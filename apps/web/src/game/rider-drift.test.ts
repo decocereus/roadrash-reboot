@@ -17,6 +17,7 @@ const SPEED = 50;
 const moved = {
   air: 0,
   heading: 0,
+  lateralSpeed: 0,
   lean: 0,
   rider: riderIdAt(1),
   s: 0,
@@ -85,6 +86,20 @@ describe("how a corrected rider settles on screen", () => {
     const { mostChange } = settleFor(drift, 900, 63);
     expect(mostChange).toBeLessThanOrEqual(25 * FRAME + 1e-9);
     expect(Math.abs(drift.s)).toBeLessThan(0.01);
+  });
+
+  it("keeps a bike's drawn sideways speed through a correction that changes it, then changes it no faster than hard braking", () => {
+    const drift = stillDrift();
+    driftBy(drift, { ...moved, lateralSpeed: 1.06, x: 0 });
+    expect(drift.across).toBe(1.06);
+    let mostChange = 0;
+    for (let frame = 0; frame < 120; frame += 1) {
+      const { across } = drift;
+      driftSettle(drift, FRAME, SPEED);
+      mostChange = Math.max(mostChange, Math.abs(drift.across - across));
+    }
+    expect(mostChange).toBeLessThanOrEqual(25 * FRAME + 1e-9);
+    expect(Math.abs(drift.x)).toBeLessThan(0.01);
   });
 
   it("stops when cleared", () => {
@@ -181,20 +196,27 @@ interface Framed {
   readonly along: number;
   readonly kicked?: number;
   readonly riding: number;
+  readonly ridingAcross?: number;
   readonly ridingSeconds?: number;
+  readonly swerved?: number;
 }
 
 const offOver = (first: Framed, second: Framed, unseen = false): number => {
-  const last = { drawnRate: 0, ridingRate: 0 };
+  const last = {
+    drawnAcrossRate: 0,
+    drawnAlongRate: 0,
+    ridingAcrossRate: 0,
+    ridingAlongRate: 0,
+  };
   const measure = (frame: Framed, measured = true): number =>
     drawnOff(
       measured,
       frame.along,
       frame.riding,
       frame.across ?? 0,
-      0,
+      frame.ridingAcross ?? 0,
       frame.ridingSeconds ?? FRAME,
-      frame.kicked ?? 0,
+      { kicked: frame.kicked ?? 0, swerved: frame.swerved ?? 0 },
       SPEED,
       FRAME,
       last
@@ -209,6 +231,12 @@ const offOver = (first: Framed, second: Framed, unseen = false): number => {
 const at = (metresPerSecond: number): Framed => ({
   along: metresPerSecond * FRAME,
   riding: metresPerSecond * FRAME,
+});
+
+const sliding = (metresPerSecond: number): Framed => ({
+  ...at(SPEED),
+  across: metresPerSecond * FRAME,
+  ridingAcross: metresPerSecond * FRAME,
 });
 
 describe("how far a frame draws a bike off its riding", () => {
@@ -228,6 +256,11 @@ describe("how far a frame draws a bike off its riding", () => {
       "at its old speed after a correction raised it from 20 to 63 m/s",
       at(20),
       { along: 20 * FRAME, kicked: -43, riding: 63 * FRAME },
+    ],
+    [
+      "at its old sideways speed after a correction slowed it from 2.44 to 1.38 m/s",
+      sliding(2.44),
+      { ...sliding(1.38), across: 2.44 * FRAME, swerved: 1.06 },
     ],
   ] as const)("counts nothing for a bike drawn %s", (_name, first, second) => {
     expect(offOver(first, second)).toBe(0);
@@ -251,9 +284,14 @@ describe("how far a frame draws a bike off its riding", () => {
       { along: 1.3 * SPEED * FRAME, riding: SPEED * FRAME },
     ],
     [
-      "gliding sideways at 3 m/s",
+      "sliding sideways at 3 m/s from one frame to the next",
       at(SPEED),
       { ...at(SPEED), across: 3 * FRAME },
+    ],
+    [
+      "slowing from 2.44 to 1.38 m/s sideways with a correction",
+      sliding(2.44),
+      { ...sliding(1.38), swerved: 1.06 },
     ],
     [
       "two ticks on in one frame",

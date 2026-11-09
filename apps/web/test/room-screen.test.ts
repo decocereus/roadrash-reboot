@@ -66,6 +66,7 @@ interface OwnPath {
   beforeS: number;
   beforeX: number;
   carried: number;
+  carriedAcross: number;
   followed: boolean;
   kicked: number;
   lastS: number;
@@ -73,6 +74,7 @@ interface OwnPath {
   offS: number;
   offX: number;
   s: number;
+  swerved: number;
   x: number;
 }
 
@@ -137,6 +139,7 @@ const ownPath = (): OwnPath => ({
   beforeS: 0,
   beforeX: 0,
   carried: 0,
+  carriedAcross: 0,
   followed: false,
   kicked: 0,
   lastS: 0,
@@ -144,6 +147,7 @@ const ownPath = (): OwnPath => ({
   offS: 0,
   offX: 0,
   s: 0,
+  swerved: 0,
   x: 0,
 });
 
@@ -176,11 +180,16 @@ const glidedPast = (
   path.carried =
     Math.max(0, path.carried - GLIDE_ACCELERATION * FRAME_SECONDS) +
     Math.abs(path.kicked);
+  path.carriedAcross =
+    Math.max(0, path.carriedAcross - GLIDE_ACCELERATION * FRAME_SECONDS) +
+    Math.abs(path.swerved);
   path.kicked = 0;
+  path.swerved = 0;
   const past = Math.max(
     Math.abs(offS - path.offS) -
       (GLIDE_SHARE * Math.abs(speed) + path.carried) * FRAME_SECONDS,
-    Math.abs(offX - path.offX) - MOST_GLIDE_ACROSS * FRAME_SECONDS
+    Math.abs(offX - path.offX) -
+      (MOST_GLIDE_ACROSS + path.carriedAcross) * FRAME_SECONDS
   );
   path.offS = offS;
   path.offX = offX;
@@ -245,6 +254,7 @@ const rideOnScreen = (race: Race): Screen => {
         path.lastS -= moved.s;
         path.lastX -= moved.x;
         path.kicked += moved.speed;
+        path.swerved += moved.lateralSpeed;
       }
     }
     for (const rider of client.predicted.riders) {

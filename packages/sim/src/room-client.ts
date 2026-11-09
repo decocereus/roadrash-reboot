@@ -16,6 +16,7 @@ import {
   scratchFor,
 } from "./room-frame.ts";
 import type { TickFrame } from "./room-frame.ts";
+import { createHitLedger } from "./room-hits.ts";
 import { MOST_BATCHED_CONTROLS, writeInput } from "./room-wire.ts";
 import { INPUT_HORIZON, seatsOf } from "./room.ts";
 import { HASH_WORDS } from "./snapshot-bytes.ts";
@@ -25,7 +26,6 @@ import { NO_FIGHTS, isFightEvent, riderOf } from "./state.ts";
 import type {
   Control,
   HeardFight,
-  HitEvent,
   RaceEvent,
   RaceSetup,
   RaceState,
@@ -39,7 +39,6 @@ const NO_CORRECTIONS: readonly RiderCorrection[] = [];
 const FELT_JUMP_METRES = 0.25;
 
 const LAG_WINDOW_TICKS = 60;
-const SAME_HIT_TICKS = 15;
 const MOST_RETRY_TICKS = 60;
 const SHRINK_EVERY_TICKS = 12;
 const LAGGING_FROM_TICKS = 20;
@@ -68,6 +67,7 @@ interface RoomStats {
 export interface RiderCorrection {
   air: number;
   heading: number;
+  lateralSpeed: number;
   lean: number;
   readonly rider: RiderId;
   s: number;
@@ -92,13 +92,6 @@ export interface RoomClient {
   readonly takeEvents: () => readonly RaceEvent[];
   readonly takeFights: () => readonly HeardFight[];
   readonly writeInputs: (view: DataView) => number;
-}
-
-interface ShownHit {
-  backed: boolean;
-  readonly hit: HitEvent;
-  refused: boolean;
-  tick: number;
 }
 
 interface Remote {
@@ -156,6 +149,7 @@ const sameHash = (left: Uint32Array, right: Uint32Array): boolean => {
 const stillCorrection = ({ id }: RiderState): RiderCorrection => ({
   air: 0,
   heading: 0,
+  lateralSpeed: 0,
   lean: 0,
   rider: id,
   s: 0,
@@ -190,8 +184,6 @@ export const createRoomClient = (
   let heard: RaceEvent[] = [];
   let fights: HeardFight[] = [];
   const mendedFights: HeardFight[] = [];
-  const mendedHits: ShownHit[] = [];
-  const shownHits: ShownHit[] = [];
   const tracked = [...predicted.riders];
   const wasAt = tracked.map(stillCorrection);
   let corrections = tracked.map(stillCorrection);
@@ -262,65 +254,16 @@ export const createRoomClient = (
     heard.push({ ...event });
   };
 
-  const shownHitOf = (
-    event: HitEvent,
-    tick: number,
-    among: readonly ShownHit[] = shownHits
-  ): ShownHit | undefined =>
-    among.find(
-      (shown) =>
-        shown.hit.rider === event.rider &&
-        shown.hit.target === event.target &&
-        shown.hit.attack === event.attack &&
-        Math.abs(shown.tick - tick) <= SAME_HIT_TICKS
-    );
-
-  const guessedHit = (
-    event: HitEvent,
-    tick: number,
-    replaying: boolean
-  ): void => {
-    const shown = shownHitOf(event, tick);
-    if (shown) {
-      shown.backed = true;
-      shown.refused = false;
-      shown.tick = tick;
-      return;
-    }
-    const found = { backed: true, hit: { ...event }, refused: false, tick };
-    if (replaying) {
-      mendedHits.push(found);
-      return;
-    }
-    shownHits.push(found);
-    if (event.rider === me) {
-      heard.push({ ...event });
-    }
-  };
-
-  const roomHit = (event: HitEvent, tick: number): void => {
-    const shown = shownHitOf(event, tick);
-    if (shown) {
-      shownHits.splice(shownHits.indexOf(shown), 1);
-      return;
-    }
-    const pending = shownHitOf(event, tick, mendedHits);
-    if (pending) {
-      mendedHits.splice(mendedHits.indexOf(pending), 1);
-    }
-    if (event.rider === me) {
-      hear(event);
-    }
-  };
-
-  const refuseUnbacked = (): void => {
-    for (const shown of shownHits) {
-      if (!shown.backed && !shown.refused) {
-        shown.refused = true;
-        fights.push({ refused: shown.hit, tick: shown.tick });
+  const hits = createHitLedger(
+    (hit) => {
+      if (hit.rider === me) {
+        heard.push({ ...hit });
       }
+    },
+    (refused, tick) => {
+      fights.push({ refused, tick });
     }
-  };
+  );
 
   const hearFights = (race: RaceState): void => {
     for (const event of race.events) {
@@ -331,9 +274,9 @@ export const createRoomClient = (
         });
       }
       if (event.kind === "hit" && race === confirmed) {
-        roomHit(event, race.tick);
+        hits.landed(event, race.tick);
       } else if (event.kind === "hit") {
-        guessedHit(event, race.tick, race === mended);
+        hits.guessed(event, race.tick, race === mended);
       }
     }
   };
@@ -358,16 +301,7 @@ export const createRoomClient = (
       }
     }
     hearFights(confirmed);
-    const overdue = confirmed.tick - SAME_HIT_TICKS;
-    for (const shown of shownHits) {
-      shown.backed &&= shown.tick >= overdue;
-    }
-    refuseUnbacked();
-    for (let at = shownHits.length - 1; at >= 0; at -= 1) {
-      if ((shownHits[at]?.tick ?? overdue) < overdue) {
-        shownHits.splice(at, 1);
-      }
-    }
+    hits.passed(confirmed.tick);
   };
 
   const copyRace = (from: RaceState, into: RaceState): void => {
@@ -379,7 +313,7 @@ export const createRoomClient = (
   const rewind = (): void => {
     mending = false;
     mendedFights.length = 0;
-    mendedHits.length = 0;
+    hits.replayDropped();
     copyRace(confirmed, predicted);
   };
 
@@ -412,6 +346,7 @@ export const createRoomClient = (
       if (rider && was) {
         was.air = rider.air;
         was.heading = rider.heading;
+        was.lateralSpeed = rider.lateralSpeed;
         was.lean = rider.lean;
         was.s = rider.s;
         was.speed = rider.speed;
@@ -429,6 +364,7 @@ export const createRoomClient = (
       if (rider && was && moved) {
         moved.air += was.air - rider.air;
         moved.heading += was.heading - rider.heading;
+        moved.lateralSpeed += was.lateralSpeed - rider.lateralSpeed;
         moved.lean += was.lean - rider.lean;
         moved.s += was.s - rider.s;
         moved.speed += was.speed - rider.speed;
@@ -446,14 +382,7 @@ export const createRoomClient = (
     mending = false;
     fights.push(...mendedFights);
     mendedFights.length = 0;
-    for (const found of mendedHits) {
-      shownHits.push(found);
-      if (found.hit.rider === me) {
-        heard.push({ ...found.hit });
-      }
-    }
-    mendedHits.length = 0;
-    refuseUnbacked();
+    hits.replayDrawn();
     noteCorrections();
     stats.crashesAfterCorrection += Math.max(0, mine.crashes - crashesBefore);
     noteJump(mendCause, fromS, fromX);
@@ -466,11 +395,8 @@ export const createRoomClient = (
     staleCause = "otherRiders";
     copyRace(confirmed, mended);
     mendedFights.length = 0;
-    mendedHits.length = 0;
+    hits.replayStarted();
     stats.rollbacks += 1;
-    for (const shown of shownHits) {
-      shown.backed = false;
-    }
   };
 
   const settle = (most = Number.POSITIVE_INFINITY): number => {
@@ -675,6 +601,7 @@ export const createRoomClient = (
       for (const moved of corrections) {
         moved.air = 0;
         moved.heading = 0;
+        moved.lateralSpeed = 0;
         moved.lean = 0;
         moved.s = 0;
         moved.speed = 0;

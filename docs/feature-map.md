@@ -1549,6 +1549,7 @@ Source files:
 - `packages/sim/src/room-client.ts`
 - `packages/sim/src/room-clock.ts`
 - `packages/sim/src/room-frame.ts`
+- `packages/sim/src/room-hits.ts`
 - `packages/sim/src/room-pace.ts`
 - `packages/sim/src/room-tape.ts`
 - `packages/sim/src/room-wire.ts`
@@ -1628,6 +1629,7 @@ Test files:
 - `apps/web/test/room-screen.test.ts`
 - `packages/career/src/room-race.test.ts`
 - `packages/sim/src/room-clock.test.ts`
+- `packages/sim/src/room-corrections.test.ts`
 - `packages/sim/src/room-delay.test.ts`
 - `packages/sim/src/room-events.test.ts`
 - `packages/sim/src/room-jumps.test.ts`

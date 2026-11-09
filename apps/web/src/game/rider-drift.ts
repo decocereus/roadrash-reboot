@@ -17,6 +17,7 @@ export interface RiderDrift {
   kicked: number;
   lean: number;
   s: number;
+  swerved: number;
   x: number;
 }
 
@@ -28,6 +29,7 @@ export const stillDrift = (): RiderDrift => ({
   kicked: 0,
   lean: 0,
   s: 0,
+  swerved: 0,
   x: 0,
 });
 
@@ -39,6 +41,7 @@ export const clearDrift = (drift: RiderDrift): void => {
   drift.kicked = 0;
   drift.lean = 0;
   drift.s = 0;
+  drift.swerved = 0;
   drift.x = 0;
 };
 
@@ -67,12 +70,14 @@ const alongGlide = (speed: number): number =>
   );
 
 export const driftBy = (drift: RiderDrift, moved: RiderCorrection): void => {
+  drift.across += moved.lateralSpeed;
   drift.air += moved.air;
   drift.along += moved.speed;
   drift.heading += moved.heading;
   drift.kicked += moved.speed;
   drift.lean += moved.lean;
   drift.s += moved.s;
+  drift.swerved += moved.lateralSpeed;
   drift.x += moved.x;
 };
 
@@ -151,9 +156,29 @@ const beyond = (
   );
 
 export interface DrawnRates {
-  drawnRate: number;
-  ridingRate: number;
+  drawnAcrossRate: number;
+  drawnAlongRate: number;
+  ridingAcrossRate: number;
+  ridingAlongRate: number;
 }
+
+const rateOff = (
+  drawnRate: number,
+  lastDrawnRate: number,
+  ridingRate: number,
+  lastRidingRate: number,
+  carried: number,
+  most: number,
+  seconds: number
+): number =>
+  Number.isNaN(lastDrawnRate)
+    ? 0
+    : beyond(
+        drawnRate - lastDrawnRate,
+        ridingRate - lastRidingRate + carried,
+        most,
+        seconds
+      );
 
 export const drawnOff = (
   measured: boolean,
@@ -162,38 +187,47 @@ export const drawnOff = (
   drawnAcross: number,
   ridingAcross: number,
   ridingSeconds: number,
-  kicked: number,
+  carried: Pick<RiderDrift, "kicked" | "swerved">,
   speed: number,
   seconds: number,
   last: DrawnRates
 ): number => {
   if (!measured) {
-    last.drawnRate = Number.NaN;
-    last.ridingRate = Number.NaN;
+    last.drawnAcrossRate = Number.NaN;
+    last.drawnAlongRate = Number.NaN;
+    last.ridingAcrossRate = Number.NaN;
+    last.ridingAlongRate = Number.NaN;
     return 0;
   }
   const atPace = ridingSeconds > 0 ? seconds / ridingSeconds : 0;
-  const drawnRate = drawnAlong / seconds;
-  const ridingRate = (ridingAlong * atPace) / seconds;
-  const sped = Number.isNaN(last.drawnRate)
-    ? 0
-    : beyond(
-        drawnRate - last.drawnRate,
-        ridingRate - last.ridingRate + kicked,
-        GLIDE_ACCELERATION + PACE_SLEW_PER_SECOND * Math.abs(speed),
-        seconds
-      );
-  last.drawnRate = drawnRate;
-  last.ridingRate = ridingRate;
-  return Math.hypot(
-    sped * seconds,
-    beyond(
-      drawnAcross,
-      ridingAcross * atPace,
-      ACROSS_METRES_PER_SECOND,
-      seconds
-    )
+  const most = GLIDE_ACCELERATION + PACE_SLEW_PER_SECOND * Math.abs(speed);
+  const drawnAlongRate = drawnAlong / seconds;
+  const ridingAlongRate = (ridingAlong * atPace) / seconds;
+  const drawnAcrossRate = drawnAcross / seconds;
+  const ridingAcrossRate = (ridingAcross * atPace) / seconds;
+  const sped = rateOff(
+    drawnAlongRate,
+    last.drawnAlongRate,
+    ridingAlongRate,
+    last.ridingAlongRate,
+    carried.kicked,
+    most,
+    seconds
   );
+  const swerved = rateOff(
+    drawnAcrossRate,
+    last.drawnAcrossRate,
+    ridingAcrossRate,
+    last.ridingAcrossRate,
+    carried.swerved,
+    most,
+    seconds
+  );
+  last.drawnAcrossRate = drawnAcrossRate;
+  last.drawnAlongRate = drawnAlongRate;
+  last.ridingAcrossRate = ridingAcrossRate;
+  last.ridingAlongRate = ridingAlongRate;
+  return Math.hypot(sped, swerved) * seconds;
 };
 
 export interface DrawnPlace extends DrawnRates {
@@ -210,11 +244,13 @@ export interface DrawnPlace extends DrawnRates {
 export const stillDrawn = (): DrawnPlace => ({
   air: 0,
   blend: 0,
-  drawnRate: 0,
+  drawnAcrossRate: 0,
+  drawnAlongRate: 0,
   fromTick: 0,
   off: 0,
   riding: false,
-  ridingRate: 0,
+  ridingAcrossRate: 0,
+  ridingAlongRate: 0,
   s: 0,
   toTick: 0,
   x: 0,
@@ -264,12 +300,13 @@ export const placeDrawn = (
     (mix(before.tick, after.tick, blend) -
       mix(drawn.fromTick, drawn.toTick, drawn.blend)) *
       TICK_SECONDS,
-    drift.kicked,
+    drift,
     rider.speed,
     seconds,
     drawn
   );
   drift.kicked = 0;
+  drift.swerved = 0;
   drawn.air = mix(before.air, after.air, blend) + drift.air;
   drawn.riding = riding;
   drawn.blend = blend;
