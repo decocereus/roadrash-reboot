@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { createHost } from "../src/host.ts";
 import { SEAT_QUIT } from "../src/messages.ts";
-import { MOST_TRACE_CHARS } from "../src/tape.ts";
+import { MOST_TRACE_CHARS, TRACE_VERSION } from "../src/tape.ts";
 import {
   advanceHearing,
   AWAY_MS,
@@ -102,6 +102,7 @@ describe("the room's notes", () => {
       gpu: "Test GPU",
       graphics: "quality rung 1",
       rows: [0, 0, 1, 0, 60, 2, 16, 90, 17],
+      version: TRACE_VERSION,
     };
     host.message(near, JSON.stringify(trace));
     host.message(near, JSON.stringify({ ...trace, rows: [250] }));
@@ -129,12 +130,17 @@ describe("the room's notes", () => {
     );
     const saved = clock.tape.get("tapes/race-1/rider-0.trace.json");
     expect(saved).toContain('"connections":[[0,0,1,0,60,2,16,90,17]]');
+    expect(saved).toContain(`"version":${TRACE_VERSION}`);
     expect(saved).not.toContain("a name");
   });
 
-  it("refuses a browser trace that is not one, or is too long", () => {
+  it("refuses a browser trace that is not one, comes from a build with other columns, or is too long", () => {
     const { clock, host, near } = loadingRace();
     host.message(near, "not json");
+    host.message(
+      near,
+      JSON.stringify({ build: "abc", gpu: "g", graphics: "q", rows: [] })
+    );
     host.gone(near, 1006);
     clock.advance(HOLD_MS);
     expect(clock.tape.has("tapes/race-1/rider-0.trace.json")).toBeFalsy();
@@ -142,7 +148,13 @@ describe("the room's notes", () => {
     otherHost.message(otherNear, "x".repeat(MOST_TRACE_CHARS + 1));
     otherHost.message(
       otherNear,
-      JSON.stringify({ build: "abc", gpu: "g", graphics: "q", rows: [] })
+      JSON.stringify({
+        build: "abc",
+        gpu: "g",
+        graphics: "q",
+        rows: [],
+        version: TRACE_VERSION,
+      })
     );
     otherHost.gone(otherNear, 1006);
     other.advance(HOLD_MS);

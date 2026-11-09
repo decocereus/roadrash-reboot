@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { controlOf } from "./control.ts";
-import { ROOM_LIMIT_TICKS, track } from "./race-fixtures.ts";
+import { ROOM_LIMIT_TICKS, track, truckRoad } from "./race-fixtures.ts";
 import { defaultSetup, neutralInput } from "./race.ts";
 import { createRoomClient } from "./room-client.ts";
 import { createRoom, roomSetup } from "./room.ts";
@@ -387,6 +387,67 @@ describe("how far a correction moved another rider", () => {
       }
     }
     expect(ownMoved).toBeGreaterThan(0);
+  });
+
+  it("carries every change a correction made to how each bike sits, height and speed included", () => {
+    const setup = roomSetup(defaultSetup(truckRoad, 3), [VICTIM, ATTACKER]);
+    const room = createRoom(setup, ROOM_LIMIT_TICKS);
+    const client = createRoomClient(setup, VICTIM, ROOM_LIMIT_TICKS);
+    for (const state of [room.state, client.confirmed, client.predicted]) {
+      const truck = state.cars.find(({ carrier }) => carrier);
+      const rival = riderOf(state.riders, ATTACKER);
+      if (truck && rival) {
+        rival.s = truck.s - 55;
+        rival.speed = 25;
+        rival.x = truck.x;
+      }
+    }
+    const braking = controlOf({ ...neutralInput, brake: 1 });
+    const placed = () =>
+      client.predicted.riders.map(({ air, heading, lean, s, speed, x }) => [
+        air,
+        heading,
+        lean,
+        s,
+        speed,
+        x,
+      ]);
+    for (let tick = 0; tick < 20; tick += 1) {
+      client.predict(riding);
+    }
+    let worstMiss = 0;
+    let lifted = 0;
+    for (let tick = 0; tick < 300; tick += 1) {
+      room.accept(VICTIM, room.state.tick + 1, [riding]);
+      room.accept(ATTACKER, room.state.tick + 1, [
+        tick >= 130 && tick < 200 && tick % 10 < 2 ? braking : riding,
+      ]);
+      room.step();
+      const before = placed();
+      client.confirm(room.frame, null);
+      client.settle();
+      const after = placed();
+      for (const moved of client.takeCorrections()) {
+        const was = riderOf(before, moved.rider) ?? [];
+        const now = riderOf(after, moved.rider) ?? [];
+        const carried = [
+          moved.air,
+          moved.heading,
+          moved.lean,
+          moved.s,
+          moved.speed,
+          moved.x,
+        ];
+        for (const [field, value] of carried.entries()) {
+          const shift = (was[field] ?? 0) - (now[field] ?? 0);
+          worstMiss = Math.max(worstMiss, Math.abs(value - shift));
+        }
+        lifted = Math.max(lifted, Math.abs(moved.air));
+      }
+      client.predict(riding);
+    }
+    expect(lifted).toBeGreaterThan(0.01);
+    expect(worstMiss).toBeLessThan(1e-9);
   });
 
   it("names every bike when a stalled client falls behind the room, so the jump forward glides", () => {

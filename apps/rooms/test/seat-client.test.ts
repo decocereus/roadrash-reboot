@@ -15,11 +15,17 @@ import { DEAD_AFTER_MS, PING_EVERY_MS } from "../src/heartbeat.ts";
 import { createInputLatency } from "../src/input-latency.ts";
 import { encodeRoomMessage, SEAT_LEFT, SEAT_QUIT } from "../src/messages.ts";
 import { createRoomRun } from "../src/room-run.ts";
-import { MOST_TICKS_PER_FRAME, openRoomSeat } from "../src/seat-client.ts";
+import {
+  LEAST_TICKS_PER_FRAME,
+  MOST_CATCH_UP_MS_PER_FRAME,
+  MOST_TICKS_PER_FRAME,
+  openRoomSeat,
+} from "../src/seat-client.ts";
 import {
   BrowserTraceSchema,
   TRACE_ROW_FIELDS,
   TRACE_ROW_MS,
+  TRACE_VERSION,
   TraceField,
 } from "../src/tape.ts";
 import {
@@ -59,6 +65,7 @@ describe("a seat loading the race", () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.useRealTimers();
     vi.unstubAllGlobals();
   });
@@ -115,7 +122,7 @@ describe("a seat loading the race", () => {
     seat.leave();
     seat.leave();
     expect(socket.sentText).toStrictEqual([
-      JSON.stringify({ ...browser, rows: [] }),
+      JSON.stringify({ ...browser, rows: [], version: TRACE_VERSION }),
     ]);
     FakeSocket.opened = [];
     const { seat: off, socket: quiet } = loadingSeat(
@@ -190,10 +197,15 @@ describe("a seat loading the race", () => {
     const workDone = () =>
       (client?.confirmed.tick ?? 0) + (client?.stats.resimulatedTicks ?? 0);
     const work = [workDone()];
+    const step = () => {
+      for (let due = seat.stepsDue(); due > 0; due -= 1) {
+        client?.predict(flooring);
+      }
+    };
     for (let frame = 0; frame < 12; frame += 1) {
       const before = workDone();
-      seat.stepsDue();
-      seat.stepsDue();
+      step();
+      step();
       seat.frameDrawn(0, 0);
       work.push(workDone() - before);
     }
@@ -203,6 +215,44 @@ describe("a seat loading the race", () => {
       MOST_TICKS_PER_FRAME
     );
   });
+
+  it.each([
+    [0.5, MOST_CATCH_UP_MS_PER_FRAME / 0.5],
+    [2, LEAST_TICKS_PER_FRAME],
+  ])(
+    "keeps a frame's catch-up to its time share when each held tick takes %s ms to confirm",
+    (tickMs, mostTicks) => {
+      const { seat, socket } = loadingSeat();
+      const client = seat.race()?.client;
+      if (!client) {
+        throw new Error("the seat has no race");
+      }
+      let nowMs = 0;
+      vi.spyOn(performance, "now").mockImplementation(() => nowMs);
+      const { confirm } = client;
+      vi.spyOn(client, "confirm").mockImplementation((frame, hash) => {
+        nowMs += tickMs;
+        confirm(frame, hash);
+      });
+      seat.frameDrawn(0, 0);
+      for (let tick = 1; tick <= HELD_TICKS; tick += 1) {
+        hearTick(socket, tick);
+      }
+      const work: number[] = [];
+      for (
+        let frame = 0;
+        frame < HELD_TICKS / LEAST_TICKS_PER_FRAME;
+        frame += 1
+      ) {
+        const before = client.confirmed.tick;
+        seat.stepsDue();
+        seat.frameDrawn(0, 0);
+        work.push(client.confirmed.tick - before);
+      }
+      expect(Math.max(...work)).toBe(mostTicks);
+      expect(client.confirmed.tick).toBe(HELD_TICKS);
+    }
+  );
 
   it("waits for a burst of held ticks to be caught up before it reports a finished rider", () => {
     const { seat, socket } = loadingSeat();

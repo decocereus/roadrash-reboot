@@ -4,7 +4,7 @@ import { createReadTick, readCatchUp, readTick } from "@racer/sim/room-wire";
 import { describe, expect, it } from "vitest";
 
 import { SEAT_QUIT } from "../src/messages.ts";
-import { TRACE_ROW_FIELDS } from "../src/tape.ts";
+import { TRACE_ROW_FIELDS, TRACE_VERSION } from "../src/tape.ts";
 import {
   advanceHearing,
   clientOf,
@@ -122,7 +122,12 @@ const rowOf = (value: number) =>
 describe("a rider who drops and comes back", () => {
   it("keeps the frame trace from both links in one file", () => {
     const { ann, clock, host, seated } = loadingRoom();
-    const trace = { build: "abc", gpu: "Test GPU", graphics: "rung 1" };
+    const trace = {
+      build: "abc",
+      gpu: "Test GPU",
+      graphics: "rung 1",
+      version: TRACE_VERSION,
+    };
     const first = [...rowOf(1), ...rowOf(2)];
     host.message(ann, JSON.stringify({ ...trace, rows: first }));
     host.gone(ann, 1006);

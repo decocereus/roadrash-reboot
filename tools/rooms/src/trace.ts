@@ -6,6 +6,7 @@ import {
   RiderTraceSchema,
   RoomTraceSchema,
   TRACE_ROW_FIELDS,
+  TRACE_VERSION,
   TraceField,
 } from "@racer/rooms/tape";
 import type { RiderTraceFile, RoomTrace } from "@racer/rooms/tape";
@@ -127,13 +128,15 @@ const momentsOf = (
 const stalled = ({ frameMs }: Moment): boolean => frameMs >= STALL_MS;
 const gapped = ({ gapMs }: Moment): boolean => gapMs >= TICK_GAP_MS;
 const missedAny = ({ missed }: Moment): boolean => missed > 0;
+const offPace = ({ slowedMs, surged }: Moment): boolean =>
+  slowedMs > 0 || surged > 0;
 const stallNear = (moments: Map<number, Moment>, second: number): boolean =>
   [second - 1, second, second + 1].some((near) => {
     const moment = moments.get(near);
     return moment !== undefined && stalled(moment);
   });
 const isBad = (moment: Moment): boolean =>
-  stalled(moment) || gapped(moment) || missedAny(moment);
+  stalled(moment) || gapped(moment) || missedAny(moment) || offPace(moment);
 
 const clockOf = (second: number): string =>
   `${Math.floor(second / SECONDS_IN_MINUTE)}:${String(second % SECONDS_IN_MINUTE).padStart(CLOCK_DIGITS, "0")}`;
@@ -161,7 +164,7 @@ export const traceReport = (
     const alone = count(
       (second, moment) => gapped(moment) && !stallNear(moments, second)
     );
-    return `Rider ${rider.rider}: build ${rider.trace.build}, ${rider.trace.gpu}, ${rider.trace.graphics}. Browser stalls in ${count((_, moment) => stalled(moment))} s, tick gaps within a second of a stall in ${nearStall} s, tick gaps with no stall near in ${alone} s, missed controls in ${count((_, moment) => missedAny(moment))} s.`;
+    return `Rider ${rider.rider}: build ${rider.trace.build}, ${rider.trace.gpu}, ${rider.trace.graphics}. Browser stalls in ${count((_, moment) => stalled(moment))} s, tick gaps within a second of a stall in ${nearStall} s, tick gaps with no stall near in ${alone} s, missed controls in ${count((_, moment) => missedAny(moment))} s, slowed or surged in ${count((_, moment) => offPace(moment))} s.`;
   });
   const seconds = [
     ...new Set(timelines.flatMap(({ moments }) => [...moments.keys()])),
@@ -188,7 +191,7 @@ export const traceReport = (
   return [
     ...riderLines,
     `Every rider missed controls in the same second ${everyoneMissed.length} time(s).`,
-    "Seconds with a stall, a tick gap or a missed control, on the race's clock:",
+    "Seconds with a stall, a tick gap, a missed control, a slowdown or a surge, on the race's clock:",
     ...badLines,
   ].join("\n");
 };
@@ -221,7 +224,11 @@ export const main = Effect.fn("rooms.trace")(function* main(
         .readFileString(`${dir}/${name}`)
         .pipe(
           Effect.flatMap(decodeBrowser),
-          Effect.mapError(failed(`${name} is not a browser trace.`))
+          Effect.mapError(
+            failed(
+              `${name} is not a version ${TRACE_VERSION} browser trace, so an older build wrote its columns.`
+            )
+          )
         );
       riders.push({ rider: Number(rider), trace });
     }

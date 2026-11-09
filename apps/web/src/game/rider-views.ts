@@ -3,7 +3,7 @@ import type { RiderBlocks } from "@racer/sim/palette";
 import type { RaceRun } from "@racer/sim/race-run";
 import type { RiderView } from "@racer/sim/race-view";
 import { RUN_SPEED } from "@racer/sim/rider-recovery";
-import { clamp, riderOf, TICK_RATE, TICK_SECONDS } from "@racer/sim/state";
+import { clamp, riderOf, TICK_RATE } from "@racer/sim/state";
 import type { HazardEffect, RaceEvent, RiderId } from "@racer/sim/state";
 import type { Track } from "@racer/track/track";
 import * as THREE from "three";
@@ -28,12 +28,11 @@ import type { Puffs } from "./puffs.ts";
 import { blockPaletteOf } from "./rider-blocks.ts";
 import {
   captureCast,
-  clearDrift,
-  drawnOff,
-  driftSettle,
+  placeDrawn,
+  stillDrawn,
   stillDrift,
 } from "./rider-drift.ts";
-import type { DrawnRates, RiderDrift } from "./rider-drift.ts";
+import type { DrawnPlace, RiderDrift } from "./rider-drift.ts";
 import {
   fightFlinch,
   fightHeard,
@@ -74,16 +73,6 @@ interface Pose {
   bodyS: number;
   bodyX: number;
   bodyAir: number;
-}
-
-interface DrawnPlace extends DrawnRates {
-  blend: number;
-  fromTick: number;
-  off: number;
-  riding: boolean;
-  s: number;
-  toTick: number;
-  x: number;
 }
 
 interface RiderActor {
@@ -290,17 +279,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
           after: emptyPose(),
           before: emptyPose(),
           bike: riderOf(bikes.roots, rider.id) ?? new THREE.Object3D(),
-          drawn: {
-            blend: 0,
-            drawnRate: 0,
-            fromTick: 0,
-            off: 0,
-            riding: false,
-            ridingRate: 0,
-            s: 0,
-            toTick: 0,
-            x: 0,
-          },
+          drawn: stillDrawn(),
           drift: stillDrift(),
           fight: quietFight(),
           figure,
@@ -546,40 +525,8 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
   ) => {
     const { before, after, bike, drift, drawn } = view;
     const seated = rider.mode === "riding" || rider.mode === "mounting";
-    const fromS = drift.s;
-    const fromX = drift.x;
-    if (seated) {
-      driftSettle(drift, seconds, rider.speed);
-    } else {
-      clearDrift(drift);
-    }
-    const ridingS = mix(before.s, after.s, blend);
-    const ridingX = mix(before.x, after.x, blend);
-    const s = ridingS + drift.s;
-    const x = ridingX + drift.x;
-    const riding = rider.mode === "riding";
-    drawn.off = drawnOff(
-      riding && drawn.riding,
-      s - drawn.s,
-      ridingS + fromS - drawn.s,
-      x - drawn.x,
-      ridingX + fromX - drawn.x,
-      (mix(before.tick, after.tick, blend) -
-        mix(drawn.fromTick, drawn.toTick, drawn.blend)) *
-        TICK_SECONDS,
-      drift.kicked,
-      rider.speed,
-      seconds,
-      drawn
-    );
-    drift.kicked = 0;
-    drawn.riding = riding;
-    drawn.blend = blend;
-    drawn.fromTick = before.tick;
-    drawn.s = s;
-    drawn.toTick = after.tick;
-    drawn.x = x;
-    const air = mix(before.air, after.air, blend);
+    placeDrawn(view, rider, blend, seconds);
+    const { air, s, x } = drawn;
     const lean = mix(before.lean, after.lean, blend) + drift.lean;
     const heading = mix(before.heading, after.heading, blend) + drift.heading;
     const bodyS = mix(before.bodyS, after.bodyS, blend);

@@ -70,6 +70,7 @@ interface RoomStats {
 }
 
 export interface RiderCorrection {
+  air: number;
   heading: number;
   lean: number;
   readonly rider: RiderId;
@@ -156,6 +157,7 @@ const sameHash = (left: Uint32Array, right: Uint32Array): boolean => {
 };
 
 const stillCorrection = ({ id }: RiderState): RiderCorrection => ({
+  air: 0,
   heading: 0,
   lean: 0,
   rider: id,
@@ -385,6 +387,7 @@ export const createRoomClient = (
       const rider = tracked[index];
       const was = wasAt[index];
       if (rider && was) {
+        was.air = rider.air;
         was.heading = rider.heading;
         was.lean = rider.lean;
         was.s = rider.s;
@@ -401,6 +404,7 @@ export const createRoomClient = (
       const was = wasAt[index];
       const moved = corrections[index];
       if (rider && was && moved) {
+        moved.air += was.air - rider.air;
         moved.heading += was.heading - rider.heading;
         moved.lean += was.lean - rider.lean;
         moved.s += was.s - rider.s;
@@ -616,6 +620,7 @@ export const createRoomClient = (
       corrections = handed;
       handed = taken;
       for (const moved of corrections) {
+        moved.air = 0;
         moved.heading = 0;
         moved.lean = 0;
         moved.s = 0;

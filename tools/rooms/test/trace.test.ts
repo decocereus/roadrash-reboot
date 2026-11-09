@@ -1,4 +1,4 @@
-import { TRACE_ROW_FIELDS, TraceField } from "@racer/rooms/tape";
+import { TRACE_ROW_FIELDS, TRACE_VERSION, TraceField } from "@racer/rooms/tape";
 import { describe, expect, it } from "vitest";
 
 import { traceReport } from "../src/trace.ts";
@@ -14,7 +14,12 @@ const row = (second: number, frameMs: number, gapMs: number): number[] => {
   return values;
 };
 
-const browser = { build: "abc", gpu: "Test GPU", graphics: "quality rung 1" };
+const browser = {
+  build: "abc",
+  gpu: "Test GPU",
+  graphics: "quality rung 1",
+  version: TRACE_VERSION,
+} as const;
 
 const report = traceReport(
   [
@@ -40,7 +45,7 @@ const report = traceReport(
 describe("the trace report", () => {
   it("names each browser and separates stalls from tick gaps", () => {
     expect(report).toContain(
-      "Rider 0: build abc, Test GPU, quality rung 1. Browser stalls in 1 s, tick gaps within a second of a stall in 1 s, tick gaps with no stall near in 1 s, missed controls in 1 s."
+      "Rider 0: build abc, Test GPU, quality rung 1. Browser stalls in 1 s, tick gaps within a second of a stall in 1 s, tick gaps with no stall near in 1 s, missed controls in 1 s, slowed or surged in 0 s."
     );
   });
 
@@ -56,6 +61,27 @@ describe("the trace report", () => {
     );
     expect(report).toContain("0:10  rider 0 frame 200 ms");
     expect(report).not.toContain("0:01  ");
+  });
+
+  it("lists a second whose frames ran slowed or surged with nothing else wrong", () => {
+    const slowed = row(3, 16, 17);
+    slowed[TraceField.slowedMs] = 200;
+    const surged = row(6, 16, 17);
+    surged[TraceField.surgedFrames] = 4;
+    const offPace = traceReport(
+      [
+        {
+          rider: 0,
+          trace: { ...browser, connections: [[...slowed, ...surged]] },
+        },
+      ],
+      { rows: [] }
+    );
+    expect(offPace).toContain(
+      "0:03  rider 0 frame 16 ms, tick gap 17 ms, round trip 0 ms, slowed 200 ms"
+    );
+    expect(offPace).toContain("surged 4, missed 0");
+    expect(offPace).toContain("slowed or surged in 2 s.");
   });
 
   it("places a stall by the browser's clock while no ticks are arriving", () => {

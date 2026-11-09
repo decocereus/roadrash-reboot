@@ -14,7 +14,7 @@ import {
   SEAT_QUIT,
   SEAT_SILENT,
 } from "../src/messages.ts";
-import { TRACE_ROW_FIELDS } from "../src/tape.ts";
+import { TRACE_ROW_FIELDS, TRACE_VERSION } from "../src/tape.ts";
 import {
   advanceHearing,
   AWAY_MS,
@@ -41,6 +41,7 @@ const TRACE = JSON.stringify({
   gpu: "g",
   graphics: "q",
   rows: Array.from({ length: TRACE_ROW_FIELDS }, () => 1),
+  version: TRACE_VERSION,
 });
 const WALK = {
   heading: 1.5,

@@ -7,12 +7,15 @@ import {
   driftBy,
   drawnOff,
   driftSettle,
+  placeDrawn,
+  stillDrawn,
   stillDrift,
 } from "./rider-drift.ts";
 
 const FRAME = 1 / 60;
 const SPEED = 50;
 const moved = {
+  air: 0,
   heading: 0,
   lean: 0,
   rider: riderIdAt(1),
@@ -96,7 +99,7 @@ const DRAWN = 1.8;
 const GUESSED = 2.078;
 const corrected = { ...moved, x: DRAWN - GUESSED };
 
-const placed = (x: number) => ({ heading: 0, lean: 0, s: 0, x });
+const placed = (x: number) => ({ air: 0, heading: 0, lean: 0, s: 0, x });
 
 const castAt = (before: number, after: number) => [
   { after: placed(0), before: placed(0), drift: stillDrift() },
@@ -116,6 +119,47 @@ const drawnAt = (
   view === undefined
     ? Number.NaN
     : view.before.x + (view.after.x - view.before.x) * blend + view.drift.x;
+
+const tickedPose = () => ({
+  air: 0,
+  heading: 0,
+  lean: 0,
+  s: 0,
+  tick: 0,
+  x: 0,
+});
+
+describe("a bike's height on screen", () => {
+  it("stays where it was drawn when a correction lifts it, then settles onto the riding", () => {
+    const lifted = 0.0153;
+    const view = {
+      after: tickedPose(),
+      before: tickedPose(),
+      drawn: stillDrawn(),
+      drift: stillDrift(),
+    };
+    const rider = { mode: "riding", speed: SPEED };
+    placeDrawn(view, rider, 0, FRAME);
+    captureCast(
+      "before",
+      [{ air: lifted }],
+      [view],
+      [{ ...moved, air: -lifted, rider: riderIdAt(0), x: 0 }],
+      (shown, posed) => {
+        posed.air = shown.air;
+      }
+    );
+    view.after.air = lifted;
+    const drawnAfter = (frames: number) => {
+      for (let frame = 0; frame < frames; frame += 1) {
+        placeDrawn(view, rider, 0, FRAME);
+      }
+      return view.drawn.air;
+    };
+    expect(drawnAfter(1)).toBeLessThan(lifted * 0.2);
+    expect(drawnAfter(40)).toBeCloseTo(lifted, 4);
+  });
+});
 
 describe("when a correction reaches the cast", () => {
   it("keeps the rider in place when a confirm corrected them between frames", () => {
