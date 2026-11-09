@@ -47,7 +47,11 @@ export interface RacePorts {
   readonly note: (note: RoomNote) => void;
   readonly raceId: () => string;
   readonly roomColo: () => string | null;
-  readonly saveTape: (key: string, body: string | Uint8Array) => void;
+  readonly saveTape: (
+    key: string,
+    body: string | Uint8Array,
+    saved?: () => void
+  ) => void;
   readonly seed: () => number;
 }
 
@@ -87,8 +91,8 @@ const tapeFor = (
 ): TapeWriter =>
   createTapeWriter(
     tickBytes,
-    (part, bytes) => {
-      ports.saveTape(tapeKey(raceId, tapePartName(part)), bytes);
+    (part, bytes, saved) => {
+      ports.saveTape(tapeKey(raceId, tapePartName(part)), bytes, saved);
     },
     resume
   );

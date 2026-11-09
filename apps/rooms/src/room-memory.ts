@@ -49,6 +49,9 @@ const CheckpointSchema = Schema.Struct({
   snapshot: Schema.Uint8Array,
   tape: Schema.Struct({
     parts: Schema.Number,
+    pending: Schema.Array(
+      Schema.Struct({ bytes: Schema.Uint8Array, part: Schema.Number })
+    ),
     tail: Schema.Struct({ bytes: Schema.Uint8Array, ticks: Schema.Number }),
   }),
   tick: Schema.Number,
@@ -69,6 +72,7 @@ const RoomMemorySchema = Schema.Struct({
   at: Schema.Number,
   build: Schema.String,
   lobby: LobbyMemorySchema,
+  lostRace: Schema.NullOr(Schema.String),
   race: Schema.NullOr(RaceMemorySchema),
   version: Schema.Literal(MEMORY_VERSION),
 });
@@ -82,7 +86,7 @@ export const checkpointOf = (room: Room, tape: TapeWriter): Checkpoint => {
   writeSnapshot(room.state, room.digest, new DataView(snapshot.buffer));
   return {
     snapshot,
-    tape: { parts: tape.parts(), tail: tape.tail() },
+    tape: { parts: tape.parts(), pending: tape.pending(), tail: tape.tail() },
     tick: room.state.tick,
   };
 };

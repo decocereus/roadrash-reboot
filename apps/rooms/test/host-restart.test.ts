@@ -220,6 +220,27 @@ describe("a room that restarts while a race runs", () => {
   });
 });
 
+describe("a room that restarts before R2 acknowledged a tape part", () => {
+  it("saves the part again from its checkpoint, so the tape stays whole", () => {
+    const { ann, bo, clock, host } = racingRoom();
+    clock.holdSaves = true;
+    advanceHearing(
+      host,
+      clock,
+      [ann, bo],
+      (TICKS_IN_PART - RACED_TICKS) * TICK_MS + 1000
+    );
+    expect(clock.tape.has("tapes/race-1/00000.bin")).toBeFalsy();
+    const pending = remembered(clock).race?.checkpoint?.tape.pending ?? [];
+    expect(pending.map(({ part }) => part)).toStrictEqual([0]);
+    const { later } = restartedRoom(clock, RESTART_GAP_MS);
+    expect(later.tape.has("tapes/race-1/00000.bin")).toBeTruthy();
+    later.advance(CHECKPOINT_TICKS * TICK_MS + 100);
+    const next = remembered(later).race?.checkpoint?.tape.pending ?? [];
+    expect(next).toStrictEqual([]);
+  });
+});
+
 describe("a room that restarts while the road loads", () => {
   it("loses the race it had not checkpointed and keeps the lobby's members, rule and host", () => {
     const { clock, host, seated } = room();
@@ -254,6 +275,16 @@ describe("a room that restarts while the road loads", () => {
       rule: { ...before.rule, tier: 3 },
     });
     expect(next.status().hostPhase).toBe("waiting");
+  });
+});
+
+describe("a lobby that lost its race", () => {
+  it("still says so after another restart", () => {
+    const { clock } = racingRoom();
+    const { later } = restartedRoom(clock, HOLD_MS + 1);
+    expect(remembered(later).lostRace).toBe("race-1");
+    const { seated } = restartedRoom(later, RESTART_GAP_MS);
+    expect(lastLobby(seated("ann", "Ann")).lostRace).toBe("race-1");
   });
 });
 

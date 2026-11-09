@@ -64,6 +64,7 @@ export interface Clock extends HostPorts {
   readonly stall: (ms: number) => void;
   readonly wakeOnce: () => void;
   readonly pending: () => number;
+  holdSaves: boolean;
 }
 
 export const createClock = (startAt = 1000): Clock => {
@@ -82,7 +83,7 @@ export const createClock = (startAt = 1000): Clock => {
     at = Math.max(at, next.due);
     next.wake();
   };
-  return {
+  const clock: Clock = {
     advance: (ms) => {
       const until = at + ms;
       for (let next = nextBy(until); next; next = nextBy(until)) {
@@ -95,6 +96,7 @@ export const createClock = (startAt = 1000): Clock => {
     },
     build: "test-build",
     config: launchRoomConfig,
+    holdSaves: false,
     memories,
     note: (note) => {
       notes.push(note);
@@ -110,8 +112,12 @@ export const createClock = (startAt = 1000): Clock => {
       memories.push(memory);
     },
     roomColo: () => "SIN",
-    saveTape: (key, body) => {
+    saveTape: (key, body, saved) => {
+      if (clock.holdSaves) {
+        return;
+      }
       tape.set(key, body);
+      saved?.();
     },
     seed: () => 7,
     stall: (ms) => {
@@ -125,6 +131,7 @@ export const createClock = (startAt = 1000): Clock => {
       }
     },
   };
+  return clock;
 };
 
 export interface FakeSocket extends HostSocket {

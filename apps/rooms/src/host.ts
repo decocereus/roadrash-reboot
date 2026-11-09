@@ -117,7 +117,7 @@ export const createHost = (
     memory?.lobby ?? null
   );
   let state: HostState<Run> = NEW_HOST;
-  let lostRace: string | null = null;
+  let lostRace = memory?.lostRace ?? null;
   let roundTripsMoved = false;
   let wakes = 0;
   let catchUpWakes = 0;
@@ -136,6 +136,7 @@ export const createHost = (
             at: ports.now(),
             build: ports.build,
             lobby: lobby.memory(),
+            lostRace,
             race: run === null ? null : raceMemoryOf(run),
             version: MEMORY_VERSION,
           }

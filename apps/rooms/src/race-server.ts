@@ -43,6 +43,7 @@ const RaceTapes = Cloudflare.R2.Bucket("RaceTapes", {
 interface TapeSave {
   readonly body: string | Uint8Array;
   readonly key: string;
+  readonly saved: (() => void) | null;
 }
 
 const note = (line: RoomNote): void => {
@@ -109,8 +110,15 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
     return Effect.gen(function* raceServerInstance() {
       const saves = yield* Queue.unbounded<TapeSave>();
       yield* Queue.take(saves).pipe(
-        Effect.flatMap(({ body, key }) =>
+        Effect.flatMap(({ body, key, saved }) =>
           tapes.put(key, body).pipe(
+            Effect.tap(() =>
+              Effect.sync(() => {
+                if (saved) {
+                  saved();
+                }
+              })
+            ),
             Effect.catchCause(() =>
               Effect.sync(() => {
                 note({ key, kind: "tapeLost" });
@@ -161,8 +169,8 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
           portsFor(
             build,
             () => roomColo,
-            (key, body) => {
-              Queue.offerUnsafe(saves, { body, key });
+            (key, body, saved) => {
+              Queue.offerUnsafe(saves, { body, key, saved: saved ?? null });
             },
             (memory) => {
               Queue.offerUnsafe(memories, memory);
