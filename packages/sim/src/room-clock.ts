@@ -1,5 +1,5 @@
 import { PACE_SLEW_PER_SECOND } from "./room-pace.ts";
-import { INPUT_HORIZON, MOST_LEAD_TICKS, SLOWING_TICKS } from "./room.ts";
+import { INPUT_HORIZON, MOST_LEAD_TICKS } from "./room.ts";
 import { TICK_SECONDS } from "./state.ts";
 
 const TICK_MS = TICK_SECONDS * 1000;
@@ -22,6 +22,8 @@ const MOST_AHEAD_TICKS = 20;
 const LEAST_AHEAD_OF_ROOM_TICKS = 6;
 const HELD_FROM_MS = 250;
 const HOLDS_RECUR_WITHIN_MS = JITTER_SECONDS * 1000;
+const SILENT_GRACE_MS = 500;
+const SILENT_EASE_MS = 500;
 
 const clampTo = (value: number, most: number): number =>
   Math.min(most, Math.max(-most, value));
@@ -59,12 +61,9 @@ export interface RoomClock {
     sentThrough: number,
     now: number
   ) => void;
-  readonly pace: (
-    predictedTick: number,
-    confirmedTick: number,
-    now: number
-  ) => number;
+  readonly pace: (predictedTick: number, now: number) => number;
   readonly silentMs: (now: number) => number;
+  readonly silenced: (now: number) => boolean;
   readonly target: (now: number) => number;
   readonly stepsDue: (
     predictedTick: number,
@@ -176,6 +175,13 @@ export const createRoomClock = (): RoomClock => {
   const target = (now: number): number =>
     serverTick(now) +
     Math.min(MOST_LEAD_TICKS - LEAD_MARGIN_TICKS, leadFor(raisedAbove(now)));
+  const silentMs = (now: number): number =>
+    now - (lastArrival === 0 ? startsAt : lastArrival);
+  const silentShare = (now: number): number =>
+    Math.min(
+      1,
+      Math.max(0, 1 - (silentMs(now) - SILENT_GRACE_MS) / SILENT_EASE_MS)
+    );
   return {
     heardRoomTime: (roomMs, now) => {
       roomAhead = Math.max(roomAhead, roomMs - now);
@@ -230,7 +236,7 @@ export const createRoomClock = (): RoomClock => {
       raisedThrough = sentThrough;
       raiseTo(typicalRtt + raisedAbove(now) + LOST_CONTROL_RAISE_MS, now);
     },
-    pace: (predictedTick, confirmedTick, now) => {
+    pace: (predictedTick, now) => {
       const wanted = target(now);
       if (wanted <= 0) {
         paced = 1;
@@ -249,11 +255,10 @@ export const createRoomClock = (): RoomClock => {
       const most = (PACE_SLEW_PER_SECOND * (now - pacedAt)) / 1000;
       paced += Math.min(most, Math.max(-most, steer - paced));
       pacedAt = now;
-      const room = INPUT_HORIZON - (predictedTick - confirmedTick);
-      const slowing = Math.max(0, room) / SLOWING_TICKS;
-      return slowing < 1 ? Math.min(paced, slowing) : paced;
+      return paced * silentShare(now);
     },
-    silentMs: (now) => now - (lastArrival === 0 ? startsAt : lastArrival),
+    silenced: (now) => silentShare(now) < 1,
+    silentMs,
     start: (startAtRoomMs) => {
       startsAt = startAtRoomMs - roomAhead;
       offset = -startsAt;

@@ -293,6 +293,13 @@ describe("a correction beyond bare-hand reach", () => {
     expect(drift.s).toBeGreaterThan(0);
   });
 
+  it("snaps a correction of more than 20 m back inside half a reach in one frame, where a slide would read as a bug", () => {
+    const drift = stillDrift();
+    driftBy(drift, { ...moved, s: 56, x: 0 });
+    driftSettle(drift, FRAME, 57);
+    expect(Math.abs(drift.s)).toBeLessThanOrEqual(HALF_REACH_ALONG + 1e-9);
+  });
+
   it("leaves a correction inside reach to the glide", () => {
     const drift = stillDrift();
     driftBy(drift, { ...moved, x: 1.5 });
@@ -356,7 +363,12 @@ interface Framed {
   readonly swerved?: number;
 }
 
-const offOver = (first: Framed, second: Framed, unseen = false): number => {
+const offOver = (
+  first: Framed,
+  second: Framed,
+  unseen = false,
+  measuredWhenStill = true
+): number => {
   const last = {
     drawnAcrossRate: 0,
     drawnAlongRate: 0,
@@ -365,7 +377,7 @@ const offOver = (first: Framed, second: Framed, unseen = false): number => {
   };
   const measure = (frame: Framed, measured = true): number =>
     drawnOff(
-      measured,
+      measured && (measuredWhenStill || (frame.ridingSeconds ?? FRAME) > 0),
       frame.along,
       frame.riding,
       frame.across ?? 0,
@@ -419,6 +431,12 @@ describe("how far a frame draws a bike off its riding", () => {
     ],
   ] as const)("counts nothing for a bike drawn %s", (_name, first, second) => {
     expect(offOver(first, second)).toBe(0);
+  });
+
+  it("counts nothing for a frame that drew no race time while the race paused for silence, and starts afresh after it", () => {
+    const paused = { along: 0, riding: 0, ridingSeconds: 0 };
+    expect(offOver(at(SPEED), paused, false, false)).toBe(0);
+    expect(offOver(paused, at(SPEED), false, false)).toBe(0);
   });
 
   it("counts nothing for a bike back on the road at another speed after frames it did not measure", () => {

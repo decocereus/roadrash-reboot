@@ -15,6 +15,7 @@ const TRUSTED_ALONG_METRES = TRUSTED_SHARE_OF_REACH * punch.reachS;
 const TRUSTED_ACROSS_METRES = TRUSTED_SHARE_OF_REACH * punch.reachX;
 const ACROSS_METRES_PER_SECOND = punch.reachX / STRIKE_SECONDS;
 const CATCH_UP_SECONDS = 0.05;
+const SKIP_METRES = 20;
 
 export interface RiderDrift {
   across: number;
@@ -93,10 +94,14 @@ const caughtUp = (
   if (Math.abs(gap) <= reach) {
     return gap;
   }
-  const cut = Math.min(
-    most * seconds,
-    (Math.abs(gap) - trusted) * (1 - Math.exp(-seconds / CATCH_UP_SECONDS))
-  );
+  const beyond = Math.abs(gap) - trusted;
+  const cut =
+    Math.abs(gap) > SKIP_METRES
+      ? beyond
+      : Math.min(
+          most * seconds,
+          beyond * (1 - Math.exp(-seconds / CATCH_UP_SECONDS))
+        );
   return gap - Math.sign(gap) * cut;
 };
 
@@ -248,7 +253,7 @@ export const drawnOff = (
     last.ridingAlongRate = Number.NaN;
     return 0;
   }
-  const atPace = ridingSeconds > 0 ? seconds / ridingSeconds : 0;
+  const atPace = seconds / ridingSeconds;
   const most = GLIDE_ACCELERATION + PACE_SLEW_PER_SECOND * Math.abs(speed);
   const drawnAlongRate = drawnAlong / seconds;
   const ridingAlongRate = (ridingAlong * atPace) / seconds;
@@ -340,15 +345,17 @@ export const placeDrawn = (
   const s = ridingS + drift.s;
   const x = ridingX + drift.x;
   const riding = rider.mode === "riding";
+  const ridingSeconds =
+    (mix(before.tick, after.tick, blend) -
+      mix(drawn.fromTick, drawn.toTick, drawn.blend)) *
+    TICK_SECONDS;
   drawn.off = drawnOff(
-    riding && drawn.riding,
+    riding && drawn.riding && ridingSeconds > 0,
     s - drawn.s,
     ridingS + fromS - drawn.s,
     x - drawn.x,
     ridingX + fromX - drawn.x,
-    (mix(before.tick, after.tick, blend) -
-      mix(drawn.fromTick, drawn.toTick, drawn.blend)) *
-      TICK_SECONDS,
+    ridingSeconds,
     drift,
     rider.speed,
     seconds,

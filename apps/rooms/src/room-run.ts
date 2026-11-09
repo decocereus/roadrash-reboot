@@ -66,7 +66,7 @@ export const createRoomRun = (
     events: client.takeEvents,
     frameDrawn: seat.frameDrawn,
     holdSeconds,
-    lagging: () => client.lagging() || seat.leadBloated(),
+    lagging: () => client.lagging() || seat.leadBloated() || seat.silenced(),
     leave: seat.leave,
     listen: (onConfirmed) => {
       seat.listen({

@@ -249,6 +249,7 @@ export interface RoomSeat {
   readonly refusal: () => Refusal | null;
   readonly inputDelay: () => number;
   readonly leadBloated: () => boolean;
+  readonly silenced: () => boolean;
   readonly rttMs: () => number;
   readonly worstRttMs: () => number;
   readonly pace: () => number;
@@ -634,11 +635,7 @@ export const openRoomSeat = (
           now,
           race.client.mine.s,
           race.client.confirmed.tick,
-          clock.pace(
-            race.client.predicted.tick,
-            race.client.confirmed.tick,
-            now
-          ),
+          clock.pace(race.client.predicted.tick, now),
           ownOffMetres,
           rivalOffMetres,
           race.client.stats.resimulatedTicks,
@@ -680,11 +677,7 @@ export const openRoomSeat = (
     pace: () => {
       const { race } = state;
       return race
-        ? clock.pace(
-            race.client.predicted.tick,
-            race.client.confirmed.tick,
-            performance.now()
-          )
+        ? clock.pace(race.client.predicted.tick, performance.now())
         : 1;
     },
     phase: () => state.phase,
@@ -697,6 +690,7 @@ export const openRoomSeat = (
         sendCommand({ edition: lobby.edition, kind: "ready", ready });
       }
     },
+    silenced: () => clock.silenced(performance.now()),
     startsInMs: () =>
       lobby?.startsInMs === null || lobby === null
         ? null

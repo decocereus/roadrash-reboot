@@ -3,6 +3,7 @@ import { defaultSetup, neutralInput } from "@racer/sim/race";
 import { ROOM_LIMIT_TICKS, straight } from "@racer/sim/race-fixtures";
 import { createRoom, roomSetup } from "@racer/sim/room";
 import { createRoomClient } from "@racer/sim/room-client";
+import type { RiderCorrection, RoomClient } from "@racer/sim/room-client";
 import { createRoomClock } from "@racer/sim/room-clock";
 import { createTickFrame } from "@racer/sim/room-frame";
 import {
@@ -55,6 +56,7 @@ const STRIKE_SECONDS = kick.ticks * TICK_SECONDS;
 const MOST_GLIDE_ACROSS = punch.reachX / STRIKE_SECONDS;
 const CATCH_UP_SECONDS = 0.05;
 const CATCH_UP_SHARE = 1 - Math.exp(-FRAME_SECONDS / CATCH_UP_SECONDS);
+const SKIP_METRES = 20;
 const FRAME_SLACK_METRES = 0.01;
 const BIKE_WIDTH = 2 * BIKE_HALF_WIDTH;
 const MOST_BEYOND_REACH_FRAMES = 18;
@@ -63,7 +65,20 @@ interface Race {
   readonly downMs: (sentAt: number) => number;
   readonly upMs: (sentAt: number) => number;
   readonly brakesFrom?: number;
+  readonly rideMs?: number;
   readonly roomStallsMs?: number;
+}
+
+interface OwnCorrections {
+  count: number;
+  total: number;
+  worst: number;
+}
+
+interface Paced {
+  frozenFrames: number;
+  pausedFrames: number;
+  pausedSeconds: number[];
 }
 
 interface Drawn {
@@ -111,7 +126,11 @@ interface Pose {
 interface Screen {
   readonly me: Drawn;
   readonly missedInStall: number;
+  readonly own: OwnCorrections;
+  readonly paced: Paced;
+  readonly refused: number;
   readonly rival: Drawn;
+  readonly jumps: RoomClient["stats"]["jumps"];
 }
 
 const riderControl = (tick: number, every: number, braking: boolean): Control =>
@@ -128,6 +147,26 @@ const brakingAt = (race: Race, tick: number): boolean =>
   tick * TICK_MS < race.brakesFrom + 2000;
 
 const steadyMs = (ms: number) => (): number => ms;
+
+const noise = (sentAt: number, salt: number): number => {
+  const seed = Math.floor(sentAt * 7 + salt) * 2_654_435_761;
+  return (seed % 1_000_003) / 1_000_003;
+};
+
+const stalledEvery =
+  (
+    baseMs: number,
+    jitterMs: number,
+    everyMs: number,
+    stallMs: number,
+    salt: number
+  ) =>
+  (sentAt: number): number => {
+    const sinceStall = sentAt % everyMs;
+    const held =
+      sentAt >= everyMs && sinceStall < stallMs ? stallMs - sinceStall : 0;
+    return held + baseMs + jitterMs * noise(sentAt, salt);
+  };
 
 const cutFor =
   (baseMs: number, seconds: number) =>
@@ -215,8 +254,13 @@ const glideAlong = (speed: number, off: number): number =>
     )
   );
 
-const cutAllowed = (gap: number, reach: number, trusted: number): number =>
-  Math.abs(gap) > reach ? (Math.abs(gap) - trusted) * CATCH_UP_SHARE : 0;
+const cutAllowed = (gap: number, reach: number, trusted: number): number => {
+  const beyond = Math.abs(gap) - trusted;
+  if (Math.abs(gap) > SKIP_METRES) {
+    return beyond;
+  }
+  return Math.abs(gap) > reach ? beyond * CATCH_UP_SHARE : 0;
+};
 
 const beyondReach = (path: OwnPath): boolean =>
   Math.abs(path.gapS + path.jumpedS) > punch.reachS ||
@@ -248,10 +292,12 @@ const glidedPast = (
       cutAllowed(gapS, punch.reachS, TRUSTED_ALONG),
     Math.abs(offX - path.offX) -
       (MOST_GLIDE_ACROSS + path.carriedAcross) * FRAME_SECONDS -
-      Math.min(
-        BIKE_HALF_WIDTH - MOST_GLIDE_ACROSS * FRAME_SECONDS,
-        cutAllowed(gapX, punch.reachX, TRUSTED_ACROSS)
-      )
+      (Math.abs(gapX) > SKIP_METRES
+        ? cutAllowed(gapX, punch.reachX, TRUSTED_ACROSS)
+        : Math.min(
+            BIKE_HALF_WIDTH - MOST_GLIDE_ACROSS * FRAME_SECONDS,
+            cutAllowed(gapX, punch.reachX, TRUSTED_ACROSS)
+          ))
   );
   path.offS = offS;
   path.offX = offX;
@@ -298,6 +344,40 @@ const drawFrame = (
   path.followed = riding;
 };
 
+const tallyOwn = (own: OwnCorrections, moved: RiderCorrection): void => {
+  if (moved.rider === ME) {
+    const size = Math.max(Math.abs(moved.s), Math.abs(moved.x));
+    own.count += 1;
+    own.total += size;
+    own.worst = Math.max(own.worst, size);
+  }
+};
+
+const notePace = (paced: Paced, pace: number, now: number): void => {
+  if (pace < 0.5) {
+    paced.pausedFrames += 1;
+    const second = Math.floor(now / 1000);
+    if (paced.pausedSeconds.at(-1) !== second) {
+      paced.pausedSeconds.push(second);
+    }
+  }
+};
+
+const drawIf = (
+  drawn: Drawn,
+  view:
+    | { after: Pose; before: Pose; drawn: DrawnPlace; drift: RiderDrift }
+    | undefined,
+  path: OwnPath | undefined,
+  rider: { mode: string; speed: number } | undefined,
+  blend: number,
+  measured: boolean
+): void => {
+  if (view && path && rider) {
+    drawFrame(drawn, view, path, rider, blend, measured);
+  }
+};
+
 const rideOnScreen = (race: Race): Screen => {
   const link = race;
   const setup = roomSetup(defaultSetup(straight, 3), [ME, RIVAL]);
@@ -326,9 +406,12 @@ const rideOnScreen = (race: Race): Screen => {
     drift: stillDrift(),
   }));
   const paths = client.predicted.riders.map(ownPath);
+  const own: OwnCorrections = { count: 0, total: 0, worst: 0 };
+  const paced: Paced = { frozenFrames: 0, pausedFrames: 0, pausedSeconds: [] };
   const capture = (into: "after" | "before") => {
     const taken = client.takeCorrections();
     for (const moved of taken) {
+      tallyOwn(own, moved);
       const path = riderOf(paths, moved.rider);
       if (path) {
         path.jumpedS += moved.s;
@@ -355,6 +438,7 @@ const rideOnScreen = (race: Race): Screen => {
     });
   };
   let now = 0;
+  let stepsThisFrame = 0;
   const sendInputs = () => {
     for (
       let bytes = client.writeInputs(input);
@@ -381,6 +465,7 @@ const rideOnScreen = (race: Race): Screen => {
         client.confirmed.tick,
         now
       );
+      stepsThisFrame += steps;
       for (let step = 0; step < steps; step += 1) {
         const tick = client.predicted.tick + 1;
         client.predict(
@@ -391,7 +476,11 @@ const rideOnScreen = (race: Race): Screen => {
       sendInputs();
       capture("after");
     },
-    () => clock.pace(client.predicted.tick, client.confirmed.tick, now)
+    () => {
+      const pace = clock.pace(client.predicted.tick, now);
+      notePace(paced, pace, now);
+      return pace;
+    }
   );
   const [mine, theirs] = views;
   const [myPath, theirPath] = paths;
@@ -403,7 +492,8 @@ const rideOnScreen = (race: Race): Screen => {
   let nextRoomAt = 0;
   let nextPing = 0;
   let lastDown = 0;
-  for (now = 0; now < RIDE_MS; now += FRAME_MS) {
+  for (now = 0; now < (race.rideMs ?? RIDE_MS); now += FRAME_MS) {
+    stepsThisFrame = 0;
     for (const sent of takeDue(controlsInFlight, now)) {
       room.accept(ME, sent.firstTick, sent.controls);
     }
@@ -447,23 +537,54 @@ const rideOnScreen = (race: Race): Screen => {
       clock.heardRtt(pong.at - pong.sent, pong.at);
     }
     advance(FRAME_SECONDS);
+    paced.frozenFrames +=
+      stepsThisFrame === 0 && now >= SETTLED_AFTER_MS ? 1 : 0;
     const blend = fixed.accumulator / TICK_SECONDS;
     const myBike = riderOf(client.predicted.riders, ME);
     const theirBike = riderOf(client.predicted.riders, RIVAL);
     const measured = now >= SETTLED_AFTER_MS;
-    if (mine && myPath && myBike) {
-      drawFrame(me, mine, myPath, myBike, blend, measured);
-    }
-    if (theirs && theirPath && theirBike) {
-      drawFrame(rival, theirs, theirPath, theirBike, blend, measured);
-    }
+    drawIf(me, mine, myPath, myBike, blend, measured);
+    drawIf(rival, theirs, theirPath, theirBike, blend, measured);
   }
   return {
+    jumps: client.stats.jumps,
     me,
     missedInStall: room.missedControls(ME) - missedBefore,
+    own,
+    paced,
+    refused: client.stats.refusedPredictions,
     rival,
   };
 };
+
+const BASE_OWN_JUMP_METRES = 18.7;
+const STALL_MS = 2500;
+const STALLS = 3;
+const PAUSED_PER_STALL_FRAMES = ((STALL_MS - 1000) / FRAME_MS) * 1.2;
+
+describe("the lagged rider's own bike", () => {
+  it("eases to a stop when the room goes quiet, so a player braking through a 2.5 s two-way stall every 15 s is corrected by less than half of what main's frozen client took, and never refused a prediction", () => {
+    const screen = rideOnScreen({
+      brakesFrom: 15_000,
+      downMs: stalledEvery(90, 60, 15_000, STALL_MS, 1),
+      rideMs: 50_000,
+      upMs: stalledEvery(90, 60, 15_000, STALL_MS, 2),
+    });
+    expect({
+      ownJump: screen.jumps.ownControl.worstMetres < BASE_OWN_JUMP_METRES / 2,
+      paused:
+        screen.paced.pausedFrames > 0 &&
+        screen.paced.pausedFrames <= STALLS * PAUSED_PER_STALL_FRAMES,
+      refused: screen.refused,
+      stepped: screen.me.worstStep < BIKE_WIDTH,
+    }).toStrictEqual({
+      ownJump: true,
+      paused: true,
+      refused: 0,
+      stepped: true,
+    });
+  });
+});
 
 describe("both bikes on screen in a room race", () => {
   it.each([
@@ -475,30 +596,30 @@ describe("both bikes on screen in a room race", () => {
     [
       "a 2.5 s hold on ticks from the room",
       { downMs: cutFor(80, 2.5), upMs: steadyMs(80) },
-      0,
+      100,
     ],
     [
       "a 1.5 s cut both ways",
       { downMs: cutFor(80, 1.5), upMs: cutFor(80, 1.5) },
-      90,
+      100,
     ],
     [
       "a 2.5 s cut both ways",
       { downMs: cutFor(80, 2.5), upMs: cutFor(80, 2.5) },
-      150,
+      160,
     ],
     [
       "a 4 s hold on ticks from the room",
       { downMs: cutFor(80, 4), upMs: steadyMs(80) },
-      0,
+      190,
     ],
     [
       "a room that stops stepping for 2.5 s",
       { downMs: steadyMs(80), roomStallsMs: 2500, upMs: steadyMs(80) },
-      0,
+      100,
     ],
   ] as const)(
-    "draws each bike within its pace and glide limits every frame over %s, never leaving its own path faster than a glide, and the room misses only controls the link lost",
+    "draws each bike within its pace and glide limits every frame over %s, never leaving its own path faster than a glide, and the room misses only the controls the link lost or the paused client never sent",
     (_name, race, mostMissed) => {
       const screen = rideOnScreen(race);
       expect(screen.me.frames).toBeGreaterThan(1200);

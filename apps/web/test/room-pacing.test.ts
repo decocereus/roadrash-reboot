@@ -13,6 +13,8 @@ const SETTLED_AFTER_MS = START_MS + 3000;
 const RIDE_MS = 60_000;
 const MOST_AHEAD_ON_ROUGH_LINKS = 50;
 const EASED_PER_SECOND = PACE_SLEW_PER_SECOND * 1.001;
+const FRAMES_PER_SECOND = 60;
+const STOP_SLACK_FRAMES = 15;
 const TRIMMED = 0.021;
 const FOLLOWED = 0.11;
 const MOST_MEAN_DELAY_TICKS = 3;
@@ -149,6 +151,7 @@ const ride = (link: Link, displayHz: number): Ride => {
   let delayed = 0;
   let planned = 0;
   let nextPing = 0;
+
   const pongs: (readonly [number, number])[] = [];
   const advance = createFixedTick(
     fixed,
@@ -170,7 +173,7 @@ const ride = (link: Link, displayHz: number): Ride => {
         }
       }
     },
-    () => clock.pace(predicted, confirmed, now)
+    () => clock.pace(predicted, now)
   );
   let drawn = 0;
   let fastest = 0;
@@ -446,38 +449,60 @@ describe("a room race on a rough link", () => {
   });
 
   it.each([
-    ["a one-second cut both ways", cutBothWays(1), 1],
-    ["a 2.5 s hold on ticks from the room", heldDownstream(2.5), 0.01],
-    ["a 2.5 s cut both ways", cutBothWays(2.5), 1],
-    ["a 4 s cut both ways", cutBothWays(4), 1],
-    ["a 4.9 s hold on ticks from the room", heldDownstream(4.9), 0.01],
+    ["a one-second cut both ways", cutBothWays(1), 1, 0, 1, 4],
+    [
+      "a 2.5 s hold on ticks from the room",
+      heldDownstream(2.5),
+      0.05,
+      1.5,
+      1,
+      6,
+    ],
+    ["a 2.5 s cut both ways", cutBothWays(2.5), 1, 1.5, 1, 6],
+    ["a 4 s cut both ways", cutBothWays(4), 1, 3, 1, 6],
+    [
+      "a 4.9 s hold on ticks from the room",
+      heldDownstream(4.9),
+      0.1,
+      3.9,
+      1,
+      6,
+    ],
     [
       "the rooms:lag proxy at 130 ms, 30 ms jitter, 1% loss and a 2.5 s hold both ways every 15 s",
       lagProxyHolds,
       0.2,
+      4.5,
+      3,
+      12,
     ],
     [
       "a 2.5 s hold both ways that holds the lobby's last pings and the race's first ticks",
       { downMs: heldAtTheStart, roomHz: steadyHz, upMs: heldAtTheStart },
       1,
+      0,
+      0,
+      0,
     ],
     [
       "a 2.5 s hold both ways whose held packets dribble out over a second",
       { downMs: dribbledOut, roomHz: steadyHz, upMs: dribbledOut },
       1,
+      1.5,
+      1,
+      30,
     ],
   ] as const)(
-    "rides on at its own pace through %s, never sending controls the room would refuse",
-    (_name, link, lateLimit) => {
+    "rides through the first half second of %s, eases to a stop by a second of silence, skips to the room's race the moment its ticks return, and never sends controls the room would refuse",
+    (_name, link, lateLimit, stoppedSeconds, holds, leapsMost) => {
       const result = ride(link, 60);
+      const stopsAbout = stoppedSeconds * FRAMES_PER_SECOND;
       expect({
-        eased: result.mostEase <= EASED_PER_SECOND,
-        leaps: result.leaps,
-        stops: result.stops,
-      }).toStrictEqual({ eased: true, leaps: 0, stops: 0 });
-      expect(
-        Math.max(1 - result.slowest, result.fastest - 1)
-      ).toBeLessThanOrEqual(TRIMMED);
+        skipped: result.leaps >= holds && result.leaps <= leapsMost,
+        stopped:
+          result.stops >= Math.max(0, stopsAbout - STOP_SLACK_FRAMES) &&
+          result.stops <= stopsAbout + STOP_SLACK_FRAMES,
+      }).toStrictEqual({ skipped: true, stopped: true });
       expect(result.mostAheadOfRoom).toBeLessThan(MOST_LEAD_TICKS);
       expect(result.lateShare).toBeLessThan(lateLimit);
     }

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import { createRoomClock } from "./room-clock.ts";
-import { INPUT_HORIZON } from "./room.ts";
 import { TICK_SECONDS } from "./state.ts";
 
 const TICK_MS = TICK_SECONDS * 1000;
@@ -34,7 +33,7 @@ const riddenLead = (spikes: readonly Spike[]) => {
       );
       clock.heardRtt(spike?.rttMs ?? STEADY_RTT_MS, now);
     }
-    progress = Math.max(progress, tick) + clock.pace(predicted, tick, now);
+    progress = Math.max(progress, tick) + clock.pace(predicted, now);
     predicted = Math.floor(progress);
     leads.set(
       Math.round(now / 100) * 100,
@@ -239,7 +238,7 @@ describe("the room clock", () => {
       clock.heardRtt(300, 1000);
     }
     clock.heardTick(309, 5000);
-    expect(clock.pace(316, 309, 5000)).toBeCloseTo(1.02, 9);
+    expect(clock.pace(316, 5000)).toBeCloseTo(1.02, 9);
     expect(316 + clock.inputDelay(316, 5000)).toBe(clock.target(5000));
     expect(clock.stepsDue(316, 309, 5000)).toBe(1);
   });
@@ -353,7 +352,7 @@ describe("the room clock", () => {
       const clock = createRoomClock();
       clock.heardRtt(1, 1000);
       clock.heardTick(100, 1000);
-      expect(clock.pace(predicted, 100, 1000)).toBeCloseTo(pace, 9);
+      expect(clock.pace(predicted, 1000)).toBeCloseTo(pace, 9);
       expect(clock.stepsDue(predicted, 100, 1000)).toBe(1);
     }
   );
@@ -362,21 +361,41 @@ describe("the room clock", () => {
     const clock = createRoomClock();
     clock.heardRtt(1, 1000);
     clock.heardTick(100, 1000);
-    expect(clock.pace(170, 100, 1000)).toBeCloseTo(0.9, 9);
-    expect(clock.pace(103, 100, 1100)).toBeCloseTo(0.91, 9);
-    expect(clock.pace(103, 100, 1100)).toBeCloseTo(0.91, 9);
-    expect(clock.pace(103, 100, 1600)).toBeCloseTo(0.96, 9);
+    expect(clock.pace(170, 1000)).toBeCloseTo(0.9, 9);
+    expect(clock.pace(103, 1100)).toBeCloseTo(0.91, 9);
+    expect(clock.pace(103, 1100)).toBeCloseTo(0.91, 9);
+    expect(clock.pace(103, 1450)).toBeCloseTo(0.945, 9);
   });
 
-  it("slows toward a stop only as its guess nears seven seconds past the last tick it heard, after the link is given up", () => {
+  it("rides through half a second of silence at full pace and eases to a stop by a second", () => {
     const clock = createRoomClock();
     clock.heardRtt(1, 1000);
     clock.heardTick(100, 1000);
-    const now = 1000 + INPUT_HORIZON * TICK_MS;
-    expect(clock.pace(480, 100, now)).toBeCloseTo(1.1, 9);
-    expect(clock.pace(505, 100, now)).toBeCloseTo(0.5, 9);
-    expect(clock.pace(520, 100, now)).toBe(0);
-    expect(clock.stepsDue(520, 100, now)).toBe(0);
+    const onTarget = (now: number) => clock.pace(clock.target(now), now);
+    expect(onTarget(1500)).toBe(1);
+    expect(clock.silenced(1500)).toBeFalsy();
+    expect(onTarget(1750)).toBeCloseTo(0.5, 9);
+    expect(onTarget(2000)).toBe(0);
+    expect(onTarget(2400)).toBe(0);
+  });
+
+  it("is back at its pace the moment the next tick arrives after a silence", () => {
+    const clock = createRoomClock();
+    clock.heardRtt(1, 1000);
+    clock.heardTick(100, 1000);
+    const onTarget = (now: number) => clock.pace(clock.target(now), now);
+    expect(onTarget(2400)).toBe(0);
+    clock.heardTick(101, 2500);
+    expect(onTarget(2500)).toBe(1);
+    expect(clock.silenced(2500)).toBeFalsy();
+  });
+
+  it("stops predicting at the horizon however the pace reads", () => {
+    const clock = createRoomClock();
+    clock.heardRtt(1, 1000);
+    clock.heardTick(100, 1000);
+    expect(clock.stepsDue(520, 100, 1000)).toBe(0);
+    expect(clock.stepsDue(519, 100, 1000)).toBe(1);
   });
 
   it("follows a room that sends 57 ticks a second instead of running away from it", () => {
