@@ -54,6 +54,7 @@ Keep implementation detail out of the map: name player paths, stable handles, re
 - [Career](./career.md): a new career, the clubhouse, a career race settled into money and qualification, the garage, and the save across reloads.
 - [Player events](./player-events.md): the race data notice, the Race data switch and player ID in Settings, and the events sent to `/api/events`.
 - [Race room](./race-room.md): the Durable Object that runs a race at 60 Hz for WebSocket seats, raced by scripted clients.
+- [Netcode compare](./netcode-compare.md): `pnpm rooms:fights` on a change's base and head builds, alternating, and `pnpm rooms:compare` holding the head to one rule table for drawn places, snaps, strikes and dropped presses.
 - [Race rules](./race-rules.md): the served field size, a ten-racer grid, a three-tier career and what each tier changes, and the save above the top tier refused.
 - [Game art](./art.md): the `/art/<key>` route, the bar's and the race's art loaded from it, the local cache refilled from the deployed game, and the deployed game reading R2.
 - [Desktop session](./desktop-session.md): the Hyprland session `rv up` starts on demand on vimaan, shared by slots and stopped by the last one.
