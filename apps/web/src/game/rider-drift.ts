@@ -1,13 +1,21 @@
 import type { RiderCorrection } from "@racer/sim/room-client";
 import { PACE_SLEW_PER_SECOND } from "@racer/sim/room-pace";
 import { riderOf, TICK_SECONDS } from "@racer/sim/state";
+import { kick, punch } from "@racer/sim/weapons";
 
 const SETTLE_SECONDS = 0.1;
 const ALONG_SHARE_OF_SPEED = 0.1;
+const FASTEST_ALONG_SHARE_OF_SPEED = 0.25;
 const SLOWEST_ALONG_METRES_PER_SECOND = 0.5;
 const ACROSS_METRES_PER_SECOND = 2.5;
 const GLIDE_ACCELERATION = 25;
 const PACE_SHARE_UNSEEN = 0.1;
+const TRUSTED_SHARE_OF_REACH = 0.5;
+const STRIKE_SECONDS = Math.min(kick.ticks, punch.ticks) * TICK_SECONDS;
+const TRUSTED_ALONG_METRES = TRUSTED_SHARE_OF_REACH * punch.reachS;
+const TRUSTED_ACROSS_METRES = TRUSTED_SHARE_OF_REACH * punch.reachX;
+const FASTEST_ACROSS_METRES_PER_SECOND =
+  ACROSS_METRES_PER_SECOND + TRUSTED_ACROSS_METRES / STRIKE_SECONDS;
 
 export interface RiderDrift {
   across: number;
@@ -63,10 +71,23 @@ const glided = (
   return rate + Math.min(step, Math.max(-step, wanted - rate));
 };
 
-const alongGlide = (speed: number): number =>
+const pastTrusted = (gap: number, trusted: number): number =>
+  Math.max(0, Math.abs(gap) - trusted) / SETTLE_SECONDS;
+
+const alongGlide = (speed: number, gap: number): number =>
   Math.max(
     SLOWEST_ALONG_METRES_PER_SECOND,
-    ALONG_SHARE_OF_SPEED * Math.abs(speed)
+    Math.min(
+      FASTEST_ALONG_SHARE_OF_SPEED * Math.abs(speed),
+      ALONG_SHARE_OF_SPEED * Math.abs(speed) +
+        pastTrusted(gap, TRUSTED_ALONG_METRES)
+    )
+  );
+
+const acrossGlide = (gap: number): number =>
+  Math.min(
+    FASTEST_ACROSS_METRES_PER_SECOND,
+    ACROSS_METRES_PER_SECOND + pastTrusted(gap, TRUSTED_ACROSS_METRES)
   );
 
 export const driftBy = (drift: RiderDrift, moved: RiderCorrection): void => {
@@ -90,13 +111,13 @@ export const driftSettle = (
   drift.air -= drift.air * by;
   drift.heading -= drift.heading * by;
   drift.lean -= drift.lean * by;
-  drift.along = glided(drift.s, drift.along, alongGlide(speed), seconds);
-  drift.across = glided(
-    drift.x,
-    drift.across,
-    ACROSS_METRES_PER_SECOND,
+  drift.along = glided(
+    drift.s,
+    drift.along,
+    alongGlide(speed, drift.s),
     seconds
   );
+  drift.across = glided(drift.x, drift.across, acrossGlide(drift.x), seconds);
   drift.s += drift.along * seconds;
   drift.x += drift.across * seconds;
 };

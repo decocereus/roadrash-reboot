@@ -22,6 +22,7 @@ import {
   TICK_SECONDS,
 } from "@racer/sim/state";
 import type { Control } from "@racer/sim/state";
+import { kick, punch } from "@racer/sim/weapons";
 import { describe, expect, it } from "vitest";
 
 import { createFixedTick } from "../src/game/fixed-tick.ts";
@@ -43,9 +44,18 @@ const RIDE_MS = 28_000;
 const SETTLED_AFTER_MS = 4000;
 const CUT_FROM_MS = 20_000;
 const GLIDE_SHARE = 0.1;
+const FASTEST_GLIDE_SHARE = 0.25;
+const SLOWEST_GLIDE_ALONG = 0.5;
 const MOST_GLIDE_ACROSS = 2.5;
 const GLIDE_ACCELERATION = 25;
+const GLIDE_SETTLE_SECONDS = 0.1;
+const TRUSTED_ALONG = punch.reachS / 2;
+const TRUSTED_ACROSS = punch.reachX / 2;
+const STRIKE_SECONDS = kick.ticks * TICK_SECONDS;
+const FASTEST_GLIDE_ACROSS =
+  MOST_GLIDE_ACROSS + TRUSTED_ACROSS / STRIKE_SECONDS;
 const FRAME_SLACK_METRES = 0.01;
+const MOST_STEP_METRES = 0.2;
 
 interface Race {
   readonly downMs: (sentAt: number) => number;
@@ -56,8 +66,10 @@ interface Race {
 
 interface Drawn {
   frames: number;
+  lastX: number;
   worstGlide: number;
   worstOff: number;
+  worstStep: number;
 }
 
 interface OwnPath {
@@ -67,7 +79,13 @@ interface OwnPath {
   beforeX: number;
   carried: number;
   carriedAcross: number;
+  fastAcross: number;
+  fastAlong: number;
   followed: boolean;
+  gapS: number;
+  gapX: number;
+  jumpedS: number;
+  jumpedX: number;
   kicked: number;
   lastS: number;
   lastX: number;
@@ -131,7 +149,13 @@ const takeDue = <Due extends { readonly at: number }>(
 
 const pose = (): Pose => ({ air: 0, heading: 0, lean: 0, s: 0, tick: 0, x: 0 });
 
-const seen = (): Drawn => ({ frames: 0, worstGlide: 0, worstOff: 0 });
+const seen = (): Drawn => ({
+  frames: 0,
+  lastX: Number.NaN,
+  worstGlide: 0,
+  worstOff: 0,
+  worstStep: 0,
+});
 
 const ownPath = (): OwnPath => ({
   afterS: 0,
@@ -140,7 +164,13 @@ const ownPath = (): OwnPath => ({
   beforeX: 0,
   carried: 0,
   carriedAcross: 0,
+  fastAcross: 0,
+  fastAlong: 0,
   followed: false,
+  gapS: 0,
+  gapX: 0,
+  jumpedS: 0,
+  jumpedX: 0,
   kicked: 0,
   lastS: 0,
   lastX: 0,
@@ -169,30 +199,61 @@ const followOwn = (
   }
 };
 
+const pastTrusted = (off: number, trusted: number): number =>
+  Math.max(0, Math.abs(off) - trusted) / GLIDE_SETTLE_SECONDS;
+
+const glideAlong = (speed: number, off: number): number =>
+  Math.max(
+    SLOWEST_GLIDE_ALONG,
+    Math.min(
+      FASTEST_GLIDE_SHARE * Math.abs(speed),
+      GLIDE_SHARE * Math.abs(speed) + pastTrusted(off, TRUSTED_ALONG)
+    )
+  );
+
+const glideAcross = (off: number): number =>
+  Math.min(
+    FASTEST_GLIDE_ACROSS,
+    MOST_GLIDE_ACROSS + pastTrusted(off, TRUSTED_ACROSS)
+  );
+
 const glidedPast = (
   path: OwnPath,
-  drawn: DrawnPlace,
+  view: { after: Pose; before: Pose; drawn: DrawnPlace },
   speed: number,
   blend: number
 ): number => {
+  const { drawn } = view;
   const offS = drawn.s - (path.beforeS + (path.afterS - path.beforeS) * blend);
   const offX = drawn.x - (path.beforeX + (path.afterX - path.beforeX) * blend);
-  path.carried =
-    Math.max(0, path.carried - GLIDE_ACCELERATION * FRAME_SECONDS) +
-    Math.abs(path.kicked);
+  const slowed = GLIDE_ACCELERATION * FRAME_SECONDS;
+  path.carried = Math.max(0, path.carried - slowed) + Math.abs(path.kicked);
   path.carriedAcross =
-    Math.max(0, path.carriedAcross - GLIDE_ACCELERATION * FRAME_SECONDS) +
-    Math.abs(path.swerved);
+    Math.max(0, path.carriedAcross - slowed) + Math.abs(path.swerved);
+  path.fastAlong = Math.max(
+    glideAlong(speed, path.gapS + path.jumpedS),
+    path.fastAlong - slowed
+  );
+  path.fastAcross = Math.max(
+    glideAcross(path.gapX + path.jumpedX),
+    path.fastAcross - slowed
+  );
+  path.jumpedS = 0;
+  path.jumpedX = 0;
   path.kicked = 0;
   path.swerved = 0;
   const past = Math.max(
     Math.abs(offS - path.offS) -
-      (GLIDE_SHARE * Math.abs(speed) + path.carried) * FRAME_SECONDS,
+      (path.fastAlong + path.carried) * FRAME_SECONDS,
     Math.abs(offX - path.offX) -
-      (MOST_GLIDE_ACROSS + path.carriedAcross) * FRAME_SECONDS
+      (path.fastAcross + path.carriedAcross) * FRAME_SECONDS
   );
   path.offS = offS;
   path.offX = offX;
+  path.gapS =
+    drawn.s - (view.before.s + (view.after.s - view.before.s) * blend);
+  path.gapX =
+    drawn.x - (view.before.x + (view.after.x - view.before.x) * blend);
   return past;
 };
 
@@ -206,11 +267,20 @@ const drawFrame = (
 ): void => {
   const wasRiding = view.drawn.riding;
   placeDrawn(view, rider, blend, FRAME_SECONDS);
-  const past = glidedPast(path, view.drawn, rider.speed, blend);
+  const past = glidedPast(path, view, rider.speed, blend);
   const riding = rider.mode === "riding";
   if (measured && riding) {
     drawn.frames += 1;
     drawn.worstOff = Math.max(drawn.worstOff, view.drawn.off);
+    if (wasRiding && !Number.isNaN(drawn.lastX)) {
+      drawn.worstStep = Math.max(
+        drawn.worstStep,
+        Math.abs(view.drawn.x - drawn.lastX)
+      );
+    }
+    drawn.lastX = view.drawn.x;
+  } else {
+    drawn.lastX = Number.NaN;
   }
   if (measured && riding && wasRiding && path.followed) {
     drawn.worstGlide = Math.max(drawn.worstGlide, past);
@@ -251,6 +321,8 @@ const rideOnScreen = (race: Race): Screen => {
     for (const moved of taken) {
       const path = riderOf(paths, moved.rider);
       if (path) {
+        path.jumpedS += moved.s;
+        path.jumpedX += moved.x;
         path.lastS -= moved.s;
         path.lastX -= moved.x;
         path.kicked += moved.speed;
@@ -427,7 +499,10 @@ describe("both bikes on screen in a room race", () => {
         off:
           Math.max(screen.me.worstOff, screen.rival.worstOff) <
           FRAME_SLACK_METRES,
-      }).toStrictEqual({ glided: true, off: true });
+        stepped:
+          Math.max(screen.me.worstStep, screen.rival.worstStep) <
+          MOST_STEP_METRES,
+      }).toStrictEqual({ glided: true, off: true, stepped: true });
       expect(screen.missedInStall).toBeLessThanOrEqual(mostMissed);
     }
   );
@@ -457,7 +532,10 @@ describe("both bikes on screen in a room race", () => {
         off:
           Math.max(screen.me.worstOff, screen.rival.worstOff) <
           FRAME_SLACK_METRES,
-      }).toStrictEqual({ glided: true, off: true });
+        stepped:
+          Math.max(screen.me.worstStep, screen.rival.worstStep) <
+          MOST_STEP_METRES,
+      }).toStrictEqual({ glided: true, off: true, stepped: true });
     }
   );
 });
