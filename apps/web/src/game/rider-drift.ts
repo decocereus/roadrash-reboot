@@ -1,6 +1,6 @@
 import type { RiderCorrection } from "@racer/sim/room-client";
 import { PACE_SLEW_PER_SECOND } from "@racer/sim/room-pace";
-import { riderOf, TICK_SECONDS } from "@racer/sim/state";
+import { BIKE_HALF_WIDTH, riderOf, TICK_SECONDS } from "@racer/sim/state";
 import { kick, punch } from "@racer/sim/weapons";
 
 const SETTLE_SECONDS = 0.1;
@@ -12,7 +12,11 @@ const PACE_SHARE_UNSEEN = 0.1;
 const TRUSTED_SHARE_OF_REACH = 0.5;
 const STRIKE_SECONDS = Math.min(kick.ticks, punch.ticks) * TICK_SECONDS;
 const TRUSTED_ALONG_METRES = TRUSTED_SHARE_OF_REACH * punch.reachS;
+const TRUSTED_ACROSS_METRES = TRUSTED_SHARE_OF_REACH * punch.reachX;
 const ACROSS_METRES_PER_SECOND = punch.reachX / STRIKE_SECONDS;
+const CATCH_UP_SECONDS = 0.05;
+const FASTEST_CATCH_UP_ACROSS_METRES_PER_SECOND =
+  BIKE_HALF_WIDTH / TICK_SECONDS - ACROSS_METRES_PER_SECOND;
 
 export interface RiderDrift {
   across: number;
@@ -81,6 +85,23 @@ const alongGlide = (speed: number, gap: number): number =>
     )
   );
 
+const caughtUp = (
+  gap: number,
+  reach: number,
+  trusted: number,
+  seconds: number,
+  most: number
+): number => {
+  if (Math.abs(gap) <= reach) {
+    return gap;
+  }
+  const cut = Math.min(
+    most * seconds,
+    (Math.abs(gap) - trusted) * (1 - Math.exp(-seconds / CATCH_UP_SECONDS))
+  );
+  return gap - Math.sign(gap) * cut;
+};
+
 export const driftBy = (drift: RiderDrift, moved: RiderCorrection): void => {
   drift.across += moved.lateralSpeed;
   drift.air += moved.air;
@@ -102,6 +123,20 @@ export const driftSettle = (
   drift.air -= drift.air * by;
   drift.heading -= drift.heading * by;
   drift.lean -= drift.lean * by;
+  drift.s = caughtUp(
+    drift.s,
+    punch.reachS,
+    TRUSTED_ALONG_METRES,
+    seconds,
+    Number.POSITIVE_INFINITY
+  );
+  drift.x = caughtUp(
+    drift.x,
+    punch.reachX,
+    TRUSTED_ACROSS_METRES,
+    seconds,
+    FASTEST_CATCH_UP_ACROSS_METRES_PER_SECOND
+  );
   drift.along = glided(
     drift.s,
     drift.along,

@@ -1,4 +1,4 @@
-import { riderIdAt } from "@racer/sim/state";
+import { BIKE_HALF_WIDTH, riderIdAt } from "@racer/sim/state";
 import { kick, punch } from "@racer/sim/weapons";
 import { describe, expect, it } from "vitest";
 
@@ -96,11 +96,17 @@ describe("how a corrected rider settles on screen", () => {
     expect(Math.abs(drift.s)).toBeLessThan(0.01);
   });
 
-  it("glides even a 60 m correction no faster than a quarter of the bike's speed, closing it in about six seconds", () => {
+  it("cuts a 60 m correction back inside reach within 18 frames, then glides no faster than a quarter of the bike's speed and is on its place within a second", () => {
     const drift = stillDrift();
     driftBy(drift, { ...moved, s: 60, x: 9 });
     expect({ s: drift.s, x: drift.x }).toStrictEqual({ s: 60, x: 9 });
-    const { fastest } = settleFor(drift, 360, SPEED);
+    let beyond = 0;
+    while (Math.abs(drift.s) > punch.reachS && beyond < 60) {
+      driftSettle(drift, FRAME, SPEED);
+      beyond += 1;
+    }
+    expect(beyond).toBeLessThanOrEqual(18);
+    const { fastest } = settleFor(drift, 60 - beyond, SPEED);
     expect(fastest).toBeLessThanOrEqual(SPEED * 0.25 + 1e-9);
     expect(Math.max(Math.abs(drift.s), Math.abs(drift.x))).toBeLessThan(0.01);
   });
@@ -123,13 +129,15 @@ describe("how a corrected rider settles on screen", () => {
     expect(Math.max(trusted.step, home.step)).toBeLessThan(MOST_STEP_METRES);
   });
 
-  it("brings a bike drawn 3 m along off its place at 25 m/s back inside half a reach within two strikes, and onto it within a second and a half", () => {
+  it("cuts a bike drawn 3 m along off its place at 25 m/s back inside reach within three frames, then glides it inside half a reach within a strike and onto its place within a second", () => {
     const drift = stillDrift();
     driftBy(drift, { ...moved, s: 3, x: 0 });
+    const reach = framesUntilWithin(drift, "s", punch.reachS, 25, 90);
     const trusted = framesUntilWithin(drift, "s", HALF_REACH_ALONG, 25, 90);
     const home = framesUntilWithin(drift, "s", 0.01, 25, 90);
-    expect(trusted.frames).toBeLessThanOrEqual(2 * kick.ticks);
-    expect(trusted.frames + home.frames).toBeLessThanOrEqual(90);
+    expect(reach.frames).toBeLessThanOrEqual(3);
+    expect(trusted.frames).toBeLessThanOrEqual(kick.ticks);
+    expect(reach.frames + trusted.frames + home.frames).toBeLessThanOrEqual(60);
     expect(Math.max(trusted.step, home.step)).toBeLessThan(MOST_STEP_METRES);
   });
 
@@ -227,6 +235,52 @@ describe("a bike's height on screen", () => {
     };
     expect(drawnAfter(1)).toBeLessThan(lifted * 0.2);
     expect(drawnAfter(40)).toBeCloseTo(lifted, 4);
+  });
+});
+
+const BEYOND_REACH_FRAMES = 18;
+
+const framesBeyond = (
+  drift: ReturnType<typeof stillDrift>,
+  axis: "s" | "x",
+  reach: number,
+  speed: number,
+  frames: number
+) => {
+  let beyond = 0;
+  let step = 0;
+  for (let frame = 0; frame < frames; frame += 1) {
+    const from = drift[axis];
+    beyond += Math.abs(from) > reach ? 1 : 0;
+    driftSettle(drift, FRAME, speed);
+    step = Math.max(step, Math.abs(drift[axis] - from));
+  }
+  return { beyond, step };
+};
+
+describe("a correction beyond bare-hand reach", () => {
+  it("keeps a bike drawn 73 m along off its place, the player braking through a 2.5 s cut, beyond reach for at most 18 frames and on its place within two seconds", () => {
+    const drift = stillDrift();
+    driftBy(drift, { ...moved, s: 73.43, speed: -43, x: 0 });
+    const { beyond } = framesBeyond(drift, "s", punch.reachS, 57, 120);
+    expect(beyond).toBeLessThanOrEqual(BEYOND_REACH_FRAMES);
+    expect(Math.abs(drift.s)).toBeLessThan(0.01);
+  });
+
+  it("cuts a bike drawn 6 m across off its place back inside reach within 18 frames, moving at most half a bike's width a frame", () => {
+    const drift = stillDrift();
+    driftBy(drift, { ...moved, x: 6 });
+    const { beyond, step } = framesBeyond(drift, "x", punch.reachX, SPEED, 120);
+    expect(beyond).toBeLessThanOrEqual(BEYOND_REACH_FRAMES);
+    expect(step).toBeLessThanOrEqual(BIKE_HALF_WIDTH + 1e-9);
+    expect(Math.abs(drift.x)).toBeLessThan(0.01);
+  });
+
+  it("leaves a correction inside reach to the glide", () => {
+    const drift = stillDrift();
+    driftBy(drift, { ...moved, x: 1.5 });
+    const { step } = framesBeyond(drift, "x", punch.reachX, SPEED, 1);
+    expect(step).toBeLessThanOrEqual(GLIDE_EASING * FRAME * FRAME + 1e-9);
   });
 });
 

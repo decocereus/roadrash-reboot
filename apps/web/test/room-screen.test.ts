@@ -16,6 +16,7 @@ import {
   writeTick,
 } from "@racer/sim/room-wire";
 import {
+  BIKE_HALF_WIDTH,
   PLAYER_RIDER,
   riderIdAt,
   riderOf,
@@ -49,10 +50,14 @@ const SLOWEST_GLIDE_ALONG = 0.5;
 const GLIDE_ACCELERATION = 200;
 const GLIDE_SETTLE_SECONDS = 0.1;
 const TRUSTED_ALONG = punch.reachS / 2;
+const TRUSTED_ACROSS = punch.reachX / 2;
 const STRIKE_SECONDS = kick.ticks * TICK_SECONDS;
 const MOST_GLIDE_ACROSS = punch.reachX / STRIKE_SECONDS;
+const CATCH_UP_SECONDS = 0.05;
+const CATCH_UP_SHARE = 1 - Math.exp(-FRAME_SECONDS / CATCH_UP_SECONDS);
 const FRAME_SLACK_METRES = 0.01;
-const MOST_STEP_METRES = 0.2;
+const BIKE_WIDTH = 2 * BIKE_HALF_WIDTH;
+const MOST_BEYOND_REACH_FRAMES = 18;
 
 interface Race {
   readonly downMs: (sentAt: number) => number;
@@ -62,8 +67,10 @@ interface Race {
 }
 
 interface Drawn {
+  beyondReach: number;
   frames: number;
   lastX: number;
+  wasBeyond: boolean;
   worstGlide: number;
   worstOff: number;
   worstStep: number;
@@ -79,7 +86,9 @@ interface OwnPath {
   fastAlong: number;
   followed: boolean;
   gapS: number;
+  gapX: number;
   jumpedS: number;
+  jumpedX: number;
   kicked: number;
   lastS: number;
   lastX: number;
@@ -144,8 +153,10 @@ const takeDue = <Due extends { readonly at: number }>(
 const pose = (): Pose => ({ air: 0, heading: 0, lean: 0, s: 0, tick: 0, x: 0 });
 
 const seen = (): Drawn => ({
+  beyondReach: 0,
   frames: 0,
   lastX: Number.NaN,
+  wasBeyond: false,
   worstGlide: 0,
   worstOff: 0,
   worstStep: 0,
@@ -161,7 +172,9 @@ const ownPath = (): OwnPath => ({
   fastAlong: 0,
   followed: false,
   gapS: 0,
+  gapX: 0,
   jumpedS: 0,
+  jumpedX: 0,
   kicked: 0,
   lastS: 0,
   lastX: 0,
@@ -202,6 +215,13 @@ const glideAlong = (speed: number, off: number): number =>
     )
   );
 
+const cutAllowed = (gap: number, reach: number, trusted: number): number =>
+  Math.abs(gap) > reach ? (Math.abs(gap) - trusted) * CATCH_UP_SHARE : 0;
+
+const beyondReach = (path: OwnPath): boolean =>
+  Math.abs(path.gapS + path.jumpedS) > punch.reachS ||
+  Math.abs(path.gapX + path.jumpedX) > punch.reachX;
+
 const glidedPast = (
   path: OwnPath,
   view: { after: Pose; before: Pose; drawn: DrawnPlace },
@@ -212,26 +232,33 @@ const glidedPast = (
   const offS = drawn.s - (path.beforeS + (path.afterS - path.beforeS) * blend);
   const offX = drawn.x - (path.beforeX + (path.afterX - path.beforeX) * blend);
   const slowed = GLIDE_ACCELERATION * FRAME_SECONDS;
+  const gapS = path.gapS + path.jumpedS;
+  const gapX = path.gapX + path.jumpedX;
   path.carried = Math.max(0, path.carried - slowed) + Math.abs(path.kicked);
   path.carriedAcross =
     Math.max(0, path.carriedAcross - slowed) + Math.abs(path.swerved);
-  path.fastAlong = Math.max(
-    glideAlong(speed, path.gapS + path.jumpedS),
-    path.fastAlong - slowed
-  );
+  path.fastAlong = Math.max(glideAlong(speed, gapS), path.fastAlong - slowed);
   path.jumpedS = 0;
+  path.jumpedX = 0;
   path.kicked = 0;
   path.swerved = 0;
   const past = Math.max(
     Math.abs(offS - path.offS) -
-      (path.fastAlong + path.carried) * FRAME_SECONDS,
+      (path.fastAlong + path.carried) * FRAME_SECONDS -
+      cutAllowed(gapS, punch.reachS, TRUSTED_ALONG),
     Math.abs(offX - path.offX) -
-      (MOST_GLIDE_ACROSS + path.carriedAcross) * FRAME_SECONDS
+      (MOST_GLIDE_ACROSS + path.carriedAcross) * FRAME_SECONDS -
+      Math.min(
+        BIKE_HALF_WIDTH - MOST_GLIDE_ACROSS * FRAME_SECONDS,
+        cutAllowed(gapX, punch.reachX, TRUSTED_ACROSS)
+      )
   );
   path.offS = offS;
   path.offX = offX;
   path.gapS =
     drawn.s - (view.before.s + (view.after.s - view.before.s) * blend);
+  path.gapX =
+    drawn.x - (view.before.x + (view.after.x - view.before.x) * blend);
   return past;
 };
 
@@ -244,12 +271,16 @@ const drawFrame = (
   measured: boolean
 ): void => {
   const wasRiding = view.drawn.riding;
+  const beyond = beyondReach(path);
   placeDrawn(view, rider, blend, FRAME_SECONDS);
   const past = glidedPast(path, view, rider.speed, blend);
   const riding = rider.mode === "riding";
   if (measured && riding) {
     drawn.frames += 1;
-    drawn.worstOff = Math.max(drawn.worstOff, view.drawn.off);
+    drawn.beyondReach += beyond ? 1 : 0;
+    if (!beyond && !drawn.wasBeyond) {
+      drawn.worstOff = Math.max(drawn.worstOff, view.drawn.off);
+    }
     if (wasRiding && !Number.isNaN(drawn.lastX)) {
       drawn.worstStep = Math.max(
         drawn.worstStep,
@@ -263,6 +294,7 @@ const drawFrame = (
   if (measured && riding && wasRiding && path.followed) {
     drawn.worstGlide = Math.max(drawn.worstGlide, past);
   }
+  drawn.wasBeyond = beyond;
   path.followed = riding;
 };
 
@@ -300,6 +332,7 @@ const rideOnScreen = (race: Race): Screen => {
       const path = riderOf(paths, moved.rider);
       if (path) {
         path.jumpedS += moved.s;
+        path.jumpedX += moved.x;
         path.lastS -= moved.s;
         path.lastX -= moved.x;
         path.kicked += moved.speed;
@@ -470,6 +503,9 @@ describe("both bikes on screen in a room race", () => {
       const screen = rideOnScreen(race);
       expect(screen.me.frames).toBeGreaterThan(1200);
       expect({
+        beyondReach:
+          Math.max(screen.me.beyondReach, screen.rival.beyondReach) <=
+          MOST_BEYOND_REACH_FRAMES,
         glided:
           Math.max(screen.me.worstGlide, screen.rival.worstGlide) <
           FRAME_SLACK_METRES,
@@ -477,9 +513,13 @@ describe("both bikes on screen in a room race", () => {
           Math.max(screen.me.worstOff, screen.rival.worstOff) <
           FRAME_SLACK_METRES,
         stepped:
-          Math.max(screen.me.worstStep, screen.rival.worstStep) <
-          MOST_STEP_METRES,
-      }).toStrictEqual({ glided: true, off: true, stepped: true });
+          Math.max(screen.me.worstStep, screen.rival.worstStep) < BIKE_WIDTH,
+      }).toStrictEqual({
+        beyondReach: true,
+        glided: true,
+        off: true,
+        stepped: true,
+      });
       expect(screen.missedInStall).toBeLessThanOrEqual(mostMissed);
     }
   );
@@ -503,6 +543,9 @@ describe("both bikes on screen in a room race", () => {
       const screen = rideOnScreen(race);
       expect(screen.me.frames).toBeGreaterThan(1200);
       expect({
+        beyondReach:
+          Math.max(screen.me.beyondReach, screen.rival.beyondReach) <=
+          MOST_BEYOND_REACH_FRAMES,
         glided:
           Math.max(screen.me.worstGlide, screen.rival.worstGlide) <
           FRAME_SLACK_METRES,
@@ -510,9 +553,13 @@ describe("both bikes on screen in a room race", () => {
           Math.max(screen.me.worstOff, screen.rival.worstOff) <
           FRAME_SLACK_METRES,
         stepped:
-          Math.max(screen.me.worstStep, screen.rival.worstStep) <
-          MOST_STEP_METRES,
-      }).toStrictEqual({ glided: true, off: true, stepped: true });
+          Math.max(screen.me.worstStep, screen.rival.worstStep) < BIKE_WIDTH,
+      }).toStrictEqual({
+        beyondReach: true,
+        glided: true,
+        off: true,
+        stepped: true,
+      });
     }
   );
 });
