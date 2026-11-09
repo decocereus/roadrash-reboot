@@ -17,11 +17,12 @@ import * as Option from "effect/Option";
 import { expect } from "vitest";
 
 import { createHost } from "../src/host.ts";
-import type { Host, HostPorts, HostSocket } from "../src/host.ts";
+import type { Host, HostPorts } from "../src/host.ts";
 import { seatedCount } from "../src/manifest.ts";
 import { decodeRoomMessage, encodeLobbyCommand } from "../src/messages.ts";
 import type { RoomMessage } from "../src/messages.ts";
 import type { RoomNote } from "../src/notes.ts";
+import type { HostSocket } from "../src/present.ts";
 import {
   launchRoomConfig,
   msOf,

@@ -50,6 +50,7 @@ export const roomFeatures: readonly FeatureEntry[] = [
       "apps/web/src/components/guest-name.ts",
       "apps/web/test/member-key.test.ts",
       "apps/web/test/member-rows.test.tsx",
+      "apps/web/test/rejoin-cards.test.tsx",
       "apps/web/src/components/room-lobby.tsx",
       "apps/web/src/components/use-handoff.ts",
       "apps/web/src/prepare-outcome.ts",

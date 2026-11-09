@@ -7,6 +7,7 @@ import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 
 import type { RaceManifest } from "./manifest.ts";
+import { SEAT_LEFT, SEAT_QUIT } from "./messages.ts";
 import type { RaceSeat, RoomNote, SeatTally } from "./notes.ts";
 import type { SeatMemory } from "./room-memory.ts";
 import {
@@ -42,6 +43,11 @@ export type SeatPresence =
   | { readonly kind: "left"; readonly tick: number };
 
 export const HERE: SeatPresence = { kind: "here" };
+
+export type Parting = "hold" | "leave";
+
+export const partingOf = (closeCode: number | null): Parting =>
+  closeCode === SEAT_LEFT || closeCode === SEAT_QUIT ? "leave" : "hold";
 
 export interface Seat {
   readonly colour: number;
