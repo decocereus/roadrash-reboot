@@ -64,6 +64,7 @@ export interface Clock extends HostPorts {
   readonly stall: (ms: number) => void;
   readonly wakeOnce: () => void;
   readonly pending: () => number;
+  readonly releaseSaves: () => void;
   holdSaves: boolean;
 }
 
@@ -73,6 +74,11 @@ export const createClock = (startAt = 1000): Clock => {
   const notes: RoomNote[] = [];
   const memories: (RoomMemory | null)[] = [];
   const tape = new Map<string, string | Uint8Array>();
+  const held: {
+    body: string | Uint8Array;
+    key: string;
+    saved: () => void;
+  }[] = [];
   let races = 0;
   const nextBy = (until: number) =>
     timers
@@ -108,16 +114,23 @@ export const createClock = (startAt = 1000): Clock => {
       races += 1;
       return `race-${races}`;
     },
+    releaseSaves: () => {
+      for (const { body, key, saved } of held.splice(0)) {
+        tape.set(key, body);
+        saved();
+      }
+    },
     remember: (memory) => {
       memories.push(memory);
     },
     roomColo: () => "SIN",
     saveTape: (key, body, saved) => {
       if (clock.holdSaves) {
+        held.push({ body, key, saved });
         return;
       }
       tape.set(key, body);
-      saved?.();
+      saved();
     },
     seed: () => 7,
     stall: (ms) => {

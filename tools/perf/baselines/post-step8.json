@@ -3552,22 +3552,6 @@
       "side": "B",
       "source": "baseline-2026-11-06T14-23-30-459Z-5eed07d-5eed07d",
       "value": 834325
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.checkpoint.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-09T20-09-25-244Z-919e51a-919e51a",
-      "value": 0.24616779906538452
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.checkpoint.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-09T20-09-25-244Z-919e51a-919e51a",
-      "value": 0.22068762737175532
     }
   ],
   "revisions": {
@@ -4871,37 +4855,6 @@
       "sides": {
         "A": "5eed07d2fe0c79e205b3b504b995d16949f3d2f4",
         "B": "5eed07d2fe0c79e205b3b504b995d16949f3d2f4"
-      }
-    },
-    {
-      "environment": "node-linux-x64",
-      "facts": {
-        "arch": "x64",
-        "cpu": "AMD EPYC 9V45 96-Core Processor",
-        "cpus": "4",
-        "harness": "the room child of tools/perf/room.ts, timing checkpointOf twenty times after each scenario's window",
-        "node": "v26.13.0",
-        "platform": "linux",
-        "ci": "GitHub Actions run 42690117454 (perf), pull_request event on PR #204, with gate.ts baseline --lanes node in place of pnpm perf for this one run; the runner was an AMD EPYC 9V45, not the 7763 the other node-linux-x64 rows are set on, so the rows keep the 1.3 x spread between runners",
-        "why": "the first run that measures room.checkpoint.p95, the host's checkpoint of a race into Durable Object storage at the start moment and every 300 ticks (PR #204)"
-      },
-      "id": "baseline-2026-11-09T20-09-25-244Z-919e51a-919e51a",
-      "lanes": ["node"],
-      "sides": {
-        "A": {
-          "dirty": false,
-          "harnessDigest": "be0c3e08852167626bcd9235507b36c3bd970942e5c8161425857fcbd8224699",
-          "revision": "919e51abe0bc6cf950ed09c6b2c4167d76fe9c95",
-          "sourceDigest": "f8f38e40116999b7328451ae88f090fde1f36f44ef102818286ed92c5e5af832",
-          "sourceFiles": 967
-        },
-        "B": {
-          "dirty": false,
-          "harnessDigest": "be0c3e08852167626bcd9235507b36c3bd970942e5c8161425857fcbd8224699",
-          "revision": "919e51abe0bc6cf950ed09c6b2c4167d76fe9c95",
-          "sourceDigest": "f8f38e40116999b7328451ae88f090fde1f36f44ef102818286ed92c5e5af832",
-          "sourceFiles": 967
-        }
       }
     }
   ],

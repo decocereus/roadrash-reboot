@@ -16,6 +16,8 @@ import * as Option from "effect/Option";
 
 import type { RoomStatus } from "./contract.ts";
 import { createPongs, watchForSilence } from "./heartbeat.ts";
+import { createMemory } from "./host-memory.ts";
+import type { MemoryPorts } from "./host-memory.ts";
 import { hostAfter, NEW_HOST, startMomentOf } from "./host-phase.ts";
 import type { HostEvent, HostState } from "./host-phase.ts";
 import { createLobby } from "./lobby.ts";
@@ -32,12 +34,7 @@ import type { LobbyCommand, Refusal } from "./messages.ts";
 import { noteGap } from "./notes.ts";
 import { createAudience, moveSocket, SEND_FAILED } from "./present.ts";
 import type { HostSocket, Present } from "./present.ts";
-import {
-  buildRace,
-  finishTape,
-  raceMemoryOf,
-  restoreRace,
-} from "./race-build.ts";
+import { buildRace, finishTape, restoreRace } from "./race-build.ts";
 import type { RacePorts, Run } from "./race-build.ts";
 import {
   HERE,
@@ -54,11 +51,7 @@ import {
 import type { Parting, Seat, SeatHold, SeatLink } from "./race-seat.ts";
 import { msOf, publicRuleFor } from "./room-config.ts";
 import type { RoomKind } from "./room-id.ts";
-import {
-  CHECKPOINT_TICKS,
-  checkpointOf,
-  MEMORY_VERSION,
-} from "./room-memory.ts";
+import { CHECKPOINT_TICKS } from "./room-memory.ts";
 import type { RoomMemory } from "./room-memory.ts";
 import { roomStatus } from "./room-status.ts";
 import { createSocketBudget, CUT_AFTER_DROPS, spend } from "./socket-budget.ts";
@@ -77,10 +70,8 @@ export interface SeatClaim {
   readonly rejoin: boolean;
 }
 
-export interface HostPorts extends RacePorts {
-  readonly now: () => number;
+export interface HostPorts extends Omit<RacePorts, "saveTape">, MemoryPorts {
   readonly after: (ms: number, wake: () => void) => void;
-  readonly remember: (memory: RoomMemory | null) => void;
 }
 
 export interface Host {
@@ -96,7 +87,7 @@ export interface Host {
 }
 
 export const createHost = (
-  ports: HostPorts,
+  given: HostPorts,
   kind: RoomKind = "custom",
   memory: RoomMemory | null = null
 ): Host => {
@@ -107,13 +98,13 @@ export const createHost = (
   const tickBuffer = new ArrayBuffer(tickCapacity(MOST_SEATS));
   const tickView = new DataView(tickBuffer);
   const readyDigest = new Uint32Array(HASH_WORDS);
-  const bornAt = ports.now();
-  const { publicRace } = ports.config;
+  const bornAt = given.now();
+  const { publicRace } = given.config;
   const lobby = createLobby(
     bornAt,
     kind,
-    ports.config,
-    () => publicRuleFor(publicRace, kind === "public" ? ports.seed() : 0),
+    given.config,
+    () => publicRuleFor(publicRace, kind === "public" ? given.seed() : 0),
     memory?.lobby ?? null
   );
   let state: HostState<Run> = NEW_HOST;
@@ -123,30 +114,18 @@ export const createHost = (
   let catchUpWakes = 0;
   let worstBehindTicks = 0;
   let dropped = 0;
+  const { checkpoint, remember, saveTape } = createMemory(given, {
+    lobby,
+    lostRace: () => lostRace,
+    run: () => state.run,
+  });
+  const ports: RacePorts & Pick<HostPorts, "after" | "now"> = {
+    ...given,
+    saveTape,
+  };
 
   const roomMs = (): number => ports.now() - bornAt;
   const pongFor = createPongs(roomMs);
-
-  const remember = (): void => {
-    const { run } = state;
-    ports.remember(
-      run === null && lobby.size() === 0
-        ? null
-        : {
-            at: ports.now(),
-            build: ports.build,
-            lobby: lobby.memory(),
-            lostRace,
-            race: run === null ? null : raceMemoryOf(run),
-            version: MEMORY_VERSION,
-          }
-    );
-  };
-
-  const checkpoint = (run: Run): void => {
-    run.checkpoint = checkpointOf(run.room, run.tape);
-    remember();
-  };
 
   const move = (event: HostEvent<Run>): boolean => {
     const next = hostAfter(state, event);
@@ -612,7 +591,10 @@ export const createHost = (
     ride(run, startedAt, now);
   };
 
-  const restore = ({ at, build, race }: RoomMemory): void => {
+  const restore = ({ at, build, race, unsaved: pending }: RoomMemory): void => {
+    for (const { body, key } of pending) {
+      ports.saveTape(key, body);
+    }
     if (race === null) {
       return;
     }

@@ -1510,6 +1510,7 @@ Source files:
 - `apps/rooms/src/contract.ts`
 - `apps/rooms/src/gate.ts`
 - `apps/rooms/src/heartbeat.ts`
+- `apps/rooms/src/host-memory.ts`
 - `apps/rooms/src/host-phase.ts`
 - `apps/rooms/src/host.ts`
 - `apps/rooms/src/input-latency.ts`
@@ -1639,6 +1640,7 @@ Test files:
 - `packages/sim/src/room-lag.test.ts`
 - `packages/sim/src/room-limit.test.ts`
 - `packages/sim/src/room-missed.test.ts`
+- `packages/sim/src/room-restore.test.ts`
 - `packages/sim/src/room.test.ts`
 - `scripts/rooms-build.test.ts`
 - `tools/rooms/test/fight-compare.test.ts`

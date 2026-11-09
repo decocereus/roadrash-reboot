@@ -28,6 +28,7 @@ import { TAPE_KEEP_DAYS } from "./tape.ts";
 
 const SECONDS_PER_DAY = 86_400;
 const MEMORY_KEY = "room";
+const WRITE_RETRIES = 5;
 
 const RaceTapes = Cloudflare.R2.Bucket("RaceTapes", {
   lifecycleRules: [
@@ -43,7 +44,7 @@ const RaceTapes = Cloudflare.R2.Bucket("RaceTapes", {
 interface TapeSave {
   readonly body: string | Uint8Array;
   readonly key: string;
-  readonly saved: (() => void) | null;
+  readonly saved: () => void;
 }
 
 const note = (line: RoomNote): void => {
@@ -112,13 +113,8 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
       yield* Queue.take(saves).pipe(
         Effect.flatMap(({ body, key, saved }) =>
           tapes.put(key, body).pipe(
-            Effect.tap(() =>
-              Effect.sync(() => {
-                if (saved) {
-                  saved();
-                }
-              })
-            ),
+            Effect.retry({ times: WRITE_RETRIES }),
+            Effect.tap(() => Effect.sync(saved)),
             Effect.catchCause(() =>
               Effect.sync(() => {
                 note({ key, kind: "tapeLost" });
@@ -132,9 +128,10 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
       const memories = yield* Queue.sliding<RoomMemory | null>(1);
       yield* Queue.take(memories).pipe(
         Effect.flatMap((memory) =>
-          memory === null
+          (memory === null
             ? Effect.asVoid(state.storage.delete(MEMORY_KEY))
             : state.storage.put(MEMORY_KEY, memory)
+          ).pipe(Effect.retry({ times: WRITE_RETRIES }))
         ),
         Effect.catchCause((cause) =>
           Effect.sync(() => {
@@ -170,7 +167,7 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
             build,
             () => roomColo,
             (key, body, saved) => {
-              Queue.offerUnsafe(saves, { body, key, saved: saved ?? null });
+              Queue.offerUnsafe(saves, { body, key, saved });
             },
             (memory) => {
               Queue.offerUnsafe(memories, memory);

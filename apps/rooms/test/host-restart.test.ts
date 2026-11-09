@@ -10,7 +10,7 @@ import {
 import { describe, expect, it } from "vitest";
 
 import { createHost } from "../src/host.ts";
-import { SEAT_LEFT } from "../src/messages.ts";
+import { SEAT_LEFT, SEAT_QUIT } from "../src/messages.ts";
 import { CHECKPOINT_TICKS } from "../src/room-memory.ts";
 import type { RoomMemory } from "../src/room-memory.ts";
 import {
@@ -220,8 +220,11 @@ describe("a room that restarts while a race runs", () => {
   });
 });
 
+const unsavedKeys = (clock: Clock): readonly string[] =>
+  remembered(clock).unsaved.map(({ key }) => key);
+
 describe("a room that restarts before R2 acknowledged a tape part", () => {
-  it("saves the part again from its checkpoint, so the tape stays whole", () => {
+  it("saves the part again from its memory, so the tape stays whole", () => {
     const { ann, bo, clock, host } = racingRoom();
     clock.holdSaves = true;
     advanceHearing(
@@ -231,13 +234,65 @@ describe("a room that restarts before R2 acknowledged a tape part", () => {
       (TICKS_IN_PART - RACED_TICKS) * TICK_MS + 1000
     );
     expect(clock.tape.has("tapes/race-1/00000.bin")).toBeFalsy();
-    const pending = remembered(clock).race?.checkpoint?.tape.pending ?? [];
-    expect(pending.map(({ part }) => part)).toStrictEqual([0]);
+    expect(unsavedKeys(clock)).toStrictEqual(["tapes/race-1/00000.bin"]);
     const { later } = restartedRoom(clock, RESTART_GAP_MS);
     expect(later.tape.has("tapes/race-1/00000.bin")).toBeTruthy();
     later.advance(CHECKPOINT_TICKS * TICK_MS + 100);
-    const next = remembered(later).race?.checkpoint?.tape.pending ?? [];
-    expect(next).toStrictEqual([]);
+    expect(unsavedKeys(later)).toStrictEqual([]);
+  });
+});
+
+describe("a room that restarts right after its race ended", () => {
+  it("saves the race's final tape files again from its memory", () => {
+    const { ann, bo, clock, host } = racingRoom();
+    clock.holdSaves = true;
+    host.gone(ann, SEAT_QUIT);
+    host.gone(bo, SEAT_QUIT);
+    clock.advance(TICK_MS * 2);
+    expect(notesOf(clock, "ended")).toHaveLength(1);
+    expect(unsavedKeys(clock)).toStrictEqual([
+      "tapes/race-1/00000.bin",
+      "tapes/race-1/room-trace.json",
+      "tapes/race-1/end.json",
+    ]);
+    const { later } = restartedRoom(clock, RESTART_GAP_MS);
+    expect([...later.tape.keys()]).toStrictEqual([
+      "tapes/race-1/00000.bin",
+      "tapes/race-1/room-trace.json",
+      "tapes/race-1/end.json",
+    ]);
+    expect(later.memories.at(-1)?.unsaved).toStrictEqual([]);
+  });
+
+  it("keeps the record of an empty lobby until R2 acknowledges, then forgets it", () => {
+    const { ann, bo, clock, host } = racingRoom();
+    clock.holdSaves = true;
+    host.gone(ann, SEAT_LEFT);
+    host.gone(bo, SEAT_LEFT);
+    clock.advance(TICK_MS * 2);
+    expect(remembered(clock)).toMatchObject({ race: null });
+    expect(remembered(clock).lobby.members).toStrictEqual([]);
+    clock.releaseSaves();
+    expect(clock.memories.at(-1)).toBeNull();
+  });
+});
+
+describe("a room that restarts after a rider left since the checkpoint", () => {
+  it("restores the seats as the checkpoint had them, so that rider is held and can come back", () => {
+    const { ann, bo, clock, host } = racingRoom();
+    advanceHearing(host, clock, [ann, bo], 1000);
+    host.gone(ann, SEAT_QUIT);
+    expect(notesOf(clock, "left")).toHaveLength(1);
+    const { host: next, later, seated } = restartedRoom(clock, RESTART_GAP_MS);
+    expect(notesOf(later, "held")).toHaveLength(2);
+    expect(next.status()).toMatchObject({
+      hostPhase: "racing",
+      raceId: "race-1",
+    });
+    expect(kindsHeard(seated("ann", "Ann"))).toStrictEqual([
+      "started",
+      "countdown",
+    ]);
   });
 });
 

@@ -13,13 +13,7 @@ import { seatedCount } from "./manifest.ts";
 import type { RaceManifest } from "./manifest.ts";
 import { WAKE_GAP_CEILINGS_MS } from "./notes.ts";
 import type { LostReason, RoomNote } from "./notes.ts";
-import {
-  restoredSeat,
-  rosterOf,
-  seatFor,
-  seatMemoryOf,
-  traceSeats,
-} from "./race-seat.ts";
+import { restoredSeat, rosterOf, seatFor, traceSeats } from "./race-seat.ts";
 import type { Seat } from "./race-seat.ts";
 import { msOf, ticksOf } from "./room-config.ts";
 import type { RoomConfig } from "./room-config.ts";
@@ -47,11 +41,7 @@ export interface RacePorts {
   readonly note: (note: RoomNote) => void;
   readonly raceId: () => string;
   readonly roomColo: () => string | null;
-  readonly saveTape: (
-    key: string,
-    body: string | Uint8Array,
-    saved?: () => void
-  ) => void;
+  readonly saveTape: (key: string, body: string | Uint8Array) => void;
   readonly seed: () => number;
 }
 
@@ -72,13 +62,7 @@ export const raceMemoryOf = ({
   checkpoint,
   manifest,
   raceId,
-  riders,
-}: Run): RaceMemory => ({
-  checkpoint,
-  manifest,
-  raceId,
-  seats: riders.map((seat) => seatMemoryOf(seat)),
-});
+}: Run): RaceMemory => ({ checkpoint, manifest, raceId });
 
 const freshGaps = (): Uint32Array =>
   new Uint32Array(WAKE_GAP_CEILINGS_MS.length + 1);
@@ -91,8 +75,8 @@ const tapeFor = (
 ): TapeWriter =>
   createTapeWriter(
     tickBytes,
-    (part, bytes, saved) => {
-      ports.saveTape(tapeKey(raceId, tapePartName(part)), bytes, saved);
+    (part, bytes) => {
+      ports.saveTape(tapeKey(raceId, tapePartName(part)), bytes);
     },
     resume
   );
@@ -113,7 +97,7 @@ const lost = (reason: LostReason, detail: string | null): RaceRestore => ({
 
 export const restoreRace = (
   ports: RacePorts,
-  { checkpoint, manifest, raceId, seats }: RaceMemory,
+  { checkpoint, manifest, raceId }: RaceMemory,
   afterMs: number,
   tickBytes: number,
   now: number
@@ -130,13 +114,16 @@ export const restoreRace = (
     manifest.rule
   );
   const room = createRoom(setup, ticksOf(manifest.raceLimitSeconds));
-  const { snapshot } = checkpoint;
+  const { controls, seats, snapshot } = checkpoint;
   try {
     restoreInto(
       room.state,
       room.digest,
       new DataView(snapshot.buffer, snapshot.byteOffset, snapshot.byteLength),
       setup.track
+    );
+    room.readSeats(
+      new DataView(controls.buffer, controls.byteOffset, controls.byteLength)
     );
   } catch (error) {
     return lost(
@@ -145,11 +132,6 @@ export const restoreRace = (
     );
   }
   const riders = seats.map((seat) => restoredSeat(seat, raceId));
-  for (const seat of riders) {
-    if (seat.presence.kind === "left") {
-      room.leave(seat.rider);
-    }
-  }
   return {
     kind: "run",
     run: {

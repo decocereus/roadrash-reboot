@@ -15,14 +15,8 @@ interface TapeTail {
   readonly ticks: number;
 }
 
-export interface TapePending {
-  readonly bytes: Uint8Array;
-  readonly part: number;
-}
-
 export interface TapeResume {
   readonly parts: number;
-  readonly pending: readonly TapePending[];
   readonly tail: TapeTail;
 }
 
@@ -30,14 +24,13 @@ export interface TapeWriter {
   readonly add: (packet: Uint8Array) => void;
   readonly finish: () => void;
   readonly parts: () => number;
-  readonly pending: () => readonly TapePending[];
   readonly sofar: () => readonly Uint8Array[];
   readonly tail: () => TapeTail;
 }
 
 export const createTapeWriter = (
   mostPacketBytes: number,
-  save: (part: number, bytes: Uint8Array, saved: () => void) => void,
+  save: (part: number, bytes: Uint8Array) => void,
   resume: TapeResume | null = null
 ): TapeWriter => {
   const buffer = new Uint8Array(
@@ -49,24 +42,14 @@ export const createTapeWriter = (
   let ticks = resume?.tail.ticks ?? 0;
   let parts = resume?.parts ?? 0;
   let resumed = used;
-  const unsaved = new Map<number, Uint8Array>();
-  const saving = (part: number, bytes: Uint8Array): void => {
-    unsaved.set(part, bytes);
-    save(part, bytes, () => {
-      unsaved.delete(part);
-    });
-  };
   if (resume) {
     buffer.set(resume.tail.bytes, 0);
-    for (const { bytes, part } of resume.pending) {
-      saving(part, bytes);
-    }
   }
   const finish = (): void => {
     if (ticks > 0) {
       const part = buffer.slice(0, used);
       kept.push(part.subarray(resumed));
-      saving(parts, part);
+      save(parts, part);
       parts += 1;
       used = 0;
       ticks = 0;
@@ -85,7 +68,6 @@ export const createTapeWriter = (
     },
     finish,
     parts: () => parts,
-    pending: () => [...unsaved].map(([part, bytes]) => ({ bytes, part })),
     sofar: () =>
       used > resumed ? [...kept, buffer.slice(resumed, used)] : kept,
     tail: () => ({ bytes: buffer.slice(0, used), ticks }),

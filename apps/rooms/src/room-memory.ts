@@ -1,3 +1,4 @@
+import { seatsCapacity } from "@racer/sim/room";
 import type { Room } from "@racer/sim/room";
 import type { TapeWriter } from "@racer/sim/room-tape";
 import { snapshotCapacity, writeSnapshot } from "@racer/sim/snapshot";
@@ -46,12 +47,11 @@ const SeatMemorySchema = Schema.Struct({
 export type SeatMemory = typeof SeatMemorySchema.Type;
 
 const CheckpointSchema = Schema.Struct({
+  controls: Schema.Uint8Array,
+  seats: Schema.Array(SeatMemorySchema),
   snapshot: Schema.Uint8Array,
   tape: Schema.Struct({
     parts: Schema.Number,
-    pending: Schema.Array(
-      Schema.Struct({ bytes: Schema.Uint8Array, part: Schema.Number })
-    ),
     tail: Schema.Struct({ bytes: Schema.Uint8Array, ticks: Schema.Number }),
   }),
   tick: Schema.Number,
@@ -63,10 +63,16 @@ const RaceMemorySchema = Schema.Struct({
   checkpoint: Schema.NullOr(CheckpointSchema),
   manifest: RaceManifestSchema,
   raceId: Schema.String,
-  seats: Schema.Array(SeatMemorySchema),
 });
 
 export type RaceMemory = typeof RaceMemorySchema.Type;
+
+const UnsavedSchema = Schema.Struct({
+  body: Schema.Union([Schema.String, Schema.Uint8Array]),
+  key: Schema.String,
+});
+
+export type Unsaved = typeof UnsavedSchema.Type;
 
 const RoomMemorySchema = Schema.Struct({
   at: Schema.Number,
@@ -74,6 +80,7 @@ const RoomMemorySchema = Schema.Struct({
   lobby: LobbyMemorySchema,
   lostRace: Schema.NullOr(Schema.String),
   race: Schema.NullOr(RaceMemorySchema),
+  unsaved: Schema.Array(UnsavedSchema),
   version: Schema.Literal(MEMORY_VERSION),
 });
 
@@ -81,12 +88,20 @@ export type RoomMemory = typeof RoomMemorySchema.Type;
 
 export const decodeRoomMemory = Schema.decodeUnknownOption(RoomMemorySchema);
 
-export const checkpointOf = (room: Room, tape: TapeWriter): Checkpoint => {
+export const checkpointOf = (
+  room: Room,
+  tape: TapeWriter,
+  seats: readonly SeatMemory[]
+): Checkpoint => {
   const snapshot = new Uint8Array(snapshotCapacity(room.state));
   writeSnapshot(room.state, room.digest, new DataView(snapshot.buffer));
+  const controls = new Uint8Array(seatsCapacity(seats.length));
+  room.writeSeats(new DataView(controls.buffer));
   return {
+    controls,
+    seats,
     snapshot,
-    tape: { parts: tape.parts(), pending: tape.pending(), tail: tape.tail() },
+    tape: { parts: tape.parts(), tail: tape.tail() },
     tick: room.state.tick,
   };
 };
