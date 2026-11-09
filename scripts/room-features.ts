@@ -70,6 +70,7 @@ export const roomFeatures: readonly FeatureEntry[] = [
       "room.tick.p95",
       "room.confirm.p95",
       "room.rollback.p95",
+      "room.checkpoint.p95",
       "room.allocatedBytesPerTick",
       "room.client.allocatedBytesPerTick",
       "room.frame.allocatedBytesPerTick",

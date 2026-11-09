@@ -1501,7 +1501,7 @@ The race room's rules: the setup that seats up to eight humans with pacing off, 
 - Start: `apps/rooms/src/host.ts`, `apps/rooms/src/lobby.ts`, `packages/sim/src/room.ts`
 - Docs: [docs/architecture/race-rooms.md#race-rooms](architecture/race-rooms.md#race-rooms), [docs/standards/simulation.md#keep-the-simulation-deterministic](standards/simulation.md#keep-the-simulation-deterministic), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
 - Verify: [race-room.md](../.claude/skills/verify-rushline/features/race-room.md), [netcode-compare.md](../.claude/skills/verify-rushline/features/netcode-compare.md)
-- Perf: `room.tick.p95`, `room.confirm.p95`, `room.rollback.p95`, `room.allocatedBytesPerTick`, `room.client.allocatedBytesPerTick`, `room.frame.allocatedBytesPerTick`
+- Perf: `room.tick.p95`, `room.confirm.p95`, `room.rollback.p95`, `room.checkpoint.p95`, `room.allocatedBytesPerTick`, `room.client.allocatedBytesPerTick`, `room.frame.allocatedBytesPerTick`
 - Owns: `packages/sim/src/room*.ts`, `packages/career/src/room-race*.ts`, `apps/rooms/**`, `scripts/rooms-build.test.ts`, `apps/web/src/components/guest-name.ts`, `apps/web/test/member-key.test.ts`, `apps/web/test/member-rows.test.tsx`, `apps/web/src/components/room-lobby.tsx`, `apps/web/src/components/use-handoff.ts`, `apps/web/src/prepare-outcome.ts`, `apps/web/src/race-handoff.ts`, `apps/web/src/room-handoff.ts`, `apps/web/test/prepare-outcome.test.ts`, `apps/web/test/race-handoff.test.ts`, `apps/web/test/room-boot-failure.test.tsx`, `apps/web/test/room-limited.test.tsx`, `apps/web/test/queue-screen.test.tsx`, `apps/web/test/room-rejoin-choice.test.ts`, `apps/web/src/components/room-url.ts`, `apps/web/src/components/room-preview.ts`, `apps/web/test/room-preview.test.ts`, `tools/rooms/**`
 
 Source files:
@@ -1530,6 +1530,7 @@ Source files:
 - `apps/rooms/src/refused-seat.ts`
 - `apps/rooms/src/room-config.ts`
 - `apps/rooms/src/room-id.ts`
+- `apps/rooms/src/room-memory.ts`
 - `apps/rooms/src/room-rule.ts`
 - `apps/rooms/src/room-run.ts`
 - `apps/rooms/src/route.ts`
@@ -1602,6 +1603,7 @@ Test files:
 - `apps/rooms/test/host-ownership.test.ts`
 - `apps/rooms/test/host-phases.test.ts`
 - `apps/rooms/test/host-rejoin.test.ts`
+- `apps/rooms/test/host-restart.test.ts`
 - `apps/rooms/test/host-walk.test.ts`
 - `apps/rooms/test/host.test.ts`
 - `apps/rooms/test/input-latency.test.ts`

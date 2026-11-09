@@ -6,6 +6,7 @@ import { parseArgs } from "node:util";
 import { UsageError } from "@racer/devtools/usage-error";
 import { createRaceTally } from "@racer/rooms/race-tally";
 import { launchRoomConfig, ticksOf } from "@racer/rooms/room-config";
+import { checkpointOf } from "@racer/rooms/room-memory";
 import { controlOf } from "@racer/sim/control";
 import { createRoom, firstRacers, roomSetup } from "@racer/sim/room";
 import { createRoomClient } from "@racer/sim/room-client";
@@ -38,6 +39,7 @@ const PUNCH_EVERY_TICKS = 241;
 const SAMPLING_BYTES = 4096;
 const FRAME_REPEATS = 20;
 const SAMPLED_WINDOWS = 3;
+const CHECKPOINT_REPEATS = 20;
 
 const controlAt = (tick: number, seat: number): Control => {
   const phase = (tick + seat * STEER_PERIOD_TICKS) % (STEER_PERIOD_TICKS * 2);
@@ -109,7 +111,7 @@ const prepareRoom = (scenario: Scenario) => {
     }
   };
 
-  return { client, confirm, predict, room, stepRoom, warm };
+  return { client, confirm, predict, room, stepRoom, tape, warm };
 };
 
 type Prepared = ReturnType<typeof prepareRoom>;
@@ -127,6 +129,7 @@ const timedWindow = (scenario: Scenario) => {
   const confirm: number[] = [];
   const rollback: number[] = [];
   const resimulated: number[] = [];
+  const checkpoint: number[] = [];
   for (let index = 0; index < WINDOW_TICKS; index += 1) {
     prepared.predict();
     const atStep = performance.now();
@@ -144,7 +147,12 @@ const timedWindow = (scenario: Scenario) => {
       resimulated.push(prepared.client.stats.resimulatedTicks - resimBefore);
     }
   }
-  return { confirm, resimulated, rollback, tick };
+  for (let repeat = 0; repeat < CHECKPOINT_REPEATS; repeat += 1) {
+    const at = performance.now();
+    checkpointOf(prepared.room, prepared.tape);
+    checkpoint.push(performance.now() - at);
+  }
+  return { checkpoint, confirm, resimulated, rollback, tick };
 };
 
 const inspector = (method: string) => (cause: unknown) =>

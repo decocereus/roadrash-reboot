@@ -19,6 +19,7 @@ export const GUARDS = [
   "GuardRejoinCountdown",
   "GuardTakenStaysPut",
   "GuardHoldDeadline",
+  "GuardRestoreHolds",
 ] as const;
 
 export type Guard = (typeof GUARDS)[number];
@@ -41,6 +42,7 @@ const ACTION_PROPERTIES = [
   "BackOnBike",
   "BikeHeldForHold",
   "HoldEndsOnTime",
+  "RideSurvivesRestart",
 ] as const;
 
 const LIVENESS = ["NeverStuck"] as const;
@@ -67,6 +69,7 @@ interface Bounds {
   readonly maxRaces: number;
   readonly mostSeats: number;
   readonly oldPageFirst: boolean;
+  readonly restarts: number;
   readonly riders: 1 | 2 | 3;
   readonly slots: number;
   readonly twins: boolean;
@@ -88,6 +91,7 @@ export const CHECKS = {
       maxRaces: 1,
       mostSeats: 1,
       oldPageFirst: true,
+      restarts: 0,
       riders: 2,
       slots: 2,
       twins: false,
@@ -102,6 +106,7 @@ export const CHECKS = {
       maxRaces: 2,
       mostSeats: 1,
       oldPageFirst: true,
+      restarts: 0,
       riders: 1,
       slots: 2,
       twins: false,
@@ -116,6 +121,7 @@ export const CHECKS = {
       maxRaces: 1,
       mostSeats: 2,
       oldPageFirst: true,
+      restarts: 0,
       riders: 2,
       slots: 2,
       twins: false,
@@ -130,6 +136,7 @@ export const CHECKS = {
       maxRaces: 1,
       mostSeats: 2,
       oldPageFirst: true,
+      restarts: 0,
       riders: 2,
       slots: 2,
       twins: false,
@@ -138,12 +145,28 @@ export const CHECKS = {
     rules: SAFETY,
     says: "two riders in a public room, one race",
   },
+  restart: {
+    bounds: {
+      kind: "custom",
+      maxRaces: 1,
+      mostSeats: 2,
+      oldPageFirst: true,
+      restarts: 1,
+      riders: 1,
+      slots: 2,
+      twins: false,
+      userActs: 3,
+    },
+    rules: [...SAFETY, ...LIVENESS],
+    says: "one rider whose room restarts once, mid-race or not, never stuck",
+  },
   solo: {
     bounds: {
       kind: "custom",
       maxRaces: 2,
       mostSeats: 2,
       oldPageFirst: true,
+      restarts: 0,
       riders: 1,
       slots: 2,
       twins: false,
@@ -158,6 +181,7 @@ export const CHECKS = {
       maxRaces: 1,
       mostSeats: 1,
       oldPageFirst: true,
+      restarts: 0,
       riders: 2,
       slots: 1,
       twins: true,
@@ -209,6 +233,7 @@ export const GUARD_OFFS = {
   GuardRejoinCountdown: { breaks: "ReadyRiderRides", on: "solo" },
   GuardReopen: { breaks: "NeverStuck", on: "solo" },
   GuardReplacedHolds: { breaks: "BackOnBike", on: "solo" },
+  GuardRestoreHolds: { breaks: "RideSurvivesRestart", on: "restart" },
   GuardRetireReplaced: { breaks: "OneSocketPerMember", on: "solo" },
   GuardSameRun: { breaks: "FairStart", on: "solo" },
   GuardSweepWaits: { breaks: "HoldLastsAway", on: "solo" },
@@ -236,6 +261,7 @@ const constantsOf = (
     maxRaces,
     mostSeats,
     oldPageFirst,
+    restarts,
     riders,
     slots,
     twins,
@@ -251,6 +277,7 @@ const constantsOf = (
   `Slots = ${slots}`,
   `UserActs = ${userActs}`,
   `OldPageFirst = ${oldPageFirst ? "TRUE" : "FALSE"}`,
+  `Restarts = ${restarts}`,
   ...Object.entries(TIMERS).map(([name, ticks]) => `${name} = ${ticks}`),
   ...GUARDS.map((guard) => `${guard} = ${guard === off ? "FALSE" : "TRUE"}`),
 ];
