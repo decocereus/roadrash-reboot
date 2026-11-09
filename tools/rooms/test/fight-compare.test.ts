@@ -199,7 +199,7 @@ describe("comparing two builds' fights", () => {
     ]);
   });
 
-  it("judges a head against the pool of base runs, not one run", async () => {
+  it("judges a head against the base's worst run, not its best", async () => {
     const spread: Build = [
       [report("home", { ...steady, p95: 0.21 })],
       [report("home", { ...steady, p95: 0.28 })],
@@ -208,6 +208,23 @@ describe("comparing two builds' fights", () => {
       [report("home", { ...steady, p95: 0.44 })],
     ]);
     expect(Exit.isSuccess(exit)).toBeTruthy();
+  });
+
+  it("reads a bound only some head runs break as mixed, shows every run and passes", async () => {
+    const drifting = { ...steady, p95: 0.5 };
+    const { exit, markdown, verdicts } = await compare(twoRuns(), [
+      [report("home"), report("mobile")],
+      [report("home", drifting), report("mobile", drifting)],
+    ]);
+    expect(Exit.isSuccess(exit)).toBeTruthy();
+    expect(verdicts).toStrictEqual([
+      "- mixed home rival-drawn-off",
+      "- mixed mobile rival-drawn-off",
+      "- Head passes all 12 checks, with 2 mixed",
+    ]);
+    expect(markdown).toContain(
+      "| Rival drawn off the room's place, worst p95 in a run | 0.25 m | 0.25 m | 0.25 m | 0.50 m | 0.41 m, base's worst run plus 25% and 0.10 m | mixed |"
+    );
   });
 
   it("reports and fails a link only one build ran", async () => {

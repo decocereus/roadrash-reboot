@@ -20,7 +20,6 @@ const USAGE =
 const REPORT_FILE = /^[a-z]+\.json$/u;
 const MS_PER_SECOND = 1000;
 const PERCENT = 100;
-const COUNT_DIGITS = 2;
 
 class FightCompareFailed extends Data.TaggedError("FightCompareFailed")<{
   readonly cause?: unknown;
@@ -34,26 +33,23 @@ const decodeReport = Schema.decodeUnknownEffect(
   Schema.fromJsonString(NetworkReportSchema)
 );
 
-type Values = readonly [number, ...number[]];
+const worstOf = (values: readonly number[]): number | null =>
+  values.length === 0 ? null : Math.max(...values);
 
-const STATISTICS = {
-  mean: (values: Values) =>
-    values.reduce((total, value) => total + value, 0) / values.length,
-  median: (values: Values) => {
-    const sorted = values.toSorted((left, right) => left - right);
-    const middle = Math.floor(sorted.length / 2);
-    const upper = sorted[middle] ?? values[0];
-    return sorted.length % 2 === 1
-      ? upper
-      : ((sorted[middle - 1] ?? upper) + upper) / 2;
-  },
-  worst: (values: Values) => Math.max(...values),
-} as const;
-
-type Statistic = keyof typeof STATISTICS;
+const medianOf = (values: readonly number[]): number | null => {
+  const sorted = values.toSorted((left, right) => left - right);
+  const middle = Math.floor(sorted.length / 2);
+  const upper = sorted[middle];
+  if (upper === undefined) {
+    return null;
+  }
+  return sorted.length % 2 === 1
+    ? upper
+    : ((sorted[middle - 1] ?? upper) + upper) / 2;
+};
 
 const UNITS = {
-  count: (value: number) => String(Number(value.toFixed(COUNT_DIGITS))),
+  count: String,
   metres: (value: number) => `${value.toFixed(2)} m`,
   ms: (value: number) => `${Math.round(value)} ms`,
 } as const;
@@ -64,8 +60,8 @@ interface RuleBase {
   readonly description: string;
   readonly id: string;
   readonly label: string;
-  readonly samples: (run: NetworkReport) => readonly number[];
-  readonly statistic: Statistic;
+  readonly measured: string;
+  readonly perRun: (run: NetworkReport) => number | null;
   readonly unit: Unit;
 }
 
@@ -87,18 +83,21 @@ const failedStrike = (row: BoutRow): boolean => {
   return verdict === "FAIL" || verdict === "room ran no strike";
 };
 
-const drawnTracks =
+const worstDrawn =
   (pick: (track: NetworkReport["tracks"][number]["drawn"]) => number) =>
-  (run: NetworkReport): readonly number[] =>
-    run.tracks.flatMap(({ drawn }) => (drawn.frames > 0 ? [pick(drawn)] : []));
+  (run: NetworkReport): number | null =>
+    worstOf(
+      run.tracks.flatMap(({ drawn }) => (drawn.frames > 0 ? [pick(drawn)] : []))
+    );
 
-const rowValues =
-  (pick: (row: BoutRow) => number | null) =>
-  (run: NetworkReport): readonly number[] =>
-    run.rows.flatMap((row) => {
-      const value = pick(row);
-      return value === null ? [] : [value];
-    });
+const rowValues = (
+  run: NetworkReport,
+  pick: (row: BoutRow) => number | null
+): readonly number[] =>
+  run.rows.flatMap((row) => {
+    const value = pick(row);
+    return value === null ? [] : [value];
+  });
 
 const RULES = [
   {
@@ -108,8 +107,9 @@ const RULES = [
     id: "strikes-failed",
     kind: "limit",
     label: "Strikes that failed in a run",
-    samples: (run) => [run.rows.filter(failedStrike).length],
-    statistic: "worst",
+    measured:
+      "On 2026-11-09 no strike failed in 18 runs of main's netcode over home, mobile and bursts.",
+    perRun: (run) => run.rows.filter(failedStrike).length,
     unit: "count",
   },
   {
@@ -117,12 +117,12 @@ const RULES = [
     id: "presses-dropped",
     kind: "noWorse",
     label: "Presses the room dropped in a run",
-    samples: (run) => [
+    measured:
+      "On 2026-11-09 main's netcode dropped 3 to 5 presses, all in one strike, in 4 of 12 runs on mobile and bursts, and none in 6 runs on home.",
+    perRun: (run) =>
       run.rows.reduce((total, row) => total + row.lostPresses, 0),
-    ],
     share: 0,
     slack: 0,
-    statistic: "mean",
     unit: "count",
   },
   {
@@ -130,11 +130,12 @@ const RULES = [
       "The rival is drawn where the room had them, judged by the 95th percentile of the sideways gap over every drawn frame.",
     id: "rival-drawn-off",
     kind: "noWorse",
-    label: "Rival drawn off the room's place, p95",
-    samples: drawnTracks((track) => track.errorP95Metres),
+    label: "Rival drawn off the room's place, worst p95 in a run",
+    measured:
+      "On 2026-11-09 six runs of main's netcode read 0.24 to 0.28 m on home, 1.08 to 1.21 m on mobile and 1.51 to 3.92 m on bursts.",
+    perRun: worstDrawn((track) => track.errorP95Metres),
     share: 0.25,
     slack: 0.1,
-    statistic: "worst",
     unit: "metres",
   },
   {
@@ -143,9 +144,10 @@ const RULES = [
       "The rival never jumps sideways more than a bike's width between two frames. Steering and a kick's shove move a bike under 0.2 m a frame, so a bigger jump is a snap the player sees.",
     id: "rival-snap",
     kind: "limit",
-    label: "Rival's biggest sideways jump between frames",
-    samples: drawnTracks((track) => track.worstStepMetres),
-    statistic: "worst",
+    label: "Rival's biggest sideways jump between frames in a run",
+    measured:
+      "On 2026-11-09 main's netcode moved at most 0.11 to 0.20 m on home, snapped 3.30 to 4.11 m in 5 of 6 runs on mobile and 3.86 to 12.39 m in all 6 on bursts.",
+    perRun: worstDrawn((track) => track.worstStepMetres),
     unit: "metres",
   },
   {
@@ -154,9 +156,11 @@ const RULES = [
       "When a hit lands, the victim sees the attacker within half a bare-hand reach of where the room had them, so no hit lands from a bike drawn out of reach.",
     id: "attacker-off-at-hit",
     kind: "limit",
-    label: "Attacker drawn off the room's place at the hit",
-    samples: rowValues((row) => row.drawnErrorAtHitMetres),
-    statistic: "worst",
+    label: "Attacker drawn off the room's place at a hit, worst in a run",
+    measured:
+      "On 2026-11-09 six runs of main's netcode read 0.08 to 0.51 m on home, 0.13 to 1.30 m on mobile and 0.40 to 4.49 m on bursts.",
+    perRun: (run) =>
+      worstOf(rowValues(run, (row) => row.drawnErrorAtHitMetres)),
     unit: "metres",
   },
   {
@@ -164,18 +168,19 @@ const RULES = [
       "A strike reaches full extension on the victim's screen no later after the press than it did before.",
     id: "press-to-strike-out",
     kind: "noWorse",
-    label: "Press to the strike drawn fully out",
-    samples: rowValues((row) => row.pressToStrikeOutMs),
+    label: "Press to the strike drawn fully out, median in a run",
+    measured:
+      "On 2026-11-09 the median of a run of main's netcode read 209 to 227 ms on home, 387 to 539 ms on mobile and 337 to 752 ms on bursts.",
+    perRun: (run) => medianOf(rowValues(run, (row) => row.pressToStrikeOutMs)),
     share: 0.15,
     slack: TICK_SECONDS * MS_PER_SECOND,
-    statistic: "median",
     unit: "ms",
   },
 ] as const satisfies readonly CompareRule[];
 
 export type RuleId = (typeof RULES)[number]["id"];
 
-const OUTCOMES = ["pass", "FAIL", "known gap", "not judged"] as const;
+const OUTCOMES = ["pass", "FAIL", "mixed", "known gap", "not judged"] as const;
 
 type Outcome = (typeof OUTCOMES)[number];
 
@@ -185,79 +190,15 @@ interface Judged {
   readonly outcome: Outcome;
 }
 
-interface Measured {
-  readonly samples: readonly number[];
-  readonly value: number | null;
-}
-
-const measure = (
-  rule: CompareRule,
-  runs: readonly NetworkReport[]
-): Measured => {
-  const samples = runs.flatMap(rule.samples);
-  const [first, ...rest] = samples;
-  return {
-    samples,
-    value:
-      first === undefined ? null : STATISTICS[rule.statistic]([first, ...rest]),
-  };
-};
-
-const shown = (rule: CompareRule, value: number) =>
-  `${rule.statistic} ${UNITS[rule.unit](value)}`;
-
-const judge = (
-  rule: CompareRule,
-  base: number | null,
-  head: number | null
-): Judged => {
-  if (head === null) {
-    return base === null
-      ? {
-          bound: null,
-          note: "Neither build measured it.",
-          outcome: "not judged",
-        }
-      : {
-          bound: null,
-          note: `Head measured nothing where base measured ${shown(rule, base)}.`,
-          outcome: "FAIL",
-        };
-  }
+const boundOf = (rule: CompareRule, baseWorst: number | null) => {
   switch (rule.kind) {
     case "limit": {
-      const bound = rule.ceiling;
-      if (head <= bound) {
-        return { bound, note: "", outcome: "pass" };
-      }
-      return base !== null && base > bound
-        ? {
-            bound,
-            note: `Head ${shown(rule, head)} is over ${UNITS[rule.unit](bound)}, and base breaks it too at ${shown(rule, base)}.`,
-            outcome: "known gap",
-          }
-        : {
-            bound,
-            note: `Head ${shown(rule, head)} is over ${UNITS[rule.unit](bound)}, which base keeps.`,
-            outcome: "FAIL",
-          };
+      return rule.ceiling;
     }
     case "noWorse": {
-      if (base === null) {
-        return {
-          bound: null,
-          note: "Base measured nothing to compare with.",
-          outcome: "not judged",
-        };
-      }
-      const bound = base * (1 + rule.share) + rule.slack;
-      return head <= bound
-        ? { bound, note: "", outcome: "pass" }
-        : {
-            bound,
-            note: `Head ${shown(rule, head)} is over ${UNITS[rule.unit](bound)}, base ${shown(rule, base)} plus ${rule.share * PERCENT}% and ${UNITS[rule.unit](rule.slack)}.`,
-            outcome: "FAIL",
-          };
+      return baseWorst === null
+        ? null
+        : baseWorst * (1 + rule.share) + rule.slack;
     }
     default: {
       return rule satisfies never;
@@ -271,7 +212,7 @@ const boundText = (rule: CompareRule, bound: number | null): string => {
       return `${UNITS[rule.unit](rule.ceiling)}, a limit`;
     }
     case "noWorse": {
-      const growth = `base plus ${rule.share * PERCENT}% and ${UNITS[rule.unit](rule.slack)}`;
+      const growth = `base's worst run plus ${rule.share * PERCENT}% and ${UNITS[rule.unit](rule.slack)}`;
       return bound === null ? growth : `${UNITS[rule.unit](bound)}, ${growth}`;
     }
     default: {
@@ -280,24 +221,59 @@ const boundText = (rule: CompareRule, bound: number | null): string => {
   }
 };
 
-const cell = (rule: CompareRule, { samples, value }: Measured): string => {
-  const [first, ...rest] = samples;
-  if (first === undefined || value === null) {
-    return "no sample";
+const judge = (
+  rule: CompareRule,
+  base: readonly number[],
+  head: readonly number[]
+): Judged => {
+  const baseWorst = worstOf(base);
+  if (head.length === 0) {
+    return baseWorst === null
+      ? {
+          bound: null,
+          note: "Neither build measured it.",
+          outcome: "not judged",
+        }
+      : {
+          bound: null,
+          note: `Head measured nothing where base's worst run read ${UNITS[rule.unit](baseWorst)}.`,
+          outcome: "FAIL",
+        };
   }
-  const others = (["median", "worst"] as const)
-    .filter((statistic) => statistic !== rule.statistic)
-    .map(
-      (statistic) =>
-        `${statistic} ${UNITS[rule.unit](STATISTICS[statistic]([first, ...rest]))}`
-    );
-  return `${shown(rule, value)} (${[...others, `${samples.length} samples`].join(", ")})`;
+  const bound = boundOf(rule, baseWorst);
+  if (bound === null) {
+    return {
+      bound,
+      note: "Base measured nothing to compare with.",
+      outcome: "not judged",
+    };
+  }
+  const over = head.filter((value) => value > bound).length;
+  if (over === 0) {
+    return { bound, note: "", outcome: "pass" };
+  }
+  const broke = `${over} of ${head.length} head runs are over ${boundText(rule, bound)}.`;
+  if (rule.kind === "limit" && baseWorst !== null && baseWorst > bound) {
+    return {
+      bound,
+      note: `${broke} Base breaks it too, at worst ${UNITS[rule.unit](baseWorst)}.`,
+      outcome: "known gap",
+    };
+  }
+  return over === head.length
+    ? { bound, note: broke, outcome: "FAIL" }
+    : {
+        bound,
+        note: `${broke} It does not fail, because a regression that shows in only some runs passes this gate. Run more runs of both builds to settle it.`,
+        outcome: "mixed",
+      };
 };
 
 interface Verdict {
   readonly description: string;
   readonly id: string;
   readonly link: RunName;
+  readonly measured: string;
   readonly note: string;
   readonly outcome: Outcome;
 }
@@ -312,10 +288,14 @@ const reachText = (runs: readonly NetworkReport[]): string => {
   return `${runs.length} runs, ${rows.filter((row) => row.pressed).length} of ${rows.length} strikes in reach`;
 };
 
-const TABLE_HEAD = [
-  "| Measure | Base | Head | Head must stay at or under | Verdict |",
-  "| --- | --- | --- | --- | --- |",
-];
+const present = (values: readonly (number | null)[]): readonly number[] =>
+  values.flatMap((value) => (value === null ? [] : [value]));
+
+const runCells = (rule: CompareRule, values: readonly (number | null)[]) =>
+  values.map((value) => (value === null ? "none" : UNITS[rule.unit](value)));
+
+const runHeads = (side: string, runs: readonly NetworkReport[]) =>
+  runs.map((_, index) => `${side} ${index + 1}`);
 
 const linkSection = (
   link: RunName,
@@ -323,25 +303,33 @@ const linkSection = (
   head: readonly NetworkReport[]
 ): Section => {
   const rows = RULES.map((rule) => {
-    const before = measure(rule, base);
-    const after = measure(rule, head);
+    const before = base.map(rule.perRun);
+    const after = head.map(rule.perRun);
     return {
       after,
       before,
-      judged: judge(rule, before.value, after.value),
+      judged: judge(rule, present(before), present(after)),
       rule,
     };
   });
+  const columns = [
+    "Measure",
+    ...runHeads("Base", base),
+    ...runHeads("Head", head),
+    "Head must stay at or under",
+    "Verdict",
+  ];
   return {
     lines: [
       `## ${link}`,
       "",
       `Base: ${reachText(base)}. Head: ${reachText(head)}.`,
       "",
-      ...TABLE_HEAD,
+      `| ${columns.join(" | ")} |`,
+      `|${" --- |".repeat(columns.length)}`,
       ...rows.map(
         ({ after, before, judged: { bound, outcome }, rule }) =>
-          `| ${rule.label} | ${cell(rule, before)} | ${cell(rule, after)} | ${boundText(rule, bound)} | ${outcome} |`
+          `| ${[rule.label, ...runCells(rule, before), ...runCells(rule, after), boundText(rule, bound), outcome].join(" | ")} |`
       ),
       "",
     ],
@@ -349,6 +337,7 @@ const linkSection = (
       description: rule.description,
       id: rule.id,
       link,
+      measured: rule.measured,
       note,
       outcome,
     })),
@@ -371,6 +360,7 @@ const oneSided = (
       description: "Both builds ran every link the comparison reads.",
       id: "link-on-both",
       link,
+      measured: "",
       note: `Only ${ran} ran it.`,
       outcome: "FAIL",
     },
@@ -380,8 +370,15 @@ const oneSided = (
 const runsOf = (runs: readonly NetworkReport[], link: RunName) =>
   runs.filter((run) => run.network === link);
 
-const verdictLine = ({ description, id, link, note, outcome }: Verdict) =>
-  `- ${outcome} ${link} ${id}. ${note} ${description}`;
+const verdictLine = ({
+  description,
+  id,
+  link,
+  measured,
+  note,
+  outcome,
+}: Verdict) =>
+  `- ${outcome} ${link} ${id}. ${[note, description, measured].filter((text) => text !== "").join(" ")}`;
 
 const comparison = (
   base: readonly NetworkReport[],
@@ -403,10 +400,11 @@ const comparison = (
   });
   const verdicts = sections.flatMap((section) => section.verdicts);
   const failures = verdicts.filter((verdict) => verdict.outcome === "FAIL");
+  const mixed = verdicts.filter((verdict) => verdict.outcome === "mixed");
   const flagged = verdicts.filter((verdict) => verdict.outcome !== "pass");
   const summary =
     failures.length === 0
-      ? `Head passes all ${verdicts.length} checks.`
+      ? `Head passes all ${verdicts.length} checks${mixed.length === 0 ? "" : `, with ${mixed.length} mixed`}.`
       : `Head fails ${failures.length} of ${verdicts.length} checks.`;
   return {
     failures,
@@ -414,6 +412,8 @@ const comparison = (
       "# Netcode comparison",
       "",
       sources,
+      "",
+      "Each rule judges every run on its own. A rule fails only when every head run breaks its bound, so the gate avoids failing on run-to-run noise at the cost of passing a regression that shows in only some runs. Such a rule reads mixed.",
       "",
       ...sections.flatMap((section) => section.lines),
       "## Verdicts",
