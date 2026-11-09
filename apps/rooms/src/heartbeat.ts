@@ -11,6 +11,7 @@ import type { Ping, Pong } from "@racer/sim/room-wire";
 import { TICK_SECONDS } from "@racer/sim/state";
 
 export const PING_EVERY_MS = 500;
+export const PINGS_PER_REPORT = 30;
 export const DEAD_AFTER_MS = Math.round(
   LINK_DEAD_AFTER_TICKS * TICK_SECONDS * 1000
 );

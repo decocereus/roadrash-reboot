@@ -82,6 +82,7 @@ const seatChanges = [
   "raceLost",
   "redraw",
   "reopen",
+  "seatFlooded",
   "seatTaken",
   "tryRejoin",
 ] as const;
@@ -101,6 +102,9 @@ export const seatChange = <Ride>(
     case "lost": {
       if (refusal === "replaced") {
         return "seatTaken";
+      }
+      if (refusal === "flooded") {
+        return "seatFlooded";
       }
       if (!inRace) {
         return "reopen";

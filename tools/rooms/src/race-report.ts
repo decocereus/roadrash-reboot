@@ -166,7 +166,11 @@ const serverLine = (ended: RaceEnded): string => {
   const gaps = ended.wakeGaps
     .map((count, at) => `${gapLabels[at] ?? ""}: ${count}`)
     .join(", ");
-  return `  Server: worst ${ended.worstBehindTicks} ticks behind, ${ended.catchUpWakes} catch-up wakes. Gaps between wakes, ${gaps}.`;
+  const dropped =
+    ended.dropped !== null && ended.dropped > 0
+      ? ` Dropped ${ended.dropped} messages over a socket's budget.`
+      : "";
+  return `  Server: worst ${ended.worstBehindTicks} ticks behind, ${ended.catchUpWakes} catch-up wakes. Gaps between wakes, ${gaps}.${dropped}`;
 };
 
 const unfinishedLines = (record: RaceRecord): readonly string[] => [

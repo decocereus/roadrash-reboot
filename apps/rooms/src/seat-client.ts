@@ -28,7 +28,7 @@ import { riderIdAt, TICK_SECONDS } from "@racer/sim/state";
 import type { RiderId } from "@racer/sim/state";
 import * as Option from "effect/Option";
 
-import { createPings, DEAD_AFTER_MS } from "./heartbeat.ts";
+import { createPings, DEAD_AFTER_MS, PINGS_PER_REPORT } from "./heartbeat.ts";
 import { humanColours, humanNames, seatedCount } from "./manifest.ts";
 import {
   decodeRoomMessage,
@@ -50,8 +50,6 @@ import { createRaceTally } from "./race-tally.ts";
 import { ticksOf } from "./room-config.ts";
 import { TRACE_VERSION } from "./tape.ts";
 import type { BrowserTrace, SeatBrowser } from "./tape.ts";
-
-const PINGS_PER_REPORT = 30;
 
 export const MOST_TICKS_PER_FRAME = 60;
 export const MOST_CATCH_UP_MS_PER_FRAME = 4;

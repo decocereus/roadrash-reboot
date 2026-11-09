@@ -1,4 +1,5 @@
 import { lobbyActs, lobbyPlaces, lobbyPoses } from "@racer/sim/lobby-walk";
+import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 
 import { LOBBY_PHASES } from "./lobby.ts";
@@ -86,6 +87,7 @@ const Ended = Schema.Struct({
 export const REFUSALS = [
   "build",
   "content",
+  "flooded",
   "full",
   "limited",
   "replaced",
@@ -141,8 +143,14 @@ export type LobbyCommand = typeof LobbyCommandSchema.Type;
 
 const LobbyCommandJson = Schema.fromJsonString(LobbyCommandSchema);
 
+export const MOST_COMMAND_CHARS = 1024;
+
 export const encodeLobbyCommand = Schema.encodeSync(LobbyCommandJson);
-export const decodeLobbyCommand = Schema.decodeUnknownOption(LobbyCommandJson);
+const decodeCommandJson = Schema.decodeUnknownOption(LobbyCommandJson);
+export const decodeLobbyCommand = (
+  text: string
+): Option.Option<LobbyCommand> =>
+  text.length > MOST_COMMAND_CHARS ? Option.none() : decodeCommandJson(text);
 
 export const ROOM_PHASES = ["waiting", "racing"] as const;
 
@@ -162,3 +170,4 @@ export const SEAT_CLOSED = 1000;
 export const SEAT_LEFT = 4410;
 export const SEAT_SILENT = 4408;
 export const SEAT_QUIT = 4411;
+export const SEAT_FLOODED = 4429;
