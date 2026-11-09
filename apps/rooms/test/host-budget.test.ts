@@ -18,7 +18,11 @@ import {
   MOST_COMMAND_CHARS,
   SEAT_FLOODED,
 } from "../src/messages.ts";
-import { CUT_AFTER_DROPS, socketAllowances } from "../src/socket-budget.ts";
+import {
+  CUT_AFTER_DROPS,
+  MOST_PACKET_BYTES,
+  socketAllowances,
+} from "../src/socket-budget.ts";
 import { RiderTraceSchema, TRACE_ROW_FIELDS } from "../src/tape.ts";
 import {
   clientOf,
@@ -140,6 +144,20 @@ describe("a socket's message budget", () => {
     expect(saved.connections.map((rows) => rows.length)).toStrictEqual([
       socketAllowances.trace.burst * 20 * TRACE_ROW_FIELDS,
     ]);
+  });
+
+  it("drops a binary message longer than any packet a client sends, unread", () => {
+    const { host, rider } = racing();
+    rider.pongs.length = 0;
+    const padded = new Uint8Array(MOST_PACKET_BYTES + 1);
+    padded.set(new Uint8Array(pingPacket()));
+    host.message(rider, padded.buffer);
+    host.message(rider, new ArrayBuffer(1024 * 1024));
+    expect({
+      closed: rider.closed,
+      dropped: host.status().dropped,
+      pongs: rider.pongs.length,
+    }).toStrictEqual({ closed: null, dropped: 2, pongs: 0 });
   });
 
   it("ignores a lobby command padded past the longest real one", () => {

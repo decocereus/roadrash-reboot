@@ -5,7 +5,7 @@ const ROOM_ID_CHARS = 8;
 const ARRIVAL_PARAM = "via";
 const REJOIN_PARAM = "rejoin";
 
-const rejoinChoices = ["try", "no", "taken"] as const;
+const rejoinChoices = ["try", "no", "taken", "flooded"] as const;
 
 export type RejoinChoice = (typeof rejoinChoices)[number];
 

@@ -250,6 +250,10 @@ const SeatedLobby = ({
             reopening = setTimeout(reopen, REOPEN_MS);
             break;
           }
+          case "seatFlooded": {
+            moveToRoom(roomId, "moved", "flooded");
+            break;
+          }
           case "seatTaken": {
             moveToRoom(roomId, "moved", "taken");
             break;
@@ -433,13 +437,14 @@ const RoomEntry = (props: RoomProps & BootFailed) => {
       />
     );
   }
-  if (rejoinOf(globalThis.location.search) === "taken") {
+  const rejoin = rejoinOf(globalThis.location.search);
+  if (rejoin === "taken" || rejoin === "flooded") {
     return (
       <RoomLobbyScreen
         name={name}
         onBack={props.onBack}
         phase="refused"
-        refusal="replaced"
+        refusal={rejoin === "taken" ? "replaced" : "flooded"}
         roomId={props.roomId}
       />
     );

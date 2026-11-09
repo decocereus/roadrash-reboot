@@ -1,4 +1,11 @@
 import { WALKS_PER_SECOND } from "@racer/sim/lobby-walk";
+import {
+  inputBytes,
+  MOST_BATCHED_CONTROLS,
+  PING_PACKET_BYTES,
+  RACE_STATS_PACKET_BYTES,
+  READY_PACKET_BYTES,
+} from "@racer/sim/room-wire";
 import { TICK_SECONDS } from "@racer/sim/state";
 
 import {
@@ -39,9 +46,16 @@ type SocketMessage = keyof typeof socketAllowances;
 
 export const CUT_AFTER_DROPS = 64;
 
+export const MOST_PACKET_BYTES = Math.max(
+  inputBytes(MOST_BATCHED_CONTROLS),
+  PING_PACKET_BYTES,
+  RACE_STATS_PACKET_BYTES,
+  READY_PACKET_BYTES
+);
+
 const messageOf = (data: string | ArrayBuffer): SocketMessage | null => {
   if (data instanceof ArrayBuffer) {
-    return "packet";
+    return data.byteLength <= MOST_PACKET_BYTES ? "packet" : null;
   }
   if (data.length <= MOST_COMMAND_CHARS) {
     return "command";
