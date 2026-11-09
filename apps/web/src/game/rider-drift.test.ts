@@ -1,4 +1,5 @@
 import { riderIdAt } from "@racer/sim/state";
+import { kick, punch } from "@racer/sim/weapons";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -41,6 +42,29 @@ const settleFor = (
   return { fastest, mostChange };
 };
 
+const HALF_REACH_ACROSS = punch.reachX / 2;
+const HALF_REACH_ALONG = punch.reachS / 2;
+const MOST_STEP_METRES = 0.2;
+
+const framesUntilWithin = (
+  drift: ReturnType<typeof stillDrift>,
+  axis: "s" | "x",
+  within: number,
+  speed: number,
+  most: number
+) => {
+  let step = 0;
+  for (let frame = 1; frame <= most; frame += 1) {
+    const from = drift[axis];
+    driftSettle(drift, FRAME, speed);
+    step = Math.max(step, Math.abs(drift[axis] - from));
+    if (Math.abs(drift[axis]) < within) {
+      return { frames: frame, step };
+    }
+  }
+  return { frames: Number.POSITIVE_INFINITY, step };
+};
+
 describe("how a corrected rider settles on screen", () => {
   it("keeps the rider where they were drawn the moment the correction arrives", () => {
     const drift = stillDrift();
@@ -70,13 +94,41 @@ describe("how a corrected rider settles on screen", () => {
     expect(Math.abs(drift.s)).toBeLessThan(0.01);
   });
 
-  it("glides even a 60 m correction no faster than a tenth of the bike's speed, closing it in about thirteen seconds", () => {
+  it("glides even a 60 m correction no faster than a quarter of the bike's speed, closing it in about six seconds", () => {
     const drift = stillDrift();
     driftBy(drift, { ...moved, s: 60, x: 9 });
     expect({ s: drift.s, x: drift.x }).toStrictEqual({ s: 60, x: 9 });
-    const { fastest } = settleFor(drift, 800, SPEED);
-    expect(fastest).toBeLessThanOrEqual(SPEED * 0.1 + 1e-9);
+    const { fastest } = settleFor(drift, 360, SPEED);
+    expect(fastest).toBeLessThanOrEqual(SPEED * 0.25 + 1e-9);
     expect(Math.max(Math.abs(drift.s), Math.abs(drift.x))).toBeLessThan(0.01);
+  });
+
+  it("glides a correction inside half a bare-hand reach no faster than a tenth of the bike's speed", () => {
+    const drift = stillDrift();
+    driftBy(drift, { ...moved, s: HALF_REACH_ALONG, x: 0 });
+    const { fastest } = settleFor(drift, 120, SPEED);
+    expect(fastest).toBeLessThanOrEqual(SPEED * 0.1 + 1e-9);
+    expect(Math.abs(drift.s)).toBeLessThan(0.01);
+  });
+
+  it("brings a bike drawn a full reach across off its place back inside half a reach within a strike and a third, and onto it within a second, stepping under 20 cm a frame", () => {
+    const drift = stillDrift();
+    driftBy(drift, { ...moved, x: punch.reachX });
+    const trusted = framesUntilWithin(drift, "x", HALF_REACH_ACROSS, SPEED, 60);
+    const home = framesUntilWithin(drift, "x", 0.01, SPEED, 60);
+    expect(trusted.frames).toBeLessThanOrEqual(Math.ceil((kick.ticks * 4) / 3));
+    expect(trusted.frames + home.frames).toBeLessThanOrEqual(60);
+    expect(Math.max(trusted.step, home.step)).toBeLessThan(MOST_STEP_METRES);
+  });
+
+  it("brings a bike drawn 3 m along off its place at 25 m/s back inside half a reach within two strikes, and onto it within a second and a half", () => {
+    const drift = stillDrift();
+    driftBy(drift, { ...moved, s: 3, x: 0 });
+    const trusted = framesUntilWithin(drift, "s", HALF_REACH_ALONG, 25, 90);
+    const home = framesUntilWithin(drift, "s", 0.01, 25, 90);
+    expect(trusted.frames).toBeLessThanOrEqual(2 * kick.ticks);
+    expect(trusted.frames + home.frames).toBeLessThanOrEqual(90);
+    expect(Math.max(trusted.step, home.step)).toBeLessThan(MOST_STEP_METRES);
   });
 
   it("keeps a bike's drawn speed through a correction that changes it, then changes it no faster than hard braking", () => {
