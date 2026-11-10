@@ -202,6 +202,7 @@ describe("gamepad controls", () => {
       steer: 0.5,
       throttle: 0.8,
     });
+    expect(controls.read({ ...neutralInput })).toBe("stick");
   });
 
   it("skips a pad the browser cannot map to the standard layout, whose buttons mean something else", () => {
@@ -222,6 +223,7 @@ describe("gamepad controls", () => {
     keyboard.pads.push(pad(0.1, {}));
     keyboard.press("ArrowLeft");
     expect(readOnce(controls).steer).toBe(-1);
+    expect(controls.read({ ...neutralInput })).toBe("keys");
   });
 
   it("a pad without axes or buttons reads as idle", () => {

@@ -1,3 +1,4 @@
+import type { SteerSource } from "@racer/sim/control";
 import type { RiderInput } from "@racer/sim/state";
 
 import { createHeldKeys } from "./held-keys.ts";
@@ -77,7 +78,7 @@ const padPressed = (pad: Pad | null, index: number): boolean =>
   pad?.buttons[index]?.pressed ?? false;
 
 export interface Controls {
-  read: (input: RiderInput) => void;
+  read: (input: RiderInput) => SteerSource;
   dispose: () => void;
 }
 
@@ -115,7 +116,8 @@ export const createControls = (
     read(input) {
       const pad = firstStandard(host.pads());
       const stick = pad?.axes[0] ?? 0;
-      input.steer = Math.abs(stick) > STICK_DEADZONE ? stick : keySteer();
+      const onStick = Math.abs(stick) > STICK_DEADZONE;
+      input.steer = onStick ? stick : keySteer();
       input.throttle = Math.max(
         down("ArrowUp", "KeyW") ? 1 : 0,
         pad?.buttons[7]?.value ?? 0
@@ -128,6 +130,7 @@ export const createControls = (
       input.kick =
         down("KeyK", "ShiftLeft", "ShiftRight") || padPressed(pad, 1);
       input.remount = down("KeyE") || padPressed(pad, 0);
+      return onStick ? "stick" : "keys";
     },
   };
 };

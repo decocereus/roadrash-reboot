@@ -366,10 +366,11 @@ const startGame = (
 
   const readInputs = () => {
     if (frameOf() === playerFrame) {
-      controls.read(playerInput);
-      devRide?.steer(stage.race.view, stage.track, playerInput);
+      const read = controls.read(playerInput);
+      const steerFrom =
+        devRide?.steer(stage.race.view, stage.track, playerInput, read) ?? read;
       playerControls.clear();
-      playerControls.set(stage.me, controlOf(playerInput));
+      playerControls.set(stage.me, controlOf(playerInput, steerFrom));
     }
   };
 

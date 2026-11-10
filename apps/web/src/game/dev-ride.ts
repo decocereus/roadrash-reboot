@@ -1,3 +1,4 @@
+import type { SteerSource } from "@racer/sim/control";
 import type { LocalRun } from "@racer/sim/race-run";
 import type { RaceView, RiderView } from "@racer/sim/race-view";
 import {
@@ -33,7 +34,12 @@ const holdLine = (track: Track, me: RiderView, lineX: number): number => {
 
 export interface DevRide {
   readonly place: (run: LocalRun) => void;
-  readonly steer: (race: RaceView, track: Track, input: RiderInput) => void;
+  readonly steer: (
+    race: RaceView,
+    track: Track,
+    input: RiderInput,
+    steerFrom: SteerSource
+  ) => SteerSource;
   readonly holds: (race: RaceView) => boolean;
   readonly whenReleased: (resume: () => void) => void;
 }
@@ -135,16 +141,25 @@ export const devRideFrom = (search: string): DevRide => {
         run.relocateTraffic(s, hazard?.s ?? s);
       }
     },
-    steer: (race, track, input) => {
+    steer: (race, track, input, steerFrom) => {
       const me = riderOf(race.riders, PLAYER_RIDER);
+      let from = steerFrom;
       if (me && straight) {
         input.steer = holdLine(track, me, lineFor(race, me));
         input.throttle = 1;
         input.brake = 0;
+        from = "stick";
       }
-      if (me && swerveAt > 0 && me.s > swerveAt) {
-        input.steer = me.s < swerveAt + swerveFor ? swerveTo : input.steer;
+      if (
+        me &&
+        swerveAt > 0 &&
+        me.s > swerveAt &&
+        me.s < swerveAt + swerveFor
+      ) {
+        input.steer = swerveTo;
+        from = "stick";
       }
+      return from;
     },
     whenReleased: (resume) => {
       if (holdOn === null || holdOn === "") {

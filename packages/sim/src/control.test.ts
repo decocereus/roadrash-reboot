@@ -4,6 +4,7 @@ import {
   CONTROL_BYTES,
   controlOf,
   readControl,
+  withoutButtons,
   writeControl,
 } from "./control.ts";
 import {
@@ -24,6 +25,7 @@ import {
 } from "./race.ts";
 import { PLAYER_RIDER, TICK_RATE, TICK_SECONDS } from "./state.ts";
 import type {
+  Control,
   Controller,
   InputFrame,
   RaceState,
@@ -62,7 +64,6 @@ const weaving = (tick: number): RiderInput => ({
   throttle: tick % 300 > 240 ? 0 : 0.9,
 });
 
-const STEER_STEPS = 127;
 const SETTLE_TICKS = 20;
 const RELEASE_STEP = 18 * TICK_SECONDS;
 
@@ -76,6 +77,9 @@ const steerCurve = (state: RaceState, targets: readonly number[]): number[] =>
 
 const held = (target: number, ticks: number): number[] =>
   Array.from({ length: ticks }, () => target);
+
+const stick = (steer: number, punch = false): Control =>
+  controlOf({ ...neutralInput, punch, steer }, "stick");
 
 describe("a rider's controls", () => {
   it("ride on a grid of 127 steps of steer each way and 255 of throttle and brake, with full lock, full pedal and zero exact", () => {
@@ -134,14 +138,25 @@ describe("a rider's controls", () => {
     );
   });
 
-  it("a stick that moves no faster than the bars passes through each tick, and a flick is held to the bars' rate", () => {
-    const sweep = field(straight, 1, 0, 0);
-    const targets = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1];
-    expect(steerCurve(sweep, targets)).toStrictEqual(
-      targets.map((steer) => Math.round(steer * STEER_STEPS) / STEER_STEPS)
+  it("a stick's target applies at once, a flick and a reversal included, and the keys then ramp from where the stick left the bars", () => {
+    const state = field(straight, 1, 0, 0);
+    const ridden = (control: Control): RiderInput => {
+      stepRace(state, straight, {
+        ...emptyFrame,
+        controls: new Map([[PLAYER_RIDER, control]]),
+      });
+      return player(state).input;
+    };
+    expect(ridden(stick(1)).steer).toBe(1);
+    expect(ridden(stick(-0.5)).steer).toBe(-64 / 127);
+    expect(ridden(withoutButtons(stick(0.3, true)))).toMatchObject({
+      punch: false,
+      steer: 38 / 127,
+    });
+    expect(ridden(controlOf({ ...neutralInput, steer: -1 })).steer).toBeCloseTo(
+      38 / 127 - 0.15,
+      9
     );
-    const flick = field(straight, 1, 0, 0);
-    expect(steerCurve(flick, [1, 1])).toStrictEqual([0.15, 0.3]);
   });
 
   it("a rider handed from the pilot to a human eases from the bars the pilot left, not from centre", () => {
@@ -209,7 +224,7 @@ describe("a rider's controls", () => {
     expect(wired).toStrictEqual(direct);
   });
 
-  it("four bytes with a steer byte of -128 or a button bit past punch, kick and remount are not a control", () => {
+  it("four bytes with a steer byte of -128 or a bit past punch, kick, remount and the stick are not a control", () => {
     const wire = new DataView(new ArrayBuffer(CONTROL_BYTES));
     wire.setUint8(STEER_BYTE, 128);
     expect(readControl(wire, 0)).toBeUndefined();
@@ -217,17 +232,14 @@ describe("a rider's controls", () => {
     expect(readControl(wire, 0)).toBe(
       controlOf({ ...neutralInput, steer: -1 })
     );
-    wire.setUint8(BUTTONS_BYTE, 8);
+    wire.setUint8(BUTTONS_BYTE, 16);
     expect(readControl(wire, 0)).toBeUndefined();
-    wire.setUint8(BUTTONS_BYTE, 7);
+    wire.setUint8(BUTTONS_BYTE, 15);
     expect(readControl(wire, 0)).toBe(
-      controlOf({
-        ...neutralInput,
-        kick: true,
-        punch: true,
-        remount: true,
-        steer: -1,
-      })
+      controlOf(
+        { ...neutralInput, kick: true, punch: true, remount: true, steer: -1 },
+        "stick"
+      )
     );
   });
 });
