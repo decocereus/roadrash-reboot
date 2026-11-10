@@ -18,7 +18,7 @@ The game holds 60 frames per second on one fixed quality preset, which `apps/web
 ## How to get to it (user POV)
 
 - A player sees frame rate only as smoothness, or turns on Settings → Frame meter. Add `?fps` to any URL for the same overlay.
-- Settings, from the back room or the pause menu, has Frame rate: 60 (the default) or 30.
+- Settings, from the bar's Settings tab or the pause menu, has Frame rate: 60 (the default) or 30. Frame meter is a tester row under `?tester`.
 - `?stress` and `?stress=reference` work in every build; `&ratio=2` pins the pixel ratio, past the preset's pixel cap, and turns the pacer off.
 
 ## Driving it with rv

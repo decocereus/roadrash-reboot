@@ -13,7 +13,7 @@ Every model and menu picture the player sees comes from the art store, not from 
 ## How to get to it (user POV)
 
 - Load the site. The bar paints its plates and figures before the menu answers.
-- Ride any race from the Clubhouse or the Back Room. The grid's bikes and riders are models.
+- Ride any race from Ride solo on the bar's Race tab. The grid's bikes and riders are models.
 - Open the deployed game at https://rushline.amartya-faceless.workers.dev from any browser.
 
 ## Driving it with rv
