@@ -13,7 +13,7 @@ const rig = () => {
   });
   const escape = (): number => {
     const prevented = { count: 0 };
-    for (const press of [...listening]) {
+    for (const press of listening) {
       press({
         key: "Escape",
         preventDefault: () => {
