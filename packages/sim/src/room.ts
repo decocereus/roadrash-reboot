@@ -42,8 +42,13 @@ const RIDER_BYTES = 1;
 const COUNTER_BYTES = 4;
 const FLAG_BYTES = 1;
 const SEAT_HEAD_BYTES =
-  RIDER_BYTES + CONTROL_BYTES + COUNTER_BYTES + COUNTER_BYTES + FLAG_BYTES;
-const SLOT_BYTES = COUNTER_BYTES + CONTROL_BYTES;
+  RIDER_BYTES +
+  CONTROL_BYTES +
+  COUNTER_BYTES +
+  COUNTER_BYTES +
+  FLAG_BYTES +
+  COUNTER_BYTES;
+export const SLOT_BYTES = COUNTER_BYTES + CONTROL_BYTES;
 
 const controlAt = (from: DataView, at: number): Control =>
   readControl(from, at) ??
@@ -67,19 +72,20 @@ const flagAt = (from: DataView, at: number): boolean => {
       );
 };
 
-const slotTickAt = (
-  from: DataView,
-  at: number,
-  slot: number,
-  tick: number
-): number => {
+const queuedTickAt = (from: DataView, at: number, tick: number): number => {
   const held = from.getInt32(at, true);
-  return held === NO_TICK ||
-    (held >= 0 && held <= tick + INPUT_HORIZON && held % INPUT_HORIZON === slot)
+  return held > tick && held <= tick + INPUT_HORIZON
     ? held
     : refuse(
-        `This seat record holds tick ${held} in slot ${slot} at tick ${tick}.`
+        `This seat record queues a control for tick ${held} at tick ${tick}.`
       );
+};
+
+const queuedCountAt = (from: DataView, at: number): number => {
+  const count = from.getUint32(at, true);
+  return count <= INPUT_HORIZON
+    ? count
+    : refuse(`This seat record queues ${count} controls for one seat.`);
 };
 
 export const seatsCapacity = (seats: number): number =>
@@ -270,14 +276,24 @@ export const createRoom = (setup: RaceSetup, pilotFromTick: number): Room => {
     missedControls: (rider) => seatOf(rider)?.missed ?? 0,
     over: () => seats.every((seat) => seat.left || isDone(seat.rider)),
     readSeats: (from) => {
-      const needed = seatsCapacity(seats.length);
-      if (from.byteLength !== needed || from.getUint8(0) !== seats.length) {
+      if (
+        from.byteLength < SEAT_COUNT_BYTES ||
+        from.getUint8(0) !== seats.length
+      ) {
         refuse(
-          `The room's seats take ${needed} bytes for ${seats.length} seats and this record holds ${from.byteLength}.`
+          `The room has ${seats.length} seats and this record holds ${from.byteLength} bytes for ${from.byteLength > 0 ? from.getUint8(0) : 0}.`
         );
       }
       let at = SEAT_COUNT_BYTES;
+      const need = (bytes: number): void => {
+        if (at + bytes > from.byteLength) {
+          refuse(
+            `This seat record ends at ${from.byteLength} bytes, inside a seat.`
+          );
+        }
+      };
       for (const seat of seats) {
+        need(SEAT_HEAD_BYTES);
         if (riderIdAt(from.getUint8(at)) !== seat.rider.id) {
           refuse("This seat record was taken of another room's seats.");
         }
@@ -290,12 +306,27 @@ export const createRoom = (setup: RaceSetup, pilotFromTick: number): Room => {
         at += COUNTER_BYTES;
         seat.left = flagAt(from, at);
         at += FLAG_BYTES;
-        for (let slot = 0; slot < INPUT_HORIZON; slot += 1) {
-          seat.ticks[slot] = slotTickAt(from, at, slot, state.tick);
+        const queued = queuedCountAt(from, at);
+        at += COUNTER_BYTES;
+        seat.ticks.fill(NO_TICK);
+        seat.controls.fill(coasting);
+        need(queued * SLOT_BYTES);
+        for (let index = 0; index < queued; index += 1) {
+          const tick = queuedTickAt(from, at, state.tick);
           at += COUNTER_BYTES;
+          const slot = tick % INPUT_HORIZON;
+          if (seat.ticks[slot] !== NO_TICK) {
+            refuse(`This seat record queues tick ${tick} twice.`);
+          }
+          seat.ticks[slot] = tick;
           seat.controls[slot] = controlAt(from, at);
           at += CONTROL_BYTES;
         }
+      }
+      if (at !== from.byteLength) {
+        refuse(
+          `This seat record holds ${from.byteLength} bytes and its seats end at ${at}.`
+        );
       }
     },
     snapshot: () => {
@@ -331,12 +362,20 @@ export const createRoom = (setup: RaceSetup, pilotFromTick: number): Room => {
         at += COUNTER_BYTES;
         out.setUint8(at, seat.left ? 1 : 0);
         at += FLAG_BYTES;
+        const countAt = at;
+        at += COUNTER_BYTES;
+        let queued = 0;
         for (let slot = 0; slot < INPUT_HORIZON; slot += 1) {
-          out.setInt32(at, seat.ticks[slot] ?? NO_TICK, true);
-          at += COUNTER_BYTES;
-          writeControl(out, at, seat.controls[slot] ?? coasting);
-          at += CONTROL_BYTES;
+          const tick = seat.ticks[slot] ?? NO_TICK;
+          if (tick > state.tick) {
+            out.setInt32(at, tick, true);
+            at += COUNTER_BYTES;
+            writeControl(out, at, seat.controls[slot] ?? coasting);
+            at += CONTROL_BYTES;
+            queued += 1;
+          }
         }
+        out.setUint32(countAt, queued, true);
       }
       return at;
     },

@@ -98,8 +98,11 @@ export const checkpointOf = (
 ): Checkpoint => {
   const snapshot = new Uint8Array(snapshotCapacity(room.state));
   writeSnapshot(room.state, room.digest, new DataView(snapshot.buffer));
-  const controls = new Uint8Array(seatsCapacity(seats.length));
-  room.writeSeats(new DataView(controls.buffer));
+  const record = new Uint8Array(seatsCapacity(seats.length));
+  const controls = record.slice(
+    0,
+    room.writeSeats(new DataView(record.buffer))
+  );
   return {
     controls,
     seats,
