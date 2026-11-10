@@ -18,6 +18,11 @@ export interface MemoryPorts {
   ) => void;
 }
 
+export const MOST_UNSAVED_BYTES = 4_000_000;
+
+const bytesOf = (body: string | Uint8Array): number =>
+  body instanceof Uint8Array ? body.byteLength : body.length * 2;
+
 interface Remembered {
   readonly ended: number;
   readonly lobby: Lobby;
@@ -45,6 +50,14 @@ export const createMemory = (
     { readonly body: string | Uint8Array; readonly sequence: number }
   >();
   let sequence = 0;
+  let unsavedBytes = 0;
+  const forget = (key: string): void => {
+    const entry = unsaved.get(key);
+    if (entry !== undefined) {
+      unsavedBytes -= bytesOf(entry.body);
+      unsaved.delete(key);
+    }
+  };
   const remember = (): void => {
     const current = run();
     ports.remember(
@@ -66,12 +79,20 @@ export const createMemory = (
   const saveTape: RacePorts["saveTape"] = (key, body) => {
     sequence += 1;
     const written = sequence;
+    forget(key);
     unsaved.set(key, { body, sequence: written });
+    unsavedBytes += bytesOf(body);
+    for (const oldest of unsaved.keys()) {
+      if (unsavedBytes <= MOST_UNSAVED_BYTES || oldest === key) {
+        break;
+      }
+      forget(oldest);
+    }
     ports.saveTape(key, body, () => {
       if (unsaved.get(key)?.sequence !== written) {
         return;
       }
-      unsaved.delete(key);
+      forget(key);
       if (unsaved.size === 0) {
         remember();
       }

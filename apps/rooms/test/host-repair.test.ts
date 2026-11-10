@@ -109,6 +109,18 @@ describe("a rider whose race drifts from the room's", () => {
     });
   });
 
+  it("ignores an ask for a tick the room never hashed or has not reached", () => {
+    const { ann, clock, host } = racing();
+    host.message(ann, askFor(HASH_EVERY + 1));
+    host.message(ann, askFor(HASH_EVERY * 1000));
+    expect({
+      notes: repairNotes(clock),
+      snapshots: snapshotsOn(ann),
+    }).toStrictEqual({ notes: [], snapshots: 0 });
+    host.message(ann, askFor(HASH_EVERY));
+    expect(snapshotsOn(ann)).toBe(1);
+  });
+
   it("keeps a seat's repairs when the room restarts from its checkpoint", () => {
     const { ann, bo, clock, host } = racing();
     for (let repair = 0; repair < MOST_REPAIRS; repair += 1) {

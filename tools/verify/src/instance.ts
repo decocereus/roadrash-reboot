@@ -62,6 +62,9 @@ const webDir = (checkout: string): string => path.join(checkout, "apps/web");
 export const buildDirFor = (checkout: string, slot: number): string =>
   path.join(webDir(checkout), "node_modules/.rushline-verify", `slot-${slot}`);
 
+const viteCacheDirFor = (checkout: string, slot: number): string =>
+  path.join(webDir(checkout), "node_modules/.rushline-verify", `vite-${slot}`);
+
 const devEnv = (): NodeJS.ProcessEnv => ({
   ...process.env,
   NODE_ENV: "development",
@@ -170,7 +173,10 @@ export const startServer = Effect.fn("rv.startServer")(function* startServer(
         serverArgs(state),
         webDir(state.checkout),
         path.join(state.evidence, "server.log"),
-        devEnv()
+        {
+          ...devEnv(),
+          RUSHLINE_VITE_CACHE_DIR: viteCacheDirFor(state.checkout, state.slot),
+        }
       )
       .pipe(
         Effect.flatMap((pid) =>

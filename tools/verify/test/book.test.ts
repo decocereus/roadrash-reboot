@@ -185,6 +185,9 @@ describe("rv book between two lanes", () => {
         `running campaign (pid ${job.child.pid}`
       );
       await expect.poll(() => existsSync(pidFile)).toBeTruthy();
+      await expect(statusUntil(temp, "workload group")).resolves.toContain(
+        "workload group"
+      );
       const workload = Number(readFileSync(pidFile, "utf-8"));
       onTestFinished(() => {
         if (alive(workload)) {

@@ -7,8 +7,10 @@ import * as Clock from "effect/Clock";
 import * as Config from "effect/Config";
 import * as Console from "effect/Console";
 import * as Data from "effect/Data";
+import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
+import * as Headers from "effect/http/Headers";
 import * as HttpClient from "effect/http/HttpClient";
 import * as HttpClientRequest from "effect/http/HttpClientRequest";
 import * as HttpClientResponse from "effect/http/HttpClientResponse";
@@ -26,6 +28,8 @@ const PROD_ROOMS_SCRIPT = "rushline-rooms-prod-yzaffdxxtu73r6ek";
 const MS_PER_HOUR = 3_600_000;
 const MOST_EVENTS = 2000;
 const SHORTEST_WINDOW_MS = 60_000;
+const MOST_RATE_LIMIT_WAITS = 5;
+const UNSTATED_RETRY_AFTER_SECONDS = 10;
 
 class RoomReadFailed extends Data.TaggedError("RoomReadFailed")<{
   readonly cause?: unknown;
@@ -110,6 +114,19 @@ const halvesOf = ({ from, to }: Timeframe): readonly [Timeframe, Timeframe] => {
   ];
 };
 
+const retryAfterOf = (
+  response: HttpClientResponse.HttpClientResponse
+): Duration.Duration => {
+  const seconds = Number(
+    Option.getOrElse(Headers.get(response.headers, "retry-after"), () => "")
+  );
+  return Duration.seconds(
+    Number.isFinite(seconds) && seconds > 0
+      ? seconds
+      : UNSTATED_RETRY_AFTER_SECONDS
+  );
+};
+
 const unreadable = (cause: unknown) =>
   new RoomReadFailed({
     cause,
@@ -149,7 +166,15 @@ export const liveNotes = (script: string, hours: number) =>
             view: "events",
           })
         );
-        const response = yield* client.execute(request);
+        let response = yield* client.execute(request);
+        for (
+          let waits = 0;
+          response.status === 429 && waits < MOST_RATE_LIMIT_WAITS;
+          waits += 1
+        ) {
+          yield* Effect.sleep(retryAfterOf(response));
+          response = yield* client.execute(request);
+        }
         return yield* HttpClientResponse.schemaBodyJson(QueryAnswer)(
           yield* HttpClientResponse.filterStatusOk(response)
         );
