@@ -1,12 +1,7 @@
 import { SLOT_BYTES } from "@racer/sim/room";
-import type { RoomClient } from "@racer/sim/room-client";
 import { createTickFrame } from "@racer/sim/room-frame";
 import { readTapePart, TICKS_IN_PART } from "@racer/sim/room-tape";
-import {
-  createReadTick,
-  readRaceSnapshot,
-  readTick,
-} from "@racer/sim/room-wire";
+import { createReadTick } from "@racer/sim/room-wire";
 import { describe, expect, it } from "vitest";
 
 import { createHost } from "../src/host.ts";
@@ -45,19 +40,6 @@ const notesOf = (clock: Clock, ...kinds: readonly string[]) =>
 
 const kindsHeard = (socket: FakeSocket): readonly string[] =>
   socket.messages.map(({ kind }) => kind);
-
-const followAll = (socket: FakeSocket, client: RoomClient): void => {
-  const read = createReadTick(createTickFrame());
-  for (const packet of socket.ticks.splice(0)) {
-    const snapshot = readRaceSnapshot(packet);
-    if (snapshot) {
-      client.catchUpFrom(snapshot);
-    } else {
-      expect(readTick(packet, read)).toBeTruthy();
-      client.confirm(read.frame, read.hashed ? read.hash : null);
-    }
-  }
-};
 
 const remembered = (clock: Clock): RoomMemory => {
   const memory = clock.memories.at(-1);
@@ -106,8 +88,8 @@ const ridersBack = () => {
   const boBack = seated("bo", "Bo");
   const ann = clientOf(annBack);
   const bo = clientOf(boBack);
-  followAll(annBack, ann);
-  followAll(boBack, bo);
+  followTicks(annBack, ann);
+  followTicks(boBack, bo);
   return { ann, annBack, bo, boBack, host, later, stayed };
 };
 
@@ -153,8 +135,8 @@ describe("a room that restarts while a race runs", () => {
   it("rides the riders on together, in step with the room", () => {
     const { ann, annBack, bo, boBack, host, later } = ridersBack();
     advanceHearing(host, later, [annBack, boBack], RIDE_ON_MS);
-    followAll(annBack, ann);
-    followAll(boBack, bo);
+    followTicks(annBack, ann);
+    followTicks(boBack, bo);
     expect([ann.stats.desyncs, bo.stats.desyncs]).toStrictEqual([0, 0]);
     expect(ann.confirmed.tick).toBe(bo.confirmed.tick);
     expect(ann.confirmed.riders).toStrictEqual(bo.confirmed.riders);

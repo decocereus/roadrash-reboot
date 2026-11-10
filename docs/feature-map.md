@@ -1611,6 +1611,7 @@ Test files:
 - `apps/rooms/test/host-ownership.test.ts`
 - `apps/rooms/test/host-phases.test.ts`
 - `apps/rooms/test/host-rejoin.test.ts`
+- `apps/rooms/test/host-repair.test.ts`
 - `apps/rooms/test/host-restart.test.ts`
 - `apps/rooms/test/host-walk.test.ts`
 - `apps/rooms/test/host.test.ts`
@@ -1652,6 +1653,7 @@ Test files:
 - `packages/sim/src/room-limit.test.ts`
 - `packages/sim/src/room-mend.test.ts`
 - `packages/sim/src/room-missed.test.ts`
+- `packages/sim/src/room-repair.test.ts`
 - `packages/sim/src/room-restore.test.ts`
 - `packages/sim/src/room.test.ts`
 - `scripts/rooms-build.test.ts`

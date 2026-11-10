@@ -612,6 +612,10 @@ export const openRoomSeat = (
       ) {
         socket.send(new Uint8Array(input.buffer, 0, bytes));
       }
+      const asked = race.client.writeRepair(input);
+      if (asked > 0) {
+        socket.send(new Uint8Array(input.buffer, 0, asked));
+      }
       if (isDone(race.client.mine) && caughtUp(race)) {
         reportOnce();
       }

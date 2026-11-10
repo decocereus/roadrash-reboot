@@ -6,6 +6,7 @@ import {
   createReadTick,
   PING_PACKET_BYTES,
   READY_PACKET_BYTES,
+  readRaceSnapshot,
   readTick,
   ROOM_PROTOCOL,
   writePing,
@@ -228,6 +229,7 @@ export const someRaceStats: RaceStats = {
   jumpsOwnControl: 4,
   mostReplayedTicks: 64,
   refusedPredictions: 0,
+  repairs: 0,
   resimulatedTicks: 90,
   retriedPresses: 0,
   rivalsSurgedFrames: 1,
@@ -337,8 +339,13 @@ export const race = (
 export const followTicks = (socket: FakeSocket, client: RoomClient): void => {
   const read = createReadTick(createTickFrame());
   for (const packet of socket.ticks.splice(0)) {
-    expect(readTick(packet, read)).toBeTruthy();
-    client.confirm(read.frame, read.hashed ? read.hash : null);
+    const snapshot = readRaceSnapshot(packet);
+    if (snapshot) {
+      client.catchUpFrom(snapshot);
+    } else {
+      expect(readTick(packet, read)).toBeTruthy();
+      client.confirm(read.frame, read.hashed ? read.hash : null);
+    }
   }
 };
 
