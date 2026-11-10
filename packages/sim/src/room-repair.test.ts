@@ -158,4 +158,55 @@ describe("a room client whose confirmed race drifts from the room's", () => {
     expect(asked).toHaveLength(MOST_REPAIRS);
     expect(client.stats.desyncs).toBeGreaterThan(MOST_REPAIRS);
   });
+
+  it("draws and counts how far a repair moved the riders when the client had fallen behind the room", () => {
+    const setup = roomSetup(defaultSetup(track, 3), [PLAYER_RIDER, RIVAL]);
+    const room = createRoom(setup, ROOM_LIMIT_TICKS);
+    const client = createRoomClient(setup, PLAYER_RIDER, ROOM_LIMIT_TICKS);
+    const askView = new DataView(new ArrayBuffer(REPAIR_PACKET_BYTES));
+    const ride = (tick: number): void => {
+      room.accept(PLAYER_RIDER, tick, [weaving(tick, 25)]);
+      room.accept(RIVAL, tick, [weaving(tick, 7)]);
+      room.step();
+    };
+    for (let tick = 1; tick <= HASH_EVERY * 2; tick += 1) {
+      ride(tick);
+      const mine = riderOf(client.confirmed.riders, PLAYER_RIDER);
+      if (tick === DRIFTED_AT && mine) {
+        mine.s += 1;
+      }
+      client.confirm(room.frame, room.hashed ? room.hash : null);
+    }
+    expect(client.writeRepair(askView)).toBe(REPAIR_PACKET_BYTES);
+    for (
+      let tick = HASH_EVERY * 2 + 1;
+      tick <= HASH_EVERY * 2 + 30;
+      tick += 1
+    ) {
+      ride(tick);
+    }
+    const { s: fromS } = client.mine;
+    const { felt } = client.stats.jumps.behindServer;
+    client.takeCorrections();
+    const snapshot = readRaceSnapshot(
+      new DataView(writeRaceSnapshot(room.snapshot()).buffer)
+    );
+    if (snapshot) {
+      client.catchUpFrom(snapshot);
+    }
+    const moved = client
+      .takeCorrections()
+      .find((correction) => correction.rider === PLAYER_RIDER);
+    expect({
+      drawn: moved?.s,
+      felt: client.stats.jumps.behindServer.felt - felt,
+      repairs: client.stats.repairs,
+      tick: client.predicted.tick,
+    }).toStrictEqual({
+      drawn: fromS - client.mine.s,
+      felt: 1,
+      repairs: 1,
+      tick: room.state.tick,
+    });
+  });
 });

@@ -1628,6 +1628,7 @@ Test files:
 - `apps/rooms/test/seat-catch-up.test.ts`
 - `apps/rooms/test/seat-client.test.ts`
 - `apps/rooms/test/seat-phases.test.ts`
+- `apps/rooms/test/seat-repair.test.ts`
 - `apps/rooms/test/seat-socket.ts`
 - `apps/rooms/test/socket-role.test.ts`
 - `apps/rooms/test/tape.test.ts`

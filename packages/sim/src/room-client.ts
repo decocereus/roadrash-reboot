@@ -383,6 +383,16 @@ export const createRoomClient = (
     }
   };
 
+  const takeConfirmed = (): void => {
+    const fromS = mine.s;
+    const fromX = mine.x;
+    stale = false;
+    noteWhereRidersAre();
+    rewind();
+    noteCorrections();
+    noteJump("behindServer", fromS, fromX);
+  };
+
   const finishMending = (): void => {
     const fromS = mine.s;
     const fromX = mine.x;
@@ -532,15 +542,18 @@ export const createRoomClient = (
   return {
     catchUpFrom: (snapshot) => {
       restoreInto(confirmed, digest, snapshot, setup.track);
-      stats.repairs += asked ? 1 : 0;
+      const repaired = asked;
+      stats.repairs += repaired ? 1 : 0;
       asked = false;
-      if (predicted.tick <= confirmed.tick) {
+      if (predicted.tick > confirmed.tick) {
+        mending = false;
+        stale = true;
+        staleCause = "behindServer";
+      } else if (repaired) {
+        takeConfirmed();
+      } else {
         rewind();
-        return;
       }
-      mending = false;
-      stale = true;
-      staleCause = "behindServer";
     },
     confirm: (frame, serverHash) => {
       stepConfirmed(frame, serverHash);
@@ -549,13 +562,7 @@ export const createRoomClient = (
       noteRoomChoice(frame, plannedThrough);
       notePresses(frame, plannedThrough);
       if (reached < frame.tick) {
-        const fromS = mine.s;
-        const fromX = mine.x;
-        stale = false;
-        noteWhereRidersAre();
-        rewind();
-        noteCorrections();
-        noteJump("behindServer", fromS, fromX);
+        takeConfirmed();
         return;
       }
       const guessed = guesses[slotOf(frame.tick)];

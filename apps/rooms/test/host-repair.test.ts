@@ -8,14 +8,20 @@ import {
 import { riderIdAt, riderOf } from "@racer/sim/state";
 import { describe, expect, it } from "vitest";
 
+import { createHost } from "../src/host.ts";
 import { REPAIR_EVERY_TICKS } from "../src/race-seat.ts";
 import {
   advanceHearing,
   clientOf,
+  createClock,
+  fakeSocket,
   followTicks,
+  nearby,
+  pingPacket,
   readyAll,
   readyPacket,
   room,
+  sameBuild,
   START_DELAY_MS,
   TICK_MS,
 } from "./host-harness.ts";
@@ -101,5 +107,25 @@ describe("a rider whose race drifts from the room's", () => {
       notes: [1, 2, 3],
       snapshots: MOST_REPAIRS,
     });
+  });
+
+  it("keeps a seat's repairs when the room restarts from its checkpoint", () => {
+    const { ann, bo, clock, host } = racing();
+    for (let repair = 0; repair < MOST_REPAIRS; repair += 1) {
+      host.message(ann, askFor(HASH_EVERY));
+      advanceHearing(host, clock, [ann, bo], REPAIR_EVERY_MS);
+    }
+    const later = createClock(clock.now() + 1000);
+    const restarted = createHost(later, "custom", clock.memories.at(-1));
+    const back = fakeSocket();
+    restarted.seat(back, "Ann", nearby, sameBuild("ann"));
+    restarted.message(back, pingPacket());
+    advanceHearing(restarted, later, [back], REPAIR_EVERY_MS);
+    restarted.message(back, askFor(HASH_EVERY));
+    expect({
+      notes: repairNotes(later),
+      restored: later.notes.filter((note) => note.kind === "restored").length,
+      snapshots: snapshotsOn(back),
+    }).toStrictEqual({ notes: [], restored: 1, snapshots: 1 });
   });
 });

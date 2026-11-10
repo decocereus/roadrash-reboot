@@ -371,7 +371,12 @@ export const openRoomSeat = (
 
   const confirmHeld = (race: SeatRace, all: boolean): void => {
     for (let data = nextHeld(all); data; data = nextHeld(all)) {
-      if (readTick(new DataView(data), read)) {
+      const view = new DataView(data);
+      const snapshot = readRaceSnapshot(view);
+      if (snapshot) {
+        race.client.catchUpFrom(snapshot);
+        listeners.onConfirmed?.(race.client);
+      } else if (readTick(view, read)) {
         confirmRead(race, performance.now());
       }
     }
@@ -512,11 +517,9 @@ export const openRoomSeat = (
       return;
     }
     const { race } = state;
-    const snapshot = readRaceSnapshot(view);
-    if (race && snapshot) {
-      backlog.length = 0;
-      race.client.catchUpFrom(snapshot);
-      listeners.onConfirmed?.(race.client);
+    if (race && readRaceSnapshot(view)) {
+      backlog.push(data);
+      confirmHeld(race, !drawing);
       return;
     }
     if (race && readTick(view, read)) {

@@ -72,7 +72,7 @@ export interface Seat {
   late: number;
   presence: SeatPresence;
   readyMs: number | null;
-  repairedAtTick: number;
+  repairedAtTick: number | null;
   repairs: number;
   reported: boolean;
   stats: RaceStats | null;
@@ -121,7 +121,7 @@ export const seatFor = (
   presence: HERE,
   raceId,
   readyMs: null,
-  repairedAtTick: Number.NEGATIVE_INFINITY,
+  repairedAtTick: null,
   repairs: 0,
   reported: false,
   rider,
@@ -145,6 +145,8 @@ export const seatMemoryOf = ({
   name,
   presence,
   readyMs,
+  repairedAtTick,
+  repairs,
   reported,
   rider,
 }: Seat): SeatMemory => ({
@@ -157,6 +159,8 @@ export const seatMemoryOf = ({
   memberId,
   name,
   readyMs,
+  repairedAtTick,
+  repairs,
   reported,
   rider,
 });
@@ -171,6 +175,8 @@ export const restoredSeat = (memory: SeatMemory, raceId: string): Seat => ({
       ? HERE
       : { kind: "left", tick: memory.leftAtTick },
   readyMs: memory.readyMs,
+  repairedAtTick: memory.repairedAtTick,
+  repairs: memory.repairs,
   reported: memory.reported,
 });
 
@@ -245,7 +251,8 @@ export const answerRepair = (
   const { tick } = room.state;
   if (
     seat.repairs < MOST_REPAIRS &&
-    tick - seat.repairedAtTick >= REPAIR_EVERY_TICKS
+    (seat.repairedAtTick === null ||
+      tick - seat.repairedAtTick >= REPAIR_EVERY_TICKS)
   ) {
     seat.repairs += 1;
     seat.repairedAtTick = tick;
