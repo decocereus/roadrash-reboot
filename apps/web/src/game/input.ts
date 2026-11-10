@@ -79,6 +79,7 @@ const padPressed = (pad: Pad | null, index: number): boolean =>
 
 export interface Controls {
   read: (input: RiderInput) => SteerSource;
+  release: () => void;
   dispose: () => void;
 }
 
@@ -132,5 +133,6 @@ export const createControls = (
       input.remount = down("KeyE") || padPressed(pad, 0);
       return onStick ? "stick" : "keys";
     },
+    release: held.clear,
   };
 };

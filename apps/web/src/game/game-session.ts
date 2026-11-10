@@ -45,10 +45,14 @@ type Preparation = StillDressing | Built;
 
 type Pace =
   | { readonly kind: "running" }
+  | { readonly kind: "inMenu" }
   | { readonly kind: "resuming"; holdLeft: number }
   | { readonly kind: "frozen"; readonly holdLeft: number };
 
-const running: Pace = { kind: "running" };
+type StartPace = Extract<Pace, { readonly kind: "inMenu" | "running" }>;
+
+const running: StartPace = { kind: "running" };
+const inMenu: StartPace = { kind: "inMenu" };
 const frozenWithNoHold: Pace = { holdLeft: 0, kind: "frozen" };
 
 export interface Attract {
@@ -70,6 +74,7 @@ interface Entered {
 export interface Countdown extends Entered {
   readonly phase: "countdown";
   readonly log: RaceLog;
+  readonly pace: StartPace;
   left: number;
 }
 
@@ -129,15 +134,21 @@ export const countdownFor = (
   dressing,
   left: COUNTDOWN_SECONDS,
   log,
+  pace: running,
   phase: "countdown",
   plan,
 });
 
-export const racingFrom = ({ dressing, log, plan }: Countdown): Racing => ({
+export const racingFrom = ({
+  dressing,
+  log,
+  pace,
+  plan,
+}: Countdown): Racing => ({
   dressing,
   lastStretchSaid: false,
   log,
-  pace: running,
+  pace,
   phase: "racing",
   plan,
 });
@@ -171,13 +182,13 @@ export const stoodDownFrom = (state: Session): Session => {
   }
 };
 
-export const pausedFrom = (state: Session): Session => {
-  if (state.phase !== "racing" || state.plan.room) {
-    return state;
-  }
+const racingPaused = (state: Racing): Racing => {
   switch (state.pace.kind) {
     case "running": {
-      return { ...state, pace: frozenWithNoHold };
+      return {
+        ...state,
+        pace: state.plan.room ? inMenu : frozenWithNoHold,
+      };
     }
     case "resuming": {
       return {
@@ -185,7 +196,47 @@ export const pausedFrom = (state: Session): Session => {
         pace: { holdLeft: state.pace.holdLeft, kind: "frozen" },
       };
     }
+    case "frozen":
+    case "inMenu": {
+      return state;
+    }
+    default: {
+      return state.pace satisfies never;
+    }
+  }
+};
+
+export const pausedFrom = (state: Session): Session => {
+  switch (state.phase) {
+    case "countdown": {
+      return state.plan.room && state.pace.kind === "running"
+        ? { ...state, pace: inMenu }
+        : state;
+    }
+    case "racing": {
+      return racingPaused(state);
+    }
+    case "attract":
+    case "idle":
+    case "settled": {
+      return state;
+    }
+    default: {
+      return state satisfies never;
+    }
+  }
+};
+
+const racingResumed = (state: Racing): Racing => {
+  switch (state.pace.kind) {
     case "frozen": {
+      return { ...state, pace: { holdLeft: RESUME_SECONDS, kind: "resuming" } };
+    }
+    case "inMenu": {
+      return { ...state, pace: running };
+    }
+    case "resuming":
+    case "running": {
       return state;
     }
     default: {
@@ -195,12 +246,41 @@ export const pausedFrom = (state: Session): Session => {
 };
 
 export const resumedFrom = (state: Session): Session => {
-  if (state.phase === "settled" && state.held) {
-    return { ...state, held: false };
+  switch (state.phase) {
+    case "countdown": {
+      return state.pace.kind === "inMenu" ? { ...state, pace: running } : state;
+    }
+    case "racing": {
+      return racingResumed(state);
+    }
+    case "settled": {
+      return state.held ? { ...state, held: false } : state;
+    }
+    case "attract":
+    case "idle": {
+      return state;
+    }
+    default: {
+      return state satisfies never;
+    }
   }
-  return state.phase === "racing" && state.pace.kind === "frozen"
-    ? { ...state, pace: { holdLeft: RESUME_SECONDS, kind: "resuming" } }
-    : state;
+};
+
+export const handsOn = (state: Session): boolean => {
+  switch (state.phase) {
+    case "countdown":
+    case "racing": {
+      return state.pace.kind !== "inMenu";
+    }
+    case "attract":
+    case "idle":
+    case "settled": {
+      return true;
+    }
+    default: {
+      return state satisfies never;
+    }
+  }
 };
 
 export const heldFrom = (state: Racing): Racing => ({
@@ -309,6 +389,7 @@ export const liveRaceOf = (state: Session): Countdown | Racing | null => {
 
 const holdLeftOf = (pace: Pace): number => {
   switch (pace.kind) {
+    case "inMenu":
     case "running": {
       return 0;
     }
