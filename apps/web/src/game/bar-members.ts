@@ -20,10 +20,10 @@ import { riderBlocks } from "@racer/sim/palette";
 import { hypot2 } from "@racer/track/math";
 import type * as THREE from "three";
 
+import { SOLO_SLOT } from "../bar-view.ts";
 import type { Bikes } from "./actors.ts";
 import type { BarCompany } from "./bar-player.ts";
 import type { BarSpeech } from "./bar-speech.ts";
-import { SOLO_SLOT } from "./bar-walker.ts";
 import type { BarWalkers, WalkerView } from "./bar-walker.ts";
 
 const SEND_EVERY_SECONDS = 1 / WALKS_PER_SECOND;

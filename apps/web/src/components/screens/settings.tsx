@@ -1,16 +1,35 @@
 import { frameRates, testDevices } from "@racer/telemetry/limits";
-import type { FrameRate, TestDevice } from "@racer/telemetry/limits";
-import { Screen } from "@racer/ui/components/screen";
+import type { TestDevice } from "@racer/telemetry/limits";
+import {
+  Panel,
+  PanelLine,
+  PanelRule,
+  PanelTitle,
+} from "@racer/ui/components/kit-panel";
+import {
+  ChipButton,
+  OptionChips,
+  RowList,
+  SettingRow,
+} from "@racer/ui/components/kit-rows";
+import { TextButton, TextLinks } from "@racer/ui/components/skew-button";
 import { useState, useSyncExternalStore } from "react";
+import type { ComponentProps } from "react";
 
+import {
+  barCameraLabels,
+  barCameras,
+  saveBarCamera,
+  savedBarCamera,
+} from "../../bar-view.ts";
+import type { BarCamera } from "../../bar-view.ts";
 import { diagnostics } from "../../diagnostics/hub.ts";
 import type { Diagnostics, DiagnosticsView } from "../../diagnostics/hub.ts";
 import type { ReportStatus } from "../../diagnostics/uploader.ts";
-import { BarStrip } from "./bar-chrome.tsx";
-import { Stage, stagePx } from "./clubhouse-stage.tsx";
-import { PinnedList } from "./pinned-list.tsx";
+import { storedGuestName, watchGuestName } from "../guest-name.ts";
+import { Confirm } from "./confirm.tsx";
+import { NameCard } from "./name-card.tsx";
 import { useEscape } from "./shared.tsx";
-import type { MenuAction } from "./shared.tsx";
 
 const deviceNames = {
   air: "MacBook Air",
@@ -18,29 +37,48 @@ const deviceNames = {
   unspecified: "Not set",
 } as const satisfies Record<TestDevice, string>;
 
-const onOff = (on: boolean): string => (on ? "On" : "Off");
+const onOff = [
+  { label: "On", value: "on" },
+  { label: "Off", value: "off" },
+] as const;
 
-const nextRate = (rate: FrameRate): FrameRate =>
-  frameRates[(frameRates.indexOf(rate) + 1) % frameRates.length] ?? "60";
+const isOn = (value: "on" | "off"): boolean => value === "on";
 
-const nextDevice = (device: TestDevice): TestDevice =>
-  testDevices[(testDevices.indexOf(device) + 1) % testDevices.length] ??
-  "unspecified";
+const switchOf = (on: boolean): "on" | "off" => (on ? "on" : "off");
+
+const rateOptions = frameRates.map((value) => ({ label: value, value }));
+
+const cameraOptions = barCameras.map((value) => ({
+  label: barCameraLabels[value],
+  value,
+}));
+
+const deviceOptions = testDevices.map((value) => ({
+  label: deviceNames[value],
+  value,
+}));
 
 const reportLine = (report: ReportStatus): string => {
-  if (report.state === "idle") {
-    return "";
+  switch (report.state) {
+    case "idle": {
+      return "";
+    }
+    case "sending": {
+      return `Sending ${report.reportId}`;
+    }
+    case "saved": {
+      return `Sent ${report.reportId}`;
+    }
+    case "queued": {
+      return `Could not send ${report.reportId} yet. Trying again.`;
+    }
+    case "failed": {
+      return `Could not send ${report.reportId}.`;
+    }
+    default: {
+      return report satisfies never;
+    }
   }
-  if (report.state === "sending") {
-    return `Sending ${report.reportId}`;
-  }
-  if (report.state === "saved") {
-    return `Sent ${report.reportId}`;
-  }
-  if (report.state === "queued") {
-    return `Could not send ${report.reportId} yet. Trying again.`;
-  }
-  return `Could not send ${report.reportId}.`;
 };
 
 const useDiagnosticsView = (): DiagnosticsView => {
@@ -48,139 +86,245 @@ const useDiagnosticsView = (): DiagnosticsView => {
   return useSyncExternalStore(hub.subscribe, hub.view, hub.view);
 };
 
-const testerActions = (
-  hub: Diagnostics,
-  { queued, report, settings }: DiagnosticsView
-): readonly MenuAction[] => {
-  const reported = reportLine(report);
-  return [
-    {
-      detail: "Keeps frame times, quality changes, and errors from this tab",
-      id: "recording",
-      label: "Recording",
-      run: () => {
-        hub.settings.change({ recording: !settings.recording });
-      },
-      trailing: onOff(settings.recording),
-    },
-    {
-      detail: "Sends the recording to us every 30 seconds",
-      id: "upload",
-      label: "Automatic upload",
-      run: () => {
-        hub.settings.change({ automaticUpload: !settings.automaticUpload });
-      },
-      trailing: onOff(settings.automaticUpload),
-    },
-    {
-      id: "device",
-      label: "Test device",
-      run: () => {
-        hub.settings.change({ device: nextDevice(settings.device) });
-      },
-      trailing: deviceNames[settings.device],
-    },
-    {
-      detail:
-        reported === ""
-          ? `Uploads what is recorded now${queued > 0 ? ` and ${queued} waiting` : ""}`
-          : reported,
-      id: "report",
-      label: "Send report",
-      run: hub.sendReport,
-    },
-  ];
+const useGuestName = (): string | null =>
+  useSyncExternalStore(watchGuestName, storedGuestName, () => null);
+
+const TesterRows = ({
+  hub,
+  view,
+}: {
+  readonly hub: Diagnostics;
+  readonly view: DiagnosticsView;
+}) => {
+  const { playerId, queued, report, session, settings } = view;
+  const sent = reportLine(report);
+  return (
+    <>
+      <SettingRow label="Frame meter">
+        <OptionChips
+          label="Frame meter"
+          onChange={(value) => {
+            hub.settings.change({ overlay: isOn(value) });
+          }}
+          options={onOff}
+          value={switchOf(settings.overlay)}
+        />
+      </SettingRow>
+      <SettingRow label="Recording">
+        <OptionChips
+          label="Recording"
+          onChange={(value) => {
+            hub.settings.change({ recording: isOn(value) });
+          }}
+          options={onOff}
+          value={switchOf(settings.recording)}
+        />
+      </SettingRow>
+      <SettingRow label="Automatic upload">
+        <OptionChips
+          label="Automatic upload"
+          onChange={(value) => {
+            hub.settings.change({ automaticUpload: isOn(value) });
+          }}
+          options={onOff}
+          value={switchOf(settings.automaticUpload)}
+        />
+      </SettingRow>
+      <SettingRow label="Test device">
+        <OptionChips
+          label="Test device"
+          onChange={(device) => {
+            hub.settings.change({ device });
+          }}
+          options={deviceOptions}
+          value={settings.device}
+        />
+      </SettingRow>
+      <SettingRow label="Report">
+        <ChipButton onClick={hub.sendReport}>Send</ChipButton>
+      </SettingRow>
+      <PanelLine tone="quiet">
+        {sent === ""
+          ? `Sends what is recorded now${queued > 0 ? ` and ${queued} waiting` : ""}.`
+          : sent}{" "}
+        Your ID {playerId}. Recording {session}. B while riding marks the
+        moment.
+      </PanelLine>
+    </>
+  );
 };
 
-export const SettingsScreen = ({ onBack }: { readonly onBack: () => void }) => {
+export const SettingsPanel = ({
+  camera,
+  muted,
+  onCamera,
+  onMute,
+  onNewCareer,
+  onBack,
+  ...props
+}: Omit<ComponentProps<"section">, "children"> & {
+  readonly camera: BarCamera;
+  readonly muted: boolean;
+  readonly onCamera: (camera: BarCamera) => void;
+  readonly onMute: () => void;
+  readonly onNewCareer: (() => void) | null;
+  readonly onBack: (() => void) | null;
+}) => {
   const hub = diagnostics();
   const view = useDiagnosticsView();
-  const { playerId, session, settings } = view;
-  const [focused, setFocused] = useState("frame-rate");
-  useEscape(onBack);
+  const name = useGuestName();
+  const [naming, setNaming] = useState(false);
+  const [erasing, setErasing] = useState(false);
   const tester = new URLSearchParams(globalThis.location.search).has("tester");
-  const actions: MenuAction[] = [
-    {
-      detail: "The game holds this rate; the picture never changes in a race",
-      id: "frame-rate",
-      label: "Frame rate",
-      run: () => {
-        hub.settings.change({ frameRate: nextRate(settings.frameRate) });
-      },
-      trailing: settings.frameRate,
-    },
-    {
-      detail: "Frame rate, frame times, and quality preset in the corner",
-      id: "overlay",
-      label: "Frame meter",
-      run: () => {
-        hub.settings.change({ overlay: !settings.overlay });
-      },
-      trailing: onOff(settings.overlay),
-    },
-    {
-      detail: `Sends race and game events under your ID ${playerId}`,
-      id: "race-data",
-      label: "Race data",
-      run: () => {
-        hub.settings.change({ raceData: !settings.raceData });
-      },
-      trailing: onOff(settings.raceData),
-    },
-    ...(tester ? testerActions(hub, view) : []),
-    { id: "back", label: "Back", run: onBack },
-  ];
-  const hint = actions.find((action) => action.id === focused)?.detail;
+  const { settings } = view;
   return (
-    <Screen className="bg-ink/60 flex">
-      <Stage>
-        <PinnedList
-          actions={actions}
-          autoFocus
-          compact
-          label="Settings"
-          left={560}
-          onFocusItem={setFocused}
-          primary="frame-rate"
-          title="Settings"
-        />
-        <BarStrip opaque>
-          <p
-            className="text-paper/75 tracking-wide"
-            style={{ fontSize: stagePx(20) }}
-          >
-            {hint ?? ""}
-          </p>
-          {tester && (
-            <p
-              className="text-paper/50 tracking-wide"
-              style={{ fontSize: stagePx(18) }}
+    <>
+      <Panel aria-label="Settings" {...props}>
+        <PanelTitle>Settings</PanelTitle>
+        <PanelRule />
+        <RowList>
+          <SettingRow label="Name">
+            {name !== null && <ChipButton on>{name}</ChipButton>}
+            <ChipButton
+              onClick={() => {
+                setNaming(true);
+              }}
             >
-              B while riding marks the moment. Recording {session}
-            </p>
+              {name === null ? "Pick one" : "Change"}
+            </ChipButton>
+          </SettingRow>
+          <SettingRow label="Sound">
+            <OptionChips
+              label="Sound"
+              onChange={(value) => {
+                if (isOn(value) === muted) {
+                  onMute();
+                }
+              }}
+              options={onOff}
+              value={switchOf(!muted)}
+            />
+          </SettingRow>
+          <SettingRow label="Camera in the bar">
+            <OptionChips
+              label="Camera in the bar"
+              onChange={onCamera}
+              options={cameraOptions}
+              value={camera}
+            />
+          </SettingRow>
+          <SettingRow label="Frame rate">
+            <OptionChips
+              label="Frame rate"
+              onChange={(frameRate) => {
+                hub.settings.change({ frameRate });
+              }}
+              options={rateOptions}
+              value={settings.frameRate}
+            />
+          </SettingRow>
+          <SettingRow label="Race data">
+            <OptionChips
+              label="Race data"
+              onChange={(value) => {
+                hub.settings.change({ raceData: isOn(value) });
+              }}
+              options={onOff}
+              value={switchOf(settings.raceData)}
+            />
+          </SettingRow>
+          {tester && <TesterRows hub={hub} view={view} />}
+        </RowList>
+        <TextLinks>
+          {onNewCareer && (
+            <TextButton
+              onClick={() => {
+                setErasing(true);
+              }}
+            >
+              New career
+            </TextButton>
           )}
-          <div className="flex" style={{ gap: stagePx(24) }}>
-            <a
-              className="text-paper/75 underline underline-offset-4"
-              href="/privacy"
-              rel="noopener noreferrer"
-              style={{ fontSize: stagePx(20) }}
-              target="_blank"
-            >
-              Privacy (new tab)
-            </a>
-            <a
-              className="text-paper/75 underline underline-offset-4"
-              href="/credits"
-              rel="noopener noreferrer"
-              style={{ fontSize: stagePx(20) }}
-              target="_blank"
-            >
-              Data credits (new tab)
-            </a>
-          </div>
-        </BarStrip>
-      </Stage>
-    </Screen>
+          <a
+            className="text-paper border-paper/40 hover:text-neon-yellow border-b-2 pb-0.5 text-lg font-bold uppercase"
+            href="/privacy"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            Privacy
+          </a>
+          <a
+            className="text-paper border-paper/40 hover:text-neon-yellow border-b-2 pb-0.5 text-lg font-bold uppercase"
+            href="/credits"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            Credits
+          </a>
+          {onBack && <TextButton onClick={onBack}>Back</TextButton>}
+        </TextLinks>
+      </Panel>
+      {naming && (
+        <NameCard
+          onCancel={() => {
+            setNaming(false);
+          }}
+          onNamed={() => {
+            setNaming(false);
+          }}
+          start={name}
+        />
+      )}
+      {erasing && onNewCareer && (
+        <Confirm
+          defaultValue="keep"
+          label="New career"
+          onDismiss={() => {
+            setErasing(false);
+          }}
+          onSelect={(value) => {
+            setErasing(false);
+            if (value === "erase") {
+              onNewCareer();
+            }
+          }}
+          options={[
+            { label: "Keep it", value: "keep" },
+            { label: "Erase and start", value: "erase" },
+          ]}
+        >
+          Start over? Your career will be erased.
+        </Confirm>
+      )}
+    </>
+  );
+};
+
+export const SettingsOverlay = ({
+  muted,
+  onMute,
+  onBack,
+}: {
+  readonly muted: boolean;
+  readonly onMute: () => void;
+  readonly onBack: () => void;
+}) => {
+  const [camera, setCamera] = useState(savedBarCamera);
+  useEscape(onBack);
+  return (
+    <div className="bg-ink/45 fixed inset-0 z-40 flex items-start justify-end pt-16 pr-4">
+      <SettingsPanel
+        camera={camera}
+        className="max-h-[calc(100vh-5rem)]"
+        muted={muted}
+        onBack={onBack}
+        onCamera={(next) => {
+          setCamera(next);
+          saveBarCamera(next);
+        }}
+        onMute={onMute}
+        onNewCareer={null}
+      />
+    </div>
   );
 };

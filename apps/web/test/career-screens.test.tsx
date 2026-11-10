@@ -10,11 +10,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { careerEntry, planFor, rideEntry } from "../src/career/flow.ts";
-import { bikeName } from "../src/career/format.ts";
 import type { SaveStorage } from "../src/career/save-storage.ts";
 import { freshCareer, settledRace } from "../src/career/save.ts";
 import { ResultsScreen } from "../src/components/screens/results.tsx";
-import { RouteBoardScreen } from "../src/components/screens/route-board.tsx";
 import { stepNavigation } from "../src/navigation.ts";
 import type { NavigationEvent, View } from "../src/navigation.ts";
 
@@ -109,45 +107,18 @@ describe("the results of a career race", () => {
   });
 });
 
-const stepperValue = (markup: string, label: string): string => {
-  const [, value] =
-    new RegExp(
-      `>${label}</span>.*?data-slot="menu-step-value"[^>]*>([^<]+)<`,
-      "u"
-    ).exec(markup) ?? [];
-  if (value === undefined) {
-    throw new Error(`The route board shows a ${label} stepper.`);
-  }
-  return value;
-};
-
-const boardOf = (career: CareerState, pick: PracticePick) => {
-  const markup = renderToStaticMarkup(
-    <RouteBoardScreen
-      career={career}
-      onBack={vi.fn<() => void>()}
-      onPick={vi.fn<(next: PracticePick) => void>()}
-      onRace={vi.fn<() => void>()}
-      pick={pick}
-      ready
-      rules={recordedRules}
-    />
-  );
-  return {
-    bike: stepperValue(markup, "Bike"),
-    tier: stepperValue(markup, "Tier"),
-  };
-};
-
 const raceOf = (career: CareerState, pick: PracticePick) => {
-  const ride = viewAfter({ screen: "routeBoard" }, [
-    {
-      entry: rideEntry("quick", pick.roadId, career, pick, SEED),
-      kind: "ridePicked",
-    },
-  ]);
+  const ride = viewAfter(
+    { panel: { kind: "solo" }, screen: "bar", tab: "race" },
+    [
+      {
+        entry: rideEntry("quick", pick.roadId, career, pick, SEED),
+        kind: "ridePicked",
+      },
+    ]
+  );
   if (ride.screen !== "rideOut") {
-    throw new Error("Race on the route board opens the ride out.");
+    throw new Error("Race on Ride solo opens the ride out.");
   }
   const plan = planFor(recordedRules, career, ride.entry);
   return {
@@ -158,7 +129,7 @@ const raceOf = (career: CareerState, pick: PracticePick) => {
 };
 
 describe("the single race pick", () => {
-  it("shows and rides the new career's tier and bike after a pick made in the career before it", () => {
+  it("rides the new career's tier and bike after a pick made in the career before it", () => {
     const fastBike = bikeIds.find((bike) => bike !== STARTING_BIKE);
     if (fastBike === undefined) {
       throw new Error("The game has a second bike.");
@@ -172,14 +143,10 @@ describe("the single race pick", () => {
     const pick: PracticePick = { bikeId: fastBike, roadId: ROAD, tier: 3 };
     const next = freshCareer(0.5);
     expect({
-      afterBoard: boardOf(next, pick),
       afterRace: raceOf(next, pick),
-      beforeBoard: boardOf(veteran, pick),
       beforeRace: raceOf(veteran, pick),
     }).toStrictEqual({
-      afterBoard: { bike: bikeName(STARTING_BIKE), tier: "1" },
       afterRace: { bikeId: STARTING_BIKE, roadId: ROAD, tier: 1 },
-      beforeBoard: { bike: bikeName(fastBike), tier: "3" },
       beforeRace: { bikeId: fastBike, roadId: ROAD, tier: 3 },
     });
   });

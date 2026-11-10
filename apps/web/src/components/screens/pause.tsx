@@ -15,7 +15,7 @@ import { BarStrip } from "./bar-chrome.tsx";
 import { Stage, stagePx } from "./clubhouse-stage.tsx";
 import { Confirm } from "./confirm.tsx";
 import { PinnedList } from "./pinned-list.tsx";
-import { SettingsScreen } from "./settings.tsx";
+import { SettingsOverlay } from "./settings.tsx";
 import { useEscape } from "./shared.tsx";
 import type { MenuAction } from "./shared.tsx";
 
@@ -101,10 +101,12 @@ export const PauseScreen = ({
         </BarStrip>
       </Stage>
       {overlay === "settings" && (
-        <SettingsScreen
+        <SettingsOverlay
+          muted={hud.muted}
           onBack={() => {
             setOverlay("nothing");
           }}
+          onMute={onMute}
         />
       )}
       {overlay === "quit" && (
@@ -205,10 +207,12 @@ export const RaceMenu = ({
         </BarStrip>
       </Stage>
       {settings && (
-        <SettingsScreen
+        <SettingsOverlay
+          muted={hud.muted}
           onBack={() => {
             setSettings(false);
           }}
+          onMute={onMute}
         />
       )}
     </Screen>

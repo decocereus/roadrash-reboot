@@ -14,7 +14,6 @@ import { blockPaletteOf } from "./rider-blocks.ts";
 import { createRiderFigure } from "./rider-figure.ts";
 import type { RiderFigure, Stance } from "./rider-figure.ts";
 
-export const SOLO_SLOT = riderBlocks.length - 1;
 const STOOL_SEAT = 1;
 const TAG_LIFT = 1;
 const SEATED_TAG_LIFT = 1.02;

@@ -43,7 +43,8 @@ export const createBarInput = (
     HTMLCanvasElement,
     "addEventListener" | "getBoundingClientRect" | "removeEventListener"
   >,
-  events: BarInputEvents
+  events: BarInputEvents,
+  isTextField: (target: EventTarget | null) => boolean
 ): BarInput => {
   const held = createHeldKeys();
   const control = { forward: 0, right: 0, sprint: false };
@@ -51,7 +52,7 @@ export const createBarInput = (
   let dragged = false;
 
   const onKeyDown = (event: KeyboardEvent): void => {
-    if (!held.press(event)) {
+    if (isTextField(event.target) || !held.press(event)) {
       return;
     }
     if (isPoseKey(event.code)) {

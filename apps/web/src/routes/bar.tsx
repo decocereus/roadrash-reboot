@@ -1,6 +1,13 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 
+import { savedBarCamera } from "../bar-view.ts";
 import { BarStage } from "../components/bar-stage.tsx";
+
+const BareBar = () => (
+  <main className="bg-ink fixed inset-0">
+    <BarStage camera={savedBarCamera()} seat={null} />
+  </main>
+);
 
 export const Route = createFileRoute("/bar")({
   beforeLoad: () => {
@@ -8,7 +15,7 @@ export const Route = createFileRoute("/bar")({
       notFound({ throw: true });
     }
   },
-  component: () => <BarStage seat={null} />,
+  component: BareBar,
   head: () => ({
     meta: [{ title: "The Lowside" }, { content: "noindex", name: "robots" }],
   }),

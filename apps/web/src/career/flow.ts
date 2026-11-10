@@ -1,4 +1,9 @@
-import { pickWithin, practiceSetup, setupFor } from "@racer/career/field";
+import {
+  pickWithin,
+  practiceSetup,
+  roadsFor,
+  setupFor,
+} from "@racer/career/field";
 import type { PracticePick } from "@racer/career/field";
 import { resultLine } from "@racer/career/lines";
 import type { RivalLine } from "@racer/career/lines";
@@ -9,7 +14,7 @@ import type { RaceRules } from "@racer/career/rules";
 import type { Ledger } from "@racer/career/settle";
 import { nextRaceSeed } from "@racer/career/state";
 import type { CareerState } from "@racer/career/state";
-import { STARTING_BIKE } from "@racer/career/tables";
+import { FINALE_ROAD, STARTING_BIKE } from "@racer/career/tables";
 import type { Tier, RoadId } from "@racer/career/tables";
 import type { RoomReport } from "@racer/rooms/room-run";
 import type { BikeId } from "@racer/sim/bikes";
@@ -24,6 +29,15 @@ export interface RaceEntry {
   readonly bikeId: BikeId;
   readonly seed: number;
 }
+
+export const nextRoad = (rules: RaceRules, career: CareerState): RoadId => {
+  const board = roadsFor(rules, career);
+  return (
+    board.next ??
+    board.roads.find((status) => status.open)?.road.id ??
+    FINALE_ROAD
+  );
+};
 
 export const firstQuickPick: PracticePick = {
   bikeId: STARTING_BIKE,

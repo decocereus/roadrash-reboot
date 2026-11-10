@@ -96,7 +96,7 @@ export interface BarCast extends BarCompany {
     size: { readonly width: number; readonly height: number },
     ticks: number
   ) => void;
-  readonly reset: () => void;
+  readonly setStandIns: (on: boolean) => void;
   readonly dispose: () => void;
 }
 
@@ -123,8 +123,9 @@ export const createCast = (
   heroBike: THREE.Object3D,
   garageBike: THREE.Object3D,
   shown: number,
-  standIns: boolean
+  firstStandIns: boolean
 ): BarCast => {
+  let standIns = firstStandIns;
   const group = new THREE.Group();
   const mounts = new Map<BarAct, THREE.Object3D>([
     ["ride", heroBike],
@@ -166,10 +167,7 @@ export const createCast = (
     const stepB = mixPose(still, figure.bakePose("run_b", []), STEP_SHARE);
     motions.push({ breath, stepA, stepB, still });
     group.add(figure.root);
-    const onShow = index < shown && (standIns || mounts.has(spot.act));
-    figure.root.visible = onShow;
     const tag = tags.name(blocks.name);
-    tag.show(onShow);
     members.push({
       blocks,
       figure,
@@ -200,11 +198,24 @@ export const createCast = (
     }
   };
   reset();
-  const crowd = standIns
-    ? members
-        .filter(({ spot }) => !mounts.has(spot.act))
-        .map(({ figure }) => figure.root.position)
-    : [];
+  const crowd: THREE.Vector3[] = [];
+  const setStandIns = (on: boolean): void => {
+    standIns = on;
+    crowd.length = 0;
+    for (let index = 0; index < members.length; index += 1) {
+      const member = members[index];
+      if (member) {
+        const mounted = mounts.has(member.spot.act);
+        const onShow = index < shown && (on || mounted);
+        member.figure.root.visible = onShow;
+        member.tag.show(onShow);
+        if (on && !mounted) {
+          crowd.push(member.figure.root.position);
+        }
+      }
+    }
+  };
+  setStandIns(firstStandIns);
   const riding: Stance = {
     flinch: 0,
     flinchSide: 1,
@@ -404,7 +415,7 @@ export const createCast = (
       }
       return best;
     },
-    reset,
+    setStandIns,
     shove(index, x, z, time) {
       const member = members[index];
       const push = pushes[index];
