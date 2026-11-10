@@ -18,9 +18,11 @@ const STOP_SLACK_FRAMES = 15;
 const TRIMMED = 0.021;
 const FOLLOWED = 0.11;
 const MOST_MEAN_DELAY_TICKS = 3;
+const RETRANSMIT_EXTRA_MS = 50;
 
 interface Link {
   readonly downMs: (sentAt: number) => number;
+  readonly pongMs?: (sentAt: number) => number;
   readonly roomHz: (at: number) => number;
   readonly upMs: (sentAt: number) => number;
 }
@@ -132,6 +134,53 @@ const arrivalTimes = (link: Link, emitted: readonly number[]): number[] => {
   return arrived;
 };
 
+const carryControls = (
+  arrivesAt: number[],
+  unsent: number,
+  plannedThrough: number,
+  arrives: number
+): void => {
+  for (let carried = unsent; carried <= plannedThrough; carried += 1) {
+    arrivesAt[carried] = Math.min(
+      arrivesAt[carried] ?? Number.POSITIVE_INFINITY,
+      arrives
+    );
+  }
+};
+
+const lateControl = (
+  sentAt: readonly number[],
+  arrivesAt: readonly number[],
+  emitted: readonly number[],
+  tick: number
+): boolean =>
+  sentAt[tick] !== undefined &&
+  (arrivesAt[tick] ?? Number.POSITIVE_INFINITY) > (emitted[tick] ?? 0);
+
+const lateShareOf = (
+  sentAt: readonly number[],
+  arrivesAt: readonly number[],
+  emitted: readonly number[]
+): number => {
+  let late = 0;
+  let counted = 0;
+  for (let tick = 0; tick < sentAt.length; tick += 1) {
+    const sent = sentAt[tick];
+    const arrives = arrivesAt[tick];
+    const steppedAt = emitted[tick];
+    if (
+      sent !== undefined &&
+      arrives !== undefined &&
+      steppedAt !== undefined &&
+      sent >= SETTLED_AFTER_MS
+    ) {
+      counted += 1;
+      late += arrives > steppedAt ? 1 : 0;
+    }
+  }
+  return late / Math.max(1, counted);
+};
+
 const ride = (link: Link, displayHz: number): Ride => {
   const emitted = emitTimes(link);
   const arrived = arrivalTimes(link, emitted);
@@ -141,6 +190,7 @@ const ride = (link: Link, displayHz: number): Ride => {
   const frameMs = 1000 / displayHz;
   const fixed = { accumulator: 0, clockReset: false };
   const sentAt: number[] = [];
+  const arrivesAt: number[] = [];
   let now = 0;
   let heard = 0;
   let confirmed = 0;
@@ -148,6 +198,7 @@ const ride = (link: Link, displayHz: number): Ride => {
   let before = 0;
   let after = 0;
   let plannedThrough = 0;
+  let sentThrough = 0;
   let delayed = 0;
   let planned = 0;
   let nextPing = 0;
@@ -172,6 +223,11 @@ const ride = (link: Link, displayHz: number): Ride => {
           sentAt[plannedThrough + 1] = now;
         }
       }
+      const unsent = Math.max(confirmed + 1, sentThrough + 1);
+      if (plannedThrough >= unsent) {
+        carryControls(arrivesAt, unsent, plannedThrough, now + link.upMs(now));
+        sentThrough = plannedThrough;
+      }
     },
     () => clock.pace(predicted, now)
   );
@@ -190,13 +246,17 @@ const ride = (link: Link, displayHz: number): Ride => {
       roomTick += 1;
     }
     while (heard < arrived.length && (arrived[heard] ?? 0) <= now) {
-      clock.heardTick(heard, arrived[heard] ?? now);
+      const at = arrived[heard] ?? now;
+      clock.heardTick(heard, at);
+      if (lateControl(sentAt, arrivesAt, emitted, heard)) {
+        clock.lostControl(heard, plannedThrough, at);
+      }
       confirmed = heard;
       heard += 1;
     }
     while (nextPing <= now) {
       const up = link.upMs(nextPing);
-      const back = nextPing + up + link.downMs(nextPing + up);
+      const back = nextPing + up + (link.pongMs ?? link.downMs)(nextPing + up);
       pongs.push([nextPing, back]);
       nextPing += PING_EVERY_MS;
     }
@@ -226,23 +286,9 @@ const ride = (link: Link, displayHz: number): Ride => {
     }
     lastMoved = moved;
   }
-  let late = 0;
-  let counted = 0;
-  for (let tick = 0; tick < sentAt.length; tick += 1) {
-    const sent = sentAt[tick];
-    const steppedAt = emitted[tick];
-    if (
-      sent !== undefined &&
-      steppedAt !== undefined &&
-      sent >= SETTLED_AFTER_MS
-    ) {
-      counted += 1;
-      late += sent + link.upMs(sent) > steppedAt ? 1 : 0;
-    }
-  }
   return {
     fastest,
-    lateShare: late / Math.max(1, counted),
+    lateShare: lateShareOf(sentAt, arrivesAt, emitted),
     leaps,
     meanDelay: delayed / Math.max(1, planned),
     mostAhead,
@@ -334,6 +380,44 @@ const jitteredWithHolds = (seed: number) => {
   };
 };
 
+const inOrderLane = (
+  rttMs: number,
+  jitterMs: number,
+  holdsEveryMs: number,
+  seed: number
+) => {
+  let state = seed;
+  const roll = (): number => {
+    state = (state * PARK_MILLER) % MERSENNE_31;
+    return state / MERSENNE_31;
+  };
+  const arrivals = new Map<number, number>();
+  let lastAt = 0;
+  return (sentAt: number): number => {
+    const key = Math.round(sentAt);
+    const known = arrivals.get(key);
+    if (known !== undefined) {
+      return known;
+    }
+    const into = holdsEveryMs > 0 ? sentAt % holdsEveryMs : -1;
+    const held = sentAt > 5000 && into >= 0 && into < 2500 ? 2500 - into : 0;
+    const lost = roll() < 0.01 ? rttMs + RETRANSMIT_EXTRA_MS : 0;
+    lastAt = Math.max(
+      lastAt,
+      sentAt + held + rttMs / 2 + (roll() - 0.5) * jitterMs + lost
+    );
+    arrivals.set(key, lastAt - sentAt);
+    return lastAt - sentAt;
+  };
+};
+
+const inOrderLink = (holdsEveryMs: number): Link => ({
+  downMs: inOrderLane(180, 60, holdsEveryMs, 3),
+  pongMs: inOrderLane(180, 60, holdsEveryMs, 7),
+  roomHz: steadyHz,
+  upMs: inOrderLane(180, 60, holdsEveryMs, 5),
+});
+
 const dribbledOut = (sentAt: number): number => {
   const holdEnds = 22_500;
   if (sentAt < 20_000) {
@@ -418,6 +502,19 @@ describe("a room race on a rough link", () => {
       }).toStrictEqual({ delayed: true, late: true });
     }
   );
+
+  it("loses under 1% of its controls to the rooms:lag proxy in order at 180 ms, 60 ms jitter and 1% loss, where a lost packet stalls everything behind it for a round trip", () => {
+    const result = ride(inOrderLink(0), 60);
+    expect(result.lateShare).toBeLessThan(0.01);
+    expect(result.meanDelay).toBeLessThan(5);
+  });
+
+  it("rides the same proxy with a 2.5 s hold both ways every 15 s, losing no more controls than the holds take", () => {
+    const result = ride(inOrderLink(15_000), 60);
+    expect(result.lateShare).toBeLessThan(0.12);
+    expect(result.meanDelay).toBeLessThan(20);
+    expect(result.mostAheadOfRoom).toBeLessThan(MOST_LEAD_TICKS);
+  });
 
   it("keeps its speed within 2% when the round trip rises from 150 ms to 400 ms and stays there, and pays the input delay back", () => {
     const result = ride(risingRoundTrip, 60);
