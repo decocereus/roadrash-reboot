@@ -12,10 +12,10 @@ const multiples = (step: number, last: number): number[] =>
   Array.from({ length: last / step }, (_, index) => (index + 1) * step);
 
 const publishedOn = (frames: readonly number[]): number[] => {
-  const clock = { hudClock: 0 };
+  const clock = { hudClock: 0, hudStalled: false };
   const published: number[] = [];
   for (const [index, seconds] of frames.entries()) {
-    advanceHud(clock, seconds, () => {
+    advanceHud(clock, seconds, false, () => {
       published.push(index + 1);
     });
   }
@@ -25,7 +25,7 @@ const publishedOn = (frames: readonly number[]): number[] => {
 describe("the HUD publishes once per 1/15 s of processed frame time", () => {
   it("publishes on samples 4, 8, …, 60 of a second of 1/60 s ticks, through the real feed", () => {
     const feed = createHudFeed();
-    const clock = { hudClock: 0 };
+    const clock = { hudClock: 0, hudStalled: false };
     const published: number[] = [];
     let notified = 0;
     const unsubscribe = feed.subscribe(() => {
@@ -33,7 +33,7 @@ describe("the HUD publishes once per 1/15 s of processed frame time", () => {
     });
     const drive = (from: number, to: number) => {
       for (let sample = from; sample <= to; sample += 1) {
-        advanceHud(clock, TICK_SECONDS, () => {
+        advanceHud(clock, TICK_SECONDS, false, () => {
           published.push(sample);
           feed.write({ ...idleHud, progress: sample / 60 });
         });
@@ -83,7 +83,7 @@ describe("the HUD publishes once per 1/15 s of processed frame time", () => {
 
   it("leaves the clock alone when an event publishes at once", () => {
     const feed = createHudFeed();
-    const clock = { hudClock: 0 };
+    const clock = { hudClock: 0, hudStalled: false };
     const regular: number[] = [];
     let notified = 0;
     feed.subscribe(() => {
@@ -91,7 +91,7 @@ describe("the HUD publishes once per 1/15 s of processed frame time", () => {
     });
     const drive = (from: number, to: number) => {
       for (let sample = from; sample <= to; sample += 1) {
-        advanceHud(clock, TICK_SECONDS, () => {
+        advanceHud(clock, TICK_SECONDS, false, () => {
           regular.push(sample);
           feed.write({ ...idleHud, muted: true, progress: sample });
         });

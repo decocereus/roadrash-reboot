@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { RoomNotices, TooLate } from "../src/components/screens/rejoin.tsx";
 import { createHudFeed, idleHud } from "../src/hud-feed.ts";
 import type { RaceStage } from "../src/navigation.ts";
+import { createHost, VSYNC_MS } from "./hosts.ts";
 
 describe("a rider who arrives with rejoin=try and lands in the lobby", () => {
   it("reads that the hold ran out when the room kept its race", () => {
@@ -57,9 +58,44 @@ describe("a room race whose link goes silent", () => {
     expect(screenAt(-300)).toContain("Reconnecting now.");
   });
 
-  it("is gone the moment the room's ticks resume", () => {
-    screenAt(2000);
-    expect(screenAt(null)).not.toContain("Waiting for the room");
+  it("shows on the frame the race stops and is gone on the frame its ticks resume", () => {
+    const host = createHost();
+    const notices = () =>
+      renderToStaticMarkup(
+        <RoomNotices feed={host.feed} room={room} stage={riding} />
+      );
+    let notified = 0;
+    host.feed.subscribe(() => {
+      notified += 1;
+    });
+    let now = 0;
+    const frames = (count: number) => {
+      for (let frame = 0; frame < count; frame += 1) {
+        now += VSYNC_MS;
+        host.at(now);
+      }
+    };
+    frames(30);
+    host.stall(3500);
+    const heard = notified;
+    frames(1);
+    expect({
+      notified: notified - heard,
+      pill: notices().includes(
+        'Reconnecting in <span class="numeric">4</span> s.'
+      ),
+    }).toStrictEqual({ notified: 1, pill: true });
+    const stoppedAt = host.run.view.tick;
+    frames(10);
+    expect(host.run.view.tick).toBe(stoppedAt);
+    host.stall(null);
+    const before = notified;
+    frames(1);
+    expect({
+      moved: host.run.view.tick > stoppedAt,
+      notified: notified - before,
+      pill: notices().includes("Waiting for the room"),
+    }).toStrictEqual({ moved: true, notified: 1, pill: false });
   });
 
   it("hands over to Signal lost at the hang-up", () => {

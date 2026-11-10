@@ -575,6 +575,7 @@ const startGame = (
     skipsVsync,
     sound,
     stage,
+    stalled: () => (roomOf(session)?.stallLeftMs() ?? null) !== null,
     throttleHeard: () => throttleOpen(session),
     tick,
   });
