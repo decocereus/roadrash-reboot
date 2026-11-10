@@ -16,7 +16,7 @@ const REMOUNT = 4;
 const BUTTONS = PUNCH + KICK + REMOUNT;
 const STICK = 8;
 
-export const steerSources = ["keys", "stick"] as const;
+const steerSources = ["keys", "stick"] as const;
 
 export type SteerSource = (typeof steerSources)[number];
 
