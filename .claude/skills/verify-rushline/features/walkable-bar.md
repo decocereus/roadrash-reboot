@@ -12,7 +12,7 @@ The bar is the lobby the player walks around before a race. It runs live in the 
 - `clock`: the dusk-to-night cycle, the skyline, the rain and the neon.
 - `room`: real members of a race room walking the bar together, with their names and matching outfits. The stand-ins leave the floor, and a member who readies up reads `<name> READY`, or `YOU READY` over your own head. Walks, greets, shoves and someone leaving reach every browser.
 - `pre-race`: a real lobby in the bar. `Enter` readies up, the server starts the race, the door lifts, the riders gather, and the countdown cuts to the race.
-- `panel`: the lobby panel over the bar: members, rules, Ready, Copy the link in a custom room, Change name, Leave. Leave returns to the Clubhouse. The host picks the rules behind `You set the rules`. A public lobby has no host, no picker and no link.
+- `panel`: the lobby panel over the bar: members, rules, Ready, Copy the link in a custom room, Change name, Leave. Leave returns to the Clubhouse in the same page, with no loading screen. The host picks the rules behind `You set the rules`. A public lobby has no host, no picker and no link.
 
 ## How to get to it (user POV)
 
