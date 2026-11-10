@@ -22,9 +22,9 @@ const RETRANSMIT_EXTRA_MS = 50;
 
 interface Link {
   readonly downMs: (sentAt: number) => number;
-  readonly pongMs?: (sentAt: number) => number;
   readonly roomHz: (at: number) => number;
   readonly upMs: (sentAt: number) => number;
+  readonly upStalls?: () => number;
 }
 
 interface Ride {
@@ -37,6 +37,7 @@ interface Ride {
   readonly mostEase: number;
   readonly slowest: number;
   readonly stops: number;
+  readonly upStalls: number;
 }
 
 const steadyHz = (): number => 60;
@@ -124,16 +125,6 @@ const emitTimes = (link: Link): number[] => {
   return times;
 };
 
-const arrivalTimes = (link: Link, emitted: readonly number[]): number[] => {
-  const arrived: number[] = [];
-  let latest = 0;
-  for (const at of emitted) {
-    latest = Math.max(latest, at + link.downMs(at));
-    arrived.push(latest);
-  }
-  return arrived;
-};
-
 const carryControls = (
   arrivesAt: number[],
   unsent: number,
@@ -183,7 +174,42 @@ const lateShareOf = (
 
 const ride = (link: Link, displayHz: number): Ride => {
   const emitted = emitTimes(link);
-  const arrived = arrivalTimes(link, emitted);
+  const arrived: number[] = [];
+  let nextEmit = 0;
+  let latestDown = 0;
+  const down = (sendAt: number): number => {
+    latestDown = Math.max(latestDown, sendAt + link.downMs(sendAt));
+    return latestDown;
+  };
+  const pendingPongs: { sendAt: number; sent: number }[] = [];
+  let nextPing = 0;
+  const pongs: (readonly [number, number])[] = [];
+  const sendDown = (now: number): void => {
+    while (nextPing <= now) {
+      pendingPongs.push({
+        sendAt: nextPing + link.upMs(nextPing),
+        sent: nextPing,
+      });
+      nextPing += PING_EVERY_MS;
+    }
+    pendingPongs.sort((left, right) => left.sendAt - right.sendAt);
+    for (;;) {
+      const tickAt = emitted[nextEmit] ?? Number.POSITIVE_INFINITY;
+      const pongAt = pendingPongs[0]?.sendAt ?? Number.POSITIVE_INFINITY;
+      if (Math.min(tickAt, pongAt) > now) {
+        return;
+      }
+      if (tickAt <= pongAt) {
+        arrived[nextEmit] = down(tickAt);
+        nextEmit += 1;
+      } else {
+        const pong = pendingPongs.shift();
+        if (pong) {
+          pongs.push([pong.sent, down(pong.sendAt)]);
+        }
+      }
+    }
+  };
   const clock = createRoomClock();
   clock.heardRoomTime(0, link.downMs(0));
   clock.start(START_MS);
@@ -201,9 +227,7 @@ const ride = (link: Link, displayHz: number): Ride => {
   let sentThrough = 0;
   let delayed = 0;
   let planned = 0;
-  let nextPing = 0;
 
-  const pongs: (readonly [number, number])[] = [];
   const advance = createFixedTick(
     fixed,
     () => false,
@@ -245,6 +269,7 @@ const ride = (link: Link, displayHz: number): Ride => {
     while ((emitted[roomTick + 1] ?? Number.POSITIVE_INFINITY) <= now) {
       roomTick += 1;
     }
+    sendDown(now);
     while (heard < arrived.length && (arrived[heard] ?? 0) <= now) {
       const at = arrived[heard] ?? now;
       clock.heardTick(heard, at);
@@ -253,12 +278,6 @@ const ride = (link: Link, displayHz: number): Ride => {
       }
       confirmed = heard;
       heard += 1;
-    }
-    while (nextPing <= now) {
-      const up = link.upMs(nextPing);
-      const back = nextPing + up + (link.pongMs ?? link.downMs)(nextPing + up);
-      pongs.push([nextPing, back]);
-      nextPing += PING_EVERY_MS;
     }
     for (let at = pongs.length - 1; at >= 0; at -= 1) {
       const [sent, back] = pongs[at] ?? [0, 0];
@@ -296,6 +315,7 @@ const ride = (link: Link, displayHz: number): Ride => {
     mostEase,
     slowest,
     stops,
+    upStalls: link.upStalls?.() ?? 0,
   };
 };
 
@@ -393,7 +413,8 @@ const inOrderLane = (
   };
   const arrivals = new Map<number, number>();
   let lastAt = 0;
-  return (sentAt: number): number => {
+  let stalled = 0;
+  const ms = (sentAt: number): number => {
     const key = Math.round(sentAt);
     const known = arrivals.get(key);
     if (known !== undefined) {
@@ -402,21 +423,25 @@ const inOrderLane = (
     const into = holdsEveryMs > 0 ? sentAt % holdsEveryMs : -1;
     const held = sentAt > 5000 && into >= 0 && into < 2500 ? 2500 - into : 0;
     const lost = roll() < 0.01 ? rttMs + RETRANSMIT_EXTRA_MS : 0;
-    lastAt = Math.max(
-      lastAt,
-      sentAt + held + rttMs / 2 + (roll() - 0.5) * jitterMs + lost
-    );
-    arrivals.set(key, lastAt - sentAt);
-    return lastAt - sentAt;
+    const own = sentAt + held + rttMs / 2 + (roll() - 0.5) * jitterMs + lost;
+    const at = Math.max(lastAt, own);
+    stalled += at > own ? 1 : 0;
+    lastAt = at;
+    arrivals.set(key, at - sentAt);
+    return at - sentAt;
   };
+  return { ms, stalled: () => stalled };
 };
 
-const inOrderLink = (holdsEveryMs: number): Link => ({
-  downMs: inOrderLane(180, 60, holdsEveryMs, 3),
-  pongMs: inOrderLane(180, 60, holdsEveryMs, 7),
-  roomHz: steadyHz,
-  upMs: inOrderLane(180, 60, holdsEveryMs, 5),
-});
+const inOrderLink = (holdsEveryMs: number): Link => {
+  const up = inOrderLane(180, 60, holdsEveryMs, 5);
+  return {
+    downMs: inOrderLane(180, 60, holdsEveryMs, 3).ms,
+    roomHz: steadyHz,
+    upMs: up.ms,
+    upStalls: up.stalled,
+  };
+};
 
 const dribbledOut = (sentAt: number): number => {
   const holdEnds = 22_500;
@@ -505,12 +530,14 @@ describe("a room race on a rough link", () => {
 
   it("loses under 1% of its controls to the rooms:lag proxy in order at 180 ms, 60 ms jitter and 1% loss, where a lost packet stalls everything behind it for a round trip", () => {
     const result = ride(inOrderLink(0), 60);
+    expect(result.upStalls).toBeGreaterThan(100);
     expect(result.lateShare).toBeLessThan(0.01);
     expect(result.meanDelay).toBeLessThan(5);
   });
 
   it("rides the same proxy with a 2.5 s hold both ways every 15 s, losing no more controls than the holds take", () => {
     const result = ride(inOrderLink(15_000), 60);
+    expect(result.upStalls).toBeGreaterThan(100);
     expect(result.lateShare).toBeLessThan(0.12);
     expect(result.meanDelay).toBeLessThan(20);
     expect(result.mostAheadOfRoom).toBeLessThan(MOST_LEAD_TICKS);
