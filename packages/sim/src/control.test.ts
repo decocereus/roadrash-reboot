@@ -4,6 +4,7 @@ import {
   CONTROL_BYTES,
   controlOf,
   readControl,
+  withoutButtons,
   writeControl,
 } from "./control.ts";
 import {
@@ -22,8 +23,9 @@ import {
   neutralInput,
   stepRace,
 } from "./race.ts";
-import { PLAYER_RIDER, TICK_RATE } from "./state.ts";
+import { PLAYER_RIDER, TICK_RATE, TICK_SECONDS } from "./state.ts";
 import type {
+  Control,
   Controller,
   InputFrame,
   RaceState,
@@ -62,11 +64,30 @@ const weaving = (tick: number): RiderInput => ({
   throttle: tick % 300 > 240 ? 0 : 0.9,
 });
 
+const SETTLE_TICKS = 20;
+const RELEASE_STEP = 18 * TICK_SECONDS;
+
+const steerOf = (state: RaceState): number => player(state).input.steer;
+
+const steerCurve = (state: RaceState, targets: readonly number[]): number[] =>
+  targets.map((steer) => {
+    stepRace(state, straight, playerFrame({ ...neutralInput, steer }));
+    return steerOf(state);
+  });
+
+const held = (target: number, ticks: number): number[] =>
+  Array.from({ length: ticks }, () => target);
+
+const stick = (steer: number, punch = false): Control =>
+  controlOf({ ...neutralInput, punch, steer }, "stick");
+
 describe("a rider's controls", () => {
   it("ride on a grid of 127 steps of steer each way and 255 of throttle and brake, with full lock, full pedal and zero exact", () => {
     const state = field(straight, 1, 0, 0);
     const ridden = (input: RiderInput): RiderInput => {
-      stepRace(state, straight, playerFrame(input));
+      for (let tick = 0; tick < SETTLE_TICKS; tick += 1) {
+        stepRace(state, straight, playerFrame(input));
+      }
       return { ...player(state).input };
     };
     expect(ridden({ ...neutralInput, steer: 1, throttle: 1 })).toStrictEqual({
@@ -98,6 +119,62 @@ describe("a rider's controls", () => {
     });
     expect(ridden({ ...neutralInput, steer: 0.3 }).steer).toBe(38 / 127);
     expect(ridden({ ...neutralInput, steer: -0.3 }).steer).toBe(-38 / 127);
+  });
+
+  it("a held key moves the bars to lock at 9 per second and back to centre at 18, and a reversal runs at the attack rate", () => {
+    const state = field(straight, 1, 0, 0);
+    const press = held(1, 8);
+    const lift = held(0, 5);
+    const reverse = held(-1, 15);
+    const targets = [...press, ...lift, ...held(1, 8), ...reverse];
+    const curve = steerCurve(state, targets);
+    const expected = [
+      0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1, 1, 0.7, 0.4, 0.1, 0, 0, 0.15, 0.3,
+      0.45, 0.6, 0.75, 0.9, 1, 1, 0.85, 0.7, 0.55, 0.4, 0.25, 0.1, -0.05, -0.2,
+      -0.35, -0.5, -0.65, -0.8, -0.95, -1, -1,
+    ];
+    expect(curve.map((steer) => Number(steer.toFixed(9)))).toStrictEqual(
+      expected
+    );
+  });
+
+  it("a stick's target applies at once, a flick and a reversal included, and the keys then ramp from where the stick left the bars", () => {
+    const state = field(straight, 1, 0, 0);
+    const ridden = (control: Control): RiderInput => {
+      stepRace(state, straight, {
+        ...emptyFrame,
+        controls: new Map([[PLAYER_RIDER, control]]),
+      });
+      return player(state).input;
+    };
+    expect(ridden(stick(1)).steer).toBe(1);
+    expect(ridden(stick(-0.5)).steer).toBe(-64 / 127);
+    expect(ridden(withoutButtons(stick(0.3, true)))).toMatchObject({
+      punch: false,
+      steer: 38 / 127,
+    });
+    expect(ridden(controlOf({ ...neutralInput, steer: -1 })).steer).toBeCloseTo(
+      38 / 127 - 0.15,
+      9
+    );
+  });
+
+  it("a rider handed from the pilot to a human eases from the bars the pilot left, not from centre", () => {
+    const setup = defaultSetup(quietTrack, 1);
+    const state = createRace({
+      ...setup,
+      player: { ...setup.player, controller: "pilot" },
+    });
+    rideFor(state, 10, emptyFrame);
+    player(state).input.steer = 0.9;
+    stepRace(
+      state,
+      quietTrack,
+      handing(PLAYER_RIDER, "human", [PLAYER_RIDER, neutralInput])
+    );
+    expect(steerOf(state)).toBeCloseTo(0.6, 9);
+    stepRace(state, quietTrack, playerFrame(neutralInput));
+    expect(steerOf(state)).toBeCloseTo(0.3, 9);
   });
 
   it.each(
@@ -147,7 +224,7 @@ describe("a rider's controls", () => {
     expect(wired).toStrictEqual(direct);
   });
 
-  it("four bytes with a steer byte of -128 or a button bit past punch, kick and remount are not a control", () => {
+  it("four bytes with a steer byte of -128 or a bit past punch, kick, remount and the stick are not a control", () => {
     const wire = new DataView(new ArrayBuffer(CONTROL_BYTES));
     wire.setUint8(STEER_BYTE, 128);
     expect(readControl(wire, 0)).toBeUndefined();
@@ -155,17 +232,14 @@ describe("a rider's controls", () => {
     expect(readControl(wire, 0)).toBe(
       controlOf({ ...neutralInput, steer: -1 })
     );
-    wire.setUint8(BUTTONS_BYTE, 8);
+    wire.setUint8(BUTTONS_BYTE, 16);
     expect(readControl(wire, 0)).toBeUndefined();
-    wire.setUint8(BUTTONS_BYTE, 7);
+    wire.setUint8(BUTTONS_BYTE, 15);
     expect(readControl(wire, 0)).toBe(
-      controlOf({
-        ...neutralInput,
-        kick: true,
-        punch: true,
-        remount: true,
-        steer: -1,
-      })
+      controlOf(
+        { ...neutralInput, kick: true, punch: true, remount: true, steer: -1 },
+        "stick"
+      )
     );
   });
 });
@@ -193,15 +267,20 @@ describe("handing a rider over", () => {
     rideFor(state, 10, emptyFrame);
     expect(player(state).speed).toBeGreaterThan(20);
     const braking = { ...neutralInput, brake: 1 };
+    const pilotSteer = steerOf(state);
     stepRace(
       state,
       quietTrack,
       handing(PLAYER_RIDER, "human", [PLAYER_RIDER, braking])
     );
     expect(player(state).controller).toBe("human");
-    expect(player(state).input).toStrictEqual(braking);
+    expect({ ...player(state).input, steer: 0 }).toStrictEqual(braking);
+    expect(steerOf(state)).toBeCloseTo(
+      Math.sign(pilotSteer) * Math.max(0, Math.abs(pilotSteer) - RELEASE_STEP),
+      9
+    );
     rideFor(state, 6, playerFrame(braking));
-    expect(player(state).speed).toBe(0);
+    expect([steerOf(state), player(state).speed]).toStrictEqual([0, 0]);
   });
 
   it("a frame that hands a rider to the controller already riding it is rejected before the tick moves", () => {

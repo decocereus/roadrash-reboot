@@ -290,6 +290,9 @@ Source files:
 
 Test files:
 
+- `apps/web/test/pilot-replay-baseline.ts`
+- `apps/web/test/pilot-replay-record.test.ts`
+- `apps/web/test/pilot-replay-record.ts`
 - `apps/web/test/pilot-replay.test.ts`
 - `apps/web/test/pilot-replay.ts`
 - `packages/sim/src/pilot-cornering.test.ts`

@@ -41,7 +41,7 @@ describe("dev ride placement", () => {
     dev.place(run);
     expect(me.s).toBe(walker.s - 50);
     const input = { ...neutralInput };
-    dev.steer(run.view, track, input);
+    expect(dev.steer(run.view, track, input, "keys")).toBe("stick");
     expect(input.steer).toBeCloseTo(0, 1);
   });
 

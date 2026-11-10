@@ -35,6 +35,9 @@ import {
 } from "./state.ts";
 import type { RaceEvent } from "./state.ts";
 
+const barsAt = (s: number, steerFrom: number, steer: number): number =>
+  s > steerFrom ? steer : 0;
+
 const rideAt = (
   road: Track,
   from: Placement,
@@ -48,6 +51,7 @@ const rideAt = (
   rider.x = from.x;
   rider.speed = from.speed;
   rider.lateralSpeed = from.lateralSpeed;
+  rider.input.steer = barsAt(rider.s, steerFrom, steer);
   const events: RaceEvent[] = [];
   let shakiest = 0;
   let highest = 0;
@@ -57,7 +61,7 @@ const rideAt = (
       road,
       frameOf(state, [
         PLAYER_RIDER,
-        { ...flatOut, steer: rider.s > steerFrom ? steer : 0 },
+        { ...flatOut, steer: barsAt(rider.s, steerFrom, steer) },
       ])
     );
     events.push(...state.events);
