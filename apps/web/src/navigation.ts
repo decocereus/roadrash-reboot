@@ -33,7 +33,10 @@ export type BarPanel =
       readonly kind: "lobby";
       readonly visit: RoomVisit;
       readonly turn: number;
-    };
+    }
+  | { readonly kind: "door"; readonly entry: RaceEntry }
+  | { readonly kind: "results"; readonly report: RaceReport }
+  | { readonly kind: "over" };
 
 export type RaceStage =
   | { readonly kind: "riding" }
@@ -50,15 +53,11 @@ export type View =
       readonly tab: BarTab;
       readonly panel: BarPanel;
     }
-  | { readonly screen: "rideOut"; readonly entry: RaceEntry }
   | {
       readonly screen: "race";
       readonly plan: RacePlan;
       readonly stage: RaceStage;
-    }
-  | { readonly screen: "results"; readonly report: RaceReport }
-  | { readonly screen: "ending" }
-  | { readonly screen: "gameOver" };
+    };
 
 export type BarView = Extract<View, { readonly screen: "bar" }>;
 
@@ -71,7 +70,8 @@ type RaceNews =
       readonly report: RaceReport | null;
       readonly result: RaceResult;
     }
-  | { readonly kind: "raceOver" };
+  | { readonly kind: "raceOver" }
+  | { readonly kind: "movedOn" };
 
 export type NavigationEvent =
   | RaceNews
@@ -91,6 +91,7 @@ export type NavigationEvent =
     }
   | { readonly kind: "left"; readonly save: SaveState }
   | { readonly kind: "roomMoved"; readonly visit: RoomVisit }
+  | { readonly kind: "nextRace" }
   | { readonly kind: "ridePicked"; readonly entry: RaceEntry }
   | { readonly kind: "raceBegun"; readonly plan: RacePlan };
 
@@ -101,8 +102,6 @@ type NavigationEffect =
 type NavigationStep = Step<View, NavigationEffect>;
 
 const elsewhere: View = { screen: "elsewhere" };
-const gameOver: View = { screen: "gameOver" };
-const ending: View = { screen: "ending" };
 
 const barAt = (panel: BarPanel): BarView => ({
   panel,
@@ -111,6 +110,7 @@ const barAt = (panel: BarPanel): BarView => ({
 });
 
 const home = barAt({ kind: "home" });
+const over = barAt({ kind: "over" });
 
 export const firstView = (): View => ({ screen: "boot" });
 
@@ -118,11 +118,7 @@ export const graphicsPlaceOf = {
   bar: "bar",
   boot: "menu",
   elsewhere: "menu",
-  ending: "menu",
-  gameOver: "menu",
   race: "race",
-  results: "race",
-  rideOut: "menu",
 } as const satisfies Record<View["screen"], GraphicsPlace>;
 
 export const stageOf = (view: View): "boot" | "race" | "menu" => {
@@ -140,8 +136,15 @@ const panelAddressOf = (panel: BarPanel): RoomAddress | null => {
     case "invite": {
       return { arrival: "link", roomId: panel.roomId };
     }
+    case "results": {
+      return panel.report.room
+        ? { arrival: null, roomId: panel.report.room.roomId }
+        : null;
+    }
+    case "door":
     case "finding":
     case "home":
+    case "over":
     case "solo": {
       return null;
     }
@@ -161,16 +164,8 @@ export const roomAddressOf = (view: View): RoomAddress | null => {
         ? { arrival: null, roomId: view.plan.room.roomId }
         : null;
     }
-    case "results": {
-      return view.report.room
-        ? { arrival: null, roomId: view.report.room.roomId }
-        : null;
-    }
     case "boot":
-    case "elsewhere":
-    case "ending":
-    case "gameOver":
-    case "rideOut": {
+    case "elsewhere": {
       return null;
     }
     default: {
@@ -179,18 +174,11 @@ export const roomAddressOf = (view: View): RoomAddress | null => {
   }
 };
 
-const afterResults = ({ ledger }: RaceReport): View => {
-  if (ledger === null) {
-    return home;
-  }
-  if (ledger.gameOver) {
-    return gameOver;
-  }
-  return ledger.ending === null ? home : ending;
-};
+const afterResults = ({ ledger }: RaceReport): BarView =>
+  ledger !== null && (ledger.gameOver || ledger.ending !== null) ? over : home;
 
 const afterRace = (report: RaceReport | null): View =>
-  report ? { report, screen: "results" } : home;
+  report ? barAt({ kind: "results", report }) : home;
 
 export const raceAgainOffered = (
   report: RaceReport,
@@ -234,6 +222,11 @@ const raceAfter = (
   switch (event.kind) {
     case "paused": {
       return { ...view, stage: { kind: "paused" } };
+    }
+    case "movedOn": {
+      return view.stage.kind === "finishing"
+        ? afterRace(view.stage.report)
+        : view;
     }
     case "raceOver": {
       return view.stage.kind === "consequence"
@@ -336,13 +329,11 @@ const raceLeft = (
   save: SaveState
 ): NavigationStep => {
   switch (view.stage.kind) {
-    case "finishing": {
-      return to({ report: view.stage.report, screen: "results" });
-    }
     case "paused": {
       return view.plan.room ? homeFrom(save) : to(view);
     }
     case "consequence":
+    case "finishing":
     case "riding":
     case "signalLost": {
       return to(view);
@@ -361,9 +352,18 @@ const barLeft = (view: BarView, save: SaveState): NavigationStep => {
     case "home": {
       return careerFor(view, save);
     }
+    case "door": {
+      return to(barAt({ kind: "solo" }));
+    }
+    case "results": {
+      return view.panel.report.room
+        ? homeFrom(save)
+        : to(afterResults(view.panel.report));
+    }
     case "finding":
     case "invite":
     case "lobby":
+    case "over":
     case "solo": {
       return homeFrom(save);
     }
@@ -382,18 +382,8 @@ const leaving = (view: View, save: SaveState): NavigationStep => {
     case "bar": {
       return barLeft(view, save);
     }
-    case "ending":
-    case "gameOver": {
-      return to(home);
-    }
-    case "rideOut": {
-      return to(barAt({ kind: "solo" }));
-    }
     case "race": {
       return raceLeft(view, save);
-    }
-    case "results": {
-      return view.report.room ? homeFrom(save) : to(afterResults(view.report));
     }
     default: {
       return view satisfies never;
@@ -421,14 +411,87 @@ const picking = (bar: BarView, panel: "solo" | "finding"): View =>
     ? barAt({ kind: panel })
     : bar;
 
-const rematchOrRide = (view: View, entry: RaceEntry): View =>
-  view.screen === "results" && view.report.room
-    ? lobbyAt(view, {
+const ridesFrom = (panel: BarPanel): boolean => {
+  switch (panel.kind) {
+    case "solo": {
+      return true;
+    }
+    case "results": {
+      return panel.report.room === undefined;
+    }
+    case "door":
+    case "finding":
+    case "home":
+    case "invite":
+    case "lobby":
+    case "over": {
+      return false;
+    }
+    default: {
+      return panel satisfies never;
+    }
+  }
+};
+
+const riding = (bar: BarView, entry: RaceEntry): View =>
+  ridesFrom(bar.panel) ? barAt({ entry, kind: "door" }) : bar;
+
+const nextRace = (bar: BarView): View =>
+  bar.panel.kind === "results" && bar.panel.report.room
+    ? lobbyAt(bar, {
         arrival: "rematch",
         rejoin: null,
-        roomId: view.report.room.roomId,
+        roomId: bar.panel.report.room.roomId,
       })
-    : { entry, screen: "rideOut" };
+    : bar;
+
+const careerBegun = (view: View): View => {
+  if (view.screen !== "bar") {
+    return home;
+  }
+  return view.panel.kind === "over" ? home : view;
+};
+
+const inRace = (view: View, event: RaceNews): View =>
+  view.screen === "race" ? raceAfter(view, event) : view;
+
+const movedToRoom = (view: View, visit: RoomVisit): View =>
+  view.screen === "boot" ? view : lobbyAt(view, visit);
+
+type BarNews = Extract<
+  NavigationEvent,
+  {
+    readonly kind:
+      | "doorOpened"
+      | "nextRace"
+      | "picked"
+      | "ridePicked"
+      | "tabbed";
+  }
+>;
+
+const barAfter = (bar: BarView, event: BarNews): View => {
+  switch (event.kind) {
+    case "doorOpened": {
+      return { ...bar, tab: "race" };
+    }
+    case "nextRace": {
+      return nextRace(bar);
+    }
+    case "picked": {
+      return picking(bar, event.panel);
+    }
+    case "ridePicked": {
+      return riding(bar, event.entry);
+    }
+    case "tabbed": {
+      return { ...bar, tab: event.tab };
+    }
+    default: {
+      return event satisfies never;
+    }
+  }
+};
 
 export const stepNavigation = (
   view: View,
@@ -436,13 +499,17 @@ export const stepNavigation = (
 ): NavigationStep => {
   switch (event.kind) {
     case "careerBegun": {
-      return to(view.screen === "bar" ? view : home);
+      return to(careerBegun(view));
     }
     case "raceRefused": {
       return to(home);
     }
-    case "doorOpened": {
-      return to(inBar(view, (bar) => ({ ...bar, tab: "race" })));
+    case "doorOpened":
+    case "nextRace":
+    case "picked":
+    case "ridePicked":
+    case "tabbed": {
+      return to(inBar(view, (bar) => barAfter(bar, event)));
     }
     case "entered": {
       return entering(view, event);
@@ -453,15 +520,13 @@ export const stepNavigation = (
     case "left": {
       return leaving(view, event.save);
     }
+    case "movedOn":
     case "paused":
     case "raceOver":
     case "raceSettled":
     case "resumed":
     case "signalLost": {
-      return to(view.screen === "race" ? raceAfter(view, event) : view);
-    }
-    case "picked": {
-      return to(inBar(view, (bar) => picking(bar, event.panel)));
+      return to(inRace(view, event));
     }
     case "raceBegun": {
       return to({
@@ -470,14 +535,8 @@ export const stepNavigation = (
         stage: { kind: "riding" },
       });
     }
-    case "ridePicked": {
-      return to(rematchOrRide(view, event.entry));
-    }
     case "roomMoved": {
-      return to(view.screen === "boot" ? view : lobbyAt(view, event.visit));
-    }
-    case "tabbed": {
-      return to(inBar(view, (bar) => ({ ...bar, tab: event.tab })));
+      return to(movedToRoom(view, event.visit));
     }
     default: {
       return event satisfies never;

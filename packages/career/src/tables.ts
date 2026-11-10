@@ -49,11 +49,6 @@ export const roads = {
 export const roadList: readonly Road[] = roadIds.map((roadId) => roads[roadId]);
 
 export const FINALE_ROAD: RoadId = "ridge-road";
-export const ENVELOPE_ROAD: RoadId = "breakwater-run";
-export const ENVELOPE_TIER: Tier = 2;
-export const ENVELOPE_RIVAL: RivalId = "tristan-lux";
-export const ENVELOPE_PAYMENT = 1500;
-export const ENVELOPE_CLAWBACK = 2000;
 
 export const ALLY: RivalId = "dee-santangelo";
 export const ALLY_TIER: Tier = 2;

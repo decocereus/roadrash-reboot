@@ -457,8 +457,8 @@ describe("check:save-format", () => {
 
   it.each([
     [
-      "a structural tag added to story.envelope",
-      edit(base, grow(["unseen", "offered", "taken", "refused"], "lost")),
+      "a structural tag added to story.ending",
+      edit(base, grow(["clean-crown", "runner-up"], "lost-crown")),
       structure,
     ],
     ["an optional field named title", added("title", false), structure],

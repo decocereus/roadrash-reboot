@@ -530,7 +530,6 @@ export default defineConfig({
         "apps/web/src/career/copy.ts",
         "apps/web/src/game/hud.ts",
         "apps/web/src/game/race-feedback.ts",
-        "apps/web/src/career/notes.ts",
         "apps/web/src/game/bar-signs.ts",
       ],
       rules: { "rushline/player-copy": "error" },

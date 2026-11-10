@@ -9,7 +9,7 @@ In a race the player rides a motorcycle down a point-to-point road through traff
 - `ride-steer` moves the bike across the road and leans it.
 - `fight-punch` swings at a rider alongside with Space or J.
 - `fight-kick` kicks a rider alongside with Shift or K.
-- `weapons`: a landed hit on an armed rider can take the weapon. The player sees `Got the <weapon>` on taking one, `<weapon> broke` when it breaks, and `Disarmed` when a rival takes it. The ride-out grid shows each rider's kit.
+- `weapons`: a landed hit on an armed rider can take the weapon. The player sees `Got the <weapon>` on taking one, `<weapon> broke` when it breaks, and `Disarmed` when a rival takes it.
 - `knockdown`: a punch or kick that empties a rival's stamina shows `Down!`.
 - `crash` throws the rider off the bike after hitting the roadside or traffic.
 - `tumble`: while thrown, A and D (or the arrows) move the rider sideways and S shortens the slide, including keys held through the crash.

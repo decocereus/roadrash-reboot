@@ -1,7 +1,7 @@
 import type { LobbyControl } from "@racer/sim/lobby";
 import type { LobbyPose } from "@racer/sim/lobby-walk";
 
-import { onControl } from "../key-target.ts";
+import { keptByControl } from "../key-target.ts";
 import { createHeldKeys } from "./held-keys.ts";
 
 const POSE_KEYS = {
@@ -52,7 +52,7 @@ export const createBarInput = (
   let dragged = false;
 
   const onKeyDown = (event: KeyboardEvent): void => {
-    if (onControl(event.target) || !held.press(event)) {
+    if (keptByControl(event.target, event.code) || !held.press(event)) {
       return;
     }
     if (isPoseKey(event.code)) {

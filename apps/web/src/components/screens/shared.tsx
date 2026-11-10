@@ -80,19 +80,6 @@ export const useEscape = (run: () => void, enabled = true): void => {
   );
 };
 
-export const standingTag = (
-  ally: boolean,
-  grudge: boolean
-): string | undefined => {
-  if (ally) {
-    return "On your side";
-  }
-  if (grudge) {
-    return "Holds a grudge";
-  }
-  return undefined;
-};
-
 export const RiderChip = ({ colour }: { readonly colour: number }) => (
   <span
     aria-hidden

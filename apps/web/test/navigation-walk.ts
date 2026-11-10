@@ -199,11 +199,7 @@ export const nameOf = (view: View): string => {
         : `bar/${view.panel.kind}/${view.tab}`;
     }
     case "boot":
-    case "elsewhere":
-    case "ending":
-    case "gameOver":
-    case "results":
-    case "rideOut": {
+    case "elsewhere": {
       return view.screen;
     }
     default: {
@@ -235,8 +231,11 @@ export const racing = (
   stage: { kind: "riding" },
 });
 
+export const resultsOf = (report: RaceReport): BarView =>
+  barAt({ kind: "results", report });
+
 export const afterResultsOf = (report: RaceReport) =>
-  stepNavigation({ report, screen: "results" }, LEFT).state;
+  stepNavigation(resultsOf(report), LEFT).state;
 
 export const fallenTrail = (plan: RacePlan) =>
   walk(racing(plan), settled("busted", null), { kind: "raceOver" }).trail;
@@ -250,18 +249,17 @@ const everyScreen = {
   bar: home,
   boot: { screen: "boot" },
   elsewhere: { screen: "elsewhere" },
-  ending: { screen: "ending" },
-  gameOver: { screen: "gameOver" },
   race: racing(careerPlan),
-  results: { report: careerResult, screen: "results" },
-  rideOut: { entry: toCareerRace, screen: "rideOut" },
 } as const satisfies Record<View["screen"], View>;
 
 const everyPanel = {
+  door: barAt({ entry: toCareerRace, kind: "door" }),
   finding,
   home,
   invite,
   lobby: roomLobby,
+  over: barAt({ kind: "over" }),
+  results: resultsOf(careerResult),
   solo,
 } as const satisfies Record<BarPanel["kind"], BarView>;
 

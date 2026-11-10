@@ -1,8 +1,5 @@
 export const ordinaryRiders = [
   {
-    art: {
-      figure: "clubhouse/rivals/juno-kade.webp",
-    },
     game: {
       aggression: 0.25,
       armedFrom: 1,
@@ -27,9 +24,6 @@ export const ordinaryRiders = [
     shortName: "Juno",
   },
   {
-    art: {
-      figure: "clubhouse/rivals/ruth-ann-bixby.webp",
-    },
     game: {
       aggression: 0.45,
       armedFrom: 1,
@@ -52,9 +46,6 @@ export const ordinaryRiders = [
     shortName: "Ruth Ann",
   },
   {
-    art: {
-      figure: "clubhouse/rivals/dee-santangelo.webp",
-    },
     game: {
       aggression: 0.5,
       armedFrom: 1,
@@ -79,9 +70,6 @@ export const ordinaryRiders = [
     shortName: "Dee",
   },
   {
-    art: {
-      figure: "clubhouse/rivals/ines-marchetti.webp",
-    },
     game: {
       aggression: 0.75,
       armedFrom: 1,
@@ -107,9 +95,6 @@ export const ordinaryRiders = [
     shortName: "Ines",
   },
   {
-    art: {
-      figure: "clubhouse/rivals/mags-dunleavy.webp",
-    },
     game: {
       aggression: 0.6,
       armedFrom: 1,
@@ -136,9 +121,6 @@ export const ordinaryRiders = [
     shortName: "Mags",
   },
   {
-    art: {
-      figure: "clubhouse/rivals/lyle-gorski.webp",
-    },
     game: {
       aggression: 0.7,
       armedFrom: 1,
@@ -164,9 +146,6 @@ export const ordinaryRiders = [
     shortName: "Lyle",
   },
   {
-    art: {
-      figure: "clubhouse/rivals/tristan-lux.webp",
-    },
     game: {
       aggression: 0.35,
       armedFrom: 1,
@@ -191,9 +170,6 @@ export const ordinaryRiders = [
     shortName: "Tristan",
   },
   {
-    art: {
-      figure: "clubhouse/rivals/coach-dale-hutto.webp",
-    },
     game: {
       aggression: 0.55,
       armedFrom: 2,
@@ -219,9 +195,6 @@ export const ordinaryRiders = [
     shortName: "Coach",
   },
   {
-    art: {
-      figure: "clubhouse/rivals/moose-kowalczyk.webp",
-    },
     game: {
       aggression: 0.85,
       armedFrom: 1,
@@ -246,9 +219,6 @@ export const ordinaryRiders = [
     shortName: "Moose",
   },
   {
-    art: {
-      figure: "clubhouse/rivals/gus-abernathy.webp",
-    },
     game: {
       aggression: 0.65,
       armedFrom: 2,
@@ -272,9 +242,6 @@ export const ordinaryRiders = [
     shortName: "Gus",
   },
   {
-    art: {
-      figure: "clubhouse/rivals/benny-okafor.webp",
-    },
     game: {
       aggression: 0.4,
       armedFrom: 1,
@@ -299,9 +266,6 @@ export const ordinaryRiders = [
     shortName: "Benny",
   },
   {
-    art: {
-      figure: "clubhouse/rivals/wanda-pruitt.webp",
-    },
     game: {
       aggression: 0.3,
       armedFrom: 1,
@@ -325,9 +289,6 @@ export const ordinaryRiders = [
     shortName: "Wanda",
   },
   {
-    art: {
-      figure: "clubhouse/rivals/orrin-blackwell.webp",
-    },
     game: {
       aggression: 0.55,
       armedFrom: 1,
@@ -354,9 +315,6 @@ export const ordinaryRiders = [
     shortName: "Orrin",
   },
   {
-    art: {
-      figure: "clubhouse/rivals/agnes-mulcahy.webp",
-    },
     game: {
       aggression: 0.2,
       armedFrom: 1,
@@ -381,9 +339,6 @@ export const ordinaryRiders = [
     shortName: "Agnes",
   },
   {
-    art: {
-      figure: "clubhouse/rivals/hollis-thorne.webp",
-    },
     game: {
       aggression: 0.45,
       armedFrom: 1,
@@ -408,9 +363,6 @@ export const ordinaryRiders = [
     shortName: "Hollis",
   },
   {
-    art: {
-      figure: "clubhouse/rivals/felix-aurand.webp",
-    },
     game: {
       aggression: 0.7,
       armedFrom: 1,

@@ -45,64 +45,70 @@ export const move = <
   };
 };
 
-const rideOutKinds = [
+const soloDoorKinds = [
+  "atDoor",
   "closed",
-  "dwelling",
   "failed",
-  "failedDwelt",
+  "failedPastDoor",
   "preparing",
-  "preparingDwelt",
+  "preparingPastDoor",
   "started",
   "waitingForGame",
-  "waitingForGameDwelt",
+  "waitingForGamePastDoor",
 ] as const;
 
-const rideOutEffectKinds = ["prepare", "start"] as const;
+const soloDoorEffectKinds = ["prepare", "start"] as const;
 
-export const rideOutSignals = [
+export const soloDoorSignals = [
   "closed",
-  "dwellElapsed",
+  "doorElapsed",
   "gameReady",
   "retry",
 ] as const;
 
-type RideOutKind = (typeof rideOutKinds)[number];
-type RideOutEventKind = (typeof rideOutSignals)[number] | PreparedRace;
-type RideOutEffectKind = (typeof rideOutEffectKinds)[number];
+type SoloDoorKind = (typeof soloDoorKinds)[number];
+type SoloDoorEventKind = (typeof soloDoorSignals)[number] | PreparedRace;
+type SoloDoorEffectKind = (typeof soloDoorEffectKinds)[number];
 
-export type RideOutHandoff<Ride> = Carrying<RideOutKind, Ride>;
-type RideOutEffect<Ride> = Carrying<RideOutEffectKind, Ride>;
-export interface RideOutEvent {
-  readonly kind: RideOutEventKind;
+export type SoloDoorHandoff<Ride> = Carrying<SoloDoorKind, Ride>;
+type SoloDoorEffect<Ride> = Carrying<SoloDoorEffectKind, Ride>;
+export interface SoloDoorEvent {
+  readonly kind: SoloDoorEventKind;
 }
 
-const rideOutRows = {
+const soloDoorRows = {
+  atDoor: { doorElapsed: ["started", "start"] },
   closed: {},
-  dwelling: { dwellElapsed: ["started", "start"] },
-  failed: { dwellElapsed: ["failedDwelt"], retry: ["preparing", "prepare"] },
-  failedDwelt: { retry: ["preparingDwelt", "prepare"] },
+  failed: {
+    doorElapsed: ["failedPastDoor"],
+    retry: ["preparing", "prepare"],
+  },
+  failedPastDoor: { retry: ["preparingPastDoor", "prepare"] },
   preparing: {
-    built: ["dwelling"],
-    dwellElapsed: ["preparingDwelt"],
+    built: ["atDoor"],
+    doorElapsed: ["preparingPastDoor"],
     missing: ["failed"],
   },
-  preparingDwelt: { built: ["started", "start"], missing: ["failedDwelt"] },
+  preparingPastDoor: {
+    built: ["started", "start"],
+    missing: ["failedPastDoor"],
+  },
   started: {},
   waitingForGame: {
-    dwellElapsed: ["waitingForGameDwelt"],
+    doorElapsed: ["waitingForGamePastDoor"],
     gameReady: ["preparing", "prepare"],
   },
-  waitingForGameDwelt: { gameReady: ["preparingDwelt", "prepare"] },
+  waitingForGamePastDoor: { gameReady: ["preparingPastDoor", "prepare"] },
 } as const satisfies Rows<
-  RideOutKind,
-  Exclude<RideOutEventKind, "closed">,
-  RideOutEffectKind
+  SoloDoorKind,
+  Exclude<SoloDoorEventKind, "closed">,
+  SoloDoorEffectKind
 >;
 
-export const stepRideOut = <Ride>(
-  state: RideOutHandoff<Ride>,
-  event: RideOutEvent
-): Step<RideOutHandoff<Ride>, RideOutEffect<Ride>> =>
+export const stepSoloDoor = <Ride>(
+  state: SoloDoorHandoff<Ride>,
+  event: SoloDoorEvent
+): Step<SoloDoorHandoff<Ride>, SoloDoorEffect<Ride>> =>
   event.kind === "closed"
     ? { effect: null, state: { kind: "closed", ride: state.ride } }
-    : move(rideOutRows, state, event.kind);
+    : move(soloDoorRows, state, event.kind);

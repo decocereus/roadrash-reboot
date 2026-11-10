@@ -9,7 +9,6 @@ import {
   Bike,
   Count,
   Ending,
-  Envelope,
   FieldPlace,
   Hits,
   Kilometres,
@@ -111,8 +110,6 @@ const CareerRecord = Schema.Struct({
 const Story = Schema.Struct({
   deeAlly: Schema.Boolean,
   ending: Schema.NullOr(Ending),
-  envelope: Envelope,
-  envelopeClawedBack: Schema.Boolean,
   finaleUnlocked: Schema.Boolean,
   leftRace: Schema.Boolean,
 });

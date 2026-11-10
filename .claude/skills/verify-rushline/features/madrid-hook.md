@@ -29,7 +29,7 @@ Preconditions: a slot from `rv up` on this checkout and a passing `rv doctor`.
 
 ## Gotchas
 
-- The hook borrows Slag Row's road id for the field draw, the police officer and the result, so the ride-out card and the results screen say Slag Row. The track, length and lap time are the hook's.
+- The hook borrows Slag Row's road id for the field draw, the police officer and the result, so Results says Slag Row. The track, length and lap time are the hook's.
 - Police posts start at 1,500 m, past the hook's finish at 1,039 m, so no cop rides on the hook in any mode.
 - The road runs 80 m of lead-in before the hook and 200 m of runoff after it. Two potholes lie past the 450 m start clearance, one in the S-bend at 529 m and one on the Patines approach at 838 m, and tier 1 shows both.
 - Tree positions are procedural, not surveyed. Blocks take the corridor's estimated heights.

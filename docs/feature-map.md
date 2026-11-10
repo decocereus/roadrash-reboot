@@ -375,7 +375,7 @@ Test files:
 
 ### Career tiers, season and story
 
-The career state itself, tiers, qualification and promotion, the season board, the story beats, the envelope and the endings.
+The career state itself, tiers, qualification and promotion, the season board, the story beats and the endings.
 
 - Id: `career-progression`
 - Start: `packages/career/src/state.ts`, `packages/career/src/story.ts`, `packages/career/src/season.ts`
@@ -398,14 +398,14 @@ Test files:
 
 ### Menus and screens
 
-Every screen React draws around a race: the bar's Race, Garage and Settings tabs and their panels, the ride-out card, pause and results, with the screen flow, the menu art and the copy.
+Every screen React draws around a race: the bar's Race, Garage and Settings tabs and their panels, the solo door moment, pause, results and the career over card, with the screen flow, the menu art and the copy.
 
 - Id: `menus`
 - Start: `apps/web/src/navigation.ts`, `apps/web/src/components/use-flow.ts`, `apps/web/src/components/game-shell.tsx`
 - Docs: [docs/design/screens.md#flow](design/screens.md#flow), [docs/design/game-design.md#3-modes](design/game-design.md#3-modes), [DESIGN.md#components](../DESIGN.md#components)
 - Verify: [single-race.md](../.claude/skills/verify-rushline/features/single-race.md), [career.md](../.claude/skills/verify-rushline/features/career.md)
 - Perf: `bytes.route.root.gzip`, `bytes.route.root.raw`
-- Owns: `apps/web/src/components/screens/**`, `apps/web/test/bar-nav.test.tsx`, `apps/web/test/escape-layers.test.ts`, `apps/web/test/career-screens.test.tsx`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/navigation.ts`, `apps/web/test/navigation.test.ts`, `apps/web/test/navigation-walk.ts`, `apps/web/src/assets/*-art.ts`, `apps/web/src/game/showroom.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`, `apps/web/src/career/notes.ts`
+- Owns: `apps/web/src/components/screens/**`, `apps/web/test/bar-nav.test.tsx`, `apps/web/test/escape-layers.test.ts`, `apps/web/test/career-screens.test.tsx`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/solo-door.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/navigation.ts`, `apps/web/test/navigation.test.ts`, `apps/web/test/navigation-walk.ts`, `apps/web/src/assets/*-art.ts`, `apps/web/src/game/showroom.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`
 
 Source files:
 
@@ -414,7 +414,6 @@ Source files:
 - `apps/web/src/career/copy.ts`
 - `apps/web/src/career/flow.ts`
 - `apps/web/src/career/format.ts`
-- `apps/web/src/career/notes.ts`
 - `apps/web/src/components/game-shell.tsx`
 - `apps/web/src/components/screens/bar-chrome.tsx`
 - `apps/web/src/components/screens/bike-stand.tsx`
@@ -426,7 +425,6 @@ Source files:
 - `apps/web/src/components/screens/data-notice.tsx`
 - `apps/web/src/components/screens/escape-layers.ts`
 - `apps/web/src/components/screens/finish.tsx`
-- `apps/web/src/components/screens/game-over.tsx`
 - `apps/web/src/components/screens/garage.tsx`
 - `apps/web/src/components/screens/name-card.tsx`
 - `apps/web/src/components/screens/pause.tsx`
@@ -434,11 +432,11 @@ Source files:
 - `apps/web/src/components/screens/race-hud.tsx`
 - `apps/web/src/components/screens/race-panel.tsx`
 - `apps/web/src/components/screens/rejoin.tsx`
-- `apps/web/src/components/screens/results.tsx`
-- `apps/web/src/components/screens/ride-out.tsx`
+- `apps/web/src/components/screens/results-panel.tsx`
 - `apps/web/src/components/screens/room-lobby.tsx`
 - `apps/web/src/components/screens/settings.tsx`
 - `apps/web/src/components/screens/shared.tsx`
+- `apps/web/src/components/solo-door.tsx`
 - `apps/web/src/components/use-flow.ts`
 - `apps/web/src/game/showroom.ts`
 - `apps/web/src/navigation.ts`

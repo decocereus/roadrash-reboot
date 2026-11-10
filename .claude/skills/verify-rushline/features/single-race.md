@@ -1,13 +1,14 @@
 # Ride solo and single race
 
-The game opens in the walkable Lowside bar with the Race tab on its home panel. Ride solo there opens the Ride solo panel: the career line with Ride, and a single race, where a player picks one of three roads and presses Race. The ride-out card shows the field while the road loads, and the race starts by itself with no money at stake. During the race Escape pauses it, and the pause menu resumes, restarts, toggles sound, opens Settings, or quits back to the bar.
+The game opens in the walkable Lowside bar with the Race tab on its home panel. Ride solo there opens the Ride solo panel: the career line with Ride, and a single race, where a player picks one of three roads and presses Race. The panel closes, the bar's door lifts, the rider walks out while the road loads, and the race starts by itself with no money at stake. After the finish, Results sits on the Race panel with Continue and Race again. During the race Escape pauses it, and the pause menu resumes, restarts, toggles sound, opens Settings, or quits back to the bar.
 
 ## Sub-features
 
 - `ride-solo` shows `Career. Tier <n>. $<cash> in your pocket.` with Ride (`Next up, <road>.`), or New career when the career is over, Start over for a damaged save, Try again for an unreadable one, and nothing while the save loads. Under it, `Single race. Pick a road. No money on it.`, one button per road with the picked one `aria-pressed`, Race, and Back. A single race rides the career's tier and bike: after New career it reads tier 1 and the bike that career owns.
-- `ride-out` shows the road's flyer, the grid, and "Loading the road", then "Ride", and starts the race about 2 seconds after it opens. It has no buttons; Escape goes back.
-- `ride-out-failed-load` shows `The riders did not load.` with Retry and Back when a rider's model cannot load. Retry prepares the race again and starts it without waiting out the dwell again. A Retry before the dwell ends still waits it out. Back returns to Ride solo.
-- `ride-out-back` leaves the card while the road is loading, and the preparation that finishes later starts nothing.
+- `door` closes the panel and lifts the bar's door, the same door a room race uses, and starts the race once the road is prepared and the door has stood open 5 seconds. Nothing is on screen during it; Escape goes back to Ride solo and closes the door.
+- `door-failed-load` shows `No ride` and `The riders did not load. Check your connection and try again.` with Retry and Back on the Race panel when a rider's model cannot load. Retry prepares the race again and starts it without waiting out the door again. A Retry before the 5 seconds end still waits them out. Back returns to Ride solo.
+- `door-back` leaves the door while the road is loading, and the preparation that finishes later starts nothing.
+- `results` shows the place out of the field, the road, the top five placings (or down to the player) and `Continue`. `Race again` (`Same road.`) goes straight through the door again.
 - `race-start` counts down 3, 2, 1, then shows the speedometer with place out of 10.
 - `pause` freezes the race on Escape and offers Resume, Restart race, Sound, Settings, and Quit race. A career race drops Restart race and asks Quit and pay ([career.md](career.md)); a room race does not pause.
 - `resume` holds the race for 3 seconds with countdown digits, then lets it run.
@@ -29,9 +30,9 @@ Preconditions:
 
 - **Ride solo.** Run `rv open --run <run> / --until bar`, `rv click --run <run> "Ride solo" --within Race` and `rv aria --run <run> ride-solo`. `region "Ride solo"` shows the career line, `button "Ride Next up, Breakwater Run."`, the three road buttons with `Ridge Road` `pressed=true`, `Race` and `BACK`.
 - **Pick a road.** Run `rv click --run <run> "Slag Row" --within "Ride solo"`. `Slag Row` reads `pressed=true` and the others `pressed=false`.
-- **Ride out.** Run `rv click --run <run> Race --within "Ride solo"` and `rv shot --run <run> ride-out`. The card shows the flyer and the grid with YOU last.
-- **Failed load and Retry.** `?as=` works only in a development build, which is what `rv` serves. Read the model's file name from `apps/web/src/assets/art.json`, open Ride solo on `/?as=kylie`, and keep a DevTools session open on the page's port that sends `Network.enable` and `Network.setBlockedURLs` with `urlPatterns` `[{ "urlPattern": "*://*:*/art/<file name>", "block": true }]`. Run `rv click --run <run> Race --within "Ride solo"`. The card shows the alert with Retry and Back, and no speed meter appears past the dwell. `rv click --run <run> Retry` fails the same way. Send `Network.setBlockedURLs` with an empty list and `rv click --run <run> Retry`: the race starts.
-- **Back while loading.** Open Ride solo on `/?as=kylie` and keep a DevTools session open that sends `Fetch.enable` with `patterns` `[{ "urlPattern": "*/art/<file name>" }]` and holds each `Fetch.requestPaused`. Press Race, wait past the dwell so the card still reads `Loading the road`, then `rv press --run <run> Escape`. Send `Fetch.continueRequest`. Ride solo stays up and no race starts.
+- **Door.** Run `rv click --run <run> Race --within "Ride solo"` and `rv shot --run <run> door` within a second. The panel is gone and the door is lifting. Record it with `rv cast` to watch the door rise and the rider walk out.
+- **Failed load and Retry.** `?as=` works only in a development build, which is what `rv` serves. Read the model's file name from `apps/web/src/assets/art.json`, open Ride solo on `/?as=kylie`, and keep a DevTools session open on the page's port that sends `Network.enable` and `Network.setBlockedURLs` with `urlPatterns` `[{ "urlPattern": "*://*:*/art/<file name>", "block": true }]`. Run `rv click --run <run> Race --within "Ride solo"`. The Race panel shows the alert with Retry and Back, and no speed meter appears past the door's 5 seconds. `rv click --run <run> Retry` fails the same way. Send `Network.setBlockedURLs` with an empty list and `rv click --run <run> Retry`: the race starts.
+- **Back while loading.** Open Ride solo on `/?as=kylie` and keep a DevTools session open that sends `Fetch.enable` with `patterns` `[{ "urlPattern": "*/art/<file name>" }]` and holds each `Fetch.requestPaused`. Press Race, wait past 5 seconds so the race is still loading, then `rv press --run <run> Escape`. Send `Fetch.continueRequest`. Ride solo stays up and no race starts.
 - **Start.** Run `rv wait --run <run> race`. The `meter "Speed"` appears; `rv shot --run <run> race-start` shows the countdown digits and the speedometer reading 10TH /10.
 - **Pause.** After the countdown, run `rv press --run <run> Escape` and `rv aria --run <run> paused`. `menu "Pause"` shows `RESUME` focused, `RESTART RACE`, `SOUND ON`, `SETTINGS`, `QUIT RACE`.
 - **Resume.** Run `rv click --run <run> Resume --within Pause`. The pause menu is gone and countdown digits hold the race for 3 seconds. After them, the speed meter moves while `rv press --run <run> ArrowUp --hold 2000` is held. Throttle during the digits does nothing.
@@ -45,7 +46,7 @@ Preconditions:
 ## Gotchas
 
 - The bar's tab strip appears once the save has been read; wait for `bar`, not for the page load.
-- The ride-out card reads "Loading the road" until the models load, which takes 2-3 seconds on a build and about 20 seconds on `--dev` with `fast4g`.
+- The door holds until the models load, which takes 2-3 seconds on a build and about 20 seconds on `--dev` with `fast4g`.
 - R only restarts a single race, and only while racing; in a career race or a room race it does nothing.
 - Escape on the pause screen resumes, so pressing it twice is not a way to make sure the game is paused.
 - A hidden page pauses the race on its own; if the pause menu appears unasked, run `rv doctor` and check `page visible`.

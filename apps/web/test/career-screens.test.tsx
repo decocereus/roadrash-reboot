@@ -6,13 +6,18 @@ import { newCareer } from "@racer/career/state";
 import type { CareerState } from "@racer/career/state";
 import { STARTING_BIKE } from "@racer/career/tables";
 import { bikeIds } from "@racer/sim/bikes";
+import type { ComponentProps } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { careerEntry, planFor, rideEntry } from "../src/career/flow.ts";
 import type { SaveStorage } from "../src/career/save-storage.ts";
 import { freshCareer, settledRace } from "../src/career/save.ts";
-import { ResultsScreen } from "../src/components/screens/results.tsx";
+import {
+  CareerOver,
+  SoloResults,
+} from "../src/components/screens/results-panel.tsx";
+import { SoloDoor } from "../src/components/solo-door.tsx";
 import { stepNavigation } from "../src/navigation.ts";
 import type { NavigationEvent, View } from "../src/navigation.ts";
 
@@ -68,17 +73,16 @@ const resultsAfter = (open: () => SaveStorage) => {
       { kind: "raceOver" },
     ]
   );
-  if (results.screen !== "results") {
-    throw new Error("A settled career race opens Results.");
+  if (results.screen !== "bar" || results.panel.kind !== "results") {
+    throw new Error("A settled career race opens Results in the bar.");
   }
   const markup = renderToStaticMarkup(
-    <ResultsScreen
+    <SoloResults
       canRaceAgain={false}
-      career={settled.save.career}
       onContinue={vi.fn<() => void>()}
       onRaceAgain={vi.fn<() => void>()}
       repeatRun={false}
-      report={results.report}
+      report={results.panel.report}
       riding={settled.save.career.bikeId}
     />
   );
@@ -117,16 +121,78 @@ const raceOf = (career: CareerState, pick: PracticePick) => {
       },
     ]
   );
-  if (ride.screen !== "rideOut") {
-    throw new Error("Race on Ride solo opens the ride out.");
+  if (ride.screen !== "bar" || ride.panel.kind !== "door") {
+    throw new Error("Race on Ride solo opens the door.");
   }
-  const plan = planFor(recordedRules, career, ride.entry);
+  const plan = planFor(recordedRules, career, ride.panel.entry);
   return {
     bikeId: plan.bikeId,
     roadId: plan.setup.roadId,
     tier: plan.setup.tier,
   };
 };
+
+const overCardOf = (career: CareerState): string =>
+  renderToStaticMarkup(
+    <CareerOver
+      career={career}
+      onClose={vi.fn<() => void>()}
+      onNewCareer={vi.fn<() => void>()}
+    />
+  );
+
+describe("the career over card", () => {
+  it("names a broke career and offers a new one or Close", () => {
+    const markup = overCardOf({ ...fresh, gameOver: true });
+    expect([
+      markup.includes("Broke"),
+      markup.includes("New career"),
+      markup.includes("Close"),
+    ]).toStrictEqual([true, true, true]);
+  });
+
+  it("keeps the ending's name and note", () => {
+    const markup = overCardOf({
+      ...fresh,
+      story: { ...fresh.story, ending: "runner-up" },
+    });
+    expect([
+      markup.includes("Runner-up"),
+      markup.includes("Broke"),
+    ]).toStrictEqual([true, false]);
+  });
+});
+
+type SoloDoorProps = ComponentProps<typeof SoloDoor>;
+
+const doorOf = (failure: string): string =>
+  renderToStaticMarkup(
+    <SoloDoor
+      career={fresh}
+      entry={careerEntry(fresh, ROAD)}
+      failure={failure}
+      onBack={vi.fn<() => void>()}
+      onPrepare={vi.fn<SoloDoorProps["onPrepare"]>()}
+      onStart={vi.fn<() => void>()}
+      ready={false}
+      rules={recordedRules}
+    />
+  );
+
+describe("the solo door", () => {
+  it("draws nothing while the race loads behind the open door", () => {
+    expect(doorOf("")).toBe("");
+  });
+
+  it("says the game could not start and offers Back when the game failed to boot", () => {
+    const markup = doorOf("The game chunk did not load.");
+    expect([
+      markup.includes("Could not start the game: The game chunk did not load."),
+      markup.includes("Back"),
+      markup.includes("Retry"),
+    ]).toStrictEqual([true, true, false]);
+  });
+});
 
 describe("the single race pick", () => {
   it("rides the new career's tier and bike after a pick made in the career before it", () => {

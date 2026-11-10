@@ -10,6 +10,7 @@ import {
   blankSeason,
   byRacer,
   byRival,
+  endingIds,
   SAVE_VERSION,
 } from "./state.ts";
 import type { CareerState } from "./state.ts";
@@ -20,8 +21,24 @@ export type SaveResult =
 
 const RawSave = Schema.Record(Schema.String, Schema.Unknown);
 
+const version7Endings = [...endingIds, "bought-crown"] as const;
+const Version7Ending = Schema.NullOr(Schema.Literals(version7Endings));
+const withRest = <Fields extends Schema.Struct.Fields>(fields: Fields) =>
+  Schema.StructWithRest(Schema.Struct(fields), [RawSave]);
+
+const Version7Save = withRest({
+  lastResult: Schema.NullOr(
+    withRest({ ledger: withRest({ ending: Version7Ending }) })
+  ),
+  story: withRest({ ending: Version7Ending }),
+  version: Schema.Literal(7),
+});
+
 const decodeText = Schema.decodeUnknownResult(Schema.fromJsonString(RawSave));
 const decodeSave = Schema.decodeUnknownResult(EncodedSaveSchema, {
+  errors: "all",
+});
+const decodeVersion7 = Schema.decodeUnknownResult(Version7Save, {
   errors: "all",
 });
 const decodeSources = Schema.decodeUnknownResult(SaveSourceSchema, {
@@ -61,13 +78,42 @@ const currentSave = (save: typeof RawSave.Type): SaveResult => {
   });
 };
 
+const crownOf = (
+  ending: typeof Version7Ending.Type
+): (typeof endingIds)[number] | null =>
+  ending === "bought-crown" ? "clean-crown" : ending;
+
+const fromVersion7 = (save: typeof RawSave.Type): SaveResult =>
+  Result.match(decodeVersion7(save), {
+    onFailure: (error) => refused("invalid", firstField(issuePaths(error))),
+    onSuccess: ({ lastResult, story, ...rest }) =>
+      currentSave({
+        ...rest,
+        lastResult: lastResult && {
+          ...lastResult,
+          ledger: {
+            ...lastResult.ledger,
+            ending: crownOf(lastResult.ledger.ending),
+          },
+        },
+        story: { ...story, ending: crownOf(story.ending) },
+        version: SAVE_VERSION,
+      }),
+  });
+
+const VERSION_7 = 7;
+
 const decode = (text: string): SaveResult =>
   Result.match(decodeText(text), {
     onFailure: () => refused("notJson", ""),
-    onSuccess: (save) =>
-      save.version === SAVE_VERSION
-        ? currentSave(save)
-        : refused("wrongVersion", "version"),
+    onSuccess: (save) => {
+      if (save.version === SAVE_VERSION) {
+        return currentSave(save);
+      }
+      return save.version === VERSION_7
+        ? fromVersion7(save)
+        : refused("wrongVersion", "version");
+    },
   });
 
 export const serialiseCareer = (career: CareerState): string => {

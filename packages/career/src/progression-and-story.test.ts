@@ -18,8 +18,7 @@ import { roadsFor, setupFor } from "./field.ts";
 import { startRace } from "./settle.ts";
 import { shopStock } from "./shop.ts";
 import { newCareer } from "./state.ts";
-import type { CareerState } from "./state.ts";
-import { acceptEnvelope, refuseEnvelope, storyBeat } from "./story.ts";
+import { storyBeat } from "./story.ts";
 import { roadList } from "./tables.ts";
 
 describe("moving up", () => {
@@ -90,36 +89,13 @@ describe("moving up", () => {
 describe("the story", () => {
   const levelTwo = seasonAt(decent, 1).end;
 
-  it("offers the envelope at tier 2, pays $1,500 for taking it, and takes back $2,000 when the player beats Tristan on Breakwater Run", () => {
-    const taken = acceptEnvelope(levelTwo);
-    const race = enter(taken, "breakwater-run");
-    sprint(race, 4, ["tristan-lux"]);
-    const behind = settle(race);
-    const ahead = play(behind.career, { place: 1, roadId: "breakwater-run" });
-    const again = play(ahead.career, { place: 1, roadId: "breakwater-run" });
-    expect([
-      storyBeat(seasonAt(decent, 1).start).envelopeOpen,
-      storyBeat(levelTwo).envelopeOpen,
-      taken.cash - levelTwo.cash,
-      storyBeat(taken).envelopeOpen,
-    ]).toStrictEqual([false, true, 1500, false]);
-    expect([
-      ledgerOf(behind).envelope,
-      ledgerOf(ahead).envelope,
-      ledgerOf(ahead).prize,
-      ledgerOf(again).envelope,
-    ]).toStrictEqual([0, -2000, 12_000, 0]);
-  });
-
-  it("an envelope that is refused, or left on the board until the Breakwater race, pays nothing and cannot be taken later", () => {
-    const refused = refuseEnvelope(levelTwo);
-    const left = play(levelTwo, { place: 1, roadId: "breakwater-run" });
-    expect([
-      acceptEnvelope(refused).cash,
-      left.career.story.envelope,
-      acceptEnvelope(left.career).cash - left.career.cash,
-      ledgerOf(left).envelope,
-    ]).toStrictEqual([levelTwo.cash, "refused", 0, 0]);
+  it("beating Tristan on Breakwater Run at tier 2 pays the prize and takes nothing back", () => {
+    const race = enter(levelTwo, "breakwater-run");
+    sprint(race, 1, ["tristan-lux"]);
+    const won = settle(race);
+    expect(won.career.cash - levelTwo.cash).toBe(
+      ledgerOf(won).prize - ledgerOf(won).repair
+    );
   });
 
   it("Dee rides as an ally from tier 2 until the player knocks her down twice in one race", () => {
@@ -145,21 +121,17 @@ describe("the story", () => {
     ).toMatchObject({ aggressionBoost: 0.2, grudge: 0 });
   });
 
-  it("winning the Long Ridge after taking the envelope is the bought crown", () => {
+  it("winning the Long Ridge is the clean crown, and second place is the runner-up", () => {
     const beforeFinale = playAll(
       seasonAt(decent, 3).start,
       roadList.slice(0, 2).map((entry) => ({ place: 3, roadId: entry.id }))
     );
-    const bought: CareerState = {
-      ...beforeFinale,
-      story: { ...beforeFinale.story, envelope: "taken" },
-    };
-    const won = play(bought, { place: 1, roadId: "ridge-road" });
+    const won = play(beforeFinale, { place: 1, roadId: "ridge-road" });
     const second = play(beforeFinale, { place: 2, roadId: "ridge-road" });
     expect([
       ledgerOf(won).ending,
       storyBeat(won.career).endingChapter?.name,
       ledgerOf(second).ending,
-    ]).toStrictEqual(["bought-crown", "Bought Crown", "runner-up"]);
+    ]).toStrictEqual(["clean-crown", "Clean Crown", "runner-up"]);
   });
 });

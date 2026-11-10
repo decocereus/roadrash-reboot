@@ -9,7 +9,7 @@ import type { LastResult } from "./result.ts";
 import { byTier, roadList, STARTING_BIKE, STARTING_CASH } from "./tables.ts";
 import type { Tier, RoadId } from "./tables.ts";
 
-export const SAVE_VERSION = 7;
+export const SAVE_VERSION = 8;
 
 export const racerIds = ["player", ...rivalIds] as const;
 
@@ -59,17 +59,11 @@ export interface RivalMemory {
   readonly outrunUntouched: number;
 }
 
-export const envelopeFlags = ["unseen", "offered", "taken", "refused"] as const;
-
-export type EnvelopeFlag = (typeof envelopeFlags)[number];
-
-export const endingIds = ["clean-crown", "bought-crown", "runner-up"] as const;
+export const endingIds = ["clean-crown", "runner-up"] as const;
 
 export type EndingId = (typeof endingIds)[number];
 
 export interface StoryFlags {
-  readonly envelope: EnvelopeFlag;
-  readonly envelopeClawedBack: boolean;
   readonly deeAlly: boolean;
   readonly finaleUnlocked: boolean;
   readonly leftRace: boolean;
@@ -185,8 +179,6 @@ export const newCareer = (seed: number): CareerState => ({
   story: {
     deeAlly: false,
     ending: null,
-    envelope: "unseen",
-    envelopeClawedBack: false,
     finaleUnlocked: false,
     leftRace: false,
   },

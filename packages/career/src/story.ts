@@ -1,5 +1,4 @@
-import type { CareerState, EndingId, EnvelopeFlag } from "./state.ts";
-import { ENVELOPE_TIER, ENVELOPE_PAYMENT } from "./tables.ts";
+import type { CareerState, EndingId } from "./state.ts";
 import type { Tier } from "./tables.ts";
 
 export interface StoryChapter {
@@ -14,7 +13,7 @@ const chapters = {
   },
   2: {
     name: "Dee's Tip",
-    note: 'Tristan\'s sponsor wants a win on his home road, and Vic wants the sponsor. There is an envelope on the corkboard with your name on it and $1,500 inside; the note says "Breakwater Run. Behind the boy. V." Taking it is optional and is the only branch in the story. If you take it and beat Tristan anyway, Vic takes back $2,000 and pins a photo of your bike with a red X on it. If you leave it, the envelope is gone the next morning and Vic is very pleasant to you, which is worse. Juno races for the first time and says nothing to you at all. Dee wins a race on her home road and Vic pays her half, with a "processing fee" for the rest. She sits at your table and stops pretending to dislike you. From now on, before each race, she texts where the first cop is parked ("cop at 2.15 on slag row. same as always. vic knows. vic ALWAYS knows"), and she does not attack you on the road. The new cops are quicker, and the board fills up with tickets from riders who did not get a text.',
+    note: 'Tristan\'s sponsor wants a win on his home road, and Vic wants the sponsor, so Vic is very pleasant to everyone on Breakwater Run, which is worse. Juno races for the first time and says nothing to you at all. Dee wins a race on her home road and Vic pays her half, with a "processing fee" for the rest. She sits at your table and stops pretending to dislike you. From now on, before each race, she texts where the first cop is parked ("cop at 2.15 on slag row. same as always. vic knows. vic ALWAYS knows"), and she does not attack you on the road. The new cops are quicker, and the board fills up with tickets from riders who did not get a text.',
   },
   3: {
     name: "The Long Ridge",
@@ -23,13 +22,9 @@ const chapters = {
 } as const satisfies Record<Tier, StoryChapter>;
 
 export const endings = {
-  "bought-crown": {
-    name: "Bought Crown",
-    note: "You win the Long Ridge but took the envelope at tier 2. Vic hands you the purse and a contract: next season you ride for him. Your Polaroid goes at the top of the board, pinned through Vic's business card. Juno does not buy a round. This is the hook for a second season.",
-  },
   "clean-crown": {
     name: "Clean Crown",
-    note: "You win the Long Ridge and never took the envelope. Sergeant Pike, who has read the room, busts Vic in the Lowside car park instead of you. Deputy Haverty asks Vic to hold still for a photo. Your Polaroid goes at the top of the board, Juno buys the first round, and Dee delivers a pizza nobody ordered.",
+    note: "You win the Long Ridge and you owe Vic nothing. Sergeant Pike, who has read the room, busts Vic in the Lowside car park instead of you. Deputy Haverty asks Vic to hold still for a photo. Your Polaroid goes at the top of the board, Juno buys the first round, and Dee delivers a pizza nobody ordered.",
   },
   "runner-up": {
     name: "Runner-up",
@@ -44,8 +39,6 @@ export const LEFT_RACE_NOTE =
 
 export interface StoryBeat {
   readonly tier: Tier;
-  readonly envelope: EnvelopeFlag;
-  readonly envelopeOpen: boolean;
   readonly deeAlly: boolean;
   readonly finaleOpen: boolean;
   readonly leftRaceNote: string | null;
@@ -53,33 +46,11 @@ export interface StoryBeat {
   readonly endingChapter: StoryChapter | null;
 }
 
-const envelopeOpen = (career: CareerState): boolean =>
-  career.tier === ENVELOPE_TIER &&
-  career.story.envelope === "offered" &&
-  !career.gameOver &&
-  career.activeRace === null;
-
 export const storyBeat = (career: CareerState): StoryBeat => ({
   deeAlly: career.story.deeAlly,
   ending: career.story.ending,
   endingChapter: career.story.ending ? endings[career.story.ending] : null,
-  envelope: career.story.envelope,
-  envelopeOpen: envelopeOpen(career),
   finaleOpen: career.story.finaleUnlocked,
   leftRaceNote: career.story.leftRace ? LEFT_RACE_NOTE : null,
   tier: career.tier,
 });
-
-export const acceptEnvelope = (career: CareerState): CareerState =>
-  envelopeOpen(career)
-    ? {
-        ...career,
-        cash: career.cash + ENVELOPE_PAYMENT,
-        story: { ...career.story, envelope: "taken" },
-      }
-    : career;
-
-export const refuseEnvelope = (career: CareerState): CareerState =>
-  envelopeOpen(career)
-    ? { ...career, story: { ...career.story, envelope: "refused" } }
-    : career;

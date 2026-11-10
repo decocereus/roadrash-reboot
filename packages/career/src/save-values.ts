@@ -6,7 +6,7 @@ import { roadIds } from "@racer/track/road";
 import * as Schema from "effect/Schema";
 
 import { fates, raceResults, witnesses } from "./outcome.ts";
-import { endingIds, envelopeFlags, racerIds } from "./state.ts";
+import { endingIds, racerIds } from "./state.ts";
 import { tiers, QUALIFYING_PLACE } from "./tables.ts";
 
 const MAX_MONEY = 1e9;
@@ -44,7 +44,6 @@ export const Tier = Schema.Literals(tiers);
 export const Racer = Schema.Literals(racerIds);
 export const Rival = Schema.Literals(rivalIds);
 export const Weapon = Schema.Literals(weaponKinds);
-export const Envelope = Schema.Literals(envelopeFlags);
 export const Ending = Schema.Literals(endingIds);
 export const Result = Schema.Literals(raceResults);
 export const RowFate = Schema.Literals(fates);

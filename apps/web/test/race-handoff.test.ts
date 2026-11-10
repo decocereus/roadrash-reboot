@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { preparedRace, preparedRaces } from "../src/prepare-outcome.ts";
 import type { PrepareOutcome } from "../src/prepare-outcome.ts";
-import { rideOutSignals, stepRideOut } from "../src/race-handoff.ts";
+import { soloDoorSignals, stepSoloDoor } from "../src/race-handoff.ts";
 import type {
-  RideOutEvent,
-  RideOutHandoff,
+  SoloDoorEvent,
+  SoloDoorHandoff,
   Step,
 } from "../src/race-handoff.ts";
 import {
@@ -23,7 +23,7 @@ const failedAt = (
   stage: Extract<PrepareOutcome, { readonly kind: "failed" }>["stage"]
 ): PrepareOutcome => ({ cause: new Error(stage), kind: "failed", stage });
 
-const FIRST_RIDE_OUT: RideOutHandoff<Ride> = {
+const FIRST_SOLO_DOOR: SoloDoorHandoff<Ride> = {
   kind: "waitingForGame",
   ride: RIDE,
 };
@@ -49,10 +49,10 @@ const walk = <State extends { readonly kind: string }, Event>(
   return { effects, state: at.kind };
 };
 
-const rideOut = (...kinds: readonly RideOutEvent["kind"][]) =>
+const soloDoor = (...kinds: readonly SoloDoorEvent["kind"][]) =>
   walk(
-    stepRideOut<Ride>,
-    FIRST_RIDE_OUT,
+    stepSoloDoor<Ride>,
+    FIRST_SOLO_DOOR,
     kinds.map((kind) => ({ kind }))
   );
 
@@ -84,18 +84,20 @@ const upToEffect = <Event>(
     ) + 1
   );
 
-const rideOutRulesHold = (events: readonly RideOutEvent["kind"][]): boolean => {
-  const { effects } = rideOut(...events);
+const soloDoorRulesHold = (
+  events: readonly SoloDoorEvent["kind"][]
+): boolean => {
+  const { effects } = soloDoor(...events);
   const toStart = upToEffect(
     events,
-    (prefix) => rideOut(...prefix).effects,
+    (prefix) => soloDoor(...prefix).effects,
     "start"
   );
   const startRules =
     !effects.includes("start") ||
     (toStart.includes("gameReady") &&
       toStart.includes("built") &&
-      toStart.includes("dwellElapsed") &&
+      toStart.includes("doorElapsed") &&
       !toStart.includes("closed"));
   return (
     countOf(effects, "start") < 2 &&
@@ -129,41 +131,41 @@ const roomRulesHold = (events: readonly RoomEvent<Ride>[]): boolean => {
   );
 };
 
-describe("a solo ride-out", () => {
+describe("a solo race at the door", () => {
   it("waits for the game before it prepares", () => {
-    expect(rideOut("dwellElapsed")).toStrictEqual({
+    expect(soloDoor("doorElapsed")).toStrictEqual({
       effects: [],
-      state: "waitingForGameDwelt",
+      state: "waitingForGamePastDoor",
     });
-    expect(rideOut("dwellElapsed", "gameReady").effects).toStrictEqual([
+    expect(soloDoor("doorElapsed", "gameReady").effects).toStrictEqual([
       "prepare",
     ]);
-    expect(rideOut("gameReady").effects).toStrictEqual(["prepare"]);
+    expect(soloDoor("gameReady").effects).toStrictEqual(["prepare"]);
   });
 
   it("prepares once however often the game says it is ready", () => {
-    expect(rideOut("gameReady", "gameReady").effects).toStrictEqual([
+    expect(soloDoor("gameReady", "gameReady").effects).toStrictEqual([
       "prepare",
     ]);
-    expect(rideOut("gameReady", "missing", "gameReady").effects).toStrictEqual([
-      "prepare",
-    ]);
+    expect(soloDoor("gameReady", "missing", "gameReady").effects).toStrictEqual(
+      ["prepare"]
+    );
   });
 
-  it("starts once the race is built and the dwell is over, in either order", () => {
-    expect(rideOut("gameReady", "built")).toStrictEqual({
+  it("starts once the race is built and the door moment is over, in either order", () => {
+    expect(soloDoor("gameReady", "built")).toStrictEqual({
       effects: ["prepare"],
-      state: "dwelling",
+      state: "atDoor",
     });
-    expect(rideOut("gameReady", "built", "dwellElapsed")).toStrictEqual({
+    expect(soloDoor("gameReady", "built", "doorElapsed")).toStrictEqual({
       effects: ["prepare", "start"],
       state: "started",
     });
-    expect(rideOut("gameReady", "dwellElapsed")).toStrictEqual({
+    expect(soloDoor("gameReady", "doorElapsed")).toStrictEqual({
       effects: ["prepare"],
-      state: "preparingDwelt",
+      state: "preparingPastDoor",
     });
-    expect(rideOut("gameReady", "dwellElapsed", "built")).toStrictEqual({
+    expect(soloDoor("gameReady", "doorElapsed", "built")).toStrictEqual({
       effects: ["prepare", "start"],
       state: "started",
     });
@@ -171,67 +173,67 @@ describe("a solo ride-out", () => {
 
   it("offers Retry after a missing race and prepares again when pressed", () => {
     const race = preparedRace(failedAt("dress"));
-    expect(rideOut("gameReady", race)).toStrictEqual({
+    expect(soloDoor("gameReady", race)).toStrictEqual({
       effects: ["prepare"],
       state: "failed",
     });
-    expect(rideOut("gameReady", race, "retry")).toStrictEqual({
+    expect(soloDoor("gameReady", race, "retry")).toStrictEqual({
       effects: ["prepare", "prepare"],
       state: "preparing",
     });
   });
 
-  it("does not wait out the dwell again after a Retry", () => {
+  it("does not wait out the door again after a Retry", () => {
     expect(
-      rideOut("gameReady", "missing", "dwellElapsed", "retry", "built")
+      soloDoor("gameReady", "missing", "doorElapsed", "retry", "built")
     ).toStrictEqual({
       effects: ["prepare", "prepare", "start"],
       state: "started",
     });
     expect(
-      rideOut("gameReady", "dwellElapsed", "missing", "retry", "built").effects
+      soloDoor("gameReady", "doorElapsed", "missing", "retry", "built").effects
     ).toStrictEqual(["prepare", "prepare", "start"]);
   });
 
-  it("still waits out the dwell when a Retry comes before it ends", () => {
-    expect(rideOut("gameReady", "missing", "retry", "built")).toStrictEqual({
+  it("still waits out the door when a Retry comes before it ends", () => {
+    expect(soloDoor("gameReady", "missing", "retry", "built")).toStrictEqual({
       effects: ["prepare", "prepare"],
-      state: "dwelling",
+      state: "atDoor",
     });
   });
 
   it("ignores Retry unless the load failed", () => {
-    expect(rideOut("retry").effects).toStrictEqual([]);
-    expect(rideOut("gameReady", "retry").effects).toStrictEqual(["prepare"]);
-    expect(rideOut("gameReady", "built", "retry").state).toBe("dwelling");
+    expect(soloDoor("retry").effects).toStrictEqual([]);
+    expect(soloDoor("gameReady", "retry").effects).toStrictEqual(["prepare"]);
+    expect(soloDoor("gameReady", "built", "retry").state).toBe("atDoor");
   });
 
   it("changes nothing when a preparation is cancelled", () => {
-    expect(rideOut("gameReady", "cancelled")).toStrictEqual(
-      rideOut("gameReady")
+    expect(soloDoor("gameReady", "cancelled")).toStrictEqual(
+      soloDoor("gameReady")
     );
-    expect(rideOut("gameReady", "dwellElapsed", "cancelled")).toStrictEqual(
-      rideOut("gameReady", "dwellElapsed")
+    expect(soloDoor("gameReady", "doorElapsed", "cancelled")).toStrictEqual(
+      soloDoor("gameReady", "doorElapsed")
     );
   });
 
-  it("starts nothing for an outcome that arrives after the card closed", () => {
+  it("starts nothing for an outcome that arrives after the rider backed out", () => {
     expect(
-      rideOut("gameReady", "dwellElapsed", "closed", "built")
+      soloDoor("gameReady", "doorElapsed", "closed", "built")
     ).toStrictEqual({ effects: ["prepare"], state: "closed" });
     expect(
-      rideOut("gameReady", "built", "closed", "dwellElapsed").effects
+      soloDoor("gameReady", "built", "closed", "doorElapsed").effects
     ).toStrictEqual(["prepare"]);
-    expect(rideOut("closed", "gameReady").effects).toStrictEqual([]);
+    expect(soloDoor("closed", "gameReady").effects).toStrictEqual([]);
     expect(
-      rideOut("gameReady", "missing", "closed", "retry").effects
+      soloDoor("gameReady", "missing", "closed", "retry").effects
     ).toStrictEqual(["prepare"]);
   });
 
   it("keeps the rules in every order of its events", () => {
-    const kinds = [...rideOutSignals, ...preparedRaces];
+    const kinds = [...soloDoorSignals, ...preparedRaces];
     expect(
-      sequences(kinds, 6).filter((events) => !rideOutRulesHold(events))
+      sequences(kinds, 6).filter((events) => !soloDoorRulesHold(events))
     ).toStrictEqual([]);
   });
 });

@@ -32,10 +32,6 @@ import {
   ALLY_BREAKING_KNOCKDOWNS,
   ALLY_TIER,
   creditLimitOf,
-  ENVELOPE_CLAWBACK,
-  ENVELOPE_TIER,
-  ENVELOPE_RIVAL,
-  ENVELOPE_ROAD,
   fineFor,
   prizeFor,
   QUALIFYING_PLACE,
@@ -81,7 +77,6 @@ export interface Ledger {
   readonly repair: number;
   readonly repairHalved: boolean;
   readonly fine: number;
-  readonly envelope: number;
   readonly cashBefore: number;
   readonly cashAfter: number;
   readonly qualified: boolean;
@@ -133,8 +128,6 @@ export const startRace = (
   if (reason) {
     return { career, reason, started: false };
   }
-  const envelopeRace =
-    roadId === ENVELOPE_ROAD && career.tier === ENVELOPE_TIER;
   return {
     career: {
       ...career,
@@ -148,14 +141,7 @@ export const startRace = (
       },
       lastResult: null,
       record: { ...career.record, starts: career.record.starts + 1 },
-      story: {
-        ...career.story,
-        envelope:
-          envelopeRace && career.story.envelope === "offered"
-            ? "refused"
-            : career.story.envelope,
-        leftRace: false,
-      },
+      story: { ...career.story, leftRace: false },
     },
     started: true,
   };
@@ -204,14 +190,6 @@ export const billConsequence = (
 
 const placeOf = (outcome: RaceOutcome, racer: Placing["racer"]): number =>
   outcome.placings.find((placing) => placing.racer === racer)?.place ?? 0;
-
-const envelopeDue = (career: CareerState, outcome: RaceOutcome): boolean =>
-  career.story.envelope === "taken" &&
-  !career.story.envelopeClawedBack &&
-  outcome.roadId === ENVELOPE_ROAD &&
-  outcome.tier === ENVELOPE_TIER &&
-  outcome.result === "finished" &&
-  placeOf(outcome, ENVELOPE_RIVAL) > outcome.place;
 
 const repairOf = (
   race: ActiveRace,
@@ -344,7 +322,6 @@ interface Bill {
   readonly repair: number;
   readonly repairHalved: boolean;
   readonly fine: number;
-  readonly envelope: number;
 }
 
 const billOf = (
@@ -356,7 +333,6 @@ const billOf = (
   const repeat = career.qualified[race.tier][race.roadId] !== undefined;
   const earned = repeat ? repeatPrizeFor : prizeFor;
   return {
-    envelope: envelopeDue(career, outcome) ? -ENVELOPE_CLAWBACK : 0,
     fine: outcome.result === "busted" ? fineFor(race.tier) : 0,
     prize: outcome.result === "finished" ? earned(race.tier, outcome.place) : 0,
     repair: repairOf(race, outcome, offer),
@@ -374,12 +350,8 @@ interface Progress {
   readonly ending: EndingId | null;
 }
 
-const endingOf = (career: CareerState, outcome: RaceOutcome): EndingId => {
-  if (outcome.place !== 1) {
-    return "runner-up";
-  }
-  return career.story.envelope === "taken" ? "bought-crown" : "clean-crown";
-};
+const endingOf = (outcome: RaceOutcome): EndingId =>
+  outcome.place === 1 ? "clean-crown" : "runner-up";
 
 const progressOf = (
   career: CareerState,
@@ -412,7 +384,7 @@ const progressOf = (
     career.story.ending === null;
   return {
     arrivals: promoted ? stockArrivingAt(nextTier) : [],
-    ending: crowned ? endingOf(career, outcome) : null,
+    ending: crowned ? endingOf(outcome) : null,
     newlyQualified,
     promoted,
     roads,
@@ -434,29 +406,14 @@ const allyAfter = (
   return career.story.deeAlly && knockdowns < ALLY_BREAKING_KNOCKDOWNS;
 };
 
-const envelopeAfter = (
-  story: StoryFlags,
-  progress: Progress
-): StoryFlags["envelope"] => {
-  if (progress.promoted && progress.tier === ENVELOPE_TIER) {
-    return "offered";
-  }
-  return progress.promoted && story.envelope === "offered"
-    ? "refused"
-    : story.envelope;
-};
-
 const storyAfter = (
   career: CareerState,
   outcome: RaceOutcome,
-  progress: Progress,
-  bill: Bill
+  progress: Progress
 ): StoryFlags => ({
   ...career.story,
   deeAlly: allyAfter(career, outcome, progress),
   ending: progress.ending ?? career.story.ending,
-  envelope: envelopeAfter(career.story, progress),
-  envelopeClawedBack: career.story.envelopeClawedBack || bill.envelope !== 0,
 });
 
 const carried = (
@@ -498,7 +455,7 @@ export const settleRace = (
   }
   const bill = billOf(career, race, outcome, offer);
   const debt = checkDebt(
-    career.cash + bill.prize - bill.repair - bill.fine + bill.envelope,
+    career.cash + bill.prize - bill.repair - bill.fine,
     career.bikeId
   );
   const progress = progressOf(career, race, outcome, debt.gameOver);
@@ -525,7 +482,7 @@ export const settleRace = (
     qualified: { ...career.qualified, [race.tier]: progress.roads },
     record: recordAfter(career.record, outcome, bill.prize),
     season: scoreRace(career.season, outcome.placings),
-    story: storyAfter(career, outcome, progress, bill),
+    story: storyAfter(career, outcome, progress),
     tier: progress.tier,
   };
   const ledger: Ledger = {

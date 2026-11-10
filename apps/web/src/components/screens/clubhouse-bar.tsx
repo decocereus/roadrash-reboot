@@ -1,15 +1,9 @@
 import { cn } from "@racer/ui/utils";
-import { useEffect, useState } from "react";
-import type { CSSProperties } from "react";
 
 import { plates } from "../../assets/clubhouse-art.ts";
 import { Plate, place, stagePx } from "./clubhouse-stage.tsx";
 import type { StageBox } from "./clubhouse-stage.tsx";
 
-const BACKDROP = { h: 941, w: 610, x: 0, y: 0 } as const;
-const FRONT_SEAT = { h: 577, w: 512, x: 0, y: 278 } as const;
-const COUNTER = { h: 148, w: 512, x: 0, y: 620 } as const;
-const STOOL = { h: 87, w: 290, x: 280, y: 768 } as const;
 const SPEECH = { h: 191, w: 266 } as const;
 const SPEECH_TEXT = { h: 88, w: 224, x: 28, y: 24 } as const;
 const SPEECH_NAME = { h: 33, w: 147, x: 111, y: 152 } as const;
@@ -17,65 +11,6 @@ const BAR_SPEECH = { x: 194, y: 136 } as const;
 
 const LONG_LINE = 60;
 const LONGER_LINE = 90;
-const MS_PER_SECOND = 1000;
-
-let secondsInBar = 0;
-
-export const useBarClock = (): string => {
-  const [offset] = useState(() => secondsInBar);
-  useEffect(() => {
-    const entered = performance.now();
-    return () => {
-      secondsInBar += (performance.now() - entered) / MS_PER_SECOND;
-    };
-  }, []);
-  return `${-offset}s`;
-};
-
-export const BarBackdrop = ({ clock }: { readonly clock: string }) => {
-  const timed: CSSProperties = { animationDelay: clock };
-  return (
-    <div aria-hidden className="absolute inset-0">
-      <Plate box={BACKDROP} className="object-cover" src={plates.night} />
-      <Plate
-        box={BACKDROP}
-        className="bar-dusk object-cover"
-        src={plates.dusk}
-        style={timed}
-      />
-      <Plate
-        box={BACKDROP}
-        className="bar-rays object-cover mix-blend-screen"
-        src={plates.rays}
-        style={{ animationDelay: `${clock}, 0s` }}
-      />
-    </div>
-  );
-};
-
-export const BarLight = ({ clock }: { readonly clock: string }) => (
-  <div aria-hidden className="pointer-events-none absolute inset-0">
-    <div
-      className="bar-dusk-wash absolute inset-0"
-      style={{ animationDelay: clock }}
-    />
-    <div
-      className="bar-neon absolute inset-0"
-      style={{ animationDelay: clock }}
-    />
-  </div>
-);
-
-export const BarSeats = ({ figure }: { readonly figure: string | null }) => (
-  <div aria-hidden className="absolute inset-0">
-    {figure !== null && (
-      <Plate box={FRONT_SEAT} className="seat-in" key={figure} src={figure} />
-    )}
-    <Plate box={COUNTER} src={plates.counter} />
-    <Plate box={STOOL} src={plates.stool} />
-  </div>
-);
-
 export interface Speech {
   readonly line: string;
   readonly name: string;

@@ -131,9 +131,9 @@ A busted or wrecked rider does not finish, so the race does not qualify and pays
 | Reached | Unlocks |
 | --- | --- |
 | New career | All three roads. Shop stock: Gutter Pup 250, Halden Wren 400, Halden Kite 500, Ostra Sesta 600. |
-| Tier 2 | Shop adds Ostra Sette 750, Brack Stoker 800 and Halden Meridian 900. Pool cue and stop sign appear in the field. Story: the envelope. Dee turns ally. |
+| Tier 2 | Shop adds Ostra Sette 750, Brack Stoker 800 and Halden Meridian 900. Pool cue and stop sign appear in the field. Story: Dee's tip. Dee turns ally. |
 | Tier 3 | Shop adds Brack Anvil 1100 and Ostra Nera 1000. Unarmed rivals with aggression 0.5 or more start with a club. Ridge Road at tier 3 is the finale and opens only when the other two roads are qualified at tier 3. |
-| Career end | The ending screen, then Single Race at every tier. |
+| Career end | The career over card, then Single Race at every tier. |
 
 ### Going broke and game over
 
@@ -216,10 +216,6 @@ The tier-1 fine is the original's: a first-level arrest there cost $400 every ti
 ### Trade-in
 
 Trade-in value is **60% of the bike's list price**, whatever its history, because bikes are repaired between races. The Gutter Pup's trade-in value is $0: nobody wants it. The shop shows "cash + trade-in" as the spending power for each bike.
-
-### The envelope
-
-At tier 2 the promoter offers an envelope (section 11). Taking it pays **$1,500** at once. If the player then finishes ahead of Tristan Lux on Breakwater Run at tier 2, the promoter takes back **$2,000**. The bill follows the normal debt rules.
 
 ### Repeat runs
 
@@ -902,7 +898,7 @@ The new story is drafted as a short story bible, which the owner rewrites in the
 - **The Lowside** stays the bar where riders wait between races, and the hub of the menus. Where it sits on a world tour is for the story bible.
 - **The limits.** Jokes come from public, well-known memes. The parodies never claim real crimes or private facts about the real people (section 15).
 
-Each tier has one story chapter: tier 1 is "New Meat", tier 2 is "Dee's Tip", with the envelope and Dee's tip, and tier 3 is "The Long Ridge", with the badge and the finale. Vic's promotion cards follow the same order, so the tier-3 card ends "The Ridge is last. She'll be waiting."
+Each tier has one story chapter: tier 1 is "New Meat", tier 2 is "Dee's Tip", with Dee's tip, and tier 3 is "The Long Ridge", with the badge and the finale. Vic's promotion cards follow the same order, so the tier-3 card ends "The Ridge is last. She'll be waiting."
 
 Still for the story bible: the league's arc, one scene or line for each of the nine races, the bar's lines, and the ending.
 

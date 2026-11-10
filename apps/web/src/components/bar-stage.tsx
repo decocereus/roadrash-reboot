@@ -8,9 +8,10 @@ import type { BarScene } from "../game/bar.ts";
 interface BarStageProps {
   readonly camera: BarCamera;
   readonly seat: RoomSeat | null;
+  readonly doorOpen: boolean;
 }
 
-export const BarStage = ({ camera, seat }: BarStageProps) => {
+export const BarStage = ({ camera, seat, doorOpen }: BarStageProps) => {
   const canvas = useRef<HTMLCanvasElement>(null);
   const firstCamera = useRef(camera);
   const [scene, setScene] = useState<BarScene | null>(null);
@@ -45,6 +46,9 @@ export const BarStage = ({ camera, seat }: BarStageProps) => {
   useEffect(() => {
     scene?.setSeat(seat);
   }, [scene, seat]);
+  useEffect(() => {
+    scene?.setDoor(doorOpen);
+  }, [doorOpen, scene]);
   return (
     <>
       <canvas

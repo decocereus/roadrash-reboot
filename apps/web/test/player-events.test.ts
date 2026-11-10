@@ -485,7 +485,7 @@ describe("a graphics loss", () => {
   it("reports no when the wait runs out, and stays one report if they return later", () => {
     const { giveUp, loss, screen, sent } = lossTracker();
     const canvas = new EventTarget();
-    screen.shown = "rideOut";
+    screen.shown = "elsewhere";
     loss.watch(canvas, "game");
     fire(canvas, LOST);
     giveUp();
@@ -510,17 +510,7 @@ describe("a graphics loss", () => {
     const canvas = new EventTarget();
     loss.watch(canvas, "game");
     fire(canvas, LOST);
-    screen.shown = "rideOut";
-    fire(canvas, RESTORED);
-    expect(sent).toStrictEqual(report("race", "yes"));
-  });
-
-  it("counts the results screen as the race", () => {
-    const { loss, screen, sent } = lossTracker();
-    const canvas = new EventTarget();
-    screen.shown = "results";
-    loss.watch(canvas, "game");
-    fire(canvas, LOST);
+    screen.shown = "elsewhere";
     fire(canvas, RESTORED);
     expect(sent).toStrictEqual(report("race", "yes"));
   });
@@ -584,7 +574,7 @@ describe("a graphics loss", () => {
     fire(bar, LOST);
     unwatch();
     expect(sent).toStrictEqual(report("bar", "no"));
-    screen.shown = "rideOut";
+    screen.shown = "elsewhere";
     fire(game, LOST);
     fire(game, RESTORED);
     expect(sent.at(-1)).toStrictEqual(report("menu", "yes")[0]);
