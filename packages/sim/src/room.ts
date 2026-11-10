@@ -1,4 +1,10 @@
-import { coasting, withoutButtons } from "./control.ts";
+import {
+  coasting,
+  CONTROL_BYTES,
+  readControl,
+  withoutButtons,
+  writeControl,
+} from "./control.ts";
 import { createRace, stepRace } from "./race.ts";
 import {
   clearFrame,
@@ -7,10 +13,10 @@ import {
   scratchFor,
 } from "./room-frame.ts";
 import type { TickFrame } from "./room-frame.ts";
-import { HASH_WORDS } from "./snapshot-bytes.ts";
+import { HASH_WORDS, refuse } from "./snapshot-bytes.ts";
 import { setupDigest } from "./snapshot-setup.ts";
 import { hashRace, writeSnapshot } from "./snapshot.ts";
-import { rosterOf } from "./state.ts";
+import { riderIdAt, rosterOf } from "./state.ts";
 import type {
   Control,
   Controller,
@@ -31,6 +37,53 @@ export const INPUT_HORIZON =
 export const HASH_EVERY = 60;
 
 const NO_TICK = -1;
+const SEAT_COUNT_BYTES = 1;
+const RIDER_BYTES = 1;
+const COUNTER_BYTES = 4;
+const FLAG_BYTES = 1;
+const SEAT_HEAD_BYTES =
+  RIDER_BYTES + CONTROL_BYTES + COUNTER_BYTES + COUNTER_BYTES + FLAG_BYTES;
+const SLOT_BYTES = COUNTER_BYTES + CONTROL_BYTES;
+
+const controlAt = (from: DataView, at: number): Control =>
+  readControl(from, at) ??
+  refuse("This seat record holds a control word the room cannot read.");
+
+const counterAt = (from: DataView, at: number, tick: number): number => {
+  const count = from.getUint32(at, true);
+  return count <= tick
+    ? count
+    : refuse(
+        `This seat record counts ${count} ticks in a race at tick ${tick}.`
+      );
+};
+
+const flagAt = (from: DataView, at: number): boolean => {
+  const flag = from.getUint8(at);
+  return flag <= 1
+    ? flag === 1
+    : refuse(
+        `This seat record holds the flag ${flag}, which is neither 0 nor 1.`
+      );
+};
+
+const slotTickAt = (
+  from: DataView,
+  at: number,
+  slot: number,
+  tick: number
+): number => {
+  const held = from.getInt32(at, true);
+  return held === NO_TICK ||
+    (held >= 0 && held <= tick + INPUT_HORIZON && held % INPUT_HORIZON === slot)
+    ? held
+    : refuse(
+        `This seat record holds tick ${held} in slot ${slot} at tick ${tick}.`
+      );
+};
+
+export const seatsCapacity = (seats: number): number =>
+  SEAT_COUNT_BYTES + seats * (SEAT_HEAD_BYTES + INPUT_HORIZON * SLOT_BYTES);
 
 export const roomSetup = <Setup extends RaceSetup>(
   setup: Setup,
@@ -120,6 +173,8 @@ export interface Room {
   readonly hashNow: () => Uint32Array;
   readonly snapshot: () => Uint8Array;
   readonly step: () => void;
+  readonly writeSeats: (out: DataView) => number;
+  readonly readSeats: (from: DataView) => void;
 }
 
 const seatFrame = (
@@ -214,6 +269,35 @@ export const createRoom = (setup: RaceSetup, pilotFromTick: number): Room => {
     },
     missedControls: (rider) => seatOf(rider)?.missed ?? 0,
     over: () => seats.every((seat) => seat.left || isDone(seat.rider)),
+    readSeats: (from) => {
+      const needed = seatsCapacity(seats.length);
+      if (from.byteLength !== needed || from.getUint8(0) !== seats.length) {
+        refuse(
+          `The room's seats take ${needed} bytes for ${seats.length} seats and this record holds ${from.byteLength}.`
+        );
+      }
+      let at = SEAT_COUNT_BYTES;
+      for (const seat of seats) {
+        if (riderIdAt(from.getUint8(at)) !== seat.rider.id) {
+          refuse("This seat record was taken of another room's seats.");
+        }
+        at += RIDER_BYTES;
+        seat.last = controlAt(from, at);
+        at += CONTROL_BYTES;
+        seat.silent = counterAt(from, at, state.tick);
+        at += COUNTER_BYTES;
+        seat.missed = counterAt(from, at, state.tick);
+        at += COUNTER_BYTES;
+        seat.left = flagAt(from, at);
+        at += FLAG_BYTES;
+        for (let slot = 0; slot < INPUT_HORIZON; slot += 1) {
+          seat.ticks[slot] = slotTickAt(from, at, slot, state.tick);
+          at += COUNTER_BYTES;
+          seat.controls[slot] = controlAt(from, at);
+          at += CONTROL_BYTES;
+        }
+      }
+    },
     snapshot: () => {
       const view = scratchFor(scratch, state);
       const length = writeSnapshot(state, digest, view);
@@ -231,6 +315,30 @@ export const createRoom = (setup: RaceSetup, pilotFromTick: number): Room => {
       if (room.hashed) {
         hashRace(state, digest, scratchFor(scratch, state), room.hash);
       }
+    },
+    writeSeats: (out) => {
+      let at = 0;
+      out.setUint8(at, seats.length);
+      at += SEAT_COUNT_BYTES;
+      for (const seat of seats) {
+        out.setUint8(at, seat.rider.id);
+        at += RIDER_BYTES;
+        writeControl(out, at, seat.last);
+        at += CONTROL_BYTES;
+        out.setUint32(at, seat.silent, true);
+        at += COUNTER_BYTES;
+        out.setUint32(at, seat.missed, true);
+        at += COUNTER_BYTES;
+        out.setUint8(at, seat.left ? 1 : 0);
+        at += FLAG_BYTES;
+        for (let slot = 0; slot < INPUT_HORIZON; slot += 1) {
+          out.setInt32(at, seat.ticks[slot] ?? NO_TICK, true);
+          at += COUNTER_BYTES;
+          writeControl(out, at, seat.controls[slot] ?? coasting);
+          at += CONTROL_BYTES;
+        }
+      }
+      return at;
     },
   };
   return room;

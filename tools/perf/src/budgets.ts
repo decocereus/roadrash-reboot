@@ -76,6 +76,7 @@ const nodeKinds: readonly MetricKind[] = [
   snapshotKind("room.tick.p95", "ms"),
   snapshotKind("room.confirm.p95", "ms"),
   snapshotKind("room.rollback.p95", "ms"),
+  snapshotKind("room.checkpoint.p95", "ms"),
   roomAllocationKind("room.allocatedBytesPerTick"),
   roomAllocationKind("room.client.allocatedBytesPerTick"),
   roomAllocationKind("room.frame.allocatedBytesPerTick"),

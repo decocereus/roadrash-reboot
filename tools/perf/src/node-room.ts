@@ -2,10 +2,23 @@ import type { HeapProfiler } from "node:inspector";
 import { Session } from "node:inspector/promises";
 import { performance } from "node:perf_hooks";
 import { parseArgs } from "node:util";
+import { serialize } from "node:v8";
 
 import { UsageError } from "@racer/devtools/usage-error";
+import type { RaceManifest } from "@racer/rooms/manifest";
+import { rosterOf, seatFor, seatMemoryOf } from "@racer/rooms/race-seat";
 import { createRaceTally } from "@racer/rooms/race-tally";
-import { launchRoomConfig, ticksOf } from "@racer/rooms/room-config";
+import {
+  launchRoomConfig,
+  publicRuleFor,
+  ticksOf,
+} from "@racer/rooms/room-config";
+import {
+  CHECKPOINT_TICKS,
+  checkpointOf,
+  MEMORY_VERSION,
+} from "@racer/rooms/room-memory";
+import type { RoomMemory } from "@racer/rooms/room-memory";
 import { controlOf } from "@racer/sim/control";
 import { createRoom, firstRacers, roomSetup } from "@racer/sim/room";
 import { createRoomClient } from "@racer/sim/room-client";
@@ -14,9 +27,11 @@ import { createTapeWriter } from "@racer/sim/room-tape";
 import {
   createReadTick,
   readTick,
+  ROOM_PROTOCOL,
   tickCapacity,
   writeTick,
 } from "@racer/sim/room-wire";
+import { trackDigest } from "@racer/sim/snapshot-setup";
 import type { Control, RiderId } from "@racer/sim/state";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
@@ -38,6 +53,8 @@ const PUNCH_EVERY_TICKS = 241;
 const SAMPLING_BYTES = 4096;
 const FRAME_REPEATS = 20;
 const SAMPLED_WINDOWS = 3;
+const BENCH_RACE = "bench-race";
+const NO_LINK = { asn: null, colo: null, network: null, tcpRttMs: null };
 
 const controlAt = (tick: number, seat: number): Control => {
   const phase = (tick + seat * STEER_PERIOD_TICKS) % (STEER_PERIOD_TICKS * 2);
@@ -63,12 +80,77 @@ const prepareRoom = (scenario: Scenario) => {
   }
   const client = createRoomClient(setup, me, pilotFromTick);
   const out = new DataView(new ArrayBuffer(tickCapacity(SEATS)));
-  const savedParts: Uint8Array[] = [];
-  const tape = createTapeWriter(tickCapacity(SEATS), (_part, bytes) => {
-    savedParts[0] = bytes;
+  let pendingPart: { readonly body: Uint8Array; readonly key: string } | null =
+    null;
+  const tape = createTapeWriter(tickCapacity(SEATS), (part, bytes) => {
+    pendingPart = { body: bytes, key: `tapes/${BENCH_RACE}/${part}.bin` };
   });
   const read = createReadTick(createTickFrame());
   const one: Control[] = [];
+  const seats = humans.map((rider, at) =>
+    seatFor(
+      { link: NO_LINK, memberId: `m${at + 1}`, name: `Rider ${at + 1}` },
+      at,
+      BENCH_RACE,
+      rider
+    )
+  );
+  const rule = publicRuleFor(launchRoomConfig.publicRace, 0);
+  const manifest: RaceManifest = {
+    build: "bench",
+    contentHash: [...room.digest],
+    loadingDeadlineMs: launchRoomConfig.loadDeadlineSeconds * 1000,
+    protocol: ROOM_PROTOCOL,
+    raceId: BENCH_RACE,
+    raceLimitSeconds: launchRoomConfig.raceLimitSeconds,
+    reconnect: { holdSeconds: launchRoomConfig.seatHoldSeconds },
+    roster: rosterOf(room, firstRacers(setup, Number.POSITIVE_INFINITY), seats),
+    rule,
+    seed: 0,
+    tickRate: 60,
+    trackHash: [...trackDigest(setup.track)],
+  };
+  const memoryNow = (): RoomMemory => ({
+    at: 0,
+    build: "bench",
+    lobby: {
+      joined: seats.length,
+      members: seats.map(({ colour, memberId, name }) => ({
+        colour,
+        id: memberId,
+        key: memberId,
+        name,
+      })),
+      rule,
+    },
+    lostRace: null,
+    race: {
+      checkpoint: checkpointOf(
+        room,
+        tape,
+        seats.map((seat) => seatMemoryOf(seat))
+      ),
+      manifest,
+      raceId: BENCH_RACE,
+      sequence: 1,
+    },
+    races: 1,
+    sim: "bench",
+    unsaved: pendingPart === null ? [] : [pendingPart],
+    version: MEMORY_VERSION,
+  });
+  const checkpoint: number[] = [];
+  const checkpointBytes: number[] = [];
+  const checkpointDue = (): void => {
+    if (room.state.tick % CHECKPOINT_TICKS !== 0) {
+      return;
+    }
+    const at = performance.now();
+    const bytes = serialize(memoryNow());
+    checkpoint.push(performance.now() - at);
+    checkpointBytes.push(bytes.byteLength);
+    pendingPart = null;
+  };
 
   const serve = (rider: RiderId, seat: number, tick: number): void => {
     one[0] = controlAt(tick, seat);
@@ -106,10 +188,21 @@ const prepareRoom = (scenario: Scenario) => {
     while (room.state.tick < scenario.window.from - 1) {
       predict();
       confirm(stepRoom());
+      checkpointDue();
     }
   };
 
-  return { client, confirm, predict, room, stepRoom, warm };
+  return {
+    checkpoint,
+    checkpointBytes,
+    checkpointDue,
+    client,
+    confirm,
+    predict,
+    room,
+    stepRoom,
+    warm,
+  };
 };
 
 type Prepared = ReturnType<typeof prepareRoom>;
@@ -143,8 +236,16 @@ const timedWindow = (scenario: Scenario) => {
       rollback.push(took);
       resimulated.push(prepared.client.stats.resimulatedTicks - resimBefore);
     }
+    prepared.checkpointDue();
   }
-  return { confirm, resimulated, rollback, tick };
+  return {
+    checkpoint: prepared.checkpoint,
+    checkpointBytes: prepared.checkpointBytes,
+    confirm,
+    resimulated,
+    rollback,
+    tick,
+  };
 };
 
 const inspector = (method: string) => (cause: unknown) =>

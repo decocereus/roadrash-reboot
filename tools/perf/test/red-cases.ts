@@ -47,6 +47,7 @@ const SNAPSHOT_HASH_MS = 0.08;
 const ROOM_TICK_MS = 0.1;
 const ROOM_CONFIRM_MS = 0.1;
 const ROOM_ROLLBACK_MS = 0.6;
+const ROOM_CHECKPOINT_MS = 0.2;
 const SNAPSHOT_BYTES = 12_000;
 const CLOSURE_BYTES = 100_000;
 
@@ -143,6 +144,8 @@ export const syntheticLane = (
     sampleOf(scenario, "B", "room", `room-${run}-B.json`, {
       room: {
         allocated: { client: 900, frame: 200, server: 900 },
+        checkpoint: tickDurations(ROOM_CHECKPOINT_MS * slowdown.runner),
+        checkpointBytes: [40_000],
         confirm: tickDurations(ROOM_CONFIRM_MS * slowdown.runner),
         resimulated: [5],
         rollback: tickDurations(ROOM_ROLLBACK_MS * slowdown.runner),

@@ -370,7 +370,12 @@ const SeatedLobby = ({
   if (seat && lobby && ((raceBegun && ready) || phase === "lobby")) {
     return (
       <>
-        {tooLate && <TooLate holdSeconds={lobby.seatHoldSeconds} />}
+        {tooLate && (
+          <TooLate
+            holdSeconds={lobby.seatHoldSeconds}
+            lostRace={lobby.lostRace}
+          />
+        )}
         <BarLobby
           copied={copied}
           lobby={lobby}

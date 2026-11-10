@@ -11,7 +11,7 @@ const PING_KIND = 3;
 const PONG_KIND = 4;
 const READY_KIND = 6;
 const RACE_STATS_KIND = 7;
-const CATCH_UP_KIND = 8;
+const SNAPSHOT_KIND = 9;
 const KIND_BYTES = 1;
 const TICK_BYTES = 4;
 const COUNT_BYTES = 1;
@@ -22,7 +22,7 @@ const WORD_BYTES = 4;
 const HASH_BYTES = HASH_WORDS * WORD_BYTES;
 const LARGEST_TICK = 0xff_ff_ff_ff;
 
-export const ROOM_PROTOCOL = 3;
+export const ROOM_PROTOCOL = 4;
 
 export const MOST_BATCHED_CONTROLS = 8;
 
@@ -411,18 +411,24 @@ export const readRaceStats = (
       )
     : null;
 
-export const writeCatchUp = (part: Uint8Array): Uint8Array => {
-  const packet = new Uint8Array(KIND_BYTES + part.byteLength);
-  packet[0] = CATCH_UP_KIND;
-  packet.set(part, KIND_BYTES);
+const framed = (kind: number, body: Uint8Array): Uint8Array => {
+  const packet = new Uint8Array(KIND_BYTES + body.byteLength);
+  packet[0] = kind;
+  packet.set(body, KIND_BYTES);
   return packet;
 };
 
-export const readCatchUp = (view: DataView): DataView | null =>
-  view.byteLength > KIND_BYTES && view.getUint8(0) === CATCH_UP_KIND
+const bodyOf = (kind: number, view: DataView): DataView | null =>
+  view.byteLength > KIND_BYTES && view.getUint8(0) === kind
     ? new DataView(
         view.buffer,
         view.byteOffset + KIND_BYTES,
         view.byteLength - KIND_BYTES
       )
     : null;
+
+export const writeRaceSnapshot = (snapshot: Uint8Array): Uint8Array =>
+  framed(SNAPSHOT_KIND, snapshot);
+
+export const readRaceSnapshot = (view: DataView): DataView | null =>
+  bodyOf(SNAPSHOT_KIND, view);

@@ -1501,8 +1501,8 @@ The race room's rules: the setup that seats up to eight humans with pacing off, 
 - Start: `apps/rooms/src/host.ts`, `apps/rooms/src/lobby.ts`, `packages/sim/src/room.ts`
 - Docs: [docs/architecture/race-rooms.md#race-rooms](architecture/race-rooms.md#race-rooms), [docs/standards/simulation.md#keep-the-simulation-deterministic](standards/simulation.md#keep-the-simulation-deterministic), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
 - Verify: [race-room.md](../.claude/skills/verify-rushline/features/race-room.md), [netcode-compare.md](../.claude/skills/verify-rushline/features/netcode-compare.md)
-- Perf: `room.tick.p95`, `room.confirm.p95`, `room.rollback.p95`, `room.allocatedBytesPerTick`, `room.client.allocatedBytesPerTick`, `room.frame.allocatedBytesPerTick`
-- Owns: `packages/sim/src/room*.ts`, `packages/career/src/room-race*.ts`, `apps/rooms/**`, `scripts/rooms-build.test.ts`, `apps/web/src/components/guest-name.ts`, `apps/web/test/member-key.test.ts`, `apps/web/test/member-rows.test.tsx`, `apps/web/src/components/room-lobby.tsx`, `apps/web/src/components/use-handoff.ts`, `apps/web/src/prepare-outcome.ts`, `apps/web/src/race-handoff.ts`, `apps/web/src/room-handoff.ts`, `apps/web/test/prepare-outcome.test.ts`, `apps/web/test/race-handoff.test.ts`, `apps/web/test/room-boot-failure.test.tsx`, `apps/web/test/room-limited.test.tsx`, `apps/web/test/queue-screen.test.tsx`, `apps/web/test/room-rejoin-choice.test.ts`, `apps/web/src/components/room-url.ts`, `apps/web/src/components/room-preview.ts`, `apps/web/test/room-preview.test.ts`, `apps/web/test/room-pacing.test.ts`, `apps/web/test/room-screen.test.ts`, `tools/rooms/**`
+- Perf: `room.tick.p95`, `room.confirm.p95`, `room.rollback.p95`, `room.checkpoint.p95`, `room.allocatedBytesPerTick`, `room.client.allocatedBytesPerTick`, `room.frame.allocatedBytesPerTick`
+- Owns: `packages/sim/src/room*.ts`, `packages/career/src/room-race*.ts`, `apps/rooms/**`, `scripts/rooms-build.test.ts`, `scripts/sim-fingerprint.test.ts`, `apps/web/src/components/guest-name.ts`, `apps/web/test/member-key.test.ts`, `apps/web/test/member-rows.test.tsx`, `apps/web/test/rejoin-cards.test.tsx`, `apps/web/src/components/room-lobby.tsx`, `apps/web/src/components/use-handoff.ts`, `apps/web/src/prepare-outcome.ts`, `apps/web/src/race-handoff.ts`, `apps/web/src/room-handoff.ts`, `apps/web/test/prepare-outcome.test.ts`, `apps/web/test/race-handoff.test.ts`, `apps/web/test/room-boot-failure.test.tsx`, `apps/web/test/room-limited.test.tsx`, `apps/web/test/queue-screen.test.tsx`, `apps/web/test/room-rejoin-choice.test.ts`, `apps/web/src/components/room-url.ts`, `apps/web/src/components/room-preview.ts`, `apps/web/test/room-preview.test.ts`, `apps/web/test/room-pacing.test.ts`, `apps/web/test/room-screen.test.ts`, `tools/rooms/**`
 
 Source files:
 
@@ -1510,7 +1510,10 @@ Source files:
 - `apps/rooms/src/contract.ts`
 - `apps/rooms/src/gate.ts`
 - `apps/rooms/src/heartbeat.ts`
+- `apps/rooms/src/host-memory.ts`
 - `apps/rooms/src/host-phase.ts`
+- `apps/rooms/src/host.ts`
+- `apps/rooms/src/host.ts`
 - `apps/rooms/src/host.ts`
 - `apps/rooms/src/input-latency.ts`
 - `apps/rooms/src/limiter.ts`
@@ -1519,6 +1522,7 @@ Source files:
 - `apps/rooms/src/messages.ts`
 - `apps/rooms/src/not-web-socket.ts`
 - `apps/rooms/src/notes.ts`
+- `apps/rooms/src/present.ts`
 - `apps/rooms/src/queue-client.ts`
 - `apps/rooms/src/queue-messages.ts`
 - `apps/rooms/src/queue-server.ts`
@@ -1526,16 +1530,24 @@ Source files:
 - `apps/rooms/src/race-build.ts`
 - `apps/rooms/src/race-seat.ts`
 - `apps/rooms/src/race-server.ts`
+- `apps/rooms/src/race-server.ts`
+- `apps/rooms/src/race-server.ts`
 - `apps/rooms/src/race-tally.ts`
 - `apps/rooms/src/refused-seat.ts`
 - `apps/rooms/src/room-config.ts`
 - `apps/rooms/src/room-id.ts`
+- `apps/rooms/src/room-memory.ts`
 - `apps/rooms/src/room-rule.ts`
 - `apps/rooms/src/room-run.ts`
+- `apps/rooms/src/room-status.ts`
 - `apps/rooms/src/route.ts`
 - `apps/rooms/src/seat-client.ts`
+- `apps/rooms/src/seat-client.ts`
+- `apps/rooms/src/seat-client.ts`
+- `apps/rooms/src/sim-fingerprint.ts`
 - `apps/rooms/src/socket-budget.ts`
 - `apps/rooms/src/socket-role.ts`
+- `apps/rooms/src/storage-failed.ts`
 - `apps/rooms/src/tape.ts`
 - `apps/rooms/src/worker.ts`
 - `apps/web/src/components/guest-name.ts`
@@ -1548,12 +1560,18 @@ Source files:
 - `apps/web/src/room-handoff.ts`
 - `packages/career/src/room-race.ts`
 - `packages/sim/src/room-client.ts`
+- `packages/sim/src/room-client.ts`
+- `packages/sim/src/room-client.ts`
 - `packages/sim/src/room-clock.ts`
 - `packages/sim/src/room-frame.ts`
 - `packages/sim/src/room-hits.ts`
 - `packages/sim/src/room-pace.ts`
 - `packages/sim/src/room-tape.ts`
+- `packages/sim/src/room-tape.ts`
+- `packages/sim/src/room-tape.ts`
 - `packages/sim/src/room-wire.ts`
+- `packages/sim/src/room.ts`
+- `packages/sim/src/room.ts`
 - `packages/sim/src/room.ts`
 - `tools/rooms/compare.ts`
 - `tools/rooms/fights.ts`
@@ -1600,10 +1618,12 @@ Test files:
 - `apps/rooms/test/host-harness.ts`
 - `apps/rooms/test/host-leave.test.ts`
 - `apps/rooms/test/host-lifecycle.test.ts`
+- `apps/rooms/test/host-memory.test.ts`
 - `apps/rooms/test/host-notes.test.ts`
 - `apps/rooms/test/host-ownership.test.ts`
 - `apps/rooms/test/host-phases.test.ts`
 - `apps/rooms/test/host-rejoin.test.ts`
+- `apps/rooms/test/host-restart.test.ts`
 - `apps/rooms/test/host-walk.test.ts`
 - `apps/rooms/test/host.test.ts`
 - `apps/rooms/test/input-latency.test.ts`
@@ -1617,6 +1637,8 @@ Test files:
 - `apps/rooms/test/room-run.test.ts`
 - `apps/rooms/test/route.test.ts`
 - `apps/rooms/test/seat-client.test.ts`
+- `apps/rooms/test/seat-client.test.ts`
+- `apps/rooms/test/seat-client.test.ts`
 - `apps/rooms/test/seat-phases.test.ts`
 - `apps/rooms/test/seat-socket.ts`
 - `apps/rooms/test/socket-role.test.ts`
@@ -1626,6 +1648,7 @@ Test files:
 - `apps/web/test/prepare-outcome.test.ts`
 - `apps/web/test/queue-screen.test.tsx`
 - `apps/web/test/race-handoff.test.ts`
+- `apps/web/test/rejoin-cards.test.tsx`
 - `apps/web/test/room-boot-failure.test.tsx`
 - `apps/web/test/room-limited.test.tsx`
 - `apps/web/test/room-pacing.test.ts`
@@ -1642,8 +1665,10 @@ Test files:
 - `packages/sim/src/room-limit.test.ts`
 - `packages/sim/src/room-mend.test.ts`
 - `packages/sim/src/room-missed.test.ts`
+- `packages/sim/src/room-restore.test.ts`
 - `packages/sim/src/room.test.ts`
 - `scripts/rooms-build.test.ts`
+- `scripts/sim-fingerprint.test.ts`
 - `tools/rooms/test/fight-compare.test.ts`
 - `tools/rooms/test/fight-probe.test.ts`
 - `tools/rooms/test/fight-report.test.ts`

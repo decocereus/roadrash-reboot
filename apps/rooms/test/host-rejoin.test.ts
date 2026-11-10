@@ -1,6 +1,10 @@
 import type { RoomClient } from "@racer/sim/room-client";
 import { createTickFrame } from "@racer/sim/room-frame";
-import { createReadTick, readCatchUp, readTick } from "@racer/sim/room-wire";
+import {
+  createReadTick,
+  readRaceSnapshot,
+  readTick,
+} from "@racer/sim/room-wire";
 import { describe, expect, it } from "vitest";
 
 import { SEAT_QUIT } from "../src/messages.ts";
@@ -36,9 +40,9 @@ const kindsHeard = (socket: FakeSocket): readonly string[] =>
 const followAll = (socket: FakeSocket, client: RoomClient): void => {
   const read = createReadTick(createTickFrame());
   for (const packet of socket.ticks.splice(0)) {
-    const part = readCatchUp(packet);
-    if (part) {
-      client.catchUp(part);
+    const snapshot = readRaceSnapshot(packet);
+    if (snapshot) {
+      client.catchUpFrom(snapshot);
     } else {
       expect(readTick(packet, read)).toBeTruthy();
       client.confirm(read.frame, read.hashed ? read.hash : null);
@@ -74,7 +78,7 @@ const caughtUpBytes = (awayMs: number) => {
   advanceHearing(host, clock, [bo], awayMs);
   const back = seated("ann", "Ann");
   return back.ticks
-    .filter((packet) => readCatchUp(packet) !== null)
+    .filter((packet) => readRaceSnapshot(packet) !== null)
     .map((packet) => packet.byteLength);
 };
 

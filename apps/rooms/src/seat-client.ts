@@ -17,7 +17,7 @@ import {
   MOST_BATCHED_CONTROLS,
   RACE_STATS_PACKET_BYTES,
   READY_PACKET_BYTES,
-  readCatchUp,
+  readRaceSnapshot,
   readTick,
   ROOM_PROTOCOL,
   writeRaceStats,
@@ -512,10 +512,10 @@ export const openRoomSeat = (
       return;
     }
     const { race } = state;
-    const snapshot = readCatchUp(view);
+    const snapshot = readRaceSnapshot(view);
     if (race && snapshot) {
       backlog.length = 0;
-      race.client.catchUp(snapshot);
+      race.client.catchUpFrom(snapshot);
       listeners.onConfirmed?.(race.client);
       return;
     }

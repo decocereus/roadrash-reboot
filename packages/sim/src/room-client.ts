@@ -86,7 +86,7 @@ export interface RoomClient {
   readonly stats: RoomStats;
   readonly predict: (control: Control, delay?: number) => boolean;
   readonly confirm: (frame: TickFrame, hash: Uint32Array | null) => void;
-  readonly catchUp: (snapshot: DataView) => void;
+  readonly catchUpFrom: (snapshot: DataView) => void;
   readonly settle: (most?: number) => number;
   readonly takeCorrections: () => readonly RiderCorrection[];
   readonly takeEvents: () => readonly RaceEvent[];
@@ -519,7 +519,7 @@ export const createRoomClient = (
   };
 
   return {
-    catchUp: (snapshot) => {
+    catchUpFrom: (snapshot) => {
       restoreInto(confirmed, digest, snapshot, setup.track);
       rewind();
     },

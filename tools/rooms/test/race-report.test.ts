@@ -208,6 +208,7 @@ const reportOfSeat = (only: RaceSeat): string =>
     },
     left: [],
     raceId: "race-c",
+    restarts: [],
     stats: [],
   });
 

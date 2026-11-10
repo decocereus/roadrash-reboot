@@ -17,17 +17,19 @@ import * as Option from "effect/Option";
 import { expect } from "vitest";
 
 import { createHost } from "../src/host.ts";
-import type { Host, HostPorts, HostSocket } from "../src/host.ts";
+import type { Host, HostPorts } from "../src/host.ts";
 import { seatedCount } from "../src/manifest.ts";
 import { decodeRoomMessage, encodeLobbyCommand } from "../src/messages.ts";
 import type { RoomMessage } from "../src/messages.ts";
 import type { RoomNote } from "../src/notes.ts";
+import type { HostSocket } from "../src/present.ts";
 import {
   launchRoomConfig,
   msOf,
   publicRuleFor,
   ticksOf,
 } from "../src/room-config.ts";
+import type { RoomMemory } from "../src/room-memory.ts";
 
 export const nearby = {
   asn: 64_512,
@@ -56,18 +58,29 @@ export const PUBLIC_RULE = publicRuleFor(launchRoomConfig.publicRace, 0);
 
 export interface Clock extends HostPorts {
   readonly advance: (ms: number) => void;
+  readonly memories: (RoomMemory | null)[];
   readonly notes: RoomNote[];
   readonly tape: Map<string, string | Uint8Array>;
   readonly stall: (ms: number) => void;
   readonly wakeOnce: () => void;
   readonly pending: () => number;
+  readonly releaseSaves: (count?: number) => void;
+  readonly endings: number[];
+  holdSaves: boolean;
 }
 
-export const createClock = (): Clock => {
-  let at = 1000;
+export const createClock = (startAt = 1000): Clock => {
+  let at = startAt;
   let timers: { due: number; wake: () => void }[] = [];
   const notes: RoomNote[] = [];
+  const memories: (RoomMemory | null)[] = [];
   const tape = new Map<string, string | Uint8Array>();
+  const held: {
+    body: string | Uint8Array;
+    key: string;
+    saved: () => void;
+  }[] = [];
+  const endings: number[] = [];
   let races = 0;
   const nextBy = (until: number) =>
     timers
@@ -78,7 +91,7 @@ export const createClock = (): Clock => {
     at = Math.max(at, next.due);
     next.wake();
   };
-  return {
+  const clock: Clock = {
     advance: (ms) => {
       const until = at + ms;
       for (let next = nextBy(until); next; next = nextBy(until)) {
@@ -91,6 +104,12 @@ export const createClock = (): Clock => {
     },
     build: "test-build",
     config: launchRoomConfig,
+    endRace: (through) => {
+      endings.push(through);
+    },
+    endings,
+    holdSaves: false,
+    memories,
     note: (note) => {
       notes.push(note);
     },
@@ -101,11 +120,26 @@ export const createClock = (): Clock => {
       races += 1;
       return `race-${races}`;
     },
+    releaseSaves: (count = held.length) => {
+      for (const { body, key, saved } of held.splice(0, count)) {
+        tape.set(key, body);
+        saved();
+      }
+    },
+    remember: (memory) => {
+      memories.push(memory);
+    },
     roomColo: () => "SIN",
-    saveTape: (key, body) => {
+    saveTape: (key, body, saved) => {
+      if (clock.holdSaves) {
+        held.push({ body, key, saved });
+        return;
+      }
       tape.set(key, body);
+      saved();
     },
     seed: () => 7,
+    sim: "test-sim",
     stall: (ms) => {
       at += ms;
     },
@@ -117,6 +151,7 @@ export const createClock = (): Clock => {
       }
     },
   };
+  return clock;
 };
 
 export interface FakeSocket extends HostSocket {

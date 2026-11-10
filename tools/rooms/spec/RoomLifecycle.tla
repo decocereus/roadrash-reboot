@@ -54,12 +54,13 @@ CONSTANTS
     Reopen,         \* room-lobby.tsx REOPEN_MS 2 s
     ClientDead,     \* heartbeat.ts DEAD_AFTER_MS 5 s
     OldPageFirst,   \* TRUE: the room hears a reloaded page's old sockets before its new seat (Reloaded)
+    Restarts,       \* Durable Object restarts the room may suffer in one behaviour (race-server.ts: a deploy past its deferral, an eviction, a crash)
     GuardRetireReplaced, GuardJoinByKey, GuardSweepWaits, GuardLeaveCode,
     GuardBootLeavesRoom, GuardFreeColour, GuardDropMarks, GuardDropRetires,
     GuardWaitForLoads, GuardSameRun, GuardReopen, GuardLateRoomRacing,
     GuardNeverArrived, GuardEndedBackToLobby, GuardDropHolds,
     GuardReplacedHolds, GuardRejoin, GuardRejoinCountdown, GuardTakenStaysPut,
-    GuardHoldDeadline
+    GuardHoldDeadline, GuardRestoreHolds
 
 \* room-config.ts RoomConfigSchema refuses a config whose awaySeconds is
 \* shorter than its seatHoldSeconds
@@ -76,7 +77,7 @@ Sock == Riders \X (1..Slots)
 Runs == 1..MaxRaces
 SeatLive == {"connecting", "lobby", "loading", "racing"}
 Outcomes == {"built", "missing"}
-HostCloses == {"close1000", "close4408"}
+HostCloses == {"close1000", "close1006", "close4408"}
 Quits == {"quit4410", "quit4411"}
 
 \* race-seat.ts SeatPresence: a seat still in the race is here or held
@@ -547,6 +548,63 @@ HostQuiet(s) ==
     /\ room' = Drop(Send(room, s, "close4408"), s, 4408)
     /\ UNCHANGED <<wire, tab>>
 
+\* race-server.ts: the Durable Object restarts, after a deploy once its
+\* deferral runs out, an eviction or a crash.  Every socket it held dies
+\* without a word, and every timer and unsent message with it: an open
+\* socket hears an abnormal close, and one still connecting fails in the
+\* browser (ClientDeadFire).  host.ts
+\* createHost reads the room's memory: the lobby's members whose browser
+\* had reached the room come back away (lobby.ts memory keeps only arrived
+\* members), and a race it had checkpointed goes on with every seat held (restore,
+\* holdSeat), so the riders return through Rejoin as after a dropped link.
+\* A race it had not checkpointed is lost, and the lobby waits.
+HostRestart ==
+    /\ room.restarts < Restarts
+    /\ Present(room) # {}
+    /\ LET restored == room.phase = "racing" /\ GuardRestoreHolds
+           gone == IF GuardNeverArrived
+                   THEN {k \in Riders : room.mem[k] = "here" /\ ~room.arrived[k]}
+                   ELSE {}
+           R1 == [room EXCEPT
+                    !.restarts = @ + 1,
+                    !.sock = [s \in Sock |-> IF room.sock[s] = "present" THEN "gone" ELSE room.sock[s]],
+                    !.role = [s \in Sock |-> "lobby"],
+                    !.quiet = [s \in Sock |-> -1],
+                    !.out = [s \in Sock |-> IF room.sock[s] = "present" /\ ~room.broken[s] /\ wire.cs[s] = "open"
+                                             THEN <<"close1006">> ELSE <<>>],
+                    !.mem = [k \in Riders |-> IF k \in gone THEN "none"
+                                              ELSE IF room.mem[k] = "here" THEN "away"
+                                              ELSE room.mem[k]],
+                    !.awayLeft = [k \in Riders |-> IF k \in gone THEN 0
+                                                   ELSE IF room.mem[k] # "none" THEN Away
+                                                   ELSE room.awayLeft[k]],
+                    !.colour = [k \in Riders |-> IF k \in gone THEN 0 ELSE room.colour[k]],
+                    !.arrived = [k \in Riders |-> IF k \in gone THEN FALSE ELSE room.arrived[k]],
+                    !.freed = [k \in Riders |-> IF k \in gone THEN TRUE ELSE room.freed[k]],
+                    !.ready = [k \in Riders |-> FALSE],
+                    !.clock = -1,
+                    !.startLeft = -1,
+                    !.deadline = [n \in Runs |-> -1],
+                    !.graces = {}]
+       IN room' = IF restored
+                  THEN [R1 EXCEPT
+                          !.pres = [k \in Riders |-> IF room.pres[k] \in InRace THEN "held" ELSE room.pres[k]],
+                          !.holdLeft = [k \in Riders |-> IF room.pres[k] \in InRace THEN Hold ELSE room.holdLeft[k]]]
+                  ELSE [R1 EXCEPT
+                          !.phase = "waiting",
+                          !.lPhase = "gathering",
+                          !.pres = [k \in Riders |-> "out"],
+                          !.seatInc = [k \in Riders |-> 0],
+                          !.loaded = [k \in Riders |-> FALSE],
+                          !.done = [k \in Riders |-> FALSE],
+                          !.holdLeft = [k \in Riders |-> -1],
+                          !.letGo = [k \in Riders |-> FALSE]]
+    /\ wire' = [wire EXCEPT
+                 !.toH = [s \in Sock |-> IF room.sock[s] = "present" THEN <<>> ELSE wire.toH[s]],
+                 !.dead = [s \in Sock |-> IF room.sock[s] = "present" /\ wire.cs[s] = "connecting"
+                                          THEN 0 ELSE wire.dead[s]]]
+    /\ UNCHANGED tab
+
 \* host.ts watchSeats with lobby.ts sweep: an away member past awaySeconds
 \* is removed
 HostSweep(k) ==
@@ -991,7 +1049,8 @@ Init ==
                lPhase |-> "gathering",
                clock |-> -1,
                freed |-> [k \in Riders |-> FALSE],
-               arrived |-> [k \in Riders |-> FALSE]]
+               arrived |-> [k \in Riders |-> FALSE],
+               restarts |-> 0]
     /\ wire = [cs |-> [s \in Sock |-> "free"],
                toH |-> [s \in Sock |-> <<>>],
                dead |-> [s \in Sock |-> -1],
@@ -1010,7 +1069,7 @@ System ==
          \/ ClientOpened(s) \/ ClientPing(s) \/ ClientRecv(s) \/ ClientDiscard(s)
          \/ ClientDeadFire(s) \/ Reuse(s)
     \/ \E n \in Runs : HostDeadline(n)
-    \/ HostStartMoment \/ HostEnd \/ HostGrace \/ HostConsider
+    \/ HostStartMoment \/ HostEnd \/ HostGrace \/ HostConsider \/ HostRestart
     \/ \E r \in Riders :
          \/ HostSweep(r) \/ RiderDone(r) \/ HostHoldOver(r)
          \/ DoorArm(r) \/ DoorDisarm(r) \/ RaceBegun(r) \/ DoorElapsed(r)
@@ -1180,6 +1239,15 @@ BackOnBike ==
              /\ room.mem[k] # "none"
              /\ room.seatInc[k] = room.inc[k])
               => (room'.pres[k] = "here" /\ room'.role[s] = "seated")]_vars
+
+\* A race the room had checkpointed survives a restart: every rider who was
+\* on a bike, here or held, is held for the full hold and gets back on it
+\* through Rejoin, as after a dropped link.  Guard: host.ts createHost
+\* restores the remembered race and holds its seats (restore, holdSeat).
+RideSurvivesRestart ==
+    [][(room'.restarts > room.restarts /\ room.phase = "racing")
+         => \A k \in Riders :
+              room.pres[k] \in InRace => (room'.pres[k] = "held" /\ room'.holdLeft[k] = Hold)]_vars
 
 \* The room lets go of a dropped rider's bike only when the hold runs out,
 \* the race ends, or the rider or their game chose to leave this race

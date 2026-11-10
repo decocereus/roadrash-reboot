@@ -2,9 +2,9 @@ import { MOST_SEATS } from "@racer/sim/room";
 import { ROOM_PROTOCOL } from "@racer/sim/room-wire";
 
 import { createPongs, watchForSilence } from "./heartbeat.ts";
-import type { HostSocket } from "./host.ts";
 import { SEAT_CLOSED, SEAT_SILENT } from "./messages.ts";
 import type { RoomNote } from "./notes.ts";
+import type { HostSocket } from "./present.ts";
 import { encodeQueueMessage } from "./queue-messages.ts";
 import type { QueueMessage } from "./queue-messages.ts";
 import { msOf } from "./room-config.ts";

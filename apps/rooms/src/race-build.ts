@@ -3,18 +3,21 @@ import type { RoomRule } from "@racer/career/room-race";
 import { createRoom, firstRacers } from "@racer/sim/room";
 import type { Room } from "@racer/sim/room";
 import { createTapeWriter, hexOfWords } from "@racer/sim/room-tape";
-import type { TapeWriter } from "@racer/sim/room-tape";
+import type { TapeResume, TapeWriter } from "@racer/sim/room-tape";
 import { ROOM_PROTOCOL } from "@racer/sim/room-wire";
+import { restoreInto } from "@racer/sim/snapshot";
 import { trackDigest } from "@racer/sim/snapshot-setup";
 import { TICK_SECONDS } from "@racer/sim/state";
 
+import { seatedCount } from "./manifest.ts";
 import type { RaceManifest } from "./manifest.ts";
 import { WAKE_GAP_CEILINGS_MS } from "./notes.ts";
-import type { RoomNote } from "./notes.ts";
-import { rosterOf, seatFor, traceSeats } from "./race-seat.ts";
+import type { LostReason, RoomNote } from "./notes.ts";
+import { restoredSeat, rosterOf, seatFor, traceSeats } from "./race-seat.ts";
 import type { Seat } from "./race-seat.ts";
 import { msOf, ticksOf } from "./room-config.ts";
 import type { RoomConfig } from "./room-config.ts";
+import type { Checkpoint, RaceMemory, RoomMemory } from "./room-memory.ts";
 import {
   roomTraceName,
   TAPE_VERSION,
@@ -40,6 +43,7 @@ export interface RacePorts {
   readonly roomColo: () => string | null;
   readonly saveTape: (key: string, body: string | Uint8Array) => void;
   readonly seed: () => number;
+  readonly sim: string;
 }
 
 export interface Run {
@@ -47,11 +51,121 @@ export interface Run {
   readonly raceId: string;
   readonly riders: readonly Seat[];
   readonly room: Room;
+  readonly sequence: number;
   readonly since: number;
   readonly tape: TapeWriter;
   readonly trace: number[];
   readonly wakeGaps: Uint32Array;
+  checkpoint: Checkpoint | null;
 }
+
+export const raceMemoryOf = ({
+  checkpoint,
+  manifest,
+  raceId,
+  sequence,
+}: Run): RaceMemory => ({ checkpoint, manifest, raceId, sequence });
+
+const freshGaps = (): Uint32Array =>
+  new Uint32Array(WAKE_GAP_CEILINGS_MS.length + 1);
+
+const tapeFor = (
+  ports: RacePorts,
+  raceId: string,
+  tickBytes: number,
+  resume: TapeResume | null
+): TapeWriter =>
+  createTapeWriter(
+    tickBytes,
+    (part, bytes) => {
+      ports.saveTape(tapeKey(raceId, tapePartName(part)), bytes);
+    },
+    resume
+  );
+
+export type RaceRestore =
+  | { readonly kind: "run"; readonly run: Run }
+  | {
+      readonly kind: "lost";
+      readonly reason: LostReason;
+      readonly detail: string | null;
+    };
+
+const lost = (reason: LostReason, detail: string | null): RaceRestore => ({
+  detail,
+  kind: "lost",
+  reason,
+});
+
+export const restoreRace = (
+  ports: RacePorts,
+  { at, sim }: RoomMemory,
+  { checkpoint, manifest, raceId, sequence }: RaceMemory,
+  endedThrough: number,
+  tickBytes: number,
+  now: number
+): RaceRestore => {
+  if (sequence <= endedThrough) {
+    return lost("ended", null);
+  }
+  if (manifest.protocol !== ROOM_PROTOCOL) {
+    return lost(
+      "newSim",
+      `the race spoke protocol ${manifest.protocol}, this room speaks ${ROOM_PROTOCOL}`
+    );
+  }
+  if (sim !== ports.sim) {
+    return lost(
+      "newSim",
+      `the race stepped with simulation ${sim}, this room steps with ${ports.sim}`
+    );
+  }
+  if (checkpoint === null) {
+    return lost("noCheckpoint", null);
+  }
+  if (now - at > msOf(ports.config.seatHoldSeconds)) {
+    return lost("pastHold", null);
+  }
+  const { setup } = seatedRace(
+    manifest.seed,
+    seatedCount(manifest),
+    manifest.rule
+  );
+  const room = createRoom(setup, ticksOf(manifest.raceLimitSeconds));
+  const { controls, seats, snapshot } = checkpoint;
+  try {
+    restoreInto(
+      room.state,
+      room.digest,
+      new DataView(snapshot.buffer, snapshot.byteOffset, snapshot.byteLength),
+      setup.track
+    );
+    room.readSeats(
+      new DataView(controls.buffer, controls.byteOffset, controls.byteLength)
+    );
+  } catch (error) {
+    return lost(
+      "refused",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+  const riders = seats.map((seat) => restoredSeat(seat, raceId));
+  return {
+    kind: "run",
+    run: {
+      checkpoint,
+      manifest,
+      raceId,
+      riders,
+      room,
+      sequence,
+      since: now,
+      tape: tapeFor(ports, raceId, tickBytes, checkpoint.tape),
+      trace: [],
+      wakeGaps: freshGaps(),
+    },
+  };
+};
 
 type Sitter = Pick<Seat, "link" | "memberId" | "name">;
 
@@ -61,6 +175,7 @@ interface Gathering<Person extends Sitter> {
   readonly lobbyMs: number;
   readonly now: number;
   readonly rule: RoomRule;
+  readonly sequence: number;
   readonly tickBytes: number;
 }
 
@@ -79,7 +194,15 @@ export const finishTape = (
 
 export const buildRace = <Person extends Sitter>(
   ports: RacePorts,
-  { colourOf, gathered, lobbyMs, now, rule, tickBytes }: Gathering<Person>
+  {
+    colourOf,
+    gathered,
+    lobbyMs,
+    now,
+    rule,
+    sequence,
+    tickBytes,
+  }: Gathering<Person>
 ) => {
   const seed = ports.seed();
   const raceId = ports.raceId();
@@ -150,16 +273,16 @@ export const buildRace = <Person extends Sitter>(
     traffic: rule.traffic,
   });
   const run: Run = {
+    checkpoint: null,
     manifest,
     raceId,
     riders,
     room,
+    sequence,
     since: now,
-    tape: createTapeWriter(tickBytes, (part, bytes) => {
-      ports.saveTape(tapeKey(raceId, tapePartName(part)), bytes);
-    }),
+    tape: tapeFor(ports, raceId, tickBytes, null),
     trace: [],
-    wakeGaps: new Uint32Array(WAKE_GAP_CEILINGS_MS.length + 1),
+    wakeGaps: freshGaps(),
   };
   return { run, seated };
 };
