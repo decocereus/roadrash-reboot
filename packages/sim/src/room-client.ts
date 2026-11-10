@@ -17,7 +17,12 @@ import {
 } from "./room-frame.ts";
 import type { TickFrame } from "./room-frame.ts";
 import { createHitLedger } from "./room-hits.ts";
-import { MOST_BATCHED_CONTROLS, writeInput } from "./room-wire.ts";
+import {
+  MOST_BATCHED_CONTROLS,
+  MOST_REPAIRS,
+  writeInput,
+  writeRepair,
+} from "./room-wire.ts";
 import { INPUT_HORIZON, seatsOf } from "./room.ts";
 import { HASH_WORDS } from "./snapshot-bytes.ts";
 import { setupDigest } from "./snapshot-setup.ts";
@@ -59,6 +64,7 @@ interface RoomStats {
   resimulatedTicks: number;
   desyncs: number;
   refusedPredictions: number;
+  repairs: number;
   retriedPresses: number;
   readonly jumps: Record<JumpCause, JumpTally>;
   readonly worstJump: { metres: number; roadMetres: number; tick: number };
@@ -92,6 +98,7 @@ export interface RoomClient {
   readonly takeEvents: () => readonly RaceEvent[];
   readonly takeFights: () => readonly HeardFight[];
   readonly writeInputs: (view: DataView) => number;
+  readonly writeRepair: (view: DataView) => number;
 }
 
 interface Remote {
@@ -205,6 +212,8 @@ export const createRoomClient = (
   const missed: Button[] = [];
   let retriedFor = 0;
   let lagging = false;
+  let askAbout: number | null = null;
+  let asked = false;
   const stats: RoomStats = {
     crashesAfterCorrection: 0,
     desyncs: 0,
@@ -214,6 +223,7 @@ export const createRoomClient = (
       ownControl: { felt: 0, totalMetres: 0, worstMetres: 0 },
     },
     refusedPredictions: 0,
+    repairs: 0,
     resimulatedTicks: 0,
     retriedPresses: 0,
     rollbacks: 0,
@@ -373,6 +383,16 @@ export const createRoomClient = (
     }
   };
 
+  const takeConfirmed = (): void => {
+    const fromS = mine.s;
+    const fromX = mine.x;
+    stale = false;
+    noteWhereRidersAre();
+    rewind();
+    noteCorrections();
+    noteJump("behindServer", fromS, fromX);
+  };
+
   const finishMending = (): void => {
     const fromS = mine.s;
     const fromX = mine.x;
@@ -514,6 +534,7 @@ export const createRoomClient = (
       hashRace(confirmed, digest, scratchFor(scratch, confirmed), hash);
       if (!sameHash(hash, serverHash)) {
         stats.desyncs += 1;
+        askAbout = stats.repairs < MOST_REPAIRS ? confirmed.tick : null;
       }
     }
   };
@@ -521,7 +542,18 @@ export const createRoomClient = (
   return {
     catchUpFrom: (snapshot) => {
       restoreInto(confirmed, digest, snapshot, setup.track);
-      rewind();
+      const repaired = asked;
+      stats.repairs += repaired ? 1 : 0;
+      asked = false;
+      if (predicted.tick > confirmed.tick) {
+        mending = false;
+        stale = true;
+        staleCause = "behindServer";
+      } else if (repaired) {
+        takeConfirmed();
+      } else {
+        rewind();
+      }
     },
     confirm: (frame, serverHash) => {
       stepConfirmed(frame, serverHash);
@@ -530,13 +562,7 @@ export const createRoomClient = (
       noteRoomChoice(frame, plannedThrough);
       notePresses(frame, plannedThrough);
       if (reached < frame.tick) {
-        const fromS = mine.s;
-        const fromX = mine.x;
-        stale = false;
-        noteWhereRidersAre();
-        rewind();
-        noteCorrections();
-        noteJump("behindServer", fromS, fromX);
+        takeConfirmed();
         return;
       }
       const guessed = guesses[slotOf(frame.tick)];
@@ -641,6 +667,15 @@ export const createRoomClient = (
       }
       sentThrough = last;
       return writeInput(view, first, batch);
+    },
+    writeRepair: (view) => {
+      if (askAbout === null) {
+        return 0;
+      }
+      const bytes = writeRepair(view, askAbout);
+      askAbout = null;
+      asked = true;
+      return bytes;
     },
   };
 };

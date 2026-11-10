@@ -36,6 +36,7 @@ import type { HostSocket, Present } from "./present.ts";
 import { buildRace, finishTape, restoreRace } from "./race-build.ts";
 import type { RacePorts, Run } from "./race-build.ts";
 import {
+  answerRepair,
   HERE,
   keepBrowserRows,
   keepReport,
@@ -562,6 +563,12 @@ export const createHost = (
       return;
     }
     if (answerPing(person, view)) {
+      return;
+    }
+    const send = (packet: Uint8Array): void => {
+      sendTo(person.socket, packet);
+    };
+    if (answerRepair(seat, run.room, view, { note: ports.note, send })) {
       return;
     }
     if (!readReady(view, readyDigest)) {

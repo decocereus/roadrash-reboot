@@ -1,5 +1,10 @@
 import type { Room } from "@racer/sim/room";
-import { readRaceStats } from "@racer/sim/room-wire";
+import {
+  MOST_REPAIRS,
+  readRaceStats,
+  readRepair,
+  writeRaceSnapshot,
+} from "@racer/sim/room-wire";
 import type { RaceStats } from "@racer/sim/room-wire";
 import { riderIdAt } from "@racer/sim/state";
 import type { RiderId } from "@racer/sim/state";
@@ -19,6 +24,8 @@ import {
   TRACE_VERSION,
 } from "./tape.ts";
 import type { SeatBrowser } from "./tape.ts";
+
+export const REPAIR_EVERY_TICKS = 300;
 
 const decodeBrowserTrace = Schema.decodeUnknownOption(
   Schema.fromJsonString(BrowserTraceSchema)
@@ -65,6 +72,8 @@ export interface Seat {
   late: number;
   presence: SeatPresence;
   readyMs: number | null;
+  repairedAtTick: number | null;
+  repairs: number;
   reported: boolean;
   stats: RaceStats | null;
   tracedLate: number;
@@ -112,6 +121,8 @@ export const seatFor = (
   presence: HERE,
   raceId,
   readyMs: null,
+  repairedAtTick: null,
+  repairs: 0,
   reported: false,
   rider,
   stats: null,
@@ -134,6 +145,8 @@ export const seatMemoryOf = ({
   name,
   presence,
   readyMs,
+  repairedAtTick,
+  repairs,
   reported,
   rider,
 }: Seat): SeatMemory => ({
@@ -146,6 +159,8 @@ export const seatMemoryOf = ({
   memberId,
   name,
   readyMs,
+  repairedAtTick,
+  repairs,
   reported,
   rider,
 });
@@ -160,6 +175,8 @@ export const restoredSeat = (memory: SeatMemory, raceId: string): Seat => ({
       ? HERE
       : { kind: "left", tick: memory.leftAtTick },
   readyMs: memory.readyMs,
+  repairedAtTick: memory.repairedAtTick,
+  repairs: memory.repairs,
   reported: memory.reported,
 });
 
@@ -217,6 +234,39 @@ export const keepStats = (seat: Seat, view: DataView): void => {
     seat.reported = true;
     seat.stats = stats;
   }
+};
+
+export const answerRepair = (
+  seat: Seat,
+  room: Room,
+  view: DataView,
+  ports: Pick<ReportPorts, "note"> & {
+    readonly send: (packet: Uint8Array) => void;
+  }
+): boolean => {
+  const desyncTick = readRepair(view);
+  if (desyncTick === null) {
+    return false;
+  }
+  const { tick } = room.state;
+  if (
+    seat.repairs < MOST_REPAIRS &&
+    (seat.repairedAtTick === null ||
+      tick - seat.repairedAtTick >= REPAIR_EVERY_TICKS)
+  ) {
+    seat.repairs += 1;
+    seat.repairedAtTick = tick;
+    ports.send(writeRaceSnapshot(room.snapshot()));
+    ports.note({
+      desyncTick,
+      kind: "repaired",
+      raceId: seat.raceId,
+      repairs: seat.repairs,
+      rider: seat.rider,
+      tick,
+    });
+  }
+  return true;
 };
 
 export const keepReport = (seat: Seat, data: string | ArrayBuffer): void => {

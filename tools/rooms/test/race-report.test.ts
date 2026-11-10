@@ -165,6 +165,26 @@ describe("the race report", () => {
     );
   });
 
+  it("says when the room sent a rider its race because the rider's had drifted", () => {
+    const [race] = groupRaces([
+      ...notes,
+      {
+        desyncTick: 1800,
+        kind: "repaired",
+        raceId: "race-a",
+        repairs: 1,
+        rider: 1,
+        tick: 1812,
+      },
+    ]);
+    if (!race) {
+      throw new Error("No race.");
+    }
+    expect(raceReport(race)).toContain(
+      "Rider 1's race differed from the room's at tick 1800, and the room sent its race at tick 1812, repair 1"
+    );
+  });
+
   it("lists each link's browser stats when a rider came back", () => {
     const [race] = groupRaces([
       ...notes,
@@ -208,6 +228,7 @@ const reportOfSeat = (only: RaceSeat): string =>
     },
     left: [],
     raceId: "race-c",
+    repairs: [],
     restarts: [],
     stats: [],
   });

@@ -14,7 +14,7 @@ import { openSeat } from "./seat.ts";
 import type { Seat, SeatReport } from "./seat.ts";
 
 const usage =
-  "Usage: pnpm rooms:race --url http://127.0.0.1:<port> [--seats 2] [--seconds 20] [--drop-at-seconds n]";
+  "Usage: pnpm rooms:race --url http://127.0.0.1:<port> [--seats 2] [--seconds 20] [--drop-at-seconds n] [--desync-at-seconds n]";
 
 const POLL_MS = 50;
 const OPEN_TIMEOUT_MS = 15_000;
@@ -36,6 +36,7 @@ const options = (args: readonly string[]) =>
       parseArgs({
         args: [...args],
         options: {
+          "desync-at-seconds": { type: "string" },
           "drop-at-seconds": { type: "string" },
           seats: { default: "2", type: "string" },
           seconds: { default: "20", type: "string" },
@@ -84,19 +85,31 @@ const raceIdProblems = (
     : [`The seats' race ID is not the room's, ${current}.`];
 };
 
+const syncProblems = (
+  { desyncs, repairs, you }: SeatReport,
+  drifted: boolean
+): readonly string[] => {
+  if (drifted) {
+    return desyncs === 1 && repairs === 1
+      ? []
+      : [
+          `Rider ${you} drifted once and desynced ${desyncs} times with ${repairs} repairs, not once with one.`,
+        ];
+  }
+  return desyncs > 0 ? [`Rider ${you} desynced ${desyncs} times.`] : [];
+};
+
 const problemsOf = (
   reports: readonly SeatReport[],
-  seconds: number
+  seconds: number,
+  drifted: SeatReport | null
 ): readonly string[] =>
   reports.flatMap((report) => {
-    const problems: string[] = [];
+    const problems: string[] = [...syncProblems(report, report === drifted)];
     if (!report.digestMatched) {
       problems.push(
         `Rider ${report.you} built a different race from the room.`
       );
-    }
-    if (report.desyncs > 0) {
-      problems.push(`Rider ${report.you} desynced ${report.desyncs} times.`);
     }
     if (report.hashesCompared === 0) {
       problems.push(`Rider ${report.you} compared no room hash.`);
@@ -155,14 +168,21 @@ const contractProblems = (answers: ContractAnswers): readonly string[] => {
   ];
 };
 
+interface SeatMoment {
+  readonly atSeconds: number;
+  readonly seat: Seat;
+}
+
 const rideUntil = (
   seats: readonly Seat[],
   endSeconds: number,
-  drop: { readonly atSeconds: number; readonly seat: Seat } | null
+  drop: SeatMoment | null,
+  drift: SeatMoment | null
 ) =>
   Effect.gen(function* riding() {
     const startedAt = yield* Clock.currentTimeMillis;
     let left = false;
+    let drifted = false;
     let racing = true;
     while (racing) {
       const now = yield* Clock.currentTimeMillis;
@@ -170,6 +190,10 @@ const rideUntil = (
       if (drop && !left && at > drop.atSeconds) {
         drop.seat.leave();
         left = true;
+      }
+      if (drift && !drifted && at > drift.atSeconds) {
+        drift.seat.drift();
+        drifted = true;
       }
       racing = at < endSeconds && !seats.every((seat) => seat.over());
       yield* Effect.sleep(POLL_MS);
@@ -224,6 +248,12 @@ export const main = Effect.fn("rooms.race")(function* main(
     dropAt === undefined
       ? null
       : { atSeconds: START_DELAY_SECONDS + Number(dropAt), seat: last };
+  const driftAt = values["desync-at-seconds"];
+  const [first] = seats;
+  const drift =
+    driftAt === undefined || first === undefined
+      ? null
+      : { atSeconds: START_DELAY_SECONDS + Number(driftAt), seat: first };
   yield* waitFor(
     () => seats.every((seat) => seat.started()),
     "every seat to hear the start",
@@ -233,7 +263,7 @@ export const main = Effect.fn("rooms.race")(function* main(
   const other = yield* client.rooms.status({
     params: { roomId: makeRoomId(`other-${stamp}`) },
   });
-  yield* rideUntil(seats, START_DELAY_SECONDS + seconds, drop);
+  yield* rideUntil(seats, START_DELAY_SECONDS + seconds, drop, drift);
   const status = yield* client.rooms.status({ params: { roomId } });
   const reports = seats.map((seat) => seat.report());
   for (const seat of seats) {
@@ -242,7 +272,11 @@ export const main = Effect.fn("rooms.race")(function* main(
     }
   }
   const problems = [
-    ...problemsOf(drop ? reports.slice(0, -1) : reports, seconds),
+    ...problemsOf(
+      drop ? reports.slice(0, -1) : reports,
+      seconds,
+      drift ? (reports[0] ?? null) : null
+    ),
     ...missedProblems(status.tick, status.seats),
     ...(status.dropped > 0
       ? [`The room dropped ${status.dropped} messages over a socket's budget.`]

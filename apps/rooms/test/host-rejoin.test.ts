@@ -1,10 +1,4 @@
-import type { RoomClient } from "@racer/sim/room-client";
-import { createTickFrame } from "@racer/sim/room-frame";
-import {
-  createReadTick,
-  readRaceSnapshot,
-  readTick,
-} from "@racer/sim/room-wire";
+import { readRaceSnapshot } from "@racer/sim/room-wire";
 import { describe, expect, it } from "vitest";
 
 import { SEAT_QUIT } from "../src/messages.ts";
@@ -36,19 +30,6 @@ const notesOf = (clock: Clock, ...kinds: readonly string[]) =>
 
 const kindsHeard = (socket: FakeSocket): readonly string[] =>
   socket.messages.map(({ kind }) => kind);
-
-const followAll = (socket: FakeSocket, client: RoomClient): void => {
-  const read = createReadTick(createTickFrame());
-  for (const packet of socket.ticks.splice(0)) {
-    const snapshot = readRaceSnapshot(packet);
-    if (snapshot) {
-      client.catchUpFrom(snapshot);
-    } else {
-      expect(readTick(packet, read)).toBeTruthy();
-      client.confirm(read.frame, read.hashed ? read.hash : null);
-    }
-  }
-};
 
 const droppedRider = () => {
   const { clock, host, seated } = room();
@@ -89,10 +70,10 @@ describe("a rider whose link drops mid-race", () => {
     expect(startedOf(back)).toMatchObject({ awayMs: AWAY_MS, you: 0 });
     expect(kindsHeard(back)).toStrictEqual(["started", "countdown"]);
     const caught = clientOf(back);
-    followAll(back, caught);
+    followTicks(back, caught);
     expect(caught.confirmed.tick).toBe(host.status().tick);
     advanceHearing(host, clock, [bo, back], RIDE_ON_MS);
-    followAll(back, caught);
+    followTicks(back, caught);
     followTicks(bo, stayed);
     const { riders, tick } = caught.confirmed;
     expect({ riders, tick }).toStrictEqual({
