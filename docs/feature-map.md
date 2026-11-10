@@ -404,7 +404,7 @@ Every screen React draws around a race, from the bar and the back room to the ga
 - Docs: [docs/design/screens.md#flow](design/screens.md#flow), [docs/design/game-design.md#3-modes](design/game-design.md#3-modes), [DESIGN.md#components](../DESIGN.md#components)
 - Verify: [single-race.md](../.claude/skills/verify-rushline/features/single-race.md), [career.md](../.claude/skills/verify-rushline/features/career.md)
 - Perf: `bytes.route.root.gzip`, `bytes.route.root.raw`
-- Owns: `apps/web/src/components/screens/**`, `apps/web/test/bar-nav.test.tsx`, `apps/web/test/career-screens.test.tsx`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/navigation.ts`, `apps/web/test/navigation.test.ts`, `apps/web/src/assets/*-art.ts`, `apps/web/src/game/showroom.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bar.ts`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/copy.test.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`, `apps/web/src/career/notes.ts`
+- Owns: `apps/web/src/components/screens/**`, `apps/web/test/bar-nav.test.tsx`, `apps/web/test/career-screens.test.tsx`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/navigation.ts`, `apps/web/test/navigation.test.ts`, `apps/web/test/navigation-walk.ts`, `apps/web/src/assets/*-art.ts`, `apps/web/src/game/showroom.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bar.ts`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/copy.test.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`, `apps/web/src/career/notes.ts`
 
 Source files:
 
@@ -449,6 +449,7 @@ Test files:
 - `apps/web/src/career/copy.test.ts`
 - `apps/web/test/bar-nav.test.tsx`
 - `apps/web/test/career-screens.test.tsx`
+- `apps/web/test/navigation-walk.ts`
 - `apps/web/test/navigation.test.ts`
 
 ### Race HUD and notices
@@ -1391,6 +1392,7 @@ Source files:
 - `tools/oxlint/rushline/rules/no-manual-tag-comparison.ts`
 - `tools/oxlint/rushline/rules/no-manual-tagged-construction.ts`
 - `tools/oxlint/rushline/rules/no-node-io.ts`
+- `tools/oxlint/rushline/rules/no-page-move.ts`
 - `tools/oxlint/rushline/rules/no-promise.ts`
 - `tools/oxlint/rushline/rules/no-service-constructor-imports.ts`
 - `tools/oxlint/rushline/rules/no-swallowed-failure.ts`
@@ -1430,6 +1432,7 @@ Test files:
 - `tools/oxlint/test/no-distance-hide.test.ts`
 - `tools/oxlint/test/no-entries-loop.test.ts`
 - `tools/oxlint/test/no-hot-allocation.test.ts`
+- `tools/oxlint/test/no-page-move.test.ts`
 - `tools/oxlint/test/numeric-draw-sort.test.ts`
 - `tools/oxlint/test/player-copy.test.ts`
 - `tools/oxlint/test/ranged-buffer-upload.test.ts`
@@ -1505,7 +1508,7 @@ The race room's rules: the setup that seats up to eight humans with pacing off, 
 - Docs: [docs/architecture/race-rooms.md#race-rooms](architecture/race-rooms.md#race-rooms), [docs/standards/simulation.md#keep-the-simulation-deterministic](standards/simulation.md#keep-the-simulation-deterministic), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
 - Verify: [race-room.md](../.claude/skills/verify-rushline/features/race-room.md), [netcode-compare.md](../.claude/skills/verify-rushline/features/netcode-compare.md)
 - Perf: `room.tick.p95`, `room.confirm.p95`, `room.rollback.p95`, `room.checkpoint.p95`, `room.allocatedBytesPerTick`, `room.client.allocatedBytesPerTick`, `room.frame.allocatedBytesPerTick`
-- Owns: `packages/sim/src/room*.ts`, `packages/career/src/room-race*.ts`, `apps/rooms/**`, `scripts/rooms-build.test.ts`, `scripts/sim-fingerprint.test.ts`, `apps/web/src/components/guest-name.ts`, `apps/web/test/member-key.test.ts`, `apps/web/test/member-rows.test.tsx`, `apps/web/test/rejoin-cards.test.tsx`, `apps/web/src/components/room-lobby.tsx`, `apps/web/src/components/use-handoff.ts`, `apps/web/src/prepare-outcome.ts`, `apps/web/src/race-handoff.ts`, `apps/web/src/room-handoff.ts`, `apps/web/test/prepare-outcome.test.ts`, `apps/web/test/race-handoff.test.ts`, `apps/web/test/room-boot-failure.test.tsx`, `apps/web/test/room-limited.test.tsx`, `apps/web/test/queue-screen.test.tsx`, `apps/web/test/room-rejoin-choice.test.ts`, `apps/web/src/components/room-url.ts`, `apps/web/src/components/room-preview.ts`, `apps/web/test/room-preview.test.ts`, `apps/web/test/room-pacing.test.ts`, `apps/web/test/room-screen.test.ts`, `tools/rooms/**`
+- Owns: `packages/sim/src/room*.ts`, `packages/career/src/room-race*.ts`, `apps/rooms/**`, `scripts/rooms-build.test.ts`, `scripts/sim-fingerprint.test.ts`, `apps/web/src/components/guest-name.ts`, `apps/web/test/member-key.test.ts`, `apps/web/test/member-rows.test.tsx`, `apps/web/test/rejoin-cards.test.tsx`, `apps/web/src/components/room-lobby.tsx`, `apps/web/src/components/room-race-screens.tsx`, `apps/web/src/components/use-handoff.ts`, `apps/web/src/prepare-outcome.ts`, `apps/web/src/race-handoff.ts`, `apps/web/src/room-handoff.ts`, `apps/web/test/prepare-outcome.test.ts`, `apps/web/test/race-handoff.test.ts`, `apps/web/test/room-boot-failure.test.tsx`, `apps/web/test/room-limited.test.tsx`, `apps/web/test/queue-screen.test.tsx`, `apps/web/test/room-address.test.ts`, `apps/web/test/room-navigation.test.ts`, `apps/web/test/room-run-stub.ts`, `apps/web/src/components/room-url.ts`, `apps/web/src/components/room-preview.ts`, `apps/web/test/room-preview.test.ts`, `apps/web/test/room-pacing.test.ts`, `apps/web/test/room-screen.test.ts`, `tools/rooms/**`
 
 Source files:
 
@@ -1550,6 +1553,7 @@ Source files:
 - `apps/web/src/components/guest-name.ts`
 - `apps/web/src/components/room-lobby.tsx`
 - `apps/web/src/components/room-preview.ts`
+- `apps/web/src/components/room-race-screens.tsx`
 - `apps/web/src/components/room-url.ts`
 - `apps/web/src/components/use-handoff.ts`
 - `apps/web/src/prepare-outcome.ts`
@@ -1641,11 +1645,13 @@ Test files:
 - `apps/web/test/queue-screen.test.tsx`
 - `apps/web/test/race-handoff.test.ts`
 - `apps/web/test/rejoin-cards.test.tsx`
+- `apps/web/test/room-address.test.ts`
 - `apps/web/test/room-boot-failure.test.tsx`
 - `apps/web/test/room-limited.test.tsx`
+- `apps/web/test/room-navigation.test.ts`
 - `apps/web/test/room-pacing.test.ts`
 - `apps/web/test/room-preview.test.ts`
-- `apps/web/test/room-rejoin-choice.test.ts`
+- `apps/web/test/room-run-stub.ts`
 - `apps/web/test/room-screen.test.ts`
 - `packages/career/src/room-race.test.ts`
 - `packages/sim/src/room-clock.test.ts`

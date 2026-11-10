@@ -3,13 +3,24 @@ import type { RaceResult } from "@racer/career/outcome";
 import type { RaceRules } from "@racer/career/rules";
 import type { TierUp } from "@racer/career/settle";
 import type { CareerState } from "@racer/career/state";
-import type { GraphicsPlace } from "@racer/telemetry/limits";
+import type { GraphicsPlace, RoomArrival } from "@racer/telemetry/limits";
 
 import type { RaceEntry, RaceReport } from "./career/flow.ts";
 import type { SaveState } from "./career/save.ts";
+import type { RoomAddress } from "./components/room-url.ts";
 import type { RacePlan } from "./game/hud.ts";
 import type { Step } from "./race-handoff.ts";
 import type { RulesLoad } from "./rules/load.ts";
+
+const rejoinChoices = ["try", "no", "taken", "flooded"] as const;
+
+export type RejoinChoice = (typeof rejoinChoices)[number];
+
+export interface RoomVisit {
+  readonly roomId: string;
+  readonly arrival: RoomArrival;
+  readonly rejoin: RejoinChoice | null;
+}
 
 export type RaceStage =
   | { readonly kind: "riding" }
@@ -27,7 +38,11 @@ export type View =
   | { readonly screen: "garage" }
   | { readonly screen: "rideOut"; readonly entry: RaceEntry }
   | { readonly screen: "queue" }
-  | { readonly screen: "room"; readonly roomId: string }
+  | {
+      readonly screen: "room";
+      readonly visit: RoomVisit;
+      readonly turn: number;
+    }
   | {
       readonly screen: "race";
       readonly plan: RacePlan;
@@ -59,12 +74,13 @@ export type NavigationEvent =
     }
   | {
       readonly kind: "entered";
-      readonly roomId: string | null;
+      readonly room: RoomVisit | null;
       readonly rules: RulesLoad | null;
       readonly save: SaveState;
       readonly urlRide: boolean;
     }
-  | { readonly kind: "left"; readonly career: CareerState | null }
+  | { readonly kind: "left"; readonly save: SaveState }
+  | { readonly kind: "roomMoved"; readonly visit: RoomVisit }
   | { readonly kind: "ridePicked"; readonly entry: RaceEntry }
   | { readonly kind: "raceBegun"; readonly plan: RacePlan };
 
@@ -74,9 +90,7 @@ type NavigationEffect =
       readonly kind: "decodeBar";
       readonly career: CareerState;
       readonly rules: RaceRules;
-    }
-  | { readonly kind: "openBar" }
-  | { readonly kind: "rematch"; readonly roomId: string };
+    };
 
 type NavigationStep = Step<View, NavigationEffect>;
 
@@ -110,6 +124,39 @@ export const stageOf = (view: View): "boot" | "race" | "menu" => {
     return "boot";
   }
   return view.screen === "race" ? "race" : "menu";
+};
+
+export const roomAddressOf = (view: View): RoomAddress | null => {
+  switch (view.screen) {
+    case "room": {
+      return { arrival: view.visit.arrival, roomId: view.visit.roomId };
+    }
+    case "race": {
+      return view.plan.room
+        ? { arrival: null, roomId: view.plan.room.roomId }
+        : null;
+    }
+    case "results": {
+      return view.report.room
+        ? { arrival: null, roomId: view.report.room.roomId }
+        : null;
+    }
+    case "backRoom":
+    case "boot":
+    case "clubhouse":
+    case "elsewhere":
+    case "ending":
+    case "gameOver":
+    case "garage":
+    case "queue":
+    case "rideOut":
+    case "routeBoard": {
+      return null;
+    }
+    default: {
+      return view satisfies never;
+    }
+  }
 };
 
 const homeOf = (career: CareerState): View => {
@@ -152,6 +199,12 @@ export const raceAgainOffered = (
 
 const to = (state: View): NavigationStep => ({ effect: null, state });
 
+const roomView = (from: View, visit: RoomVisit): View => ({
+  screen: "room",
+  turn: from.screen === "room" ? from.turn + 1 : 0,
+  visit,
+});
+
 const raceAfter = (
   view: Extract<View, { readonly screen: "race" }>,
   event: RaceNews
@@ -189,12 +242,7 @@ const raceAfter = (
 
 const entering = (
   view: View,
-  {
-    roomId,
-    rules,
-    save,
-    urlRide,
-  }: Extract<NavigationEvent, { kind: "entered" }>
+  { room, rules, save, urlRide }: Extract<NavigationEvent, { kind: "entered" }>
 ): NavigationStep => {
   if (rules?.status === "failed") {
     return to(backRoom);
@@ -202,8 +250,8 @@ const entering = (
   if (rules === null || urlRide || save.status === "loading") {
     return to(view);
   }
-  if (roomId !== null) {
-    return to({ roomId, screen: "room" });
+  if (room !== null) {
+    return to(roomView(view, room));
   }
   switch (save.status) {
     case "corrupt":
@@ -235,12 +283,52 @@ const entering = (
   }
 };
 
-const openingBar = (view: View): NavigationStep => ({
-  effect: { kind: "openBar" },
-  state: view,
-});
+const homeFrom = (save: SaveState): NavigationStep => {
+  switch (save.status) {
+    case "corrupt":
+    case "loading":
+    case "unread": {
+      return to(backRoom);
+    }
+    case "elsewhere": {
+      return to(elsewhere);
+    }
+    case "empty": {
+      return { effect: { kind: "beginCareer" }, state: clubhouse };
+    }
+    case "ready": {
+      return to(homeOf(save.career));
+    }
+    default: {
+      return save satisfies never;
+    }
+  }
+};
 
-const leaving = (view: View, career: CareerState | null): NavigationStep => {
+const raceLeft = (
+  view: Extract<View, { readonly screen: "race" }>,
+  save: SaveState
+): NavigationStep => {
+  switch (view.stage.kind) {
+    case "finishing": {
+      return to({ report: view.stage.report, screen: "results" });
+    }
+    case "paused": {
+      return view.plan.room ? homeFrom(save) : to(view);
+    }
+    case "consequence":
+    case "riding":
+    case "signalLost": {
+      return to(view);
+    }
+    default: {
+      return view.stage satisfies never;
+    }
+  }
+};
+
+const leaving = (view: View, save: SaveState): NavigationStep => {
+  const career = save.status === "ready" ? save.career : null;
   switch (view.screen) {
     case "boot":
     case "elsewhere": {
@@ -263,19 +351,13 @@ const leaving = (view: View, career: CareerState | null): NavigationStep => {
       return to(view.entry.mode === "career" ? clubhouse : routeBoard);
     }
     case "room": {
-      return openingBar(view);
+      return homeFrom(save);
     }
     case "race": {
-      return to(
-        view.stage.kind === "finishing"
-          ? { report: view.stage.report, screen: "results" }
-          : view
-      );
+      return raceLeft(view, save);
     }
     case "results": {
-      return view.report.room
-        ? openingBar(view)
-        : to(afterResults(view.report));
+      return view.report.room ? homeFrom(save) : to(afterResults(view.report));
     }
     default: {
       return view satisfies never;
@@ -297,7 +379,7 @@ export const stepNavigation = (
       return view.screen === "boot" ? entering(view, event) : to(view);
     }
     case "left": {
-      return leaving(view, event.career);
+      return leaving(view, event.save);
     }
     case "paused":
     case "raceOver":
@@ -317,12 +399,18 @@ export const stepNavigation = (
       });
     }
     case "ridePicked": {
-      return view.screen === "results" && view.report.room
-        ? {
-            effect: { kind: "rematch", roomId: view.report.room.roomId },
-            state: view,
-          }
-        : to({ entry: event.entry, screen: "rideOut" });
+      return to(
+        view.screen === "results" && view.report.room
+          ? roomView(view, {
+              arrival: "rematch",
+              rejoin: null,
+              roomId: view.report.room.roomId,
+            })
+          : { entry: event.entry, screen: "rideOut" }
+      );
+    }
+    case "roomMoved": {
+      return to(view.screen === "boot" ? view : roomView(view, event.visit));
     }
     default: {
       return event satisfies never;

@@ -5,7 +5,6 @@ import { ordinal } from "../../career/format.ts";
 import { idleHud } from "../../hud-feed.ts";
 import type { HudFeed } from "../../hud-feed.ts";
 import type { RaceStage } from "../../navigation.ts";
-import { moveToRoom } from "../room-url.ts";
 
 const TICK_MS = 250;
 const BIKE_UP_MS = 3000;
@@ -157,18 +156,15 @@ export const TooLate = ({
 const SignalLost = ({
   holdSeconds,
   lostAt,
-  roomId,
+  backToBar,
 }: {
   readonly holdSeconds: number;
   readonly lostAt: number;
-  readonly roomId: string;
+  readonly backToBar: () => void;
 }) => {
   const now = useNow();
   const holdMs = holdSeconds * 1000;
   const leftMs = holdMs - (now - lostAt);
-  const backToBar = () => {
-    moveToRoom(roomId, "moved", "no");
-  };
   if (leftMs <= 0) {
     return <LateCard holdSeconds={holdSeconds} onBack={backToBar} />;
   }
@@ -274,15 +270,46 @@ const RoomStall = ({ feed }: { readonly feed: HudFeed }) => {
   );
 };
 
+type RoomOnPage = Pick<
+  RoomRun,
+  "awayMs" | "holdSeconds" | "pressed" | "reportNow" | "stoppedDrawing"
+>;
+
+const useRoomPage = (room: RoomOnPage): void => {
+  useEffect(() => {
+    const pressed = (event: KeyboardEvent): void => {
+      if (!event.repeat) {
+        room.pressed();
+      }
+    };
+    const hidden = (): void => {
+      if (document.hidden) {
+        room.stoppedDrawing();
+      }
+    };
+    globalThis.addEventListener("keydown", pressed);
+    globalThis.addEventListener("pagehide", room.reportNow);
+    document.addEventListener("visibilitychange", hidden);
+    return () => {
+      globalThis.removeEventListener("keydown", pressed);
+      globalThis.removeEventListener("pagehide", room.reportNow);
+      document.removeEventListener("visibilitychange", hidden);
+    };
+  }, [room]);
+};
+
 export const RoomNotices = ({
   feed,
+  onBackToBar,
   room,
   stage,
 }: {
   readonly feed: HudFeed;
-  readonly room: Pick<RoomRun, "awayMs" | "holdSeconds" | "roomId">;
+  readonly onBackToBar: () => void;
+  readonly room: RoomOnPage;
   readonly stage: RaceStage;
 }) => {
+  useRoomPage(room);
   switch (stage.kind) {
     case "riding": {
       return (
@@ -295,9 +322,9 @@ export const RoomNotices = ({
     case "signalLost": {
       return (
         <SignalLost
+          backToBar={onBackToBar}
           holdSeconds={room.holdSeconds}
           lostAt={stage.lostAt}
-          roomId={room.roomId}
         />
       );
     }

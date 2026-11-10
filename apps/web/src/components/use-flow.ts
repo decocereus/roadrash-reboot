@@ -35,14 +35,15 @@ import type { HudFeed } from "../hud-feed.ts";
 import {
   firstView,
   graphicsPlaceOf,
+  roomAddressOf,
   stageOf,
   stepNavigation,
 } from "../navigation.ts";
-import type { NavigationEvent, View } from "../navigation.ts";
+import type { NavigationEvent, RoomVisit, View } from "../navigation.ts";
 import type { PrepareOutcome } from "../prepare-outcome.ts";
 import { loadRaceRules } from "../rules/load.ts";
 import type { RulesLoad } from "../rules/load.ts";
-import { moveToRoom } from "./room-url.ts";
+import { roomArrivalOf, showAddress } from "./room-url.ts";
 import { useHandoff } from "./use-handoff.ts";
 
 const modeOf = ({ mode }: RacePlan): "career" | "single" =>
@@ -53,9 +54,11 @@ const urlRide = (rules: RaceRules): RacePlan | null => {
   return bench ? benchPlan(bench) : rideOf(rules, globalThis.location.search);
 };
 
-const roomOf = (search: string): string | null => {
+const roomOf = (search: string): RoomVisit | null => {
   const roomId = new URLSearchParams(search).get("room");
-  return roomId !== null && ROOM_ID_PATTERN.test(roomId) ? roomId : null;
+  return roomId !== null && ROOM_ID_PATTERN.test(roomId)
+    ? { arrival: roomArrivalOf(search), rejoin: null, roomId }
+    : null;
 };
 
 const useRules = (): RulesLoad | null => {
@@ -75,6 +78,7 @@ const useRules = (): RulesLoad | null => {
 
 interface Save {
   readonly save: SaveState;
+  readonly saveRef: RefObject<SaveState>;
   readonly careerRef: RefObject<CareerState | null>;
   readonly commit: (career: CareerState) => void;
   readonly settle: (settlement: Settlement) => RaceReport | null;
@@ -83,8 +87,9 @@ interface Save {
 
 const useSave = (rules: RaceRules | null): Save => {
   const careerRef = useRef<CareerState | null>(null);
+  const saveRef = useRef<SaveState>({ status: "loading" });
   const [tab, setTab] = useState<CareerTab | null>(null);
-  const [save, setSave] = useState<SaveState>({ status: "loading" });
+  const [save, setSave] = useState<SaveState>(saveRef.current);
 
   useEffect(() => {
     const held = holdCareer(
@@ -93,6 +98,7 @@ const useSave = (rules: RaceRules | null): Save => {
       browserStorage,
       (next) => {
         careerRef.current = next.status === "ready" ? next.career : null;
+        saveRef.current = next;
         setSave(next);
       }
     );
@@ -123,7 +129,7 @@ const useSave = (rules: RaceRules | null): Save => {
     tab?.eraseSave();
   }, [tab]);
 
-  return { careerRef, commit, eraseSave, save, settle };
+  return { careerRef, commit, eraseSave, save, saveRef, settle };
 };
 
 interface Game {
@@ -186,7 +192,11 @@ const useGame = (
   return { failure, gameRef, ready };
 };
 
-const usePauseKeys = (racing: boolean, pause: () => void): void => {
+const usePauseKeys = (
+  racing: boolean,
+  pausesHidden: boolean,
+  pause: () => void
+): void => {
   useEffect(() => {
     const pressed = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !event.repeat) {
@@ -195,7 +205,7 @@ const usePauseKeys = (racing: boolean, pause: () => void): void => {
       }
     };
     const hidden = () => {
-      if (document.hidden) {
+      if (pausesHidden && document.hidden) {
         pause();
       }
     };
@@ -207,7 +217,7 @@ const usePauseKeys = (racing: boolean, pause: () => void): void => {
       window.removeEventListener("keydown", pressed);
       document.removeEventListener("visibilitychange", hidden);
     };
-  }, [racing, pause]);
+  }, [racing, pausesHidden, pause]);
 };
 
 const MS_PER_SECOND = 1000;
@@ -276,6 +286,7 @@ export interface Flow {
   readonly resume: () => void;
   readonly mute: () => void;
   readonly quit: (plan: RacePlan) => void;
+  readonly leaveRace: () => void;
   readonly roomLost: () => void;
 }
 
@@ -291,7 +302,8 @@ export const useFlow = (): Flow => {
   const [pick, setPick] = useState<PracticePick>(firstQuickPick);
   const rulesLoad = useRules();
   const rules = rulesLoad?.status === "ready" ? rulesLoad.rules : null;
-  const { careerRef, commit, eraseSave, save, settle } = useSave(rules);
+  const { careerRef, commit, eraseSave, save, saveRef, settle } =
+    useSave(rules);
   const {
     failure: gameFailure,
     gameRef,
@@ -317,14 +329,6 @@ export const useFlow = (): Flow => {
           void decode();
           break;
         }
-        case "openBar": {
-          globalThis.location.assign("/");
-          break;
-        }
-        case "rematch": {
-          moveToRoom(effect.roomId, "rematch");
-          break;
-        }
         default: {
           effect satisfies never;
         }
@@ -337,7 +341,7 @@ export const useFlow = (): Flow => {
   useEffect(() => {
     send({
       kind: "entered",
-      roomId: roomOf(globalThis.location.search),
+      room: roomOf(globalThis.location.search),
       rules: rulesLoad,
       save,
       urlRide:
@@ -422,6 +426,12 @@ export const useFlow = (): Flow => {
     diagnostics().showing(graphicsPlaceOf[view.screen]);
   }, [view.screen]);
 
+  useEffect(() => {
+    if (view.screen !== "boot") {
+      showAddress(roomAddressOf(view));
+    }
+  }, [view]);
+
   const stage = stageOf(view);
   useEffect(() => {
     const game = gameRef.current;
@@ -441,11 +451,15 @@ export const useFlow = (): Flow => {
       send({ kind: "paused" });
     }
   }, [gameRef, send]);
-  usePauseKeys(view.screen === "race" && view.stage.kind === "riding", pause);
+  usePauseKeys(
+    view.screen === "race" && view.stage.kind === "riding",
+    view.screen === "race" && !view.plan.room,
+    pause
+  );
 
   const leave = useCallback(() => {
-    send({ career: careerRef.current, kind: "left" });
-  }, [careerRef, send]);
+    send({ kind: "left", save: saveRef.current });
+  }, [saveRef, send]);
 
   const prepare = useCallback(
     async (plan: RacePlan): Promise<PrepareOutcome> => {
@@ -493,6 +507,11 @@ export const useFlow = (): Flow => {
     failure,
     feed,
     leave,
+    leaveRace() {
+      races.ended("quit", factsNow());
+      gameRef.current?.quit();
+      leave();
+    },
     mute: () => gameRef.current?.toggleMute(),
     newCareer() {
       commit(freshCareer(randomUnit()));

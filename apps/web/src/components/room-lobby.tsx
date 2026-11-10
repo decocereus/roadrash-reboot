@@ -22,6 +22,7 @@ import type { RefObject } from "react";
 import { diagnostics } from "../diagnostics/hub.ts";
 import { graphicsCard } from "../diagnostics/player-events.ts";
 import type { RacePlan } from "../game/hud.ts";
+import type { RoomVisit } from "../navigation.ts";
 import { preparedRace } from "../prepare-outcome.ts";
 import type { PrepareOutcome } from "../prepare-outcome.ts";
 import { seatChange, seatClosing, stepRoom } from "../room-handoff.ts";
@@ -35,13 +36,7 @@ import {
   storeGuestName,
 } from "./guest-name.ts";
 import { NO_HOLD, readRoomPreview } from "./room-preview.ts";
-import {
-  clearRejoinNo,
-  moveToRoom,
-  rejoinOf,
-  roomArrivalOf,
-  roomLink,
-} from "./room-url.ts";
+import { roomLink } from "./room-url.ts";
 import { GettingBackOn, TooLate } from "./screens/rejoin.tsx";
 import {
   GuestNameScreen,
@@ -87,17 +82,6 @@ const planOf = (seat: RoomSeat, roomId: string): RacePlan | null => {
       requestAnimationFrame(done);
     }
   );
-  globalThis.addEventListener("keydown", (event) => {
-    if (!event.repeat) {
-      latency.pressed();
-    }
-  });
-  globalThis.addEventListener("pagehide", seat.reportNow);
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden) {
-      seat.stoppedDrawing();
-    }
-  });
   rememberRaceRoom(roomId);
   const room = createRoomRun(seat, race, roomId, latency);
   Reflect.set(globalThis, "__rushlineRoom", {
@@ -116,10 +100,11 @@ const planOf = (seat: RoomSeat, roomId: string): RacePlan | null => {
 };
 
 interface RoomProps {
-  readonly roomId: string;
+  readonly visit: RoomVisit;
   readonly ready: boolean;
   readonly failure: string;
   readonly onBack: () => void;
+  readonly onMove: (visit: RoomVisit) => void;
   readonly onDoorMoment: (atDoor: boolean) => void;
   readonly onLost: () => void;
   readonly onPrepare: (plan: RacePlan) => Promise<PrepareOutcome>;
@@ -134,11 +119,12 @@ const SeatedLobby = ({
   bootFailed,
   name,
   onChangeName,
-  roomId,
+  visit,
   ready,
   onBack,
   onDoorMoment,
   onLost,
+  onMove,
   onPrepare,
   onStart,
 }: RoomProps &
@@ -150,12 +136,14 @@ const SeatedLobby = ({
   const [seat, setSeat] = useState<RoomSeat | null>(null);
   const [, redraw] = useReducer((count: number) => count + 1, 0);
   const [opening, reopen] = useReducer((count: number) => count + 1, 0);
+  const { arrival, rejoin, roomId } = visit;
   const lostTold = useRef(false);
-  const [tooLate] = useState(
-    () => rejoinOf(globalThis.location.search) === "try"
-  );
+  const gaveUp = useRef(rejoin === "no");
   const joinedTold = useRef(false);
   const lost = useEffectEvent(onLost);
+  const moveIn = useEffectEvent((next: RoomVisit["rejoin"]) => {
+    onMove({ arrival: "moved", rejoin: next, roomId });
+  });
   const {
     now: handoffNow,
     send,
@@ -165,7 +153,7 @@ const SeatedLobby = ({
     switch (effect.kind) {
       case "leave": {
         ridden.leave();
-        moveToRoom(roomId, "moved");
+        moveIn(null);
         break;
       }
       case "prepare": {
@@ -190,7 +178,6 @@ const SeatedLobby = ({
   });
   useEffect(() => {
     let reopening: ReturnType<typeof setTimeout> | null = null;
-    let watching: (() => void) | null = null;
     const card = graphicsCard();
     const opened = openRoomSeat(
       import.meta.env.VITE_ROOMS_URL,
@@ -206,7 +193,7 @@ const SeatedLobby = ({
           graphics: `quality rung ${diagnostics().qualityRung()}`,
         }),
       },
-      rejoinOf(globalThis.location.search) !== "no"
+      !gaveUp.current
     );
     const tellLost = () => {
       if (!lostTold.current) {
@@ -228,22 +215,12 @@ const SeatedLobby = ({
         );
         switch (change) {
           case "backToLobby": {
-            moveToRoom(roomId, "moved");
+            moveIn(null);
             break;
           }
           case "raceLost": {
             tellLost();
             lost();
-            if (race) {
-              watching ??= readRoomPreview(
-                import.meta.env.VITE_ROOMS_URL,
-                roomId,
-                msOf(race.holdSeconds),
-                () => {
-                  moveToRoom(roomId, "moved", "try");
-                }
-              );
-            }
             break;
           }
           case "redraw": {
@@ -256,17 +233,17 @@ const SeatedLobby = ({
             break;
           }
           case "seatFlooded": {
-            moveToRoom(roomId, "moved", "flooded");
+            moveIn("flooded");
             break;
           }
           case "seatTaken": {
-            moveToRoom(roomId, "moved", "taken");
+            moveIn("taken");
             break;
           }
           case "tryRejoin": {
             tellLost();
             lost();
-            moveToRoom(roomId, "moved", "try");
+            moveIn("try");
             break;
           }
           default: {
@@ -274,14 +251,15 @@ const SeatedLobby = ({
           }
         }
       },
-      onOpen: clearRejoinNo,
+      onOpen: () => {
+        gaveUp.current = false;
+      },
     });
     setSeat(opened);
     return () => {
       if (reopening) {
         clearTimeout(reopening);
       }
-      watching?.();
       const closing = seatClosing(handoffNow(), bootFailed.current);
       switch (closing) {
         case "keep": {
@@ -312,10 +290,10 @@ const SeatedLobby = ({
       joinedTold.current = true;
       diagnostics().events.track({
         event: "room_joined",
-        via: roomArrivalOf(globalThis.location.search),
+        via: arrival,
       });
     }
-  }, [phase]);
+  }, [arrival, phase]);
   const racing = phase === "racing";
   const raceBegun = racing || phase === "loading";
   useEffect(() => {
@@ -370,7 +348,7 @@ const SeatedLobby = ({
   if (seat && lobby && ((raceBegun && ready) || phase === "lobby")) {
     return (
       <>
-        {tooLate && (
+        {rejoin === "try" && (
           <TooLate
             holdSeconds={lobby.seatHoldSeconds}
             lostRace={lobby.lostRace}
@@ -404,11 +382,10 @@ const SeatedLobby = ({
 };
 
 const RoomEntry = (props: RoomProps & BootFailed) => {
+  const { arrival, rejoin, roomId } = props.visit;
   const [name, setName] = useState(storedGuestName);
   const [invited, setInvited] = useState(
-    () =>
-      roomArrivalOf(globalThis.location.search) === "link" &&
-      !racedIn(props.roomId)
+    () => arrival === "link" && !racedIn(roomId)
   );
   const [preview, setPreview] = useState<RoomPreview | null>(null);
   useEffect(
@@ -416,12 +393,12 @@ const RoomEntry = (props: RoomProps & BootFailed) => {
       invited
         ? readRoomPreview(
             import.meta.env.VITE_ROOMS_URL,
-            props.roomId,
+            roomId,
             NO_HOLD,
             setPreview
           )
         : undefined,
-    [invited, props.roomId]
+    [invited, roomId]
   );
   if (invited) {
     return (
@@ -431,7 +408,7 @@ const RoomEntry = (props: RoomProps & BootFailed) => {
           setInvited(false);
         }}
         preview={preview}
-        roomId={props.roomId}
+        roomId={roomId}
       />
     );
   }
@@ -447,7 +424,6 @@ const RoomEntry = (props: RoomProps & BootFailed) => {
       />
     );
   }
-  const rejoin = rejoinOf(globalThis.location.search);
   if (rejoin === "taken" || rejoin === "flooded") {
     return (
       <RoomLobbyScreen
@@ -455,7 +431,7 @@ const RoomEntry = (props: RoomProps & BootFailed) => {
         onBack={props.onBack}
         phase="refused"
         refusal={rejoin === "taken" ? "replaced" : "flooded"}
-        roomId={props.roomId}
+        roomId={roomId}
       />
     );
   }
@@ -481,12 +457,18 @@ export const RoomLobby = (props: RoomProps) => {
     <RoomFailedScreen
       failure={props.failure}
       onBack={props.onBack}
-      roomId={props.roomId}
+      roomId={props.visit.roomId}
     />
   );
 };
 
-const FindingRiders = ({ onBack }: { readonly onBack: () => void }) => {
+interface QueueProps {
+  readonly onBack: () => void;
+  readonly onPlaced: (roomId: string) => void;
+}
+
+const FindingRiders = ({ onBack, onPlaced }: QueueProps) => {
+  const placed = useEffectEvent(onPlaced);
   const [riders, setRiders] = useState(1);
   const [refusal, setRefusal] = useState<QueueRefusal | null>(null);
   const [opening, reopen] = useReducer((count: number) => count + 1, 0);
@@ -507,7 +489,7 @@ const FindingRiders = ({ onBack }: { readonly onBack: () => void }) => {
               break;
             }
             case "placed": {
-              moveToRoom(message.roomId, "queue");
+              placed(message.roomId);
               break;
             }
             case "refused": {
@@ -538,7 +520,7 @@ const FindingRiders = ({ onBack }: { readonly onBack: () => void }) => {
   );
 };
 
-export const QuickRace = ({ onBack }: { readonly onBack: () => void }) => {
+export const QuickRace = ({ onBack, onPlaced }: QueueProps) => {
   const [name, setName] = useState(storedGuestName);
   if (name === null) {
     return (
@@ -552,5 +534,30 @@ export const QuickRace = ({ onBack }: { readonly onBack: () => void }) => {
       />
     );
   }
-  return <FindingRiders onBack={onBack} />;
+  return <FindingRiders onBack={onBack} onPlaced={onPlaced} />;
+};
+
+export const RejoinWatch = ({
+  holdSeconds,
+  onOpen,
+  roomId,
+}: {
+  readonly holdSeconds: number;
+  readonly onOpen: () => void;
+  readonly roomId: string;
+}) => {
+  const opened = useEffectEvent(onOpen);
+  useEffect(
+    () =>
+      readRoomPreview(
+        import.meta.env.VITE_ROOMS_URL,
+        roomId,
+        msOf(holdSeconds),
+        () => {
+          opened();
+        }
+      ),
+    [holdSeconds, roomId]
+  );
+  return null;
 };
