@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createMemory } from "../src/host-memory.ts";
+import { createMemory, MOST_UNSAVED_BYTES } from "../src/host-memory.ts";
 import { createLobby } from "../src/lobby.ts";
 import { launchRoomConfig, publicRuleFor } from "../src/room-config.ts";
 import type { RoomMemory } from "../src/room-memory.ts";
@@ -52,6 +52,22 @@ describe("what a room keeps unsaved", () => {
     ]);
     saves[1]?.saved();
     expect(unsavedOf(written.at(-1))).toStrictEqual([]);
+  });
+
+  it("drops the oldest unacknowledged writes past the cap, so an R2 outage cannot push the record past storage's value limit", () => {
+    const { memory, written } = memoryWithHeldSaves();
+    const part = new Uint8Array(MOST_UNSAVED_BYTES / 4);
+    for (let index = 0; index < 6; index += 1) {
+      memory.saveTape(`tapes/race-1/0000${index}.bin`, part);
+    }
+    memory.remember();
+    const kept = written.at(-1)?.unsaved ?? [];
+    expect(kept.map(({ key }) => key)).toStrictEqual([
+      "tapes/race-1/00002.bin",
+      "tapes/race-1/00003.bin",
+      "tapes/race-1/00004.bin",
+      "tapes/race-1/00005.bin",
+    ]);
   });
 
   it("marks the highest sequence ended and never lets it fall", () => {

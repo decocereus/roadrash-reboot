@@ -1,6 +1,8 @@
 import type { RaceSeat, RoomNote } from "@racer/rooms/notes";
+import * as Clock from "effect/Clock";
 import * as ConfigProvider from "effect/ConfigProvider";
 import * as Effect from "effect/Effect";
+import * as Fiber from "effect/Fiber";
 import * as HttpClient from "effect/http/HttpClient";
 import type * as HttpClientRequest from "effect/http/HttpClientRequest";
 import * as HttpClientResponse from "effect/http/HttpClientResponse";
@@ -327,6 +329,25 @@ const readFrom = (store: HttpClient.HttpClient) =>
     Effect.provide(TestClock.layer())
   );
 
+const limitedOnce = (store: HttpClient.HttpClient) => {
+  const asked: number[] = [];
+  const client = HttpClient.make((request) =>
+    Effect.gen(function* answer() {
+      asked.push(yield* Clock.currentTimeMillis);
+      return asked.length === 1
+        ? HttpClientResponse.fromWeb(
+            request,
+            new Response("Too many requests", {
+              headers: { "retry-after": "7" },
+              status: 429,
+            })
+          )
+        : yield* store.execute(request);
+    })
+  );
+  return { asked, client };
+};
+
 const storeOf = (sources: readonly unknown[]): HttpClient.HttpClient =>
   logStore(
     sources.map((source) => ({ source, timestamp: -MS_PER_HOUR })),
@@ -467,6 +488,33 @@ describe("reading Cloudflare's logs", () => {
       Effect.flip(readFrom(logStore(refusedLines(30, -MS_PER_HOUR), 0)))
     );
     expect(failure.message).toContain("sampled");
+  });
+
+  it("waits out a 429 for as long as Retry-After says, then reads the log", async () => {
+    const line: StoredLine = {
+      source: { kind: "refused", reason: "full" },
+      timestamp: -MS_PER_HOUR,
+    };
+    const { asked, client } = limitedOnce(
+      logStore([line], Number.POSITIVE_INFINITY)
+    );
+    const { notes: read } = await Effect.runPromise(
+      Effect.gen(function* readLimited() {
+        const fiber = yield* Effect.forkChild(
+          liveNotes("rooms-script", 24).pipe(
+            Effect.provideService(HttpClient.HttpClient, client),
+            Effect.provideService(
+              ConfigProvider.ConfigProvider,
+              ConfigProvider.fromUnknown({ CLOUDFLARE_API_TOKEN: "test" })
+            )
+          )
+        );
+        yield* TestClock.adjust("7 seconds");
+        return yield* Fiber.join(fiber);
+      }).pipe(Effect.provide(TestClock.layer()))
+    );
+    expect(asked).toStrictEqual([0, 7000]);
+    expect(read).toStrictEqual([line.source]);
   });
 
   it("keeps a line that falls exactly where the reader splits a window", async () => {

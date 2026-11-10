@@ -106,6 +106,7 @@ const localArt = (): Plugin => ({
 
 export default defineConfig({
   build: { rolldownOptions: { external: [/^cloudflare:/u] } },
+  cacheDir: process.env.RUSHLINE_VITE_CACHE_DIR ?? "node_modules/.vite",
   define: { __RUSHLINE_BUILD__: JSON.stringify(buildIdentity()) },
   plugins: [
     localArt(),

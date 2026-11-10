@@ -4934,7 +4934,7 @@
         "arch": "x64",
         "cpu": "AMD EPYC 9V74 80-Core Processor",
         "cpus": "4",
-        "harness": "the room child of tools/perf/room.ts, timing checkpointOf twenty times after each scenario's window",
+        "harness": "the room child of tools/perf/room.ts, timing the build of the room's whole stored record, with checkpointOf and the part just finished kept unsaved, and its serialization as storage does it, at every 300th tick of the warm-up and the window",
         "node": "v26.13.0",
         "platform": "linux",
         "ci": "GitHub Actions run 42702376200 (perf), pull_request event on PR #204, with gate.ts baseline --lanes node in place of pnpm perf for this one run; the runner was an AMD EPYC 9V74, not the 7763 the other node-linux-x64 rows are set on, and an earlier 7763 run of the lane without the pending part measured 0.384 and 0.284 ms, within a few percent, so the rows keep the 1.3 x spread between runners like those rows",
@@ -4953,7 +4953,7 @@
         "arch": "arm64",
         "cpu": "Apple M4 Pro",
         "cpus": "12",
-        "harness": "the room child of tools/perf/room.ts, timing checkpointOf twenty times after each scenario's window",
+        "harness": "the room child of tools/perf/room.ts, timing the build of the room's whole stored record, with checkpointOf and the part just finished kept unsaved, and its serialization as storage does it, at every 300th tick of the warm-up and the window",
         "node": "v26.13.0",
         "platform": "darwin",
         "why": "Astra, the Mac that runs the netcode playtests, one baseline run of the node lane under the playtest lock at e4d8504e, peak load 4.67 of a 9 limit, no calibration warning; the darwin rows take 1.15 x the median with no runner spread, like the other darwin rows"

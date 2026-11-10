@@ -1,3 +1,4 @@
+import { HASH_EVERY } from "@racer/sim/room";
 import type { Room } from "@racer/sim/room";
 import {
   MOST_REPAIRS,
@@ -250,6 +251,8 @@ export const answerRepair = (
   }
   const { tick } = room.state;
   if (
+    desyncTick % HASH_EVERY === 0 &&
+    desyncTick <= tick &&
     seat.repairs < MOST_REPAIRS &&
     (seat.repairedAtTick === null ||
       tick - seat.repairedAtTick >= REPAIR_EVERY_TICKS)
