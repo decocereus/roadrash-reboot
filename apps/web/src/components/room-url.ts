@@ -20,6 +20,11 @@ export const roomLink = (roomId: string): string => {
   return `${globalThis.location.origin}/?${search.toString()}`;
 };
 
+export const roomArrivalOf = (search: string): RoomArrival => {
+  const named = new URLSearchParams(search).get(ARRIVAL_PARAM);
+  return roomArrivals.find((each) => each === named) ?? "link";
+};
+
 const paramsFor = (
   search: string,
   address: RoomAddress | null
@@ -30,11 +35,10 @@ const paramsFor = (
       [ARRIVAL_PARAM, null],
     ]);
   }
-  const arrival =
-    address.arrival ?? new URLSearchParams(search).get(ARRIVAL_PARAM);
+  const arrival = address.arrival ?? roomArrivalOf(search);
   return new Map([
     [ROOM_PARAM, address.roomId],
-    [ARRIVAL_PARAM, arrival],
+    [ARRIVAL_PARAM, arrival === "link" ? null : arrival],
   ]);
 };
 
@@ -68,9 +72,4 @@ export const showAddress = (address: RoomAddress | null): void => {
       `${location.pathname}${search}${location.hash}`
     );
   }
-};
-
-export const roomArrivalOf = (search: string): RoomArrival => {
-  const named = new URLSearchParams(search).get(ARRIVAL_PARAM);
-  return roomArrivals.find((each) => each === named) ?? "link";
 };

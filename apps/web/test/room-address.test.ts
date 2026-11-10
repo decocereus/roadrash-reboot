@@ -55,8 +55,15 @@ describe("the address of a room", () => {
     expect(page.search).toBe("?stress=");
   });
 
+  it("leaves an invite link bare, since a bare link means the rider came by link", () => {
+    const { moves, page } = addressBar("?room=abcd1234&via=link");
+    showAddress({ arrival: "link", roomId: "abcd1234" });
+    expect(page.search).toBe("?room=abcd1234");
+    expect(moves).toStrictEqual(["/?room=abcd1234"]);
+  });
+
   it("writes nothing when the address already says it", () => {
-    const { moves } = addressBar("?room=abcd1234&via=link");
+    const { moves } = addressBar("?room=abcd1234");
     showAddress({ arrival: "link", roomId: "abcd1234" });
     showAddress({ arrival: null, roomId: "abcd1234" });
     expect(moves).toStrictEqual([]);
