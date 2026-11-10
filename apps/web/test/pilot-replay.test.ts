@@ -1,6 +1,5 @@
 import { readFileSync } from "node:fs";
 
-import { TICK_SECONDS } from "@racer/sim/state";
 import type { RiderInput } from "@racer/sim/state";
 import * as Schema from "effect/Schema";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -138,7 +137,7 @@ const recordControls = (recorded: RiderInput[]) => {
         act(keys);
       }
     }
-    controls.read(TICK_SECONDS, run.controls);
+    controls.read(run.controls);
     recorded.push({ ...run.controls });
   };
 };

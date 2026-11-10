@@ -4,6 +4,8 @@ import {
   CONTROL_BYTES,
   controlOf,
   readControl,
+  STEER_ATTACK,
+  STEER_RELEASE,
   writeControl,
 } from "./control.ts";
 import {
@@ -22,7 +24,7 @@ import {
   neutralInput,
   stepRace,
 } from "./race.ts";
-import { PLAYER_RIDER, TICK_RATE } from "./state.ts";
+import { PLAYER_RIDER, TICK_RATE, TICK_SECONDS } from "./state.ts";
 import type {
   Controller,
   InputFrame,
@@ -62,11 +64,42 @@ const weaving = (tick: number): RiderInput => ({
   throttle: tick % 300 > 240 ? 0 : 0.9,
 });
 
+const STEER_STEPS = 127;
+const SETTLE_TICKS = 20;
+const ATTACK_STEP = STEER_ATTACK * TICK_SECONDS;
+const RELEASE_STEP = STEER_RELEASE * TICK_SECONDS;
+const HALF_A_STEER_STEP = 1 / (2 * STEER_STEPS);
+
+const steerOf = (state: RaceState): number => player(state).input.steer;
+
+const steerCurve = (state: RaceState, targets: readonly number[]): number[] =>
+  targets.map((steer) => {
+    stepRace(state, straight, playerFrame({ ...neutralInput, steer }));
+    return steerOf(state);
+  });
+
+const browserCurve = (targets: readonly number[]): number[] => {
+  let steer = 0;
+  return targets.map((target) => {
+    const step = target === 0 ? RELEASE_STEP : ATTACK_STEP;
+    steer =
+      steer < target
+        ? Math.min(target, steer + step)
+        : Math.max(target, steer - step);
+    return Math.round(steer * STEER_STEPS) / STEER_STEPS;
+  });
+};
+
+const held = (target: number, ticks: number): number[] =>
+  Array.from({ length: ticks }, () => target);
+
 describe("a rider's controls", () => {
   it("ride on a grid of 127 steps of steer each way and 255 of throttle and brake, with full lock, full pedal and zero exact", () => {
     const state = field(straight, 1, 0, 0);
     const ridden = (input: RiderInput): RiderInput => {
-      stepRace(state, straight, playerFrame(input));
+      for (let tick = 0; tick < SETTLE_TICKS; tick += 1) {
+        stepRace(state, straight, playerFrame(input));
+      }
       return { ...player(state).input };
     };
     expect(ridden({ ...neutralInput, steer: 1, throttle: 1 })).toStrictEqual({
@@ -98,6 +131,57 @@ describe("a rider's controls", () => {
     });
     expect(ridden({ ...neutralInput, steer: 0.3 }).steer).toBe(38 / 127);
     expect(ridden({ ...neutralInput, steer: -0.3 }).steer).toBe(-38 / 127);
+  });
+
+  it("the bars follow a held key on the curve the browser used to send, tick for tick", () => {
+    const state = field(straight, 1, 0, 0);
+    const press = held(1, 8);
+    const lift = held(0, 5);
+    const reverse = held(-1, 15);
+    const targets = [...press, ...lift, ...held(1, 8), ...reverse];
+    const curve = steerCurve(state, targets);
+    const expected = [
+      0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1, 1, 0.7, 0.4, 0.1, 0, 0, 0.15, 0.3,
+      0.45, 0.6, 0.75, 0.9, 1, 1, 0.85, 0.7, 0.55, 0.4, 0.25, 0.1, -0.05, -0.2,
+      -0.35, -0.5, -0.65, -0.8, -0.95, -1, -1,
+    ];
+    expect(curve.map((steer) => Number(steer.toFixed(9)))).toStrictEqual(
+      expected
+    );
+    const browser = browserCurve(targets);
+    for (let tick = 0; tick < targets.length; tick += 1) {
+      expect(Math.abs((curve[tick] ?? 0) - (browser[tick] ?? 0))).toBeLessThan(
+        HALF_A_STEER_STEP
+      );
+    }
+  });
+
+  it("a stick that moves no faster than the bars passes through each tick, and a flick is held to the bars' rate", () => {
+    const sweep = field(straight, 1, 0, 0);
+    const targets = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1];
+    expect(steerCurve(sweep, targets)).toStrictEqual(
+      targets.map((steer) => Math.round(steer * STEER_STEPS) / STEER_STEPS)
+    );
+    const flick = field(straight, 1, 0, 0);
+    expect(steerCurve(flick, [1, 1])).toStrictEqual([0.15, 0.3]);
+  });
+
+  it("a rider handed from the pilot to a human eases from the bars the pilot left, not from centre", () => {
+    const setup = defaultSetup(quietTrack, 1);
+    const state = createRace({
+      ...setup,
+      player: { ...setup.player, controller: "pilot" },
+    });
+    rideFor(state, 10, emptyFrame);
+    player(state).input.steer = 0.9;
+    stepRace(
+      state,
+      quietTrack,
+      handing(PLAYER_RIDER, "human", [PLAYER_RIDER, neutralInput])
+    );
+    expect(steerOf(state)).toBeCloseTo(0.6, 9);
+    stepRace(state, quietTrack, playerFrame(neutralInput));
+    expect(steerOf(state)).toBeCloseTo(0.3, 9);
   });
 
   it.each(
@@ -193,15 +277,20 @@ describe("handing a rider over", () => {
     rideFor(state, 10, emptyFrame);
     expect(player(state).speed).toBeGreaterThan(20);
     const braking = { ...neutralInput, brake: 1 };
+    const pilotSteer = steerOf(state);
     stepRace(
       state,
       quietTrack,
       handing(PLAYER_RIDER, "human", [PLAYER_RIDER, braking])
     );
     expect(player(state).controller).toBe("human");
-    expect(player(state).input).toStrictEqual(braking);
+    expect({ ...player(state).input, steer: 0 }).toStrictEqual(braking);
+    expect(steerOf(state)).toBeCloseTo(
+      Math.sign(pilotSteer) * Math.max(0, Math.abs(pilotSteer) - RELEASE_STEP),
+      9
+    );
     rideFor(state, 6, playerFrame(braking));
-    expect(player(state).speed).toBe(0);
+    expect([steerOf(state), player(state).speed]).toStrictEqual([0, 0]);
   });
 
   it("a frame that hands a rider to the controller already riding it is rejected before the tick moves", () => {

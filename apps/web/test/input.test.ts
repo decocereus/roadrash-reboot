@@ -1,13 +1,21 @@
+import { controlOf } from "@racer/sim/control";
 import { defaultSetup, neutralInput } from "@racer/sim/race";
-import { playerFrame, straight } from "@racer/sim/race-fixtures";
+import {
+  playerFrame,
+  ROOM_LIMIT_TICKS,
+  straight,
+} from "@racer/sim/race-fixtures";
 import { createRaceRun } from "@racer/sim/race-run";
-import { PLAYER_RIDER, riderOf, TICK_SECONDS } from "@racer/sim/state";
+import { createRoom, roomSetup } from "@racer/sim/room";
+import { createRoomClient } from "@racer/sim/room-client";
+import { PLAYER_RIDER, riderIdAt, riderOf } from "@racer/sim/state";
 import type { RiderInput } from "@racer/sim/state";
 import { describe, expect, it } from "vitest";
 
 import { createControls } from "../src/game/input.ts";
 import type { Controls, Pad } from "../src/game/input.ts";
 import { createKeyboard } from "./hosts.ts";
+import type { Keyboard } from "./hosts.ts";
 
 const setUp = () => {
   const keyboard = createKeyboard();
@@ -19,7 +27,7 @@ const setUp = () => {
 
 const readOnce = (controls: Controls): RiderInput => {
   const input = { ...neutralInput };
-  controls.read(TICK_SECONDS, input);
+  controls.read(input);
   return input;
 };
 
@@ -54,6 +62,21 @@ const pad = (
   mapping,
 });
 
+const THEM = riderIdAt(1);
+const LEAD_TICKS = 6;
+const KEY_EDGE_EVERY_TICKS = 40;
+const WEAVE_TICKS = 600;
+
+const weaveOnTheKeys = (keyboard: Keyboard, tick: number): boolean => {
+  if (tick % KEY_EDGE_EVERY_TICKS !== 0) {
+    return false;
+  }
+  const right = Math.floor(tick / KEY_EDGE_EVERY_TICKS) % 2 === 1;
+  keyboard.release(right ? "ArrowLeft" : "ArrowRight");
+  keyboard.press(right ? "ArrowRight" : "ArrowLeft");
+  return true;
+};
+
 const soloRun = () => {
   const setup = defaultSetup(straight, 3);
   return createRaceRun({
@@ -73,14 +96,15 @@ describe("keyboard controls", () => {
     expect(readOnce(controls).throttle).toBe(0);
   });
 
-  it("steering eases toward a held key, and opposing keys cancel", () => {
+  it("a held key asks for full lock on its side from the first read, and opposing keys cancel", () => {
     const { controls, keyboard } = setUp();
     keyboard.press("ArrowRight");
-    expect(readOnce(controls).steer).toBeCloseTo(0.15, 9);
-    expect(readOnce(controls).steer).toBeCloseTo(0.3, 9);
+    expect(readOnce(controls).steer).toBe(1);
+    expect(readOnce(controls).steer).toBe(1);
     keyboard.press("KeyA");
     expect(readOnce(controls).steer).toBe(0);
-    expect(readOnce(controls).steer).toBe(0);
+    keyboard.release("ArrowRight");
+    expect(readOnce(controls).steer).toBe(-1);
   });
 
   it("a repeated keydown neither dispatches a second command nor drops the key", () => {
@@ -142,18 +166,13 @@ describe("keyboard controls", () => {
     expect(readOnce(controls).kick).toBeFalsy();
   });
 
-  it("losing focus lets go of every key, and steering eases back", () => {
+  it("losing focus lets go of every key", () => {
     const { controls, keyboard } = setUp();
     keyboard.press("ArrowUp");
     keyboard.press("KeyD");
-    readOnce(controls);
-    readOnce(controls);
-    readOnce(controls);
+    expect(readOnce(controls)).toMatchObject({ steer: 1, throttle: 1 });
     keyboard.blur();
-    const after = readOnce(controls);
-    expect(after.throttle).toBe(0);
-    expect(after.steer).toBeCloseTo(0.15, 9);
-    expect(readOnce(controls).steer).toBe(0);
+    expect(readOnce(controls)).toMatchObject({ steer: 0, throttle: 0 });
   });
 
   it("dispose stops listening", () => {
@@ -202,7 +221,7 @@ describe("gamepad controls", () => {
     const { controls, keyboard } = setUp();
     keyboard.pads.push(pad(0.1, {}));
     keyboard.press("ArrowLeft");
-    expect(readOnce(controls).steer).toBeCloseTo(-0.15, 9);
+    expect(readOnce(controls).steer).toBe(-1);
   });
 
   it("a pad without axes or buttons reads as idle", () => {
@@ -233,7 +252,7 @@ describe("controls in a real race", () => {
     const input: RiderInput = { ...neutralInput };
     const ride = (ticks: number) => {
       for (let tick = 0; tick < ticks; tick += 1) {
-        controls.read(TICK_SECONDS, input);
+        controls.read(input);
         run.step(playerFrame(input));
       }
     };
@@ -256,5 +275,46 @@ describe("controls in a real race", () => {
     expect(fast).toBeGreaterThan(20);
     expect(slowed).toBeLessThan(fast - 5);
     expect(attacks).toHaveLength(1);
+  });
+});
+
+describe("a rider on the keys in a race room", () => {
+  it("costs the other seat one rollback per key edge, and no more while the bars travel", () => {
+    const { controls, keyboard } = setUp();
+    const setup = roomSetup(defaultSetup(straight, 3), [PLAYER_RIDER, THEM]);
+    const room = createRoom(setup, ROOM_LIMIT_TICKS);
+    const client = createRoomClient(setup, PLAYER_RIDER, ROOM_LIMIT_TICKS);
+    const riding = controlOf({ ...neutralInput, throttle: 1 });
+    const theirs: RiderInput = { ...neutralInput };
+    for (let tick = 0; tick < LEAD_TICKS; tick += 1) {
+      client.predict(riding);
+    }
+    keyboard.press("ArrowUp");
+    let edges = 0;
+    let moved = 0;
+    let rollbacksBefore = 0;
+    let resimulatedBefore = 0;
+    for (let tick = 1; tick <= WEAVE_TICKS; tick += 1) {
+      if (tick === KEY_EDGE_EVERY_TICKS) {
+        rollbacksBefore = client.stats.rollbacks;
+        resimulatedBefore = client.stats.resimulatedTicks;
+      }
+      edges += weaveOnTheKeys(keyboard, tick) ? 1 : 0;
+      controls.read(theirs);
+      room.accept(PLAYER_RIDER, tick, [riding]);
+      room.accept(THEM, tick, [controlOf(theirs)]);
+      room.step();
+      client.confirm(room.frame, null);
+      client.predict(riding);
+      for (const { rider, x } of client.takeCorrections()) {
+        moved += rider === THEM ? Math.abs(x) : 0;
+      }
+    }
+    expect(edges).toBe(WEAVE_TICKS / KEY_EDGE_EVERY_TICKS);
+    expect(client.stats.rollbacks - rollbacksBefore).toBe(edges);
+    expect(
+      client.stats.resimulatedTicks - resimulatedBefore
+    ).toBeLessThanOrEqual(edges * LEAD_TICKS);
+    expect(moved).toBeLessThan(edges * 0.05);
   });
 });

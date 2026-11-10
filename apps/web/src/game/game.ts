@@ -366,7 +366,7 @@ const startGame = (
 
   const readInputs = () => {
     if (frameOf() === playerFrame) {
-      controls.read(TICK_SECONDS, playerInput);
+      controls.read(playerInput);
       devRide?.steer(stage.race.view, stage.track, playerInput);
       playerControls.clear();
       playerControls.set(stage.me, controlOf(playerInput));

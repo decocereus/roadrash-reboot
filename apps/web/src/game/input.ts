@@ -3,8 +3,6 @@ import type { RiderInput } from "@racer/sim/state";
 import { createHeldKeys } from "./held-keys.ts";
 import type { KeyPress } from "./held-keys.ts";
 
-const STEER_ATTACK = 9;
-const STEER_RELEASE = 18;
 const STICK_DEADZONE = 0.12;
 
 const handled = new Set([
@@ -78,25 +76,8 @@ const firstStandard = (pads: readonly (Pad | null)[]): Pad | null => {
 const padPressed = (pad: Pad | null, index: number): boolean =>
   pad?.buttons[index]?.pressed ?? false;
 
-const nextSteer = (
-  current: number,
-  stick: number,
-  keys: number,
-  seconds: number
-): number => {
-  if (Math.abs(stick) > STICK_DEADZONE) {
-    return stick;
-  }
-  const rate = keys === 0 ? STEER_RELEASE : STEER_ATTACK;
-  const step = rate * seconds;
-  if (current < keys) {
-    return Math.min(keys, current + step);
-  }
-  return Math.max(keys, current - step);
-};
-
 export interface Controls {
-  read: (seconds: number, input: RiderInput) => void;
+  read: (input: RiderInput) => void;
   dispose: () => void;
 }
 
@@ -105,7 +86,6 @@ export const createControls = (
   host: InputHost = browserHost
 ): Controls => {
   const held = createHeldKeys();
-  let steer = 0;
 
   const press = (event: KeyEvent) => {
     if (host.isTextField(event.target)) {
@@ -132,10 +112,10 @@ export const createControls = (
     dispose() {
       unlisten();
     },
-    read(seconds, input) {
+    read(input) {
       const pad = firstStandard(host.pads());
-      steer = nextSteer(steer, pad?.axes[0] ?? 0, keySteer(), seconds);
-      input.steer = steer;
+      const stick = pad?.axes[0] ?? 0;
+      input.steer = Math.abs(stick) > STICK_DEADZONE ? stick : keySteer();
       input.throttle = Math.max(
         down("ArrowUp", "KeyW") ? 1 : 0,
         pad?.buttons[7]?.value ?? 0

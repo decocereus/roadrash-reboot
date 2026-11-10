@@ -37,7 +37,7 @@ import type { RaceEvent } from "./state.ts";
 
 const rideAt = (
   road: Track,
-  from: Placement,
+  from: Placement & { readonly steer?: number },
   steerFrom: number,
   steer: number,
   seconds: number
@@ -48,6 +48,7 @@ const rideAt = (
   rider.x = from.x;
   rider.speed = from.speed;
   rider.lateralSpeed = from.lateralSpeed;
+  rider.input.steer = from.steer ?? 0;
   const events: RaceEvent[] = [];
   let shakiest = 0;
   let highest = 0;
@@ -96,6 +97,7 @@ const leaned = (kmh: number) => {
       lateralSpeed: sideways,
       s: 996 - 0.1 * speed,
       speed,
+      steer: 1,
       x: 1.8 - 0.1 * sideways,
     },
     0,

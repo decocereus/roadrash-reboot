@@ -1,4 +1,4 @@
-import { clamp } from "./state.ts";
+import { approach, clamp, TICK_SECONDS } from "./state.ts";
 import type { Control, RiderInput } from "./state.ts";
 
 export const CONTROL_BYTES = 4;
@@ -53,9 +53,22 @@ export const controlOf = (input: Readonly<RiderInput>): Control => {
   return finite(input) && isControl(word) ? word : refuse(input);
 };
 
+export const STEER_ATTACK = 9;
+export const STEER_RELEASE = 18;
+
+const steerToward = (steer: number, target: number): number =>
+  approach(
+    steer,
+    target,
+    (target === 0 ? STEER_RELEASE : STEER_ATTACK) * TICK_SECONDS
+  );
+
 export const applyControl = (control: Control, input: RiderInput): void => {
   const steer = control % BYTE;
-  input.steer = (steer > UNUSED_STEER ? steer - BYTE : steer) / STEER_STEPS;
+  input.steer = steerToward(
+    input.steer,
+    (steer > UNUSED_STEER ? steer - BYTE : steer) / STEER_STEPS
+  );
   input.throttle = (Math.floor(control / THROTTLE_PLACE) % BYTE) / PEDAL_STEPS;
   input.brake = (Math.floor(control / BRAKE_PLACE) % BYTE) / PEDAL_STEPS;
   const buttons = Math.floor(control / BUTTONS_PLACE);
