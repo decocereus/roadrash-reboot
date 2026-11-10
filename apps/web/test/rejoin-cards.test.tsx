@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { RoomNotices, TooLate } from "../src/components/screens/rejoin.tsx";
 import { createHudFeed, idleHud } from "../src/hud-feed.ts";
@@ -26,7 +26,14 @@ describe("a rider who arrives with rejoin=try and lands in the lobby", () => {
 
 describe("a room race whose link goes silent", () => {
   const feed = createHudFeed();
-  const room = { awayMs: null, holdSeconds: 30, roomId: "abcd1234" };
+  const room = {
+    awayMs: null,
+    holdSeconds: 30,
+    pressed: vi.fn<() => void>(),
+    reportNow: vi.fn<() => void>(),
+    stoppedDrawing: vi.fn<() => void>(),
+  };
+  const backToBar = vi.fn<() => void>();
   const riding: RaceStage = { kind: "riding" };
   const screenAt = (
     stallLeftMs: number | null,
@@ -34,7 +41,12 @@ describe("a room race whose link goes silent", () => {
   ): string => {
     feed.write({ ...idleHud, phase: "racing", stallLeftMs });
     return renderToStaticMarkup(
-      <RoomNotices feed={feed} room={room} stage={stage} />
+      <RoomNotices
+        feed={feed}
+        onBackToBar={backToBar}
+        room={room}
+        stage={stage}
+      />
     );
   };
 
@@ -62,7 +74,12 @@ describe("a room race whose link goes silent", () => {
     const host = createHost();
     const notices = () =>
       renderToStaticMarkup(
-        <RoomNotices feed={host.feed} room={room} stage={riding} />
+        <RoomNotices
+          feed={host.feed}
+          onBackToBar={backToBar}
+          room={room}
+          stage={riding}
+        />
       );
     let notified = 0;
     host.feed.subscribe(() => {

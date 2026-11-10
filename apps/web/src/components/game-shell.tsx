@@ -8,12 +8,12 @@ import type { RaceEntry } from "../career/flow.ts";
 import { diagnostics } from "../diagnostics/hub.ts";
 import type { RacePlan } from "../game/hud.ts";
 import { raceAgainOffered, stageOf } from "../navigation.ts";
-import type { View } from "../navigation.ts";
+import type { RoomVisit, View } from "../navigation.ts";
 import { preparedRace } from "../prepare-outcome.ts";
 import type { PrepareOutcome } from "../prepare-outcome.ts";
 import { stepRideOut } from "../race-handoff.ts";
 import type { RideOutHandoff } from "../race-handoff.ts";
-import { moveToRoom, newRoomId } from "./room-url.ts";
+import { newRoomId } from "./room-url.ts";
 import { BackRoomScreen } from "./screens/back-room.tsx";
 import { BootScreen, ElsewhereScreen } from "./screens/boot.tsx";
 import { ClubhouseScreen } from "./screens/clubhouse.tsx";
@@ -23,7 +23,6 @@ import { EndingScreen, GameOverScreen } from "./screens/game-over.tsx";
 import { GarageScreen } from "./screens/garage.tsx";
 import { PauseScreen } from "./screens/pause.tsx";
 import { RaceHud } from "./screens/race-hud.tsx";
-import { RoomNotices } from "./screens/rejoin.tsx";
 import { ResultsScreen } from "./screens/results.tsx";
 import { RideOutScreen } from "./screens/ride-out.tsx";
 import { RouteBoardScreen } from "./screens/route-board.tsx";
@@ -46,6 +45,18 @@ const QuickRace = import.meta.env.SSR
       const { QuickRace: finding } = await import("./room-lobby.tsx");
       return { default: finding };
     });
+
+const RoomRaceScreens = import.meta.env.SSR
+  ? drawsNothing
+  : lazy(async () => {
+      const { RoomRaceScreens: screens } =
+        await import("./room-race-screens.tsx");
+      return { default: screens };
+    });
+
+const moveToRoom = (flow: Flow, visit: RoomVisit): void => {
+  flow.send({ kind: "roomMoved", visit });
+};
 
 const DWELL_MS = 2200;
 
@@ -149,7 +160,11 @@ const CareerScreens = ({
               choice: "friends",
               event: "race_picked",
             });
-            moveToRoom(newRoomId(), "made");
+            moveToRoom(flow, {
+              arrival: "made",
+              rejoin: null,
+              roomId: newRoomId(),
+            });
           }}
           onFindRace={() => {
             diagnostics().events.track({
@@ -246,7 +261,12 @@ const MenuScreens = ({
     case "queue": {
       return (
         <Suspense>
-          <QuickRace onBack={flow.leave} />
+          <QuickRace
+            onBack={flow.leave}
+            onPlaced={(roomId) => {
+              moveToRoom(flow, { arrival: "queue", rejoin: null, roomId });
+            }}
+          />
         </Suspense>
       );
     }
@@ -291,13 +311,17 @@ const MenuScreens = ({
         <Suspense>
           <RoomLobby
             failure={flow.failure}
+            key={view.turn}
             onBack={flow.leave}
             onDoorMoment={onDoorMoment}
             onLost={flow.roomLost}
+            onMove={(visit) => {
+              moveToRoom(flow, visit);
+            }}
             onPrepare={flow.prepare}
             onStart={flow.start}
-            roomId={view.roomId}
             ready={flow.ready}
+            visit={view.visit}
           />
         </Suspense>
       );
@@ -332,31 +356,44 @@ const RaceScreens = ({ flow }: { readonly flow: Flow }) => {
   if (view.screen !== "race") {
     return null;
   }
-  const { stage } = view;
+  const { plan, stage } = view;
   return (
     <>
       <RaceHud feed={flow.feed} settled={stage.kind === "finishing"} />
       {stage.kind === "finishing" && (
         <FinishBanner onContinue={flow.leave} report={stage.report} />
       )}
-      {view.plan.room && (
-        <RoomNotices feed={flow.feed} room={view.plan.room} stage={stage} />
-      )}
-      {stage.kind === "paused" && (
-        <PauseScreen
-          career={flow.career}
-          feed={flow.feed}
-          onMute={flow.mute}
-          onQuit={() => {
-            flow.quit(view.plan);
-          }}
-          onRestart={() => {
-            flow.start(view.plan);
-          }}
-          onResume={flow.resume}
-          plan={view.plan}
-          rules={flow.rules}
-        />
+      {plan.room ? (
+        <Suspense>
+          <RoomRaceScreens
+            feed={flow.feed}
+            onLeave={flow.leaveRace}
+            onMove={(visit) => {
+              moveToRoom(flow, visit);
+            }}
+            onMute={flow.mute}
+            onResume={flow.resume}
+            room={plan.room}
+            stage={stage}
+          />
+        </Suspense>
+      ) : (
+        stage.kind === "paused" && (
+          <PauseScreen
+            career={flow.career}
+            feed={flow.feed}
+            onMute={flow.mute}
+            onQuit={() => {
+              flow.quit(plan);
+            }}
+            onRestart={() => {
+              flow.start(plan);
+            }}
+            onResume={flow.resume}
+            plan={plan}
+            rules={flow.rules}
+          />
+        )
       )}
     </>
   );

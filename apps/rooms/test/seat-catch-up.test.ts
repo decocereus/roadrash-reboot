@@ -10,7 +10,9 @@ import {
 import { riderIdAt, TICK_SECONDS } from "@racer/sim/state";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { createInputLatency } from "../src/input-latency.ts";
 import { encodeRoomMessage } from "../src/messages.ts";
+import { createRoomRun } from "../src/room-run.ts";
 import {
   MOST_CATCH_UP_MS_PER_FRAME,
   MOST_TICKS_PER_FRAME,
@@ -202,6 +204,47 @@ describe("a seat catching up on held ticks and replays", () => {
     }).toStrictEqual({
       confirmed: HELD_TICKS,
       endedAfterCatchingUp: true,
+      reports: 1,
+    });
+  });
+
+  it("reports and hangs up at once when the rider leaves a race that ended while ticks were still held", () => {
+    const { seat, socket } = loadingSeat();
+    const race = seat.race();
+    if (!race) {
+      throw new Error("The seat has no race.");
+    }
+    const { client } = race;
+    const run = createRoomRun(
+      seat,
+      race,
+      "friday-ride",
+      createInputLatency(
+        () => 0,
+        (done) => {
+          done();
+        }
+      )
+    );
+    socket.hear(encodeRoomMessage({ kind: "countdown", startAtMs: 0 }));
+    seat.frameDrawn(0, 0);
+    for (let tick = 1; tick <= HELD_TICKS; tick += 1) {
+      hearTick(socket, tick);
+    }
+    socket.hear(encodeRoomMessage({ kind: "ended", tick: HELD_TICKS }));
+    const openUntilLeft = socket.closedWith === null;
+    run.leave();
+    expect({
+      closed: socket.closedWith !== null,
+      confirmed: client.confirmed.tick,
+      openUntilLeft,
+      reports: socket.sentBytes.filter(
+        (bytes) => bytes === RACE_STATS_PACKET_BYTES
+      ).length,
+    }).toStrictEqual({
+      closed: true,
+      confirmed: HELD_TICKS,
+      openUntilLeft: true,
       reports: 1,
     });
   });

@@ -14,6 +14,7 @@ import { noManualEffectErrorTagRule } from "./rules/no-manual-effect-error-tag.t
 import { noManualTagComparisonRule } from "./rules/no-manual-tag-comparison.ts";
 import { noManualTaggedConstructionRule } from "./rules/no-manual-tagged-construction.ts";
 import { noNodeIoRule } from "./rules/no-node-io.ts";
+import { noPageMoveRule } from "./rules/no-page-move.ts";
 import { noPromiseRule } from "./rules/no-promise.ts";
 import { noServiceConstructorImportsRule } from "./rules/no-service-constructor-imports.ts";
 import { noSwallowedFailureRule } from "./rules/no-swallowed-failure.ts";
@@ -47,6 +48,7 @@ const rushlinePlugin = definePlugin({
     "no-manual-tag-comparison": noManualTagComparisonRule,
     "no-manual-tagged-construction": noManualTaggedConstructionRule,
     "no-node-io": noNodeIoRule,
+    "no-page-move": noPageMoveRule,
     "no-promise": noPromiseRule,
     "no-service-constructor-imports": noServiceConstructorImportsRule,
     "no-swallowed-failure": noSwallowedFailureRule,

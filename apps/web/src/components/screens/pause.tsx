@@ -142,3 +142,75 @@ export const PauseScreen = ({
     </Screen>
   );
 };
+
+export const RaceMenu = ({
+  feed,
+  onResume,
+  onMute,
+  onLeave,
+}: {
+  readonly feed: HudFeed;
+  readonly onResume: () => void;
+  readonly onMute: () => void;
+  readonly onLeave: () => void;
+}) => {
+  const [settings, setSettings] = useState(false);
+  const hud = useSyncExternalStore(feed.subscribe, feed.read, () => idleHud);
+  useEscape(onResume, !settings);
+  const actions: MenuAction[] = [
+    { id: "resume", label: "Back to the race", run: onResume },
+    {
+      id: "sound",
+      label: "Sound",
+      run: onMute,
+      trailing: hud.muted ? "Off" : "On",
+    },
+    {
+      id: "settings",
+      label: "Settings",
+      run: () => {
+        setSettings(true);
+      },
+    },
+    {
+      detail: "Back to the bar. Your bike rides on without you.",
+      id: "leave",
+      label: "Leave race",
+      run: onLeave,
+    },
+  ];
+  return (
+    <Screen className="bg-ink/60 flex">
+      <Stage inert={settings ? true : undefined}>
+        <PinnedList
+          actions={actions}
+          autoFocus={!settings}
+          label="Race menu"
+          primary="resume"
+          title="Race menu"
+        />
+        <BarStrip>
+          <p
+            className="text-paper/60 tracking-wide"
+            style={{ fontSize: stagePx(22) }}
+          >
+            The race keeps going.
+          </p>
+          <p
+            className="text-paper/60 tracking-wide"
+            style={{ fontSize: stagePx(22) }}
+          >
+            {CONTROLS}, M to mute
+          </p>
+        </BarStrip>
+      </Stage>
+      {settings && (
+        <SettingsScreen
+          onBack={() => {
+            setSettings(false);
+          }}
+        />
+      )}
+    </Screen>
+  );
+};

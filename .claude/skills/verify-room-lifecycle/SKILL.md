@@ -23,7 +23,8 @@ Run the check when your diff touches any covered file. Each action in the spec n
 | `apps/rooms/src/lobby.ts` | join by member key, freeColour, away, sweep, leave |
 | `apps/rooms/src/seat-client.ts` | seatAfter, liveSeatAfter, DEAD_AFTER_MS |
 | `apps/web/src/components/room-lobby.tsx` | the door moment, reopening a lost lobby seat, the roomRacing effect |
-| `apps/web/src/components/room-url.ts`, `screens/rejoin.tsx` | rejoin=yes, rejoin=no, rejoin=taken |
+| `apps/web/src/components/room-url.ts`, `apps/web/src/navigation.ts`, `screens/rejoin.tsx` | the rejoin choices try, no and taken, moves between room screens in one page, the race menu's Leave race |
+| `apps/web/src/components/use-handoff.ts`, `apps/rooms/src/room-run.ts` | a race outcome dropped once the lobby unmounted, closing an ended seat when the rider leaves |
 | `apps/web/src/components/guest-name.ts` | the member key two tabs of one browser share |
 | `apps/web/src/room-handoff.ts`, `apps/web/src/prepare-outcome.ts` | seatChange, seatClosing, leaving after a failed boot |
 | `packages/sim/src/room.ts` | MOST_SEATS |
@@ -87,7 +88,7 @@ The sync commit is the last commit at which someone confirmed that the spec desc
 To see what changed since the sync commit:
 
 ```sh
-git log --oneline <sync commit>..HEAD -- apps/rooms/src apps/web/src/components/room-lobby.tsx apps/web/src/components/room-url.ts apps/web/src/components/screens/rejoin.tsx apps/web/src/components/guest-name.ts apps/web/src/room-handoff.ts apps/web/src/prepare-outcome.ts packages/sim/src/room.ts
+git log --oneline <sync commit>..HEAD -- apps/rooms/src apps/web/src/components/room-lobby.tsx apps/web/src/components/room-url.ts apps/web/src/navigation.ts apps/web/src/components/use-handoff.ts apps/web/src/components/screens/rejoin.tsx apps/web/src/components/guest-name.ts apps/web/src/room-handoff.ts apps/web/src/prepare-outcome.ts packages/sim/src/room.ts
 ```
 
 Use `/maintain-formal-verification-skill` to bring the spec back in line after changes that skipped this skill.

@@ -127,7 +127,7 @@ These work in the development build `rv up` serves and in `pnpm dev`; the produc
 | `?preset=full\|balanced\|lean` | Pin a quality preset instead of the one the device check picks. |
 | `?time=dusk\|night\|<0..1>`, `?lean`, `?ratio`, `?samples`, `?bloom`, `?shadow`, `?riders=<n>` | In the bar: hold the clock, take the lean preset, pin one render setting, or draw fewer riders. `pnpm perf:gpu` uses `/bar?prof&time=dusk`. |
 | `?tester` | Settings gains the recorder rows: Recording, Automatic upload, Test device and Send report. |
-| `?room=<id>`, `&via=`, `&rejoin=` | A race room's invite, arrival and rejoin state; [features/race-room.md](features/race-room.md) has them. |
+| `?room=<id>`, `&via=` | A race room's invite and how the rider arrived; [features/race-room.md](features/race-room.md) has them. |
 
 Trucks, by where each starts at the race start: Breakwater Run 3.90 and 4.65 km, Slag Row 2.60 and 4.10, Ridge Road 4.50. A truck drives 20 m/s in the first same-way lane, so with `?at` it is that far along when the race starts. Roads end at 8.50 and 8.55 km.
 

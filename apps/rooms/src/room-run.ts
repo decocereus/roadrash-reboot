@@ -37,10 +37,13 @@ export interface RoomRun extends RaceRun {
   readonly lagging: () => boolean;
   readonly leave: () => void;
   readonly listen: (onConfirmed: (view: RaceView) => void) => void;
+  readonly pressed: () => void;
   readonly report: () => RoomReport;
+  readonly reportNow: () => void;
   readonly pace: () => number;
   readonly stallLeftMs: () => number | null;
   readonly stepsDue: () => number;
+  readonly stoppedDrawing: () => void;
 }
 
 export const createRoomRun = (
@@ -68,7 +71,10 @@ export const createRoomRun = (
     frameDrawn: seat.frameDrawn,
     holdSeconds,
     lagging: () => client.lagging() || seat.leadBloated() || seat.silenced(),
-    leave: seat.leave,
+    leave: () => {
+      seat.leave();
+      seat.stoppedDrawing();
+    },
     listen: (onConfirmed) => {
       seat.listen({
         onConfirmed: (latest) => {
@@ -78,6 +84,7 @@ export const createRoomRun = (
     },
     me,
     pace: seat.pace,
+    pressed: latency.pressed,
     report: () => {
       client.settle();
       return {
@@ -97,6 +104,7 @@ export const createRoomRun = (
         roomId,
       };
     },
+    reportNow: seat.reportNow,
     riderColours,
     roomId,
     stallLeftMs: seat.stallLeftMs,
@@ -112,6 +120,7 @@ export const createRoomRun = (
       seat.flush();
     },
     stepsDue: seat.stepsDue,
+    stoppedDrawing: seat.stoppedDrawing,
     takeCorrections: client.takeCorrections,
     takeFights: client.takeFights,
     view: client.predicted,

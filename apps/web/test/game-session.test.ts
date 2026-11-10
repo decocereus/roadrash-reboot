@@ -1,9 +1,6 @@
 import { recordedRules } from "@racer/career/bench";
 import { abandonedOutcome, createRaceLog } from "@racer/career/outcome";
 import type { RaceOutcome, RaceResult } from "@racer/career/outcome";
-import type { RoomRun } from "@racer/rooms/room-run";
-import { createRaceRun } from "@racer/sim/race-run";
-import { PLAYER_RIDER } from "@racer/sim/state";
 import { describe, expect, it } from "vitest";
 
 import { firstQuickPick, planFor, quickEntry } from "../src/career/flow.ts";
@@ -15,6 +12,7 @@ import {
   countDown,
   countdownFor,
   dressingFor,
+  handsOn,
   heldFrom,
   hudCountdown,
   liveRaceOf,
@@ -28,6 +26,7 @@ import {
   settledFrom,
   spendConsequence,
   spendResumeHold,
+  standDownThenHangUp,
   stoodDownFrom,
   throttleOpen,
   ticksHalted,
@@ -36,6 +35,7 @@ import {
 import type { Session } from "../src/game/game-session.ts";
 import type { RacePlan } from "../src/game/hud.ts";
 import type { PrepareOutcome } from "../src/prepare-outcome.ts";
+import { roomRunStub } from "./room-run-stub.ts";
 
 const SEED = 31;
 const COUNTDOWN_TICKS = 181;
@@ -51,40 +51,10 @@ const soloPlan: RacePlan = planFor(
   quickEntry(firstQuickPick, SEED)
 );
 
-const roomPlan = (countdownSeconds: () => number = () => 3): RacePlan => {
-  const { step, view } = createRaceRun(soloPlan.setup);
-  const room: RoomRun = {
-    awayMs: null,
-    confirmed: view,
-    countdownSeconds,
-    events: () => [],
-    frameDrawn: () => {
-      throw new Error("The session never draws.");
-    },
-    holdSeconds: 30,
-    lagging: () => false,
-    leave: () => {
-      throw new Error("The session never leaves a room.");
-    },
-    listen: () => {
-      throw new Error("The session never listens.");
-    },
-    me: PLAYER_RIDER,
-    pace: () => 1,
-    report: () => {
-      throw new Error("The session never reports.");
-    },
-    riderColours: new Map(),
-    roomId: "test-room",
-    stallLeftMs: () => null,
-    step,
-    stepsDue: () => 1,
-    takeCorrections: () => [],
-    takeFights: () => [],
-    view,
-  };
-  return { ...soloPlan, room };
-};
+const roomPlan = (countdownSeconds: () => number = () => 3): RacePlan => ({
+  ...soloPlan,
+  room: roomRunStub(soloPlan.setup, "test-room", countdownSeconds),
+});
 
 const outcomeWith = (result: RaceResult): RaceOutcome => ({
   ...abandonedOutcome(recordedRules, {
@@ -259,10 +229,63 @@ describe("pause and resume", () => {
     expect(pausedFrom(paused)).toBe(paused);
   });
 
-  it("never pauses a room race", () => {
+  it("opens the menu on a room race and keeps the race running with the rider's hands off", () => {
     const state = racing(roomPlan());
-    expect(pausedFrom(state)).toBe(state);
-    expect(roomOf(state)).toBe(state.plan.room);
+    const inMenu = pausedFrom(state);
+    expect(inMenu).not.toBe(state);
+    expect(roomOf(inMenu)).toBe(state.plan.room);
+    expect({
+      halted: ticksHalted(inMenu),
+      hands: handsOn(inMenu),
+      hud: hudCountdown(inMenu),
+      live: liveRaceOf(inMenu),
+    }).toStrictEqual({ halted: false, hands: false, hud: 0, live: inMenu });
+    expect(pausedFrom(inMenu)).toBe(inMenu);
+  });
+
+  it("stands down before the room hangs up, so a wreck the room drains settles nothing", () => {
+    const phasesAtHangUp: Session["phase"][] = [];
+    let session: Session = unprepared;
+    const plan: RacePlan = {
+      ...soloPlan,
+      room: {
+        ...roomRunStub(soloPlan.setup, "test-room"),
+        leave: () => {
+          phasesAtHangUp.push(session.phase);
+        },
+      },
+    };
+    session = pausedFrom(racing(plan));
+    expect(session.phase).toBe("racing");
+    standDownThenHangUp(session, (next) => {
+      session = next;
+    });
+    expect(phasesAtHangUp).toStrictEqual(["idle"]);
+    expect(session).toBe(unprepared);
+  });
+
+  it("gives a room race back to the rider at once when the menu closes", () => {
+    const back = resumedFrom(pausedFrom(racing(roomPlan())));
+    expect(handsOn(back)).toBeTruthy();
+    expect(spendResumeHold(back)).toBeFalsy();
+    expect(hudCountdown(back)).toBe(0);
+    expect(throttleOpen(back)).toBeTruthy();
+  });
+
+  it("opens the menu in a room's countdown and carries it onto the road", () => {
+    const counted = counting(roomPlan());
+    const inMenu = pausedFrom(counted);
+    expect(handsOn(inMenu)).toBeFalsy();
+    if (inMenu.phase !== "countdown") {
+      throw new Error("The menu keeps the countdown.");
+    }
+    expect(handsOn(racingFrom(inMenu))).toBeFalsy();
+    expect(handsOn(resumedFrom(inMenu))).toBeTruthy();
+  });
+
+  it("keeps a solo rider's hands on through a pause", () => {
+    expect(handsOn(pausedFrom(racing()))).toBeTruthy();
+    expect(handsOn(counting())).toBeTruthy();
   });
 
   it("does nothing on a resume with no pause", () => {

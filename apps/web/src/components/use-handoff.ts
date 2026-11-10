@@ -1,4 +1,10 @@
-import { useCallback, useEffectEvent, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+} from "react";
 
 import type { Step } from "../race-handoff.ts";
 
@@ -15,9 +21,19 @@ export const useHandoff = <State, Event, Effect>(
 ): Handoff<State, Event> => {
   const [state, setState] = useState(first);
   const latest = useRef(state);
+  const mounted = useRef(true);
   const runEffect = useEffectEvent(run);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const send = useCallback(
     (event: Event): void => {
+      if (!mounted.current) {
+        return;
+      }
       const next = step(latest.current, event);
       latest.current = next.state;
       setState(next.state);

@@ -47,6 +47,7 @@ import {
   countDown,
   countdownFor,
   dressingFor,
+  handsOn,
   heldFrom,
   liveRaceOf,
   pausedFrom,
@@ -59,7 +60,7 @@ import {
   settledFrom,
   spendConsequence,
   spendResumeHold,
-  stoodDownFrom,
+  standDownThenHangUp,
   throttleOpen,
   ticksHalted,
   unprepared,
@@ -300,8 +301,9 @@ const startGame = (
   };
 
   const standDown = () => {
-    roomOf(session)?.leave();
-    session = stoodDownFrom(session);
+    standDownThenHangUp(session, (next) => {
+      session = next;
+    });
     quiet();
     report();
   };
@@ -365,11 +367,14 @@ const startGame = (
       : emptyFrame;
 
   const readInputs = () => {
-    if (frameOf() === playerFrame) {
+    if (frameOf() !== playerFrame) {
+      return;
+    }
+    playerControls.clear();
+    if (handsOn(session)) {
       const read = controls.read(playerInput);
       const steerFrom =
         devRide?.steer(stage.race.view, stage.track, playerInput, read) ?? read;
-      playerControls.clear();
       playerControls.set(stage.me, controlOf(playerInput, steerFrom));
     }
   };
@@ -701,7 +706,10 @@ const startGame = (
         return false;
       }
       session = next;
-      quiet();
+      controls.release();
+      if (ticksHalted(next)) {
+        quiet();
+      }
       return true;
     },
     prepare,
@@ -715,9 +723,12 @@ const startGame = (
       if (next === session) {
         return;
       }
+      const wasHalted = ticksHalted(session);
       session = next;
-      frame.clockReset = true;
-      frame.last = performance.now();
+      if (wasHalted) {
+        frame.clockReset = true;
+        frame.last = performance.now();
+      }
     },
     riderFacts: () => ({
       crashes: player().crashes,

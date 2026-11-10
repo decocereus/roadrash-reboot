@@ -206,7 +206,7 @@ export const KNOWN_DEFECTS = {
     bounds: { ...CHECKS.solo.bounds, oldPageFirst: false },
     breaks: "NeverStuck",
     rules: CHECKS.solo.rules,
-    says: "a failed preparation's quit that reaches the room after the new page's seat puts the rider back on the bike, for Multiplayer core, whose fix deletes this entry and the oldPageFirst bound",
+    says: "a failed preparation's quit that reaches the room after the next seat puts the rider back on the bike, for Multiplayer core, whose fix deletes this entry and the oldPageFirst bound",
   },
 } as const satisfies Record<string, Defect>;
 

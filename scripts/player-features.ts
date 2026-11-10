@@ -341,6 +341,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/components/use-flow.ts",
       "apps/web/src/navigation.ts",
       "apps/web/test/navigation.test.ts",
+      "apps/web/test/navigation-walk.ts",
       "apps/web/src/assets/*-art.ts",
       "apps/web/src/game/showroom.ts",
       "apps/web/src/styles.css",
