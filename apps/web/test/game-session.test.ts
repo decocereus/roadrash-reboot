@@ -70,6 +70,7 @@ const roomPlan = (countdownSeconds: () => number = () => 3): RacePlan => {
       throw new Error("The session never listens.");
     },
     me: PLAYER_RIDER,
+    pace: () => 1,
     report: () => {
       throw new Error("The session never reports.");
     },

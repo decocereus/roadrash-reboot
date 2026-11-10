@@ -17,7 +17,6 @@ import {
   MOST_BATCHED_CONTROLS,
   RACE_STATS_PACKET_BYTES,
   READY_PACKET_BYTES,
-  readCatchUp,
   readRaceSnapshot,
   readTick,
   ROOM_PROTOCOL,
@@ -25,8 +24,8 @@ import {
   writeReady,
 } from "@racer/sim/room-wire";
 import { setupDigest } from "@racer/sim/snapshot-setup";
-import { riderIdAt } from "@racer/sim/state";
-import type { Control, RiderId } from "@racer/sim/state";
+import { riderIdAt, TICK_SECONDS } from "@racer/sim/state";
+import type { RiderId } from "@racer/sim/state";
 import * as Option from "effect/Option";
 
 import { createPings, DEAD_AFTER_MS, PINGS_PER_REPORT } from "./heartbeat.ts";
@@ -49,7 +48,13 @@ import type {
 } from "./messages.ts";
 import { createRaceTally } from "./race-tally.ts";
 import { ticksOf } from "./room-config.ts";
+import { TRACE_VERSION } from "./tape.ts";
 import type { BrowserTrace, SeatBrowser } from "./tape.ts";
+
+export const MOST_TICKS_PER_FRAME = 60;
+export const MOST_CATCH_UP_MS_PER_FRAME = 4;
+const REPLAY_CHUNK_TICKS = 4;
+const TICK_MS = TICK_SECONDS * 1000;
 
 export interface SeatRace {
   readonly awayMs: number | null;
@@ -227,7 +232,7 @@ export interface SeatListeners {
 export interface RoomSeat {
   readonly closeCode: () => number | null;
   readonly flush: () => void;
-  readonly frameDrawn: () => void;
+  readonly frameDrawn: (ownOffMetres: number, rivalOffMetres: number) => void;
   readonly leave: () => void;
   readonly leaveRoom: () => void;
   readonly listen: (next: SeatListeners) => void;
@@ -242,11 +247,15 @@ export interface RoomSeat {
   readonly walkOf: (member: string) => RoomWalked | undefined;
   readonly act: (act: LobbyAct, target: string) => void;
   readonly refusal: () => Refusal | null;
+  readonly inputDelay: () => number;
   readonly leadBloated: () => boolean;
+  readonly silenced: () => boolean;
   readonly rttMs: () => number;
   readonly worstRttMs: () => number;
+  readonly pace: () => number;
   readonly startsInMs: () => number | null;
   readonly stepsDue: () => number;
+  readonly stoppedDrawing: () => void;
   readonly target: () => number;
 }
 
@@ -274,6 +283,12 @@ export const openRoomSeat = (
   );
   socket.binaryType = "arraybuffer";
   const read = createReadTick(createTickFrame());
+  const backlog: ArrayBuffer[] = [];
+  let drawing = false;
+  let frameLeft = MOST_TICKS_PER_FRAME;
+  let frameSpentMs = 0;
+  let frameKeepsUp = 1;
+  let lastDrawnAt = Number.POSITIVE_INFINITY;
   const input = new DataView(
     new ArrayBuffer(inputBytes(MOST_BATCHED_CONTROLS))
   );
@@ -281,6 +296,7 @@ export const openRoomSeat = (
   const clock = createRoomClock();
   const tally = createRaceTally(trace?.sharing() ?? false);
   let reported = false;
+  let raceOver = false;
   let pingsUntilReport = PINGS_PER_REPORT;
   let listeners: SeatListeners = {};
   let state: SeatState = NEW_SEAT;
@@ -293,7 +309,11 @@ export const openRoomSeat = (
 
   const sendTrace = (rows: readonly number[] | null): void => {
     if (trace && rows) {
-      const sent: BrowserTrace = { ...trace.browser(), rows };
+      const sent: BrowserTrace = {
+        ...trace.browser(),
+        rows,
+        version: TRACE_VERSION,
+      };
       socket.send(JSON.stringify(sent));
     }
   };
@@ -329,6 +349,61 @@ export const openRoomSeat = (
     socket.close(code, reason);
   };
 
+  const mayCatchUp = (): boolean =>
+    frameLeft > 0 &&
+    (MOST_TICKS_PER_FRAME - frameLeft < frameKeepsUp ||
+      frameSpentMs < MOST_CATCH_UP_MS_PER_FRAME);
+
+  const confirmRead = (race: SeatRace, now: number): void => {
+    frameLeft -= 1;
+    const lostBefore = race.client.lostControls();
+    const plannedThrough = race.client.plannedThrough();
+    race.client.confirm(read.frame, read.hashed ? read.hash : null);
+    if (race.client.lostControls() > lostBefore) {
+      clock.lostControl(read.frame.tick, plannedThrough, now);
+    }
+    listeners.onConfirmed?.(race.client);
+    frameSpentMs += performance.now() - now;
+  };
+
+  const nextHeld = (all: boolean): ArrayBuffer | undefined =>
+    all || mayCatchUp() ? backlog.shift() : undefined;
+
+  const confirmHeld = (race: SeatRace, all: boolean): void => {
+    for (let data = nextHeld(all); data; data = nextHeld(all)) {
+      if (readTick(new DataView(data), read)) {
+        confirmRead(race, performance.now());
+      }
+    }
+  };
+
+  const replaySome = (race: SeatRace): number => {
+    const startedAt = performance.now();
+    const replayed = race.client.settle(
+      Math.min(REPLAY_CHUNK_TICKS, frameLeft)
+    );
+    frameLeft -= replayed;
+    frameSpentMs += performance.now() - startedAt;
+    return replayed;
+  };
+
+  const replayWithin = (race: SeatRace): void => {
+    if (mayCatchUp() && replaySome(race) > 0) {
+      replayWithin(race);
+    }
+  };
+
+  const catchUpWork = (race: SeatRace): void => {
+    const all = !drawing;
+    confirmHeld(race, all);
+    if (all) {
+      race.client.settle();
+      return;
+    }
+    replayWithin(race);
+    race.client.settle(0);
+  };
+
   const reportWhileRiding = (): void => {
     pingsUntilReport -= 1;
     if (pingsUntilReport > 0 || reported || state.phase !== "racing") {
@@ -338,19 +413,38 @@ export const openRoomSeat = (
     sendReport(state.race, tally.closedTraceRows());
   };
 
+  const caughtUp = (race: SeatRace): boolean =>
+    backlog.length === 0 && !race.client.correcting();
+
   const reportOnce = (): void => {
     const { race } = state;
     if (!race || reported || socket.readyState !== WebSocket.OPEN) {
       return;
     }
     reported = true;
-    race.client.settle();
     tally.frameDrawn(
       performance.now(),
       race.client.mine.s,
-      race.client.confirmed.tick
+      race.client.confirmed.tick,
+      1,
+      0,
+      0,
+      race.client.stats.resimulatedTicks,
+      0
     );
+    confirmHeld(race, true);
+    race.client.settle();
     sendReport(race, tally.lastTraceRows());
+  };
+
+  const endOnceCaughtUp = (): void => {
+    const { race } = state;
+    if (!raceOver || (race && drawing && !caughtUp(race))) {
+      return;
+    }
+    raceOver = false;
+    reportOnce();
+    hangUp("The race is over.");
   };
 
   const enter = (event: SeatEvent): void => {
@@ -370,8 +464,8 @@ export const openRoomSeat = (
         break;
       }
       case "ended": {
-        reportOnce();
-        hangUp("The race is over.");
+        raceOver = true;
+        endOnceCaughtUp();
         break;
       }
       case "refused": {
@@ -420,13 +514,8 @@ export const openRoomSeat = (
     const { race } = state;
     const snapshot = readRaceSnapshot(view);
     if (race && snapshot) {
+      backlog.length = 0;
       race.client.catchUpFrom(snapshot);
-      listeners.onConfirmed?.(race.client);
-      return;
-    }
-    const caughtUp = readCatchUp(view);
-    if (race && caughtUp) {
-      race.client.catchUp(caughtUp);
       listeners.onConfirmed?.(race.client);
       return;
     }
@@ -435,13 +524,14 @@ export const openRoomSeat = (
       clock.heardTick(read.frame.tick, now);
       tally.heardTick(now);
       listeners.onTickHeard?.(now, read.hashed);
-      const lostBefore = race.client.lostControls();
-      const predictedThrough = race.client.predicted.tick;
-      race.client.confirm(read.frame, read.hashed ? read.hash : null);
-      if (race.client.lostControls() > lostBefore) {
-        clock.lostControl(read.frame.tick, predictedThrough, now);
+      if (backlog.length === 0 && (mayCatchUp() || !drawing)) {
+        confirmRead(race, now);
+        return;
       }
-      listeners.onConfirmed?.(race.client);
+      backlog.push(data);
+      if (!drawing) {
+        confirmHeld(race, true);
+      }
     }
   };
 
@@ -522,19 +612,43 @@ export const openRoomSeat = (
       ) {
         socket.send(new Uint8Array(input.buffer, 0, bytes));
       }
-      if (isDone(race.client.mine)) {
+      if (isDone(race.client.mine) && caughtUp(race)) {
         reportOnce();
       }
     },
-    frameDrawn: () => {
+    frameDrawn: (ownOffMetres, rivalOffMetres) => {
       const { race } = state;
+      if (race) {
+        catchUpWork(race);
+      }
+      drawing = true;
+      const now = performance.now();
+      frameLeft = MOST_TICKS_PER_FRAME;
+      frameSpentMs = 0;
+      frameKeepsUp = Math.min(
+        MOST_TICKS_PER_FRAME,
+        Math.max(1, Math.ceil((now - lastDrawnAt) / TICK_MS) + 1)
+      );
+      lastDrawnAt = now;
       if (race && race.client.predicted.tick > 0) {
         tally.frameDrawn(
-          performance.now(),
+          now,
           race.client.mine.s,
-          race.client.confirmed.tick
+          race.client.confirmed.tick,
+          clock.pace(race.client.predicted.tick, now),
+          ownOffMetres,
+          rivalOffMetres,
+          race.client.stats.resimulatedTicks,
+          race.client.plannedThrough() - race.client.predicted.tick
         );
       }
+      endOnceCaughtUp();
+    },
+    inputDelay: () => {
+      const { race } = state;
+      return race
+        ? clock.inputDelay(race.client.predicted.tick, performance.now())
+        : 0;
     },
     leadBloated: () => {
       const { race } = state;
@@ -560,6 +674,12 @@ export const openRoomSeat = (
       }
     },
     lobby: () => lobby,
+    pace: () => {
+      const { race } = state;
+      return race
+        ? clock.pace(race.client.predicted.tick, performance.now())
+        : 1;
+    },
     phase: () => state.phase,
     race: () => state.race,
     refusal: () => state.refusal,
@@ -570,6 +690,7 @@ export const openRoomSeat = (
         sendCommand({ edition: lobby.edition, kind: "ready", ready });
       }
     },
+    silenced: () => clock.silenced(performance.now()),
     startsInMs: () =>
       lobby?.startsInMs === null || lobby === null
         ? null
@@ -579,13 +700,17 @@ export const openRoomSeat = (
       if (!race) {
         return 0;
       }
-      race.client.settle();
-      const { predicted } = race.client;
-      const steps = clock.stepsDue(predicted.tick, performance.now());
-      if (predicted.tick > 0) {
-        tally.stepped(steps);
+      catchUpWork(race);
+      const { confirmed, predicted } = race.client;
+      return clock.stepsDue(predicted.tick, confirmed.tick, performance.now());
+    },
+    stoppedDrawing: () => {
+      drawing = false;
+      const { race } = state;
+      if (race) {
+        confirmHeld(race, true);
       }
-      return steps;
+      endOnceCaughtUp();
     },
     target: () => clock.target(performance.now()),
     walk: (walk) => {
@@ -594,24 +719,4 @@ export const openRoomSeat = (
     walkOf: (member) => walks.get(member),
     worstRttMs: () => worstRttMs,
   };
-};
-
-export const predictSteps = (
-  seat: RoomSeat,
-  controlFor: (tick: number) => Control
-): number => {
-  const race = seat.race();
-  if (!race) {
-    return 0;
-  }
-  let refused = 0;
-  const steps = seat.stepsDue();
-  for (let step = 0; step < steps; step += 1) {
-    if (!race.client.predict(controlFor(race.client.predicted.tick + 1))) {
-      refused += 1;
-      break;
-    }
-  }
-  seat.flush();
-  return refused;
 };

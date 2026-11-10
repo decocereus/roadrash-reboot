@@ -16,6 +16,7 @@ import {
   MOST_TRACE_ROW_VALUES,
   riderTraceName,
   tapeKey,
+  TRACE_VERSION,
 } from "./tape.ts";
 import type { SeatBrowser } from "./tape.ts";
 
@@ -170,13 +171,13 @@ export const keepBrowserRows = (seat: Seat, text: string): void => {
   if (Option.isNone(decoded)) {
     return;
   }
-  const { rows, ...browser } = decoded.value;
+  const { build, gpu, graphics, rows } = decoded.value;
   const kept = seat.tracedConnections.reduce(
     (sum, connection) => sum + connection.length,
     seat.traceRows.length
   );
   if (kept + rows.length <= MOST_TRACE_ROW_VALUES) {
-    seat.browser = browser;
+    seat.browser = { build, gpu, graphics };
     seat.traceRows.push(...rows);
   }
 };
@@ -199,7 +200,11 @@ export const settleReport = (seat: Seat, ports: ReportPorts): void => {
     ports.note({ ...browser, kind: "browser", raceId, rider });
     ports.saveTape(
       tapeKey(raceId, riderTraceName(rider)),
-      JSON.stringify({ ...browser, connections: tracedConnections })
+      JSON.stringify({
+        ...browser,
+        connections: tracedConnections,
+        version: TRACE_VERSION,
+      })
     );
   }
   seat.stats = null;

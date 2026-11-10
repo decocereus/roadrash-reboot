@@ -1,4 +1,4 @@
-import { openRoomSeat, predictSteps } from "@racer/rooms/seat-client";
+import { openRoomSeat } from "@racer/rooms/seat-client";
 import type { RoomSeat } from "@racer/rooms/seat-client";
 import { controlOf } from "@racer/sim/control";
 import { TICK_SECONDS } from "@racer/sim/state";
@@ -52,8 +52,22 @@ export const weavingControl = (tick: number, rider: number): Control =>
     throttle: 1,
   });
 
-const pumpWeaving = (seat: RoomSeat, you: () => number): number =>
-  predictSteps(seat, (tick) => weavingControl(tick, you()));
+const pumpWeaving = (seat: RoomSeat, you: () => number): number => {
+  const race = seat.race();
+  if (!race) {
+    return 0;
+  }
+  let refused = 0;
+  while (race.client.predicted.tick < seat.target() && seat.stepsDue() > 0) {
+    const tick = race.client.predicted.tick + 1;
+    if (!race.client.predict(weavingControl(tick, you()))) {
+      refused += 1;
+      break;
+    }
+  }
+  seat.flush();
+  return refused;
+};
 
 export const openSeat = (
   roomsUrl: string,

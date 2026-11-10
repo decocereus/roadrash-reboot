@@ -28,11 +28,11 @@ import type { Puffs } from "./puffs.ts";
 import { blockPaletteOf } from "./rider-blocks.ts";
 import {
   captureCast,
-  clearDrift,
-  driftSettle,
+  placeDrawn,
+  stillDrawn,
   stillDrift,
 } from "./rider-drift.ts";
-import type { RiderDrift } from "./rider-drift.ts";
+import type { DrawnPlace, RiderDrift } from "./rider-drift.ts";
 import {
   fightFlinch,
   fightHeard,
@@ -73,14 +73,6 @@ interface Pose {
   bodyS: number;
   bodyX: number;
   bodyAir: number;
-}
-
-interface DrawnPlace {
-  blend: number;
-  fromTick: number;
-  s: number;
-  toTick: number;
-  x: number;
 }
 
 interface RiderActor {
@@ -287,7 +279,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
           after: emptyPose(),
           before: emptyPose(),
           bike: riderOf(bikes.roots, rider.id) ?? new THREE.Object3D(),
-          drawn: { blend: 0, fromTick: 0, s: 0, toTick: 0, x: 0 },
+          drawn: stillDrawn(),
           drift: stillDrift(),
           fight: quietFight(),
           figure,
@@ -531,21 +523,10 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     blend: number,
     seconds: number
   ) => {
-    const { before, after, bike, drift } = view;
+    const { before, after, bike, drift, drawn } = view;
     const seated = rider.mode === "riding" || rider.mode === "mounting";
-    if (seated) {
-      driftSettle(drift, seconds);
-    } else {
-      clearDrift(drift);
-    }
-    const s = mix(before.s, after.s, blend) + drift.s;
-    const x = mix(before.x, after.x, blend) + drift.x;
-    view.drawn.blend = blend;
-    view.drawn.fromTick = before.tick;
-    view.drawn.s = s;
-    view.drawn.toTick = after.tick;
-    view.drawn.x = x;
-    const air = mix(before.air, after.air, blend);
+    placeDrawn(view, rider, blend, seconds);
+    const { air, s, x } = drawn;
     const lean = mix(before.lean, after.lean, blend) + drift.lean;
     const heading = mix(before.heading, after.heading, blend) + drift.heading;
     const bodyS = mix(before.bodyS, after.bodyS, blend);

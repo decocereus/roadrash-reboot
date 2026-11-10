@@ -33,11 +33,12 @@ export interface RoomRun extends RaceRun {
   readonly riderColours: ReadonlyMap<RiderId, number>;
   readonly confirmed: RaceView;
   readonly countdownSeconds: () => number;
-  readonly frameDrawn: () => void;
+  readonly frameDrawn: (ownOffMetres: number, rivalOffMetres: number) => void;
   readonly lagging: () => boolean;
   readonly leave: () => void;
   readonly listen: (onConfirmed: (view: RaceView) => void) => void;
   readonly report: () => RoomReport;
+  readonly pace: () => number;
   readonly stepsDue: () => number;
 }
 
@@ -65,7 +66,7 @@ export const createRoomRun = (
     events: client.takeEvents,
     frameDrawn: seat.frameDrawn,
     holdSeconds,
-    lagging: () => client.lagging() || seat.leadBloated(),
+    lagging: () => client.lagging() || seat.leadBloated() || seat.silenced(),
     leave: seat.leave,
     listen: (onConfirmed) => {
       seat.listen({
@@ -75,6 +76,7 @@ export const createRoomRun = (
       });
     },
     me,
+    pace: seat.pace,
     report: () => {
       client.settle();
       return {
@@ -98,11 +100,13 @@ export const createRoomRun = (
     roomId,
     step: (frame) => {
       const control = frame.controls.get(me) ?? coasting;
-      if (control !== sent) {
-        sent = control;
-        latency.controlChanged();
+      const changed = control !== sent;
+      sent = control;
+      client.predict(control, seat.inputDelay());
+      if (changed) {
+        latency.controlChanged(client.plannedThrough());
       }
-      client.predict(control);
+      latency.reached(client.predicted.tick);
       seat.flush();
     },
     stepsDue: seat.stepsDue,

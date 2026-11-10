@@ -6,7 +6,6 @@ import { clearFrame, createTickFrame } from "@racer/sim/room-frame";
 import {
   PING_PACKET_BYTES,
   RACE_STATS_PACKET_BYTES,
-  readRaceStats,
   writeRaceSnapshot,
   writeTick,
 } from "@racer/sim/room-wire";
@@ -26,6 +25,7 @@ import {
   BrowserTraceSchema,
   TRACE_ROW_FIELDS,
   TRACE_ROW_MS,
+  TRACE_VERSION,
   TraceField,
 } from "../src/tape.ts";
 import {
@@ -66,6 +66,7 @@ describe("a seat loading the race", () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.useRealTimers();
     vi.unstubAllGlobals();
   });
@@ -144,7 +145,7 @@ describe("a seat loading the race", () => {
     seat.leave();
     seat.leave();
     expect(socket.sentText).toStrictEqual([
-      JSON.stringify({ ...browser, rows: [] }),
+      JSON.stringify({ ...browser, rows: [], version: TRACE_VERSION }),
     ]);
     FakeSocket.opened = [];
     const { seat: off, socket: quiet } = loadingSeat(
@@ -165,7 +166,7 @@ describe("a seat loading the race", () => {
         vi.advanceTimersByTime(FRAME_MS);
         tick += 1;
         hearTick(socket, tick);
-        seat.frameDrawn();
+        seat.frameDrawn(0, 0);
       }
     };
     const startedAt = performance.now();
@@ -203,25 +204,6 @@ describe("a seat loading the race", () => {
     const { seat } = loadingSeat(raceData.trace);
     seat.leave();
     expect(raceData.watched()).toBeFalsy();
-  });
-
-  it("counts a correction it had not yet replayed in its last report", () => {
-    const { seat, socket } = loadingSeat();
-    const client = seat.race()?.client;
-    client?.predict(coasting);
-    client?.predict(coasting);
-    const frame = createTickFrame();
-    clearFrame(frame, 1);
-    frame.controls.set(
-      riderIdAt(0),
-      controlOf({ ...neutralInput, throttle: 1 })
-    );
-    const view = new DataView(new ArrayBuffer(64));
-    const bytes = writeTick(view, frame, null);
-    socket.hear(view.buffer.slice(0, bytes));
-    seat.leave();
-    const [report] = socket.sentBuffers;
-    expect(report && readRaceStats(new DataView(report))?.rollbacks).toBe(1);
   });
 
   it("tells the results screen the rider's own colour", () => {

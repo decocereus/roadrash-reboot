@@ -1,10 +1,14 @@
 import type { RoomClient } from "@racer/sim/room-client";
 import { createTickFrame } from "@racer/sim/room-frame";
-import { createReadTick, readCatchUp, readTick } from "@racer/sim/room-wire";
+import {
+  createReadTick,
+  readRaceSnapshot,
+  readTick,
+} from "@racer/sim/room-wire";
 import { describe, expect, it } from "vitest";
 
 import { SEAT_QUIT } from "../src/messages.ts";
-import { TRACE_ROW_FIELDS } from "../src/tape.ts";
+import { TRACE_ROW_FIELDS, TRACE_VERSION } from "../src/tape.ts";
 import {
   advanceHearing,
   clientOf,
@@ -36,9 +40,9 @@ const kindsHeard = (socket: FakeSocket): readonly string[] =>
 const followAll = (socket: FakeSocket, client: RoomClient): void => {
   const read = createReadTick(createTickFrame());
   for (const packet of socket.ticks.splice(0)) {
-    const part = readCatchUp(packet);
-    if (part) {
-      client.catchUp(part);
+    const snapshot = readRaceSnapshot(packet);
+    if (snapshot) {
+      client.catchUpFrom(snapshot);
     } else {
       expect(readTick(packet, read)).toBeTruthy();
       client.confirm(read.frame, read.hashed ? read.hash : null);
@@ -69,6 +73,15 @@ const loadingRoom = () => {
   return { ann, bo, clock, host, seated };
 };
 
+const caughtUpBytes = (awayMs: number) => {
+  const { bo, clock, host, seated } = droppedRider();
+  advanceHearing(host, clock, [bo], awayMs);
+  const back = seated("ann", "Ann");
+  return back.ticks
+    .filter((packet) => readRaceSnapshot(packet) !== null)
+    .map((packet) => packet.byteLength);
+};
+
 describe("a rider whose link drops mid-race", () => {
   it("gets the same bike back, caught up to the room's race", () => {
     const { bo, clock, host, seated, stayed } = droppedRider();
@@ -90,6 +103,12 @@ describe("a rider whose link drops mid-race", () => {
       { closeCode: 1006, kind: "held", rider: 0 },
       { awayMs: AWAY_MS, kind: "rejoined", rider: 0 },
     ]);
+  });
+
+  it("catches the rider up with one packet of the room's race, whatever its length", () => {
+    const soon = caughtUpBytes(0);
+    expect(soon).toHaveLength(1);
+    expect(caughtUpBytes(HOLD_MS - AWAY_MS - 1000)).toStrictEqual(soon);
   });
 
   it("leaves the bike with the room once the hold runs out, and a late return waits at the bar", () => {
@@ -122,7 +141,12 @@ const rowOf = (value: number) =>
 describe("a rider who drops and comes back", () => {
   it("keeps the frame trace from both links in one file", () => {
     const { ann, clock, host, seated } = loadingRoom();
-    const trace = { build: "abc", gpu: "Test GPU", graphics: "rung 1" };
+    const trace = {
+      build: "abc",
+      gpu: "Test GPU",
+      graphics: "rung 1",
+      version: TRACE_VERSION,
+    };
     const first = [...rowOf(1), ...rowOf(2)];
     host.message(ann, JSON.stringify({ ...trace, rows: first }));
     host.gone(ann, 1006);

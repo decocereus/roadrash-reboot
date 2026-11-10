@@ -6,7 +6,6 @@ import {
   readReady,
   ROOM_PROTOCOL,
   tickCapacity,
-  writeCatchUp,
   writeRaceSnapshot,
   writeTick,
 } from "@racer/sim/room-wire";
@@ -427,12 +426,7 @@ export const createHost = (
         you: seat.rider,
       })
     );
-    if (run.base) {
-      sendTo(person.socket, writeRaceSnapshot(run.base));
-    }
-    for (const part of run.tape.sofar()) {
-      sendTo(person.socket, writeCatchUp(part));
-    }
+    sendTo(person.socket, writeRaceSnapshot(run.room.snapshot()));
     const startAt = startMomentOf(state);
     if (startAt !== null) {
       sendTo(

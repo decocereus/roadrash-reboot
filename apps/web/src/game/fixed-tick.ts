@@ -8,14 +8,15 @@ interface FixedClock {
 export const createFixedTick = (
   clock: FixedClock,
   halted: () => boolean,
-  tick: () => void
+  tick: () => void,
+  pace: () => number
 ): ((seconds: number) => number) => {
   const advance = (seconds: number): number => {
     if (clock.clockReset) {
       clock.accumulator = 0;
       clock.clockReset = false;
     }
-    clock.accumulator += seconds;
+    clock.accumulator += seconds * pace();
     let ticks = 0;
     while (clock.accumulator >= TICK_SECONDS && !halted()) {
       tick();

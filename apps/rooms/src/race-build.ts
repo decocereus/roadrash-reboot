@@ -47,7 +47,6 @@ export interface RacePorts {
 }
 
 export interface Run {
-  readonly base: Uint8Array | null;
   readonly manifest: RaceManifest;
   readonly raceId: string;
   readonly riders: readonly Seat[];
@@ -154,7 +153,6 @@ export const restoreRace = (
   return {
     kind: "run",
     run: {
-      base: snapshot,
       checkpoint,
       manifest,
       raceId,
@@ -275,7 +273,6 @@ export const buildRace = <Person extends Sitter>(
     traffic: rule.traffic,
   });
   const run: Run = {
-    base: null,
     checkpoint: null,
     manifest,
     raceId,

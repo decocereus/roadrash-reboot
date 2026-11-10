@@ -157,6 +157,205 @@ const JUST_OUT_OF_REACH_X = 2.2;
 const CONTACT_TICK = RIDE_TICKS + KICK_CONTACT;
 
 describe("an attacker's own hits, reconciled with the room", () => {
+  it("holds a hit a long replay finds until the replay is drawn", () => {
+    const { client, room } = sideBySide();
+    for (let tick = 0; tick < RIDE_TICKS + AFTER_TICKS; tick += 1) {
+      client.predict(riding);
+    }
+    for (let tick = 1; tick <= RIDE_TICKS; tick += 1) {
+      room.accept(VICTIM, tick, [riding]);
+      room.accept(ATTACKER, tick, [tick === RIDE_TICKS ? kicking : riding]);
+      room.step();
+      client.confirm(room.frame, null);
+    }
+    client.takeFights();
+    const hits = { afterwards: 0, whileReplaying: 0 };
+    for (let frame = 0; frame < AFTER_TICKS; frame += 1) {
+      client.settle(4);
+      const heard = client
+        .takeFights()
+        .filter((fight) => "event" in fight && fight.event.kind === "hit");
+      hits[client.correcting() ? "whileReplaying" : "afterwards"] +=
+        heard.length;
+    }
+    expect(hits).toStrictEqual({ afterwards: 1, whileReplaying: 0 });
+  });
+
+  it("holds the sound of a hit a long replay finds until the replay is drawn", () => {
+    const { client, room } = sideBySide(ATTACKER);
+    for (let tick = 0; tick < RIDE_TICKS + AFTER_TICKS; tick += 1) {
+      client.predict(riding);
+    }
+    for (let tick = 1; tick <= RIDE_TICKS; tick += 1) {
+      room.accept(VICTIM, tick, [riding]);
+      room.accept(ATTACKER, tick, [tick === RIDE_TICKS ? kicking : riding]);
+      room.step();
+      client.confirm(room.frame, null);
+    }
+    client.takeEvents();
+    const sounds = { afterwards: 0, whileReplaying: 0 };
+    for (let frame = 0; frame < AFTER_TICKS; frame += 1) {
+      client.settle(4);
+      const heard = client
+        .takeEvents()
+        .filter((event) => event.kind === "hit").length;
+      sounds[client.correcting() ? "whileReplaying" : "afterwards"] += heard;
+    }
+    expect(sounds).toStrictEqual({ afterwards: 1, whileReplaying: 0 });
+  });
+
+  it("hears a hit a replay found once, when the room reaches the prediction before the replay is drawn", () => {
+    const { client, room } = sideBySide(ATTACKER);
+    for (let tick = 0; tick < RIDE_TICKS + AFTER_TICKS; tick += 1) {
+      client.predict(riding);
+    }
+    const roomSteps = (tick: number) => {
+      room.accept(VICTIM, tick, [riding]);
+      room.accept(ATTACKER, tick, [tick === RIDE_TICKS ? kicking : riding]);
+      room.step();
+      client.confirm(room.frame, null);
+      return room.state.events.filter((event) => event.kind === "hit").length;
+    };
+    let roomHits = 0;
+    for (let tick = 1; tick <= RIDE_TICKS; tick += 1) {
+      roomHits += roomSteps(tick);
+    }
+    client.takeEvents();
+    for (let frame = 0; frame < 4; frame += 1) {
+      client.settle(4);
+    }
+    const replaying = client.correcting();
+    for (
+      let tick = RIDE_TICKS + 1;
+      tick <= RIDE_TICKS + AFTER_TICKS;
+      tick += 1
+    ) {
+      roomHits += roomSteps(tick);
+    }
+    client.settle(4);
+    const sounds = client
+      .takeEvents()
+      .filter((event) => event.kind === "hit").length;
+    expect({ replaying, roomHits, sounds }).toStrictEqual({
+      replaying: true,
+      roomHits: 1,
+      sounds: 1,
+    });
+  });
+
+  it("never takes back its predicted hit while a sliced replay has yet to reach it", () => {
+    const { client, room } = sideBySide(ATTACKER);
+    const easing = controlOf({ ...neutralInput, throttle: 0.9 });
+    const STALE_AT = RIDE_TICKS - 10;
+    const own = (tick: number) => (tick === RIDE_TICKS ? kicking : riding);
+    let roomHits = 0;
+    const roomSteps = (tick: number) => {
+      room.accept(ATTACKER, tick, [own(tick)]);
+      room.accept(VICTIM, tick, [tick === STALE_AT ? easing : riding]);
+      room.step();
+      roomHits += room.state.events.filter(
+        (event) => event.kind === "hit"
+      ).length;
+      client.confirm(room.frame, null);
+    };
+    for (let tick = 1; tick < STALE_AT; tick += 1) {
+      client.predict(own(tick));
+      roomSteps(tick);
+    }
+    for (let tick = STALE_AT; tick <= RIDE_TICKS + 20; tick += 1) {
+      client.predict(own(tick));
+    }
+    roomSteps(STALE_AT);
+    client.takeFights();
+    client.settle(1);
+    roomSteps(STALE_AT + 1);
+    client.settle();
+    for (let tick = STALE_AT + 2; tick <= RIDE_TICKS + AFTER_TICKS; tick += 1) {
+      roomSteps(tick);
+      client.predict(riding);
+    }
+    const refused = client
+      .takeFights()
+      .filter((fight) => "refused" in fight).length;
+    expect({ refused, roomHits }).toStrictEqual({ refused: 0, roomHits: 1 });
+  });
+
+  it("hears its hit once when the room lands it while a sliced replay has yet to reach it", () => {
+    const { client, room } = sideBySide(ATTACKER);
+    for (let tick = 0; tick < RIDE_TICKS + AFTER_TICKS; tick += 1) {
+      client.predict(riding);
+    }
+    let roomHits = 0;
+    const roomSteps = (tick: number) => {
+      room.accept(VICTIM, tick, [riding]);
+      room.accept(ATTACKER, tick, [tick === RIDE_TICKS ? kicking : riding]);
+      room.step();
+      roomHits += room.state.events.filter(
+        (event) => event.kind === "hit"
+      ).length;
+      client.confirm(room.frame, null);
+    };
+    for (let tick = 1; tick <= RIDE_TICKS; tick += 1) {
+      roomSteps(tick);
+    }
+    client.takeEvents();
+    const replayed = client.settle(1);
+    for (let tick = RIDE_TICKS + 1; tick <= RIDE_TICKS + 30; tick += 1) {
+      roomSteps(tick);
+    }
+    client.settle();
+    const sounds = client
+      .takeEvents()
+      .filter((event) => event.kind === "hit").length;
+    expect({ replayed, roomHits, sounds }).toStrictEqual({
+      replayed: 1,
+      roomHits: 1,
+      sounds: 1,
+    });
+  });
+
+  it("hears its predicted hit once when the room lands it while a sliced replay from before it has yet to reach it", () => {
+    const { client, room } = sideBySide(ATTACKER);
+    const easing = controlOf({ ...neutralInput, throttle: 0.9 });
+    const STALE_AT = RIDE_TICKS - 10;
+    const own = (tick: number) => (tick === RIDE_TICKS ? kicking : riding);
+    let roomHits = 0;
+    const roomSteps = (tick: number) => {
+      room.accept(ATTACKER, tick, [own(tick)]);
+      room.accept(VICTIM, tick, [tick === STALE_AT ? easing : riding]);
+      room.step();
+      roomHits += room.state.events.filter(
+        (event) => event.kind === "hit"
+      ).length;
+      client.confirm(room.frame, null);
+    };
+    for (let tick = 1; tick < STALE_AT; tick += 1) {
+      client.predict(own(tick));
+      roomSteps(tick);
+    }
+    for (let tick = STALE_AT; tick <= RIDE_TICKS + AFTER_TICKS; tick += 1) {
+      client.predict(own(tick));
+    }
+    const guessed = client
+      .takeEvents()
+      .filter((event) => event.kind === "hit").length;
+    roomSteps(STALE_AT);
+    const replayed = client.settle(1);
+    for (let tick = STALE_AT + 1; tick <= RIDE_TICKS + 30; tick += 1) {
+      roomSteps(tick);
+    }
+    client.settle();
+    const sounds = client
+      .takeEvents()
+      .filter((event) => event.kind === "hit").length;
+    expect({ guessed, replayed, roomHits, sounds }).toStrictEqual({
+      guessed: 1,
+      replayed: 1,
+      roomHits: 1,
+      sounds: 0,
+    });
+  });
+
   it("takes back a predicted hit the room refused", () => {
     const { heardHits, refused, roomHits } = attackerHears({
       gapX: EDGE_OF_REACH_X,
@@ -311,42 +510,5 @@ describe("what a client hears of another rider's fight", () => {
   it("hears nothing again once it has been read", () => {
     const { client } = race(8, riding, kicking);
     expect(client.takeEvents()).toStrictEqual([]);
-  });
-});
-
-const steering = (lead: number) => {
-  const setup = roomSetup(defaultSetup(track, 3), [VICTIM, ATTACKER]);
-  const room = createRoom(setup, ROOM_LIMIT_TICKS);
-  const client = createRoomClient(setup, VICTIM, ROOM_LIMIT_TICKS);
-  const swerve = controlOf({ ...neutralInput, steer: 1, throttle: 1 });
-  for (let tick = 0; tick < lead; tick += 1) {
-    client.predict(riding);
-  }
-  const moved = new Map<RiderId, number>();
-  for (let tick = 0; tick < RIDE_TICKS; tick += 1) {
-    room.accept(VICTIM, room.state.tick + 1, [riding]);
-    room.accept(ATTACKER, room.state.tick + 1, [
-      tick >= RIDE_TICKS / 2 ? swerve : riding,
-    ]);
-    room.step();
-    client.confirm(room.frame, null);
-    client.predict(riding);
-    for (const { rider, x } of client.takeCorrections()) {
-      moved.set(rider, Math.max(moved.get(rider) ?? 0, Math.abs(x)));
-    }
-  }
-  return moved;
-};
-
-describe("how far a correction moved another rider", () => {
-  it("grows with the lead, because the guess ran longer", () => {
-    const near = steering(4).get(ATTACKER) ?? 0;
-    const far = steering(20).get(ATTACKER) ?? 0;
-    expect(near).toBeGreaterThan(0);
-    expect(far).toBeGreaterThan(near * 2);
-  });
-
-  it("never names the client's own rider", () => {
-    expect(steering(20).has(VICTIM)).toBeFalsy();
   });
 });

@@ -54,7 +54,7 @@ const notes: readonly RoomNote[] = [
     kind: "stats",
     raceId: "race-a",
     rider: 0,
-    stats: { crashes: 3, crashesAfterCorrection: 1, heldSteps: 9 },
+    stats: { crashes: 3, crashesAfterCorrection: 1, slowedMs: 9 },
   },
   {
     catchUpWakes: 4,

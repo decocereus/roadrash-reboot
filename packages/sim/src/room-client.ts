@@ -16,12 +16,8 @@ import {
   scratchFor,
 } from "./room-frame.ts";
 import type { TickFrame } from "./room-frame.ts";
-import { readTapePart } from "./room-tape.ts";
-import {
-  createReadTick,
-  MOST_BATCHED_CONTROLS,
-  writeInput,
-} from "./room-wire.ts";
+import { createHitLedger } from "./room-hits.ts";
+import { MOST_BATCHED_CONTROLS, writeInput } from "./room-wire.ts";
 import { INPUT_HORIZON, seatsOf } from "./room.ts";
 import { HASH_WORDS } from "./snapshot-bytes.ts";
 import { setupDigest } from "./snapshot-setup.ts";
@@ -30,7 +26,6 @@ import { NO_FIGHTS, isFightEvent, riderOf } from "./state.ts";
 import type {
   Control,
   HeardFight,
-  HitEvent,
   RaceEvent,
   RaceSetup,
   RaceState,
@@ -38,16 +33,14 @@ import type {
   RiderState,
 } from "./state.ts";
 
-const MOST_LEAD_TICKS = INPUT_HORIZON;
-
 const NO_EVENTS: readonly RaceEvent[] = [];
 const NO_CORRECTIONS: readonly RiderCorrection[] = [];
 
 const FELT_JUMP_METRES = 0.25;
 
 const LAG_WINDOW_TICKS = 60;
-const SAME_HIT_TICKS = 15;
 const MOST_RETRY_TICKS = 60;
+const SHRINK_EVERY_TICKS = 12;
 const LAGGING_FROM_TICKS = 20;
 
 const JUMP_CAUSES = ["behindServer", "otherRiders", "ownControl"] as const;
@@ -72,36 +65,33 @@ interface RoomStats {
 }
 
 export interface RiderCorrection {
+  air: number;
   heading: number;
+  lateralSpeed: number;
   lean: number;
   readonly rider: RiderId;
   s: number;
+  speed: number;
   x: number;
 }
 
 export interface RoomClient {
   readonly confirmed: RaceState;
+  readonly correcting: () => boolean;
   readonly lagging: () => boolean;
   readonly lostControls: () => number;
   readonly mine: RiderState;
+  readonly plannedThrough: () => number;
   readonly predicted: RaceState;
   readonly stats: RoomStats;
-  readonly predict: (control: Control) => boolean;
+  readonly predict: (control: Control, delay?: number) => boolean;
   readonly confirm: (frame: TickFrame, hash: Uint32Array | null) => void;
-  readonly catchUp: (part: DataView) => void;
   readonly catchUpFrom: (snapshot: DataView) => void;
-  readonly settle: () => void;
+  readonly settle: (most?: number) => number;
   readonly takeCorrections: () => readonly RiderCorrection[];
   readonly takeEvents: () => readonly RaceEvent[];
   readonly takeFights: () => readonly HeardFight[];
   readonly writeInputs: (view: DataView) => number;
-}
-
-interface ShownHit {
-  backed: boolean;
-  readonly hit: HitEvent;
-  refused: boolean;
-  tick: number;
 }
 
 interface Remote {
@@ -157,15 +147,18 @@ const sameHash = (left: Uint32Array, right: Uint32Array): boolean => {
 };
 
 const stillCorrection = ({ id }: RiderState): RiderCorrection => ({
+  air: 0,
   heading: 0,
+  lateralSpeed: 0,
   lean: 0,
   rider: id,
   s: 0,
+  speed: 0,
   x: 0,
 });
 
 const ringOf = <Value>(fill: () => Value): Value[] =>
-  Array.from({ length: MOST_LEAD_TICKS + 1 }, fill);
+  Array.from({ length: INPUT_HORIZON + 1 }, fill);
 
 export const createRoomClient = (
   setup: RaceSetup,
@@ -174,6 +167,7 @@ export const createRoomClient = (
 ): RoomClient => {
   const confirmed = createRace(setup);
   const predicted = createRace(setup);
+  const mended = createRace(setup);
   const digest = setupDigest(confirmed, setup.track);
   const scratch = createScratch(confirmed);
   const hash = new Uint32Array(HASH_WORDS);
@@ -189,15 +183,20 @@ export const createRoomClient = (
   const batch: Control[] = [];
   let heard: RaceEvent[] = [];
   let fights: HeardFight[] = [];
-  const shownHits: ShownHit[] = [];
-  const others = predicted.riders.filter((rider) => rider.id !== me);
-  const wasAt = others.map(stillCorrection);
-  let corrections = others.map(stillCorrection);
-  let handed = others.map(stillCorrection);
+  const mendedFights: HeardFight[] = [];
+  const tracked = [...predicted.riders];
+  const wasAt = tracked.map(stillCorrection);
+  let corrections = tracked.map(stillCorrection);
+  let handed = tracked.map(stillCorrection);
   let corrected = false;
   let sentThrough = 0;
+  let plannedThrough = 0;
+  let sampled = coasting;
+  let shrunkAt = Number.NEGATIVE_INFINITY;
   let stale = false;
   let staleCause: JumpCause = "otherRiders";
+  let mending = false;
+  let mendCause: JumpCause = "otherRiders";
   const overruled = new Uint8Array(LAG_WINDOW_TICKS);
   let overruledTicks = 0;
   let lostControls = 0;
@@ -223,30 +222,28 @@ export const createRoomClient = (
 
   const slotOf = (tick: number): number => tick % ownControls.length;
 
-  const remoteRider = (remote: Remote): RiderState | undefined =>
-    riderOf(predicted.riders, remote.id);
-
-  const guess = (tick: number): TickFrame => {
+  const guess = (race: RaceState, tick: number): TickFrame => {
     const frame = guesses[slotOf(tick)] ?? createTickFrame();
     clearFrame(frame, tick);
+    const own = riderOf(race.riders, me);
     if (tick >= pilotFromTick) {
-      if (mine.controller === "human") {
+      if (own?.controller === "human") {
         frame.handovers.set(me, "pilot");
       }
       for (const remote of remotes) {
-        if (remoteRider(remote)?.controller === "human") {
+        if (riderOf(race.riders, remote.id)?.controller === "human") {
           frame.handovers.set(remote.id, "pilot");
         }
       }
       return frame;
     }
     const control = ownControls[slotOf(tick)] ?? coasting;
-    if (mine.controller === "pilot") {
+    if (own?.controller === "pilot") {
       frame.handovers.set(me, "human");
     }
     frame.controls.set(me, control);
     for (const remote of remotes) {
-      if (remoteRider(remote)?.controller === "human") {
+      if (riderOf(race.riders, remote.id)?.controller === "human") {
         frame.controls.set(remote.id, withoutButtons(remote.last));
       }
     }
@@ -257,60 +254,35 @@ export const createRoomClient = (
     heard.push({ ...event });
   };
 
-  const shownHitOf = (event: HitEvent, tick: number): ShownHit | undefined =>
-    shownHits.find(
-      (shown) =>
-        shown.hit.rider === event.rider &&
-        shown.hit.target === event.target &&
-        shown.hit.attack === event.attack &&
-        Math.abs(shown.tick - tick) <= SAME_HIT_TICKS
-    );
-
-  const guessedHit = (event: HitEvent, tick: number): void => {
-    const shown = shownHitOf(event, tick);
-    if (shown) {
-      shown.backed = true;
-      shown.refused = false;
-      shown.tick = tick;
-      return;
-    }
-    shownHits.push({ backed: true, hit: { ...event }, refused: false, tick });
-    if (event.rider === me) {
-      hear(event);
-    }
-  };
-
-  const roomHit = (event: HitEvent, tick: number): void => {
-    const shown = shownHitOf(event, tick);
-    if (shown) {
-      shownHits.splice(shownHits.indexOf(shown), 1);
-    } else if (event.rider === me) {
-      hear(event);
-    }
-  };
-
-  const refuseUnbacked = (): void => {
-    for (const shown of shownHits) {
-      if (!shown.backed && !shown.refused) {
-        shown.refused = true;
-        fights.push({ refused: shown.hit, tick: shown.tick });
+  const hits = createHitLedger(
+    (hit) => {
+      if (hit.rider === me) {
+        heard.push({ ...hit });
       }
+    },
+    (refused, tick) => {
+      fights.push({ refused, tick });
     }
-  };
+  );
 
   const hearFights = (race: RaceState): void => {
     for (const event of race.events) {
       if (isFightEvent(event)) {
-        fights.push({ event: { ...event }, tick: race.tick });
+        (race === mended ? mendedFights : fights).push({
+          event: { ...event },
+          tick: race.tick,
+        });
       }
-      if (event.kind === "hit") {
-        (race === predicted ? guessedHit : roomHit)(event, race.tick);
+      if (event.kind === "hit" && race === confirmed) {
+        hits.landed(event, race.tick);
+      } else if (event.kind === "hit") {
+        hits.guessed(event, race.tick, race === mended);
       }
     }
   };
 
   const advance = (tick: number): void => {
-    stepRace(predicted, setup.track, guess(tick));
+    stepRace(predicted, setup.track, guess(predicted, tick));
     hearFights(predicted);
   };
 
@@ -329,22 +301,20 @@ export const createRoomClient = (
       }
     }
     hearFights(confirmed);
-    const overdue = confirmed.tick - SAME_HIT_TICKS;
-    for (const shown of shownHits) {
-      shown.backed &&= shown.tick >= overdue;
-    }
-    refuseUnbacked();
-    for (let at = shownHits.length - 1; at >= 0; at -= 1) {
-      if ((shownHits[at]?.tick ?? overdue) < overdue) {
-        shownHits.splice(at, 1);
-      }
-    }
+    hits.passed(confirmed.tick);
+  };
+
+  const copyRace = (from: RaceState, into: RaceState): void => {
+    const view = scratchFor(scratch, from);
+    writeSnapshot(from, digest, view);
+    restoreInto(into, digest, view, setup.track);
   };
 
   const rewind = (): void => {
-    const view = scratchFor(scratch, confirmed);
-    writeSnapshot(confirmed, digest, view);
-    restoreInto(predicted, digest, view, setup.track);
+    mending = false;
+    mendedFights.length = 0;
+    hits.replayDropped();
+    copyRace(confirmed, predicted);
   };
 
   const noteJump = (cause: JumpCause, fromS: number, fromX: number): void => {
@@ -370,13 +340,16 @@ export const createRoomClient = (
   };
 
   const noteWhereRidersAre = (): void => {
-    for (let index = 0; index < others.length; index += 1) {
-      const rider = others[index];
+    for (let index = 0; index < tracked.length; index += 1) {
+      const rider = tracked[index];
       const was = wasAt[index];
       if (rider && was) {
+        was.air = rider.air;
         was.heading = rider.heading;
+        was.lateralSpeed = rider.lateralSpeed;
         was.lean = rider.lean;
         was.s = rider.s;
+        was.speed = rider.speed;
         was.x = rider.x;
       }
     }
@@ -384,43 +357,68 @@ export const createRoomClient = (
 
   const noteCorrections = (): void => {
     corrected = true;
-    for (let index = 0; index < others.length; index += 1) {
-      const rider = others[index];
+    for (let index = 0; index < tracked.length; index += 1) {
+      const rider = tracked[index];
       const was = wasAt[index];
       const moved = corrections[index];
       if (rider && was && moved) {
+        moved.air += was.air - rider.air;
         moved.heading += was.heading - rider.heading;
+        moved.lateralSpeed += was.lateralSpeed - rider.lateralSpeed;
         moved.lean += was.lean - rider.lean;
         moved.s += was.s - rider.s;
+        moved.speed += was.speed - rider.speed;
         moved.x += was.x - rider.x;
       }
     }
   };
 
-  const settle = (): void => {
-    if (!stale) {
-      return;
-    }
-    stale = false;
-    const reached = predicted.tick;
+  const finishMending = (): void => {
     const fromS = mine.s;
     const fromX = mine.x;
     const crashesBefore = mine.crashes;
     noteWhereRidersAre();
-    rewind();
-    stats.rollbacks += 1;
-    for (const shown of shownHits) {
-      shown.backed = false;
-    }
-    for (let tick = confirmed.tick + 1; tick <= reached; tick += 1) {
-      advance(tick);
-      stats.resimulatedTicks += 1;
-    }
-    refuseUnbacked();
+    copyRace(mended, predicted);
+    mending = false;
+    fights.push(...mendedFights);
+    mendedFights.length = 0;
+    hits.replayDrawn();
     noteCorrections();
     stats.crashesAfterCorrection += Math.max(0, mine.crashes - crashesBefore);
-    noteJump(staleCause, fromS, fromX);
+    noteJump(mendCause, fromS, fromX);
+  };
+
+  const startMending = (): void => {
+    stale = false;
+    mending = true;
+    mendCause = staleCause;
     staleCause = "otherRiders";
+    copyRace(confirmed, mended);
+    mendedFights.length = 0;
+    hits.replayStarted();
+    stats.rollbacks += 1;
+  };
+
+  const settle = (most = Number.POSITIVE_INFINITY): number => {
+    if (!mending && !stale) {
+      return 0;
+    }
+    if (!mending) {
+      startMending();
+    }
+    const from = mended.tick;
+    const until = Math.min(predicted.tick, from + most);
+    for (let tick = from + 1; tick <= until; tick += 1) {
+      stepRace(mended, setup.track, guess(mended, tick));
+      hearFights(mended);
+      stats.resimulatedTicks += 1;
+    }
+    const replayed = mended.tick - from;
+    if (mended.tick !== predicted.tick) {
+      return replayed;
+    }
+    finishMending();
+    return replayed + settle(most - replayed);
   };
 
   const notePresses = (frame: TickFrame, reached: number): void => {
@@ -447,6 +445,26 @@ export const createRoomClient = (
   const retryMissed = (control: Control): Control => {
     const [button] = missed;
     return button === undefined ? control : pressing(control, button);
+  };
+
+  const pressesAnew = (control: Control): boolean =>
+    BUTTONS_OF_A_CONTROL.some(
+      (button) => holds(control, button) && !holds(sampled, button)
+    );
+
+  const plan = (control: Control, wanted: number): void => {
+    const held = withoutButtons(
+      ownControls[slotOf(plannedThrough)] ?? coasting
+    );
+    for (
+      let tick = Math.max(plannedThrough, predicted.tick) + 1;
+      tick < wanted;
+      tick += 1
+    ) {
+      ownControls[slotOf(tick)] = held;
+    }
+    ownControls[slotOf(wanted)] = retryMissed(control);
+    plannedThrough = wanted;
   };
 
   const retried = (): void => {
@@ -500,21 +518,7 @@ export const createRoomClient = (
     }
   };
 
-  const caughtUp = createReadTick(createTickFrame());
-
   return {
-    catchUp: (part) => {
-      const read = readTapePart(part, caughtUp, (tick) => {
-        stepConfirmed(tick.frame, tick.hashed ? tick.hash : null);
-        return null;
-      });
-      if (read.kind !== "read") {
-        throw new RangeError(
-          `The room sent a catch-up the client could not read after tick ${confirmed.tick}.`
-        );
-      }
-      rewind();
-    },
     catchUpFrom: (snapshot) => {
       restoreInto(confirmed, digest, snapshot, setup.track);
       rewind();
@@ -523,13 +527,15 @@ export const createRoomClient = (
       stepConfirmed(frame, serverHash);
       hearRoom();
       const reached = predicted.tick;
-      noteRoomChoice(frame, reached);
-      notePresses(frame, reached);
+      noteRoomChoice(frame, plannedThrough);
+      notePresses(frame, plannedThrough);
       if (reached < frame.tick) {
         const fromS = mine.s;
         const fromX = mine.x;
         stale = false;
+        noteWhereRidersAre();
         rewind();
+        noteCorrections();
         noteJump("behindServer", fromS, fromX);
         return;
       }
@@ -541,21 +547,41 @@ export const createRoomClient = (
         }
       }
       if (reached === frame.tick) {
+        if (mending && mendCause === "ownControl") {
+          staleCause = mendCause;
+        }
+        stale ||= mending;
+        mending = false;
         settle();
       }
     },
     confirmed,
+    correcting: () => mending || stale,
     lagging: () => lagging,
     lostControls: () => lostControls,
     mine,
-    predict: (control) => {
-      settle();
+    plannedThrough: () => plannedThrough,
+    predict: (control, delay = 0) => {
+      if (!mending) {
+        settle();
+      }
       const tick = predicted.tick + 1;
-      if (tick - confirmed.tick > MOST_LEAD_TICKS) {
+      if (tick - confirmed.tick > INPUT_HORIZON) {
         stats.refusedPredictions += 1;
         return false;
       }
-      ownControls[slotOf(tick)] = retryMissed(control);
+      const shrinks =
+        !pressesAnew(control) && tick - shrunkAt >= SHRINK_EVERY_TICKS;
+      const wanted = Math.min(
+        Math.max(tick + delay, shrinks ? 0 : plannedThrough + 1),
+        confirmed.tick + INPUT_HORIZON
+      );
+      if (wanted > plannedThrough) {
+        plan(control, wanted);
+      } else {
+        shrunkAt = tick;
+      }
+      sampled = control;
       advance(tick);
       retried();
       hearOwn();
@@ -573,9 +599,12 @@ export const createRoomClient = (
       corrections = handed;
       handed = taken;
       for (const moved of corrections) {
+        moved.air = 0;
         moved.heading = 0;
+        moved.lateralSpeed = 0;
         moved.lean = 0;
         moved.s = 0;
+        moved.speed = 0;
         moved.x = 0;
       }
       return taken;
@@ -598,7 +627,7 @@ export const createRoomClient = (
     },
     writeInputs: (view) => {
       const unsent = Math.max(sentThrough, confirmed.tick) + 1;
-      const last = Math.min(predicted.tick, unsent + MOST_BATCHED_CONTROLS - 1);
+      const last = Math.min(plannedThrough, unsent + MOST_BATCHED_CONTROLS - 1);
       if (last < unsent) {
         return 0;
       }

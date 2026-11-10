@@ -238,6 +238,7 @@ const startGame = (
   owners.push(cancelPreparation);
   const { quiet, react, report, say, toggleMute } = bindFeedback({
     chase,
+    drawnSpeed: () => player().speed + (cast.views[stage.me]?.drift.along ?? 0),
     events,
     feedback,
     player,
@@ -464,9 +465,10 @@ const startGame = (
       return;
     }
     hearFights();
-    roomOf(session)?.frameDrawn();
     cast.clock += seconds;
     let index = -1;
+    let ownOff = 0;
+    let rivalOff = 0;
     for (const rider of stage.race.view.riders) {
       index += 1;
       const view = cast.views[index];
@@ -476,8 +478,12 @@ const startGame = (
       drawRider(index, rider, view, blend, seconds);
       if (index === stage.me) {
         followPlayer(rider);
+        ownOff = view.drawn.off;
+      } else {
+        rivalOff = Math.max(rivalOff, view.drawn.off);
       }
     }
+    roomOf(session)?.frameDrawn(ownOff, rivalOff);
     const lead = cast.views[stage.me];
     if (cast.bikes && lead) {
       cast.bikes.commit(lead.bike.position);
@@ -556,6 +562,10 @@ const startGame = (
     frame,
     halted,
     noteDisplay,
+    pace: () => {
+      const room = roomOf(session);
+      return room && !autopilot ? room.pace() : 1;
+    },
     player,
     quality,
     recorder,

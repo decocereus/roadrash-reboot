@@ -1,5 +1,6 @@
 import type { RoomClient } from "@racer/sim/room-client";
 import type { RaceStats } from "@racer/sim/room-wire";
+import { TICK_SECONDS } from "@racer/sim/state";
 
 import {
   MOST_TRACE_ROWS,
@@ -14,6 +15,11 @@ const LONGEST_COUNTED_FRAME_MS = 255;
 const P50 = 0.5;
 const P95 = 0.95;
 const P99 = 0.99;
+const SLOWED_BELOW_PACE = 0.95;
+const SPED_ABOVE_PACE = 1.05;
+const STOPPED_BELOW_PACE = 0.5;
+const SURGED_FROM_METRES = 0.01;
+const TICK_MS = TICK_SECONDS * 1000;
 
 export interface RaceTally {
   readonly heardRtt: (rttMs: number) => void;
@@ -21,9 +27,13 @@ export interface RaceTally {
   readonly frameDrawn: (
     now: number,
     roadMetres: number,
-    confirmedTick: number
+    confirmedTick: number,
+    pace: number,
+    ownOffMetres: number,
+    rivalOffMetres: number,
+    replayedTicks: number,
+    inputDelayTicks: number
   ) => void;
-  readonly stepped: (steps: number) => void;
   readonly read: (client: RoomClient, rttWorstMs: number) => RaceStats;
   readonly closedTraceRows: () => readonly number[] | null;
   readonly lastTraceRows: () => readonly number[] | null;
@@ -52,9 +62,16 @@ export const createRaceTally = (sharing: boolean): RaceTally => {
   let rttCount = 0;
   let lastFrameAt = 0;
   let lastConfirmedTick = 0;
-  let held = 0;
-  let doubled = 0;
-  let mostSteps = 0;
+  let lastReplayedTicks = 0;
+  let mostReplayedTicks = 0;
+  let slowedMs = 0;
+  let spedUpMs = 0;
+  let stoppedMs = 0;
+  let surgedFrames = 0;
+  let rivalsSurgedFrames = 0;
+  let worstDrawnOffMetres = 0;
+  let delayedTickFrames = 0;
+  let worstInputDelayTicks = 0;
   let slowFrames = 0;
   let worstFrameMs = 0;
   let worstFrameRoadMetres = 0;
@@ -101,7 +118,16 @@ export const createRaceTally = (sharing: boolean): RaceTally => {
 
   return {
     closedTraceRows: takeRows,
-    frameDrawn: (now, roadMetres, confirmedTick) => {
+    frameDrawn: (
+      now,
+      roadMetres,
+      confirmedTick,
+      pace,
+      ownOffMetres,
+      rivalOffMetres,
+      replayedTicks,
+      inputDelayTicks
+    ) => {
       if (lastFrameAt === 0) {
         firstFrameAt = now;
         rowStartedAt = now;
@@ -111,7 +137,28 @@ export const createRaceTally = (sharing: boolean): RaceTally => {
         frameCount += 1;
         const counted = Math.min(LONGEST_COUNTED_FRAME_MS, Math.floor(frameMs));
         frameMsCounts[counted] = (frameMsCounts[counted] ?? 0) + 1;
+        const slowed = pace < SLOWED_BELOW_PACE ? frameMs : 0;
+        const surged = ownOffMetres > SURGED_FROM_METRES ? 1 : 0;
+        slowedMs += slowed;
+        spedUpMs += pace > SPED_ABOVE_PACE ? frameMs : 0;
+        mostReplayedTicks = Math.max(
+          mostReplayedTicks,
+          confirmedTick - lastConfirmedTick + replayedTicks - lastReplayedTicks
+        );
+        stoppedMs += pace < STOPPED_BELOW_PACE ? frameMs : 0;
+        surgedFrames += surged;
+        delayedTickFrames += inputDelayTicks;
+        worstInputDelayTicks = Math.max(worstInputDelayTicks, inputDelayTicks);
+        rivalsSurgedFrames += rivalOffMetres > SURGED_FROM_METRES ? 1 : 0;
+        worstDrawnOffMetres = Math.max(
+          worstDrawnOffMetres,
+          ownOffMetres,
+          rivalOffMetres
+        );
         if (tracing) {
+          open[TraceField.slowedMs] = (open[TraceField.slowedMs] ?? 0) + slowed;
+          open[TraceField.surgedFrames] =
+            (open[TraceField.surgedFrames] ?? 0) + surged;
           open[TraceField.frames] = (open[TraceField.frames] ?? 0) + 1;
           open[TraceField.worstFrameMs] = Math.max(
             open[TraceField.worstFrameMs] ?? 0,
@@ -125,6 +172,7 @@ export const createRaceTally = (sharing: boolean): RaceTally => {
       }
       lastFrameAt = now;
       lastConfirmedTick = confirmedTick;
+      lastReplayedTicks = replayedTicks;
       if (tracing && now - rowStartedAt >= TRACE_ROW_MS) {
         closeRow(now, confirmedTick);
       }
@@ -157,29 +205,36 @@ export const createRaceTally = (sharing: boolean): RaceTally => {
       crashes: mine.crashes,
       crashesAfterCorrection: stats.crashesAfterCorrection,
       desyncs: stats.desyncs,
-      doubledSteps: doubled,
       finished: mine.finishTick >= 0 ? 1 : 0,
       frameCount,
       frameP50Ms: percentileOf(frameMsCounts, frameCount, P50),
       frameP95Ms: percentileOf(frameMsCounts, frameCount, P95),
       frameP99Ms: percentileOf(frameMsCounts, frameCount, P99),
-      heldSteps: held,
+      inputDelayMeanMs:
+        frameCount === 0 ? 0 : (delayedTickFrames / frameCount) * TICK_MS,
+      inputDelayWorstMs: worstInputDelayTicks * TICK_MS,
       jumpsBehindServer: stats.jumps.behindServer.felt,
       jumpsOtherRiders: stats.jumps.otherRiders.felt,
       jumpsOwnControl: stats.jumps.ownControl.felt,
-      mostSteps,
+      mostReplayedTicks,
       refusedPredictions: stats.refusedPredictions,
       resimulatedTicks: stats.resimulatedTicks,
       retriedPresses: stats.retriedPresses,
+      rivalsSurgedFrames,
       rollbacks: stats.rollbacks,
       rttMeanMs: rttCount === 0 ? 0 : rttTotal / rttCount,
       rttWorstMs,
       slowFrames,
+      slowedMs,
+      spedUpMs,
+      stoppedMs,
+      surgedFrames,
       tick: predicted.tick,
       totalBehindServerCm: stats.jumps.behindServer.totalMetres * CENTIMETRES,
       totalOtherRidersCm: stats.jumps.otherRiders.totalMetres * CENTIMETRES,
       totalOwnControlCm: stats.jumps.ownControl.totalMetres * CENTIMETRES,
       worstBehindServerCm: stats.jumps.behindServer.worstMetres * CENTIMETRES,
+      worstDrawnOffCm: worstDrawnOffMetres * CENTIMETRES,
       worstFrameMs,
       worstFrameRoadMetres,
       worstJumpRoadMetres: stats.worstJump.roadMetres,
@@ -187,17 +242,6 @@ export const createRaceTally = (sharing: boolean): RaceTally => {
       worstOtherRidersCm: stats.jumps.otherRiders.worstMetres * CENTIMETRES,
       worstOwnControlCm: stats.jumps.ownControl.worstMetres * CENTIMETRES,
     }),
-    stepped: (steps) => {
-      held += steps === 0 ? 1 : 0;
-      doubled += steps >= 2 ? 1 : 0;
-      mostSteps = Math.max(mostSteps, steps);
-      if (tracing) {
-        open[TraceField.held] =
-          (open[TraceField.held] ?? 0) + (steps === 0 ? 1 : 0);
-        open[TraceField.doubled] =
-          (open[TraceField.doubled] ?? 0) + (steps >= 2 ? 1 : 0);
-      }
-    },
     traceOff: () => {
       const taken = lastRows();
       tracing = false;

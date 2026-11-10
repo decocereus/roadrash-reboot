@@ -1,43 +1,84 @@
+import { PACE_SLEW_PER_SECOND } from "./room-pace.ts";
+import { INPUT_HORIZON, MOST_LEAD_TICKS } from "./room.ts";
 import { TICK_SECONDS } from "./state.ts";
 
 const TICK_MS = TICK_SECONDS * 1000;
 const FIRST_LEAD_TICKS = 8;
 const LEAD_MARGIN_TICKS = 2;
-const CATCH_UP_AT_TICKS = 2;
-const SKIP_AT_TICKS = 2;
-const MOST_STEPS = 4;
 const NOT_MEASURED = -1;
 const RTT_SAMPLES = 10;
-const OFFSET_SAG_PER_MS = 0.002;
-const FRAMES_PER_EASED_STEP = 6;
-const FRAMES_PER_EASED_SKIP = 3;
-const RAISE_FADE_MS = 2000;
+const RAISE_FADE_MS = 20_000;
 const LOST_CONTROL_RAISE_MS = 2 * TICK_MS;
 const ARRIVAL_WINDOW = 120;
-const ARRIVAL_WINDOW_MS = 2000;
+const ARRIVAL_WINDOW_MS = 1000;
 const EARLY_SHARE = 0.1;
+const JITTER_SECONDS = 5;
 const BLOATED_FROM_TICKS = 12;
+const PACE_PER_TICK = 0.02;
+const MOST_PACE_CHANGE = 0.1;
+const MOST_TRIM = 0.02;
+const MOST_INPUT_DELAY_TICKS = 30;
+const MOST_AHEAD_TICKS = 20;
+const LEAST_AHEAD_OF_ROOM_TICKS = 6;
+const HELD_FROM_MS = 250;
+const HOLDS_RECUR_WITHIN_MS = JITTER_SECONDS * 1000;
+const SILENT_GRACE_MS = 500;
+const SILENT_EASE_MS = 500;
+
+const clampTo = (value: number, most: number): number =>
+  Math.min(most, Math.max(-most, value));
+
+const steerFor = (
+  predictedTick: number,
+  wanted: number,
+  floor: number,
+  ceiling: number
+): number => {
+  if (predictedTick < floor) {
+    return clampTo(
+      (floor - predictedTick) * PACE_PER_TICK + MOST_TRIM,
+      MOST_PACE_CHANGE
+    );
+  }
+  if (predictedTick > ceiling) {
+    return clampTo(
+      (ceiling - predictedTick) * PACE_PER_TICK - MOST_TRIM,
+      MOST_PACE_CHANGE
+    );
+  }
+  return clampTo((wanted - predictedTick) * PACE_PER_TICK, MOST_TRIM);
+};
 
 export interface RoomClock {
   readonly start: (startAtRoomMs: number) => void;
   readonly heardRoomTime: (roomMs: number, now: number) => void;
   readonly heardTick: (tick: number, now: number) => void;
   readonly heardRtt: (rttMs: number, now: number) => void;
+  readonly inputDelay: (predictedTick: number, now: number) => number;
   readonly leadBloated: (predictedTick: number, now: number) => boolean;
   readonly lostControl: (
     tick: number,
     sentThrough: number,
     now: number
   ) => void;
+  readonly pace: (predictedTick: number, now: number) => number;
   readonly silentMs: (now: number) => number;
+  readonly silenced: (now: number) => boolean;
   readonly target: (now: number) => number;
-  readonly stepsDue: (predictedTick: number, now: number) => number;
+  readonly stepsDue: (
+    predictedTick: number,
+    confirmedTick: number,
+    now: number
+  ) => number;
 }
 
 export const createRoomClock = (): RoomClock => {
   let startsAt = 0;
   let lastArrival = 0;
   let offset = 0;
+  let placed = false;
+  let paced = 1;
+  let pacedAt = Number.NEGATIVE_INFINITY;
   let roomAhead = Number.NEGATIVE_INFINITY;
   const rtts: number[] = [];
   const sorted: number[] = [];
@@ -48,30 +89,71 @@ export const createRoomClock = (): RoomClock => {
   let raisedAt = 0;
   let raisedThrough = 0;
   let jitterMs = 0;
+  let heldEndedAt = Number.NEGATIVE_INFINITY;
+  let gapEndedAt = Number.NEGATIVE_INFINITY;
+  let lastPongAt = Number.NEGATIVE_INFINITY;
+  let lastPongSentAt = Number.NEGATIVE_INFINITY;
   const arrivals = new Float64Array(ARRIVAL_WINDOW);
   const arrivedAt = new Float64Array(ARRIVAL_WINDOW).fill(
     Number.NEGATIVE_INFINITY
   );
   const ordered = new Float64Array(ARRIVAL_WINDOW);
+  const settled = new Float64Array(ARRIVAL_WINDOW);
   let arrivalAt = 0;
-  const lateSpread = (sample: number, now: number): number => {
+  const jitterOfSecond = new Float64Array(JITTER_SECONDS);
+  const recentJitter = new Float64Array(JITTER_SECONDS);
+  let jitterSecond = Number.NEGATIVE_INFINITY;
+  let jitterSlot = JITTER_SECONDS - 1;
+  let jitterSeconds = 0;
+  const heardJitter = (windowMs: number, now: number): void => {
+    const second = Math.floor(now / ARRIVAL_WINDOW_MS);
+    if (second === jitterSecond) {
+      jitterOfSecond[jitterSlot] = Math.max(
+        jitterOfSecond[jitterSlot] ?? 0,
+        windowMs
+      );
+    } else {
+      jitterSecond = second;
+      jitterSlot = (jitterSlot + 1) % JITTER_SECONDS;
+      jitterOfSecond[jitterSlot] = windowMs;
+      jitterSeconds = Math.min(JITTER_SECONDS, jitterSeconds + 1);
+    }
+    recentJitter.set(jitterOfSecond);
+    recentJitter.fill(Number.NaN, jitterSeconds);
+    recentJitter.sort();
+    jitterMs = recentJitter[Math.floor((jitterSeconds - 1) / 2)] ?? windowMs;
+  };
+  const heardArrival = (sample: number, now: number): void => {
     arrivals[arrivalAt] = sample;
     arrivedAt[arrivalAt] = now;
     arrivalAt = (arrivalAt + 1) % ARRIVAL_WINDOW;
     ordered.fill(Number.NaN);
+    settled.fill(Number.NaN);
     let count = 0;
+    let steady = 0;
     for (let at = 0; at < ARRIVAL_WINDOW; at += 1) {
-      if ((arrivedAt[at] ?? 0) > now - ARRIVAL_WINDOW_MS) {
-        ordered[count] = arrivals[at] ?? sample;
+      const heardAt = arrivedAt[at] ?? 0;
+      if (heardAt > now - ARRIVAL_WINDOW_MS) {
+        const heardSample = arrivals[at] ?? sample;
+        ordered[count] = heardSample;
         count += 1;
+        if (heardAt - heldEndedAt >= ARRIVAL_WINDOW_MS) {
+          settled[steady] = heardSample;
+          steady += 1;
+        }
       }
     }
     ordered.sort();
+    settled.sort();
+    if (steady === 0 && placed) {
+      return;
+    }
+    placed = true;
     const earliest = ordered[count - 1] ?? sample;
-    const late = ordered[Math.floor(EARLY_SHARE * (count - 1))] ?? sample;
-    return Math.floor(earliest - late);
+    const late = settled[Math.floor(EARLY_SHARE * (steady - 1))] ?? sample;
+    offset = earliest;
+    heardJitter(Math.floor(earliest - late), now);
   };
-  let framesSinceEased = FRAMES_PER_EASED_STEP;
   const serverTick = (now: number): number =>
     lastArrival === 0
       ? Math.floor((now - startsAt) / TICK_MS)
@@ -85,44 +167,63 @@ export const createRoomClock = (): RoomClock => {
       raisedAt = now;
     }
   };
-  const tooLateBelow = (now: number): number =>
-    serverTick(now) +
-    (typicalRtt === NOT_MEASURED
-      ? LEAD_MARGIN_TICKS
-      : Math.max(
-          LEAD_MARGIN_TICKS,
-          Math.ceil((typicalRtt + raisedAbove(now)) / TICK_MS)
-        ));
   const leadFor = (excessMs: number): number =>
     typicalRtt === NOT_MEASURED
       ? FIRST_LEAD_TICKS
       : Math.ceil((typicalRtt + excessMs + jitterMs) / TICK_MS) +
         LEAD_MARGIN_TICKS;
   const target = (now: number): number =>
-    serverTick(now) + leadFor(raisedAbove(now));
+    serverTick(now) +
+    Math.min(MOST_LEAD_TICKS - LEAD_MARGIN_TICKS, leadFor(raisedAbove(now)));
+  const silentMs = (now: number): number =>
+    now - (lastArrival === 0 ? startsAt : lastArrival);
+  const silentShare = (now: number): number =>
+    Math.min(
+      1,
+      Math.max(0, 1 - (silentMs(now) - SILENT_GRACE_MS) / SILENT_EASE_MS)
+    );
   return {
     heardRoomTime: (roomMs, now) => {
       roomAhead = Math.max(roomAhead, roomMs - now);
     },
     heardRtt: (rttMs, now) => {
-      rtts[rttAt] = rttMs;
-      rttAt = (rttAt + 1) % RTT_SAMPLES;
+      const sentAt = now - rttMs;
+      const bunched =
+        now - lastPongAt < HELD_FROM_MS &&
+        Math.abs(sentAt - lastPongSentAt) >= HELD_FROM_MS;
+      lastPongAt = now;
+      lastPongSentAt = sentAt;
+      if (bunched) {
+        rtts[(rttAt + RTT_SAMPLES - 1) % RTT_SAMPLES] = Number.NaN;
+      } else {
+        rtts[rttAt] = rttMs;
+        rttAt = (rttAt + 1) % RTT_SAMPLES;
+      }
       sorted.length = 0;
-      sorted.push(...rtts);
+      for (const rtt of rtts) {
+        if (!Number.isNaN(rtt)) {
+          sorted.push(rtt);
+        }
+      }
       sorted.sort((left, right) => left - right);
-      typicalRtt = sorted[Math.floor(sorted.length / 2)] ?? rttMs;
-      lastRtt = rttMs;
-      raiseTo(rttMs, now);
+      typicalRtt = sorted[Math.floor(sorted.length / 2)] ?? typicalRtt;
+      lastRtt = bunched ? lastRtt : rttMs;
     },
     heardTick: (tick, now) => {
-      const sample = tick * TICK_MS - now;
-      offset =
-        lastArrival === 0
-          ? sample
-          : Math.max(sample, offset - (now - lastArrival) * OFFSET_SAG_PER_MS);
+      if (now - (lastArrival === 0 ? startsAt : lastArrival) >= HELD_FROM_MS) {
+        if (now - gapEndedAt >= HOLDS_RECUR_WITHIN_MS) {
+          heldEndedAt = now;
+        }
+        gapEndedAt = now;
+      }
+      heardArrival(tick * TICK_MS - now, now);
       lastArrival = now;
-      jitterMs = lateSpread(sample, now);
     },
+    inputDelay: (predictedTick, now) =>
+      Math.min(
+        MOST_INPUT_DELAY_TICKS,
+        Math.max(0, target(now) - predictedTick)
+      ),
     leadBloated: (predictedTick, now) =>
       predictedTick -
         serverTick(now) -
@@ -135,28 +236,38 @@ export const createRoomClock = (): RoomClock => {
       raisedThrough = sentThrough;
       raiseTo(typicalRtt + raisedAbove(now) + LOST_CONTROL_RAISE_MS, now);
     },
-    silentMs: (now) => now - (lastArrival === 0 ? startsAt : lastArrival),
-    start: (startAtRoomMs) => {
-      startsAt = startAtRoomMs - roomAhead;
-    },
-    stepsDue: (predictedTick, now) => {
+    pace: (predictedTick, now) => {
       const wanted = target(now);
-      const gap = wanted - predictedTick;
-      framesSinceEased += 1;
       if (wanted <= 0) {
-        return 0;
-      }
-      if (predictedTick < tooLateBelow(now)) {
-        return Math.min(Math.max(gap, 1), MOST_STEPS);
-      }
-      const ahead = gap <= -SKIP_AT_TICKS;
-      const easeEvery = ahead ? FRAMES_PER_EASED_SKIP : FRAMES_PER_EASED_STEP;
-      if ((!ahead && gap < CATCH_UP_AT_TICKS) || framesSinceEased < easeEvery) {
+        paced = 1;
+        pacedAt = now;
         return 1;
       }
-      framesSinceEased = 0;
-      return gap < 0 ? 0 : 2;
+      const floor = Math.max(
+        wanted - MOST_INPUT_DELAY_TICKS,
+        Math.min(wanted, serverTick(now) + LEAST_AHEAD_OF_ROOM_TICKS)
+      );
+      const ceiling = Math.min(
+        wanted + MOST_AHEAD_TICKS,
+        serverTick(now) + MOST_LEAD_TICKS - LEAD_MARGIN_TICKS
+      );
+      const steer = 1 + steerFor(predictedTick, wanted, floor, ceiling);
+      const most = (PACE_SLEW_PER_SECOND * (now - pacedAt)) / 1000;
+      paced += Math.min(most, Math.max(-most, steer - paced));
+      pacedAt = now;
+      return paced * silentShare(now);
     },
+    silenced: (now) => silentShare(now) < 1,
+    silentMs,
+    start: (startAtRoomMs) => {
+      startsAt = startAtRoomMs - roomAhead;
+      offset = -startsAt;
+      placed = true;
+    },
+    stepsDue: (predictedTick, confirmedTick, now) =>
+      target(now) <= 0 || predictedTick - confirmedTick >= INPUT_HORIZON
+        ? 0
+        : 1,
     target,
   };
 };

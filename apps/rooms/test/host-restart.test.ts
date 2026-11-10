@@ -1,10 +1,9 @@
-import { seatsCapacity } from "@racer/sim/room";
+import { SLOT_BYTES } from "@racer/sim/room";
 import type { RoomClient } from "@racer/sim/room-client";
 import { createTickFrame } from "@racer/sim/room-frame";
 import { readTapePart, TICKS_IN_PART } from "@racer/sim/room-tape";
 import {
   createReadTick,
-  readCatchUp,
   readRaceSnapshot,
   readTick,
 } from "@racer/sim/room-wire";
@@ -39,6 +38,7 @@ const RACED_TICKS = (RACED_MS / 1000) * 60;
 const RESTART_GAP_MS = 3000;
 const RIDE_ON_MS = 5000;
 const LEFT_FLAG_AT = 1 + 4 + 4 + 4;
+const SEAT_HEAD_BYTES = LEFT_FLAG_AT + 1 + 4;
 
 const notesOf = (clock: Clock, ...kinds: readonly string[]) =>
   clock.notes.filter((note) => kinds.includes(note.kind));
@@ -50,11 +50,8 @@ const followAll = (socket: FakeSocket, client: RoomClient): void => {
   const read = createReadTick(createTickFrame());
   for (const packet of socket.ticks.splice(0)) {
     const snapshot = readRaceSnapshot(packet);
-    const part = readCatchUp(packet);
     if (snapshot) {
       client.catchUpFrom(snapshot);
-    } else if (part) {
-      client.catchUp(part);
     } else {
       expect(readTick(packet, read)).toBeTruthy();
       client.confirm(read.frame, read.hashed ? read.hash : null);
@@ -339,9 +336,12 @@ describe("a room that restarts with a race it must not restore", () => {
       throw new Error("The room remembered no checkpoint.");
     }
     const controls = new Uint8Array(checkpoint.controls);
-    const stride = seatsCapacity(1) - seatsCapacity(0);
+    const view = new DataView(controls.buffer);
+    let at = 1;
     for (let seat = 0; seat < 2; seat += 1) {
-      controls[1 + seat * stride + LEFT_FLAG_AT] = 1;
+      controls[at + LEFT_FLAG_AT] = 1;
+      const queued = view.getUint32(at + LEFT_FLAG_AT + 1, true);
+      at += SEAT_HEAD_BYTES + queued * SLOT_BYTES;
     }
     const { race } = memory;
     if (race === null) {

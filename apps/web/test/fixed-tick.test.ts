@@ -28,10 +28,12 @@ interface Ride {
   readonly stepped: number;
 }
 
+const steadyPace = (): number => 1;
+
 const rideFrames = (frames: readonly number[]): Ride => {
   const ticker = createTicker();
   const clock = { accumulator: 0, clockReset: false };
-  const advance = createFixedTick(clock, () => false, ticker.tick);
+  const advance = createFixedTick(clock, () => false, ticker.tick, steadyPace);
   let stepped = 0;
   let idle = 0;
   for (const seconds of frames) {
@@ -89,7 +91,8 @@ describe("the fixed tick", () => {
       () => false,
       () => {
         state.ticks += 1;
-      }
+      },
+      steadyPace
     );
     expect(advance(TICK_SECONDS)).toBe(1);
     expect(clock.accumulator).toBe(0);
@@ -106,7 +109,8 @@ describe("the fixed tick", () => {
       () => {
         state.ticks += 1;
         state.halted = state.ticks === 2;
-      }
+      },
+      steadyPace
     );
     expect(advance(TICK_SECONDS * 5)).toBe(2);
     expect(clock.accumulator / TICK_SECONDS).toBeCloseTo(3, 9);
@@ -120,7 +124,8 @@ describe("the fixed tick", () => {
       () => false,
       () => {
         state.ticks += 1;
-      }
+      },
+      steadyPace
     );
     advance(TICK_SECONDS * 0.9);
     clock.clockReset = true;
@@ -137,7 +142,8 @@ describe("the fixed tick", () => {
       () => {
         state.ticks += 1;
         clock.clockReset = state.ticks === 2;
-      }
+      },
+      steadyPace
     );
     expect(advance(TICK_SECONDS * 4)).toBe(2);
     expect(advance(TICK_SECONDS)).toBe(1);
@@ -170,6 +176,17 @@ describe("the frame loop's clock", () => {
     host.frame.clockReset = true;
     host.at(181 * VSYNC_MS);
     expect(host.digests.length - paused).toBe(1);
+  });
+
+  it("runs the race at the pace a room asks for", () => {
+    const slowed = createHost({ pace: 0.9 });
+    const steady = createHost();
+    for (let frame = 1; frame <= 600; frame += 1) {
+      slowed.at(frame * VSYNC_MS);
+      steady.at(frame * VSYNC_MS);
+    }
+    expect(steady.digests.length).toBeGreaterThanOrEqual(599);
+    expect(slowed.digests.length / steady.digests.length).toBeCloseTo(0.9, 2);
   });
 
   it("time from callbacks the pacer skips reaches the race on the next drawn frame", () => {

@@ -11,7 +11,6 @@ const PING_KIND = 3;
 const PONG_KIND = 4;
 const READY_KIND = 6;
 const RACE_STATS_KIND = 7;
-const CATCH_UP_KIND = 8;
 const SNAPSHOT_KIND = 9;
 const KIND_BYTES = 1;
 const TICK_BYTES = 4;
@@ -344,17 +343,17 @@ export const readReady = (view: DataView, into: Uint32Array): boolean => {
 const RACE_STAT_FIELDS = [
   "crashes",
   "crashesAfterCorrection",
-  "doubledSteps",
+  "surgedFrames",
   "finished",
   "frameCount",
   "frameP50Ms",
   "frameP95Ms",
   "frameP99Ms",
-  "heldSteps",
+  "slowedMs",
   "jumpsBehindServer",
   "jumpsOtherRiders",
   "jumpsOwnControl",
-  "mostSteps",
+  "stoppedMs",
   "desyncs",
   "refusedPredictions",
   "resimulatedTicks",
@@ -374,6 +373,12 @@ const RACE_STAT_FIELDS = [
   "worstJumpTick",
   "worstOtherRidersCm",
   "worstOwnControlCm",
+  "rivalsSurgedFrames",
+  "worstDrawnOffCm",
+  "spedUpMs",
+  "mostReplayedTicks",
+  "inputDelayMeanMs",
+  "inputDelayWorstMs",
 ] as const;
 
 export type RaceStats = Readonly<
@@ -421,12 +426,6 @@ const bodyOf = (kind: number, view: DataView): DataView | null =>
         view.byteLength - KIND_BYTES
       )
     : null;
-
-export const writeCatchUp = (part: Uint8Array): Uint8Array =>
-  framed(CATCH_UP_KIND, part);
-
-export const readCatchUp = (view: DataView): DataView | null =>
-  bodyOf(CATCH_UP_KIND, view);
 
 export const writeRaceSnapshot = (snapshot: Uint8Array): Uint8Array =>
   framed(SNAPSHOT_KIND, snapshot);

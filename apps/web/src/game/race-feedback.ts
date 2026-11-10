@@ -53,6 +53,7 @@ export const createFeedback = (): Feedback => ({
 
 interface FeedbackParts {
   readonly chase: ChaseCamera;
+  readonly drawnSpeed: () => number;
   readonly events: GameEvents;
   readonly feedback: Feedback;
   readonly player: () => RiderView;
@@ -64,6 +65,7 @@ interface FeedbackParts {
 
 export const bindFeedback = ({
   chase,
+  drawnSpeed,
   events,
   feedback,
   player,
@@ -204,7 +206,7 @@ export const bindFeedback = ({
       riderCount: order.length,
       roadLength: stage.track.length,
       roadName: stage.track.plan.name,
-      speedKmh: Math.abs(me.speed) * 3.6,
+      speedKmh: Math.abs(drawnSpeed()) * 3.6,
       stamina: me.stamina / MAX_STAMINA,
       weaponCapacity: weaponCapacity(me),
       weaponHits: me.weaponHits,

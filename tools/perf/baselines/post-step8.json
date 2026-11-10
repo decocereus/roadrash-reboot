@@ -3554,6 +3554,22 @@
       "value": 834325
     },
     {
+      "environment": "build",
+      "metric": "bytes.game.incremental.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-08T23-11-30-469Z-b1c4332-b1c4332",
+      "value": 237465
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.incremental.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-08T23-11-30-469Z-b1c4332-b1c4332",
+      "value": 832411
+    },
+    {
       "environment": "node-linux-x64",
       "metric": "room.checkpoint.p95",
       "scenario": "reference-v1",
@@ -4887,6 +4903,29 @@
       "sides": {
         "A": "5eed07d2fe0c79e205b3b504b995d16949f3d2f4",
         "B": "5eed07d2fe0c79e205b3b504b995d16949f3d2f4"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 925163, \"bytes.route.root.gzip\": 388328, \"bytes.route.kit.raw\": 732976, \"bytes.route.kit.gzip\": 321903, \"bytes.game.raw\": 1757574, \"bytes.game.gzip\": 625793, \"bytes.game.incremental.raw\": 832411, \"bytes.game.incremental.gzip\": 237465, \"bytes.worker.raw\": 727377, \"bytes.worker.gzip\": 187018, \"bytes.client.raw\": 2060929, \"bytes.client.gzip\": 840158}",
+        "builtB": "{\"bytes.route.root.raw\": 925163, \"bytes.route.root.gzip\": 388328, \"bytes.route.kit.raw\": 732976, \"bytes.route.kit.gzip\": 321903, \"bytes.game.raw\": 1757574, \"bytes.game.gzip\": 625793, \"bytes.game.incremental.raw\": 832411, \"bytes.game.incremental.gzip\": 237465, \"bytes.worker.raw\": 727437, \"bytes.worker.gzip\": 187026, \"bytes.client.raw\": 2060929, \"bytes.client.gzip\": 840158}",
+        "harnessDigest": "c61e134def72408a04cf3a5a620d6c5c3a578cbdaeadba9c9c9afedf50fd799d",
+        "lockfileSha256": "d17a9d597390c734c7d1e85b125af25cd26c22d2c807d0b1fa05e3a43c20c058",
+        "machine": "Mac16,8",
+        "node": "v26.13.0",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "32816eacb465e07b62854495f92b7bad015ef444c5bbaf0e289c2fdef337d4a8",
+        "sideBSourceDigest": "32816eacb465e07b62854495f92b7bad015ef444c5bbaf0e289c2fdef337d4a8",
+        "why": "The room client glides corrections with the speed they carry, eases the race's pace, holds hits a replay finds until it is drawn and records what each drawn frame cost, so the game chunk loaded after the menus grows by about 1.4 KB gzip against 7fec2e9's run and the two bytes.game.incremental rows re-pin on this run."
+      },
+      "id": "baseline-2026-11-08T23-11-30-469Z-b1c4332-b1c4332",
+      "lanes": ["build"],
+      "sides": {
+        "A": "b1c4332f2170730c8e1a5ef56c33e0fad8498e33",
+        "B": "b1c4332f2170730c8e1a5ef56c33e0fad8498e33"
       }
     },
     {

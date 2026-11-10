@@ -4,7 +4,14 @@ import { controlOf } from "./control.ts";
 import { ROOM_LIMIT_TICKS, track } from "./race-fixtures.ts";
 import { defaultSetup, neutralInput } from "./race.ts";
 import { hexOfWords } from "./room-tape.ts";
-import { createRoom, firstRacers, roomSetup, seatsCapacity } from "./room.ts";
+import {
+  createRoom,
+  firstRacers,
+  INPUT_HORIZON,
+  roomSetup,
+  seatsCapacity,
+  SLOT_BYTES,
+} from "./room.ts";
 import type { Room } from "./room.ts";
 import { restoreInto, snapshotCapacity, writeSnapshot } from "./snapshot.ts";
 import type { RiderId } from "./state.ts";
@@ -50,15 +57,18 @@ const checkpointed = () => {
   }
   const snapshot = new DataView(new ArrayBuffer(snapshotCapacity(room.state)));
   writeSnapshot(room.state, room.digest, snapshot);
-  const seats = new DataView(new ArrayBuffer(seatsCapacity(2)));
-  const written = room.writeSeats(seats);
+  const record = new DataView(new ArrayBuffer(seatsCapacity(2)));
+  const written = room.writeSeats(record);
+  const seats = new DataView(record.buffer, 0, written);
   return { driver, passenger, room, seats, setup, snapshot, written };
 };
 
 describe("a room restored from its checkpoint", () => {
   it("steps on as the uninterrupted room would, riding the controls it already held", () => {
     const { driver, room, seats, setup, snapshot, written } = checkpointed();
-    expect(written).toBe(seatsCapacity(2));
+    expect(written).toBe(
+      seatsCapacity(2) - (2 * INPUT_HORIZON - QUEUED_AHEAD) * SLOT_BYTES
+    );
     const restored = createRoom(setup, ROOM_LIMIT_TICKS);
     restoreInto(restored.state, restored.digest, snapshot, setup.track);
     restored.readSeats(seats);
@@ -85,7 +95,7 @@ describe("a room restored from its checkpoint", () => {
 
   it("refuses a seat record with a flag, a counter or a slot tick the room could not have written", () => {
     const { seats, setup } = checkpointed();
-    const bytes = new Uint8Array(seats.buffer);
+    const bytes = new Uint8Array(seats.buffer, 0, seats.byteLength);
     const fresh = () => createRoom(setup, ROOM_LIMIT_TICKS);
     const corrupt = (at: number, value: number): DataView => {
       const copy = new Uint8Array(bytes);

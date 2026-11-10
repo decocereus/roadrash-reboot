@@ -16,9 +16,12 @@ export const FIGHT_PROBE = `(() => {
     const { confirm, predict, writeInputs } = client;
     const own = new Map();
     const was = [];
-    client.predict = (control) => {
-      const went = predict(control);
-      if (went) { own.set(client.predicted.tick, control); }
+    const plannedThrough = () => (client.plannedThrough ? client.plannedThrough() : client.predicted.tick);
+    client.predict = (control, delay) => {
+      const plannedBefore = plannedThrough();
+      const went = predict(control, delay);
+      const planned = plannedThrough();
+      if (went && planned > plannedBefore) { own.set(planned, control); }
       return went;
     };
     client.writeInputs = (view) => {

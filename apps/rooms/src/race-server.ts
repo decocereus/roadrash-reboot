@@ -75,6 +75,8 @@ const note = (line: RoomNote): void => {
   console.log(JSON.stringify(line));
 };
 
+const MOST_WAITING_SAVES = 256;
+
 const TRACE_URL = "https://www.cloudflare.com/cdn-cgi/trace";
 const TRACE_TIMEOUT_MS = 3000;
 
@@ -144,7 +146,7 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
     const tapes = yield* Cloudflare.R2.WriteBucket(RaceTapes);
     const opens = yield* gateLimiter("open");
     return Effect.gen(function* raceServerInstance() {
-      const saves = yield* Queue.unbounded<TapeSave>();
+      const saves = yield* Queue.dropping<TapeSave>(MOST_WAITING_SAVES);
       yield* Queue.take(saves).pipe(
         Effect.flatMap(({ body, key, saved }) =>
           tapes.put(key, body).pipe(
@@ -212,7 +214,9 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
               Queue.offerUnsafe(writes, { key: MEMORY_KEY, value: memory });
             },
             saveTape: (key, body, saved) => {
-              Queue.offerUnsafe(saves, { body, key, saved });
+              if (!Queue.offerUnsafe(saves, { body, key, saved })) {
+                note({ key, kind: "tapeLost" });
+              }
             },
           }),
           roomKindOf(roomId),

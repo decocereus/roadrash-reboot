@@ -356,7 +356,7 @@ const frameWork = (): void => {
       }
     }
     sameFrame(left, right);
-    frameTally.frameDrawn(index * FRAME_MS, 0, index);
+    frameTally.frameDrawn(index * FRAME_MS, 0, index, 1, 0, 0, 0, 0);
   }
 };
 

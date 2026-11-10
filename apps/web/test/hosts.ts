@@ -31,6 +31,7 @@ const scriptedInput = (tick: number, input: RiderInput): void => {
 export interface HostOptions {
   readonly dpr?: number;
   readonly gpu?: string;
+  readonly pace?: number;
   readonly pinnedPixelRatio?: number;
   readonly pinnedPreset?: PresetId;
   readonly pinnedRefresh?: number;
@@ -235,6 +236,7 @@ export const createHost = (options: HostOptions = {}): Host => {
     frame,
     halted,
     noteDisplay: bound.noteDisplay,
+    pace: () => options.pace ?? 1,
     player: () => player,
     quality,
     recorder,

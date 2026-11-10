@@ -7,8 +7,9 @@ export interface LatencySummary {
 }
 
 export interface InputLatency {
-  readonly controlChanged: () => void;
+  readonly controlChanged: (appliesAt: number) => void;
   readonly pressed: () => void;
+  readonly reached: (tick: number) => void;
   readonly summary: () => LatencySummary;
 }
 
@@ -18,22 +19,32 @@ export const createInputLatency = (
 ): InputLatency => {
   const samples: number[] = [];
   let pressedAt: number | null = null;
+  let sampledFrom: number | null = null;
+  let sampledTick = 0;
   return {
-    controlChanged: () => {
+    controlChanged: (appliesAt) => {
       if (pressedAt === null) {
         return;
       }
       const from = pressedAt;
       pressedAt = null;
-      if (now() - from > STALE_PRESS_MS) {
-        return;
+      if (sampledFrom === null && now() - from <= STALE_PRESS_MS) {
+        sampledFrom = from;
+        sampledTick = appliesAt;
       }
-      afterFrame(() => {
-        samples.push(now() - from);
-      });
     },
     pressed: () => {
       pressedAt ??= now();
+    },
+    reached: (tick) => {
+      if (sampledFrom === null || tick < sampledTick) {
+        return;
+      }
+      const from = sampledFrom;
+      sampledFrom = null;
+      afterFrame(() => {
+        samples.push(now() - from);
+      });
     },
     summary: () => {
       const sorted = samples.toSorted((left, right) => left - right);

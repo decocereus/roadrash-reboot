@@ -6,6 +6,7 @@ import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem";
 import {
   riderTraceName,
   TRACE_ROW_FIELDS,
+  TRACE_VERSION,
   TraceField,
 } from "@racer/rooms/tape";
 import * as Console from "effect/Console";
@@ -47,7 +48,12 @@ const steadyRows = (count: number, changes: readonly Change[]): number[] =>
     return values;
   }).flat();
 
-const browser = { build: "abc", gpu: "Test GPU", graphics: "quality rung 1" };
+const browser = {
+  build: "abc",
+  gpu: "Test GPU",
+  graphics: "quality rung 1",
+  version: TRACE_VERSION,
+} as const;
 
 const report = traceReport(
   [
@@ -73,7 +79,7 @@ const report = traceReport(
 describe("the trace report", () => {
   it("names each browser and separates a frozen browser's tick gap from the link's", () => {
     expect(report).toContain(
-      "Rider 0: build abc, Test GPU, quality rung 1. Browser stalls in 1 s, missed controls in 1 s. Raced 0:11."
+      "Rider 0: build abc, Test GPU, quality rung 1. Browser stalls in 1 s, missed controls in 1 s, slowed or surged in 0 s. Raced 0:11."
     );
     expect(report).toContain(
       "Of 2 rows with a gap of 100 ms or more, 1 while the browser froze, 0 on the link with a round-trip spike, 0 on the link with a steady round trip, and 1 on the link with no round trip measured."
@@ -88,10 +94,31 @@ describe("the trace report", () => {
 
   it("lists only the bad seconds, on the race's clock, for every rider", () => {
     expect(report).toContain(
-      "0:02  rider 0 frame 16 ms, tick gap 300 ms, round trip 0 ms, held 0, doubled 0, missed 5, late 1 | rider 1 frame 16 ms, tick gap 17 ms, round trip 0 ms, held 0, doubled 0, missed 3, late 0"
+      "0:02  rider 0 frame 16 ms, tick gap 300 ms, round trip 0 ms, slowed 0 ms, surged 0, missed 5, late 1 | rider 1 frame 16 ms, tick gap 17 ms, round trip 0 ms, slowed 0 ms, surged 0, missed 3, late 0"
     );
     expect(report).toContain("0:10  rider 0 frame 200 ms");
     expect(report).not.toContain("0:01  ");
+  });
+
+  it("lists a second whose frames ran slowed or surged with nothing else wrong", () => {
+    const slowed = row(3, 16, 17);
+    slowed[TraceField.slowedMs] = 200;
+    const surged = row(6, 16, 17);
+    surged[TraceField.surgedFrames] = 4;
+    const offPace = traceReport(
+      [
+        {
+          rider: 0,
+          trace: { ...browser, connections: [[...slowed, ...surged]] },
+        },
+      ],
+      { rows: [] }
+    );
+    expect(offPace).toContain(
+      "0:03  rider 0 frame 16 ms, tick gap 17 ms, round trip 0 ms, slowed 200 ms"
+    );
+    expect(offPace).toContain("surged 4, missed 0");
+    expect(offPace).toContain("slowed or surged in 2 s.");
   });
 
   it("places a stall by the browser's clock while no ticks are arriving", () => {
@@ -224,7 +251,7 @@ describe("the stall report", () => {
       "3 riders in 2 races raced 3:00 in all. Link gaps of 100 ms or more took under 1.00% of the race for 2 of 3 riders. Their share was 0.83% at the median, 2.00% at the 90th percentile and 2.00% at worst. Over all racing, tick gaps of 50, 100, 150, 250, and 500 ms or more took 1.22%, 1.22%, 1.22%, 1.00%, and 0.67% of the time. Gaps of 100 ms or more split into 0.00% while the browser froze, 0.67% on the link with a round-trip spike, 0.00% on the link with a steady round trip, and 0.56% on the link with no round trip measured."
     );
     expect(text).toContain(
-      "Skipped race-old: rider-0.trace.json is not a browser trace."
+      "Skipped race-old: rider-0.trace.json is not a version 2 browser trace, so an older build wrote its columns."
     );
   });
 
@@ -241,7 +268,7 @@ describe("the stall report", () => {
       Effect.runPromise
     );
     expect(failure.message).toContain(
-      "Skipped race-old: rider-0.trace.json is not a browser trace."
+      "Skipped race-old: rider-0.trace.json is not a version 2 browser trace, so an older build wrote its columns."
     );
   });
 });

@@ -23,6 +23,7 @@ import { createHost } from "../src/host.ts";
 import { humanNames, seatedCount } from "../src/manifest.ts";
 import { SEAT_CLOSED, SEAT_SILENT } from "../src/messages.ts";
 import { ticksOf } from "../src/room-config.ts";
+import { TRACE_VERSION } from "../src/tape.ts";
 import {
   nearby,
   sameBuild,
@@ -364,7 +365,13 @@ describe("a room host", () => {
     host.message(socket, stats);
     host.message(
       socket,
-      JSON.stringify({ build: "abc", gpu: "g", graphics: "q", rows: [] })
+      JSON.stringify({
+        build: "abc",
+        gpu: "g",
+        graphics: "q",
+        rows: [],
+        version: TRACE_VERSION,
+      })
     );
     clock.advance(6000);
     expect({

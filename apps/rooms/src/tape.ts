@@ -35,15 +35,16 @@ export const tapePartName = (part: number): string =>
 export const tapeKey = (raceId: string, name: string): string =>
   `tapes/${raceId}/${name}`;
 
+export const TRACE_VERSION = 2;
 export const TRACE_ROW_MS = 250;
 export const MOST_TRACE_ROWS = 2400;
 const MOST_BROWSER_TEXT = 120;
 
 export const TraceField = {
   atMs: 0,
-  doubled: 1,
   frames: 2,
-  held: 3,
+  slowedMs: 3,
+  surgedFrames: 1,
   tick: 4,
   ticksHeard: 5,
   worstFrameMs: 6,
@@ -78,6 +79,7 @@ const TraceRows = Schema.Array(
 export const BrowserTraceSchema = Schema.Struct({
   ...SeatBrowserSchema.fields,
   rows: TraceRows.check(Schema.isMaxLength(MOST_TRACE_ROW_VALUES)),
+  version: Schema.Literal(TRACE_VERSION),
 });
 
 export type BrowserTrace = typeof BrowserTraceSchema.Type;
@@ -85,6 +87,7 @@ export type BrowserTrace = typeof BrowserTraceSchema.Type;
 export const RiderTraceSchema = Schema.Struct({
   ...SeatBrowserSchema.fields,
   connections: Schema.Array(TraceRows),
+  version: Schema.Literal(TRACE_VERSION),
 });
 
 export type RiderTraceFile = typeof RiderTraceSchema.Type;
