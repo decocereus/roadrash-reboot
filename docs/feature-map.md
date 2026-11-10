@@ -1513,8 +1513,6 @@ Source files:
 - `apps/rooms/src/host-memory.ts`
 - `apps/rooms/src/host-phase.ts`
 - `apps/rooms/src/host.ts`
-- `apps/rooms/src/host.ts`
-- `apps/rooms/src/host.ts`
 - `apps/rooms/src/input-latency.ts`
 - `apps/rooms/src/limiter.ts`
 - `apps/rooms/src/lobby.ts`
@@ -1530,8 +1528,6 @@ Source files:
 - `apps/rooms/src/race-build.ts`
 - `apps/rooms/src/race-seat.ts`
 - `apps/rooms/src/race-server.ts`
-- `apps/rooms/src/race-server.ts`
-- `apps/rooms/src/race-server.ts`
 - `apps/rooms/src/race-tally.ts`
 - `apps/rooms/src/refused-seat.ts`
 - `apps/rooms/src/room-config.ts`
@@ -1541,8 +1537,6 @@ Source files:
 - `apps/rooms/src/room-run.ts`
 - `apps/rooms/src/room-status.ts`
 - `apps/rooms/src/route.ts`
-- `apps/rooms/src/seat-client.ts`
-- `apps/rooms/src/seat-client.ts`
 - `apps/rooms/src/seat-client.ts`
 - `apps/rooms/src/sim-fingerprint.ts`
 - `apps/rooms/src/socket-budget.ts`
@@ -1560,18 +1554,12 @@ Source files:
 - `apps/web/src/room-handoff.ts`
 - `packages/career/src/room-race.ts`
 - `packages/sim/src/room-client.ts`
-- `packages/sim/src/room-client.ts`
-- `packages/sim/src/room-client.ts`
 - `packages/sim/src/room-clock.ts`
 - `packages/sim/src/room-frame.ts`
 - `packages/sim/src/room-hits.ts`
 - `packages/sim/src/room-pace.ts`
 - `packages/sim/src/room-tape.ts`
-- `packages/sim/src/room-tape.ts`
-- `packages/sim/src/room-tape.ts`
 - `packages/sim/src/room-wire.ts`
-- `packages/sim/src/room.ts`
-- `packages/sim/src/room.ts`
 - `packages/sim/src/room.ts`
 - `tools/rooms/compare.ts`
 - `tools/rooms/fights.ts`
@@ -1636,8 +1624,7 @@ Test files:
 - `apps/rooms/test/room-lifecycle.test.ts`
 - `apps/rooms/test/room-run.test.ts`
 - `apps/rooms/test/route.test.ts`
-- `apps/rooms/test/seat-client.test.ts`
-- `apps/rooms/test/seat-client.test.ts`
+- `apps/rooms/test/seat-catch-up.test.ts`
 - `apps/rooms/test/seat-client.test.ts`
 - `apps/rooms/test/seat-phases.test.ts`
 - `apps/rooms/test/seat-socket.ts`
