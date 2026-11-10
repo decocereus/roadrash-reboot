@@ -536,6 +536,10 @@ export default defineConfig({
       rules: { "rushline/player-copy": "error" },
     },
     {
+      files: ["apps/web/src/**/*.{ts,tsx}"],
+      rules: { "rushline/no-page-move": "error" },
+    },
+    {
       files: ["apps/web/src/game/**/*.ts"],
       rules: {
         "rushline/no-distance-hide": "error",
