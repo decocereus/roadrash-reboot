@@ -36,6 +36,7 @@ import {
   raced,
   racing,
   readySave,
+  ROOM_ID,
   roomLobby,
   roomResult,
   rulesFailed,
@@ -185,6 +186,14 @@ describe("the bar", () => {
     expect(walk(invite, LEFT).at).toStrictEqual(home);
   });
 
+  it("remembers the room an invite was joined in, so a refresh in its lobby is no invite", () => {
+    expect(stepNavigation(invite, { kind: "joined" })).toStrictEqual({
+      effect: { kind: "rememberRoom", roomId: ROOM_ID },
+      state: roomLobby,
+    });
+    expect(walk(invite, LEFT).effects).toStrictEqual([]);
+  });
+
   it("opens Garage and Settings from every panel and keeps the panel under them", () => {
     for (const view of panels) {
       for (const tab of barTabs) {
@@ -303,6 +312,46 @@ describe("leaving each screen", () => {
       effects: ["beginCareer"],
       trail: ["bar/home"],
     });
+  });
+
+  it("begins a career for a first-time rider who turns down a friend's invite", () => {
+    expect(
+      walk(
+        firstView(),
+        entered(rulesReady, EMPTY, linkVisit, false, true),
+        leftWith(EMPTY),
+        entered(rulesReady, readySave(fresh))
+      )
+    ).toStrictEqual({
+      at: home,
+      effects: ["beginCareer"],
+      trail: ["bar/invite", "bar/home", "bar/home"],
+    });
+  });
+
+  it("begins a career when Start over empties a damaged save in Ride solo", () => {
+    expect(
+      walk(
+        firstView(),
+        entered(rulesReady, CORRUPT),
+        { kind: "picked", panel: "solo" },
+        entered(rulesReady, EMPTY),
+        entered(rulesReady, readySave(fresh))
+      )
+    ).toStrictEqual({
+      at: solo,
+      effects: ["beginCareer"],
+      trail: ["bar/home", "bar/solo", "bar/solo", "bar/solo"],
+    });
+  });
+
+  it("begins no career in a room while the save is empty", () => {
+    for (const view of [invite, roomLobby]) {
+      expect(stepNavigation(view, entered(rulesReady, EMPTY))).toStrictEqual({
+        effect: null,
+        state: view,
+      });
+    }
   });
 });
 

@@ -94,9 +94,9 @@ export type NavigationEvent =
   | { readonly kind: "ridePicked"; readonly entry: RaceEntry }
   | { readonly kind: "raceBegun"; readonly plan: RacePlan };
 
-interface NavigationEffect {
-  readonly kind: "beginCareer";
-}
+type NavigationEffect =
+  | { readonly kind: "beginCareer" }
+  | { readonly kind: "rememberRoom"; readonly roomId: string };
 
 type NavigationStep = Step<View, NavigationEffect>;
 
@@ -204,6 +204,15 @@ export const raceAgainOffered = (
 
 const to = (state: View): NavigationStep => ({ effect: null, state });
 
+const beginCareer: NavigationEffect = { kind: "beginCareer" };
+
+const careerFor = (state: View, save: SaveState): NavigationStep =>
+  state.screen === "bar" &&
+  panelAddressOf(state.panel) === null &&
+  save.status === "empty"
+    ? { effect: beginCareer, state }
+    : to(state);
+
 const lobbyAt = (from: View, visit: RoomVisit): BarView => {
   const lobby: BarPanel = {
     kind: "lobby",
@@ -286,7 +295,7 @@ const enteringFrom = (
       return to(elsewhere);
     }
     case "empty": {
-      return { effect: { kind: "beginCareer" }, state: view };
+      return { effect: beginCareer, state: view };
     }
     default: {
       return save satisfies never;
@@ -298,7 +307,9 @@ const entering = (
   view: View,
   event: Extract<NavigationEvent, { kind: "entered" }>
 ): NavigationStep =>
-  view.screen === "boot" ? enteringFrom(view, event) : to(view);
+  view.screen === "boot"
+    ? enteringFrom(view, event)
+    : careerFor(view, event.save);
 
 const homeFrom = (save: SaveState): NavigationStep => {
   switch (save.status) {
@@ -312,7 +323,7 @@ const homeFrom = (save: SaveState): NavigationStep => {
       return to(elsewhere);
     }
     case "empty": {
-      return { effect: { kind: "beginCareer" }, state: home };
+      return careerFor(home, save);
     }
     default: {
       return save satisfies never;
@@ -348,14 +359,12 @@ const barLeft = (view: BarView, save: SaveState): NavigationStep => {
   }
   switch (view.panel.kind) {
     case "home": {
-      return to(view);
+      return careerFor(view, save);
     }
     case "finding":
     case "invite":
+    case "lobby":
     case "solo": {
-      return to(home);
-    }
-    case "lobby": {
       return homeFrom(save);
     }
     default: {
@@ -395,10 +404,17 @@ const leaving = (view: View, save: SaveState): NavigationStep => {
 const inBar = (view: View, change: (bar: BarView) => View): View =>
   view.screen === "bar" ? change(view) : view;
 
-const joining = (bar: BarView): View =>
-  bar.panel.kind === "invite"
-    ? lobbyAt(bar, { arrival: "link", rejoin: null, roomId: bar.panel.roomId })
-    : bar;
+const joining = (view: View): NavigationStep =>
+  view.screen === "bar" && view.panel.kind === "invite"
+    ? {
+        effect: { kind: "rememberRoom", roomId: view.panel.roomId },
+        state: lobbyAt(view, {
+          arrival: "link",
+          rejoin: null,
+          roomId: view.panel.roomId,
+        }),
+      }
+    : to(view);
 
 const picking = (bar: BarView, panel: "solo" | "finding"): View =>
   bar.panel.kind === "home" || bar.panel.kind === "solo"
@@ -432,7 +448,7 @@ export const stepNavigation = (
       return entering(view, event);
     }
     case "joined": {
-      return to(inBar(view, joining));
+      return joining(view);
     }
     case "left": {
       return leaving(view, event.save);

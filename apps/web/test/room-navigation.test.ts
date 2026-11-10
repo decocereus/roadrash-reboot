@@ -214,7 +214,7 @@ describe("one page load", () => {
     }
   });
 
-  it("leaves every room screen with no effect but a new career", () => {
+  it("leaves every room screen with no effect but a new career or the joined room kept", () => {
     const roomScreens = views.filter((view) => roomAddressOf(view) !== null);
     const effects = new Set(
       roomScreens.flatMap((view) =>
@@ -224,6 +224,6 @@ describe("one page load", () => {
         })
       )
     );
-    expect([...effects]).toStrictEqual(["beginCareer"]);
+    expect([...effects]).toStrictEqual(["beginCareer", "rememberRoom"]);
   });
 });

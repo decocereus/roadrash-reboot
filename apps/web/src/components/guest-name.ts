@@ -1,6 +1,6 @@
 const GUEST_NAME_KEY = "rushline.guestName.v1";
 const MEMBER_KEY = "rushline.memberKey.v1";
-const LAST_RACE_KEY = "rushline.lastRaceRoom.v1";
+const LAST_ROOM_KEY = "rushline.lastRaceRoom.v1";
 
 let typedName: string | null = null;
 
@@ -39,18 +39,18 @@ export const storeGuestName = (name: string): boolean => {
   return kept;
 };
 
-export const rememberRaceRoom = (roomId: string): boolean => {
+export const rememberRoom = (roomId: string): boolean => {
   try {
-    globalThis.localStorage.setItem(LAST_RACE_KEY, roomId);
+    globalThis.localStorage.setItem(LAST_ROOM_KEY, roomId);
     return true;
   } catch {
     return false;
   }
 };
 
-export const racedIn = (roomId: string): boolean => {
+export const joinedRoom = (roomId: string): boolean => {
   try {
-    return globalThis.localStorage.getItem(LAST_RACE_KEY) === roomId;
+    return globalThis.localStorage.getItem(LAST_ROOM_KEY) === roomId;
   } catch {
     return false;
   }

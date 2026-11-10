@@ -42,7 +42,7 @@ import type { NavigationEvent, RoomVisit, View } from "../navigation.ts";
 import type { PrepareOutcome } from "../prepare-outcome.ts";
 import { loadRaceRules } from "../rules/load.ts";
 import type { RulesLoad } from "../rules/load.ts";
-import { racedIn } from "./guest-name.ts";
+import { joinedRoom, rememberRoom } from "./guest-name.ts";
 import { roomArrivalOf, showAddress } from "./room-url.ts";
 import { useHandoff } from "./use-handoff.ts";
 
@@ -309,9 +309,25 @@ export const useFlow = (): Flow => {
     gameRef,
     ready,
   } = useGame(canvasRef, eventsRef);
-  const { send, state: view } = useHandoff(stepNavigation, firstView, () => {
-    commit(freshCareer(randomUnit()));
-  });
+  const { send, state: view } = useHandoff(
+    stepNavigation,
+    firstView,
+    (effect) => {
+      switch (effect.kind) {
+        case "beginCareer": {
+          commit(freshCareer(randomUnit()));
+          break;
+        }
+        case "rememberRoom": {
+          rememberRoom(effect.roomId);
+          break;
+        }
+        default: {
+          effect satisfies never;
+        }
+      }
+    }
+  );
   const failure =
     rulesLoad?.status === "failed" ? rulesLoad.failure.message : gameFailure;
   const career = save.status === "ready" ? save.career : null;
@@ -319,7 +335,7 @@ export const useFlow = (): Flow => {
     const room = roomOf(globalThis.location.search);
     send({
       invited:
-        room !== null && room.arrival === "link" && !racedIn(room.roomId),
+        room !== null && room.arrival === "link" && !joinedRoom(room.roomId),
       kind: "entered",
       room,
       rules: rulesLoad,

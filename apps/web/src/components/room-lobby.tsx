@@ -32,7 +32,7 @@ import type { RoomEvent, RoomHandoff } from "../room-handoff.ts";
 import { LobbyPart } from "./bar-lobby.tsx";
 import {
   memberKey,
-  rememberRaceRoom,
+  rememberRoom,
   storedGuestName,
   watchGuestName,
 } from "./guest-name.ts";
@@ -119,7 +119,7 @@ const planOf = (seat: RoomSeat, roomId: string): RacePlan | null => {
       requestAnimationFrame(done);
     }
   );
-  rememberRaceRoom(roomId);
+  rememberRoom(roomId);
   const room = createRoomRun(seat, race, roomId, latency);
   Reflect.set(globalThis, "__rushlineRoom", {
     client: race.client,
