@@ -337,6 +337,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
     owns: [
       "apps/web/src/components/screens/**",
       "apps/web/test/bar-nav.test.tsx",
+      "apps/web/test/escape-layers.test.ts",
       "apps/web/test/career-screens.test.tsx",
       "apps/web/src/components/game-shell.tsx",
       "apps/web/src/components/use-flow.ts",
