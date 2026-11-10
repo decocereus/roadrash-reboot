@@ -1,3 +1,4 @@
+import { Result } from "@racer/career/save-values";
 import * as Schema from "effect/Schema";
 
 import type { Replay } from "./pilot-replay.ts";
@@ -7,7 +8,7 @@ const replaySet = Schema.Array(
     final: Schema.String,
     full: Schema.String,
     id: Schema.String,
-    result: Schema.NullOr(Schema.String),
+    result: Schema.NullOr(Result),
     ticks: Schema.Number,
     window: Schema.String,
   })
