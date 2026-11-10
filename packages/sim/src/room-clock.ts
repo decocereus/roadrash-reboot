@@ -64,6 +64,7 @@ export interface RoomClock {
   readonly pace: (predictedTick: number, now: number) => number;
   readonly silentMs: (now: number) => number;
   readonly silenced: (now: number) => boolean;
+  readonly stopped: (now: number) => boolean;
   readonly target: (now: number) => number;
   readonly stepsDue: (
     predictedTick: number,
@@ -268,6 +269,7 @@ export const createRoomClock = (): RoomClock => {
       target(now) <= 0 || predictedTick - confirmedTick >= INPUT_HORIZON
         ? 0
         : 1,
+    stopped: (now) => silentShare(now) === 0,
     target,
   };
 };

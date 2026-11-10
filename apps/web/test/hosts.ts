@@ -15,6 +15,8 @@ import type { InputHost, KeyEvent, Pad } from "../src/game/input.ts";
 import { bindQuality, createQuality } from "../src/game/presets.ts";
 import type { Quality, QualityRenderer } from "../src/game/presets.ts";
 import type { Profiler } from "../src/game/profile.ts";
+import { createHudFeed, idleHud } from "../src/hud-feed.ts";
+import type { HudFeed } from "../src/hud-feed.ts";
 import { hasherFor } from "./race-hash.ts";
 
 export const VSYNC_MS = 1000 / 60;
@@ -54,6 +56,7 @@ interface Seen {
 export interface Host {
   readonly canvas: { clientHeight: number; clientWidth: number };
   readonly digests: string[];
+  readonly feed: HudFeed;
   readonly frame: FrameLoop;
   readonly quality: Quality;
   readonly run: RaceRun;
@@ -63,6 +66,7 @@ export interface Host {
   readonly halt: (halted: boolean) => void;
   readonly resize: () => void;
   readonly setDpr: (dpr: number) => void;
+  readonly stall: (leftMs: number | null) => void;
 }
 
 const recordingProfiler = (seen: Seen): Profiler => ({
@@ -148,6 +152,8 @@ export const createHost = (options: HostOptions = {}): Host => {
   };
   const canvas = { clientHeight: 720, clientWidth: 1280, height: 0, width: 0 };
   const control = { dpr: options.dpr ?? 1, halted: false };
+  let stallLeftMs: number | null = null;
+  const feed = createHudFeed();
   const loops: ((now: number) => void)[] = [];
   const renderer = {
     info: {
@@ -236,17 +242,19 @@ export const createHost = (options: HostOptions = {}): Host => {
     frame,
     halted,
     noteDisplay: bound.noteDisplay,
-    pace: () => options.pace ?? 1,
+    pace: () => (stallLeftMs === null ? (options.pace ?? 1) : 0),
     player: () => player,
     quality,
     recorder,
     renderer,
     report: () => {
       seen.reports += 1;
+      feed.write({ ...idleHud, stallLeftMs });
     },
     skipsVsync: bound.skipsVsync,
     sound: options.sounded === true ? heardSound(seen) : quietSound(seen),
     stage: { race: run },
+    stalled: () => stallLeftMs !== null,
     throttleHeard: () => true,
     tick,
   });
@@ -258,6 +266,7 @@ export const createHost = (options: HostOptions = {}): Host => {
     },
     canvas,
     digests,
+    feed,
     frame,
     frameRate: bound.applyFrameRate,
     halt: (next) => {
@@ -269,6 +278,9 @@ export const createHost = (options: HostOptions = {}): Host => {
     seen,
     setDpr: (next) => {
       control.dpr = next;
+    },
+    stall: (leftMs) => {
+      stallLeftMs = leftMs;
     },
   };
 };

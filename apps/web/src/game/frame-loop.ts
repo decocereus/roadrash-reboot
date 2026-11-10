@@ -32,6 +32,7 @@ export interface FrameLoop {
   accumulator: number;
   clockReset: boolean;
   hudClock: number;
+  hudStalled: boolean;
   lastGear: number;
   last: number;
 }
@@ -55,6 +56,7 @@ export const frameLoopOf = (
   },
   frameId: 0,
   hudClock: 0,
+  hudStalled: false,
   last: 0,
   lastGear: 1,
   meter: null,
@@ -154,6 +156,7 @@ interface LoopParts {
   readonly skipsVsync: (now: number) => boolean;
   readonly sound: Pick<Sound, "drive" | "shift">;
   readonly stage: Pick<Stage, "race">;
+  readonly stalled: () => boolean;
   readonly throttleHeard: () => boolean;
   readonly tick: () => void;
 }
@@ -175,6 +178,7 @@ export const installFrameLoop = ({
   skipsVsync,
   sound,
   stage,
+  stalled,
   throttleHeard,
   tick,
 }: LoopParts): void => {
@@ -227,7 +231,7 @@ export const installFrameLoop = ({
       frame.meter.frame(sample);
     }
     feedback.noticeLeft -= seconds;
-    advanceHud(frame, seconds, report);
+    advanceHud(frame, seconds, stalled(), report);
     if (frame.profiler) {
       frameEnd.discarded = discarded;
       frameEnd.drawnEpoch = quality.drawnEpoch;

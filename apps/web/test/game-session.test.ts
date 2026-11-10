@@ -76,6 +76,7 @@ const roomPlan = (countdownSeconds: () => number = () => 3): RacePlan => {
     },
     riderColours: new Map(),
     roomId: "test-room",
+    stallLeftMs: () => null,
     step,
     stepsDue: () => 1,
     takeCorrections: () => [],
