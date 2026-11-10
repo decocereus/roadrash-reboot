@@ -1,7 +1,6 @@
 export const ordinaryRiders = [
   {
     art: {
-      bill: "clubhouse/bills/juno-kade.webp",
       figure: "clubhouse/rivals/juno-kade.webp",
     },
     game: {
@@ -25,12 +24,10 @@ export const ordinaryRiders = [
       youBeatThem:
         "Enjoy it. Frame something. I'll be back to normal by Thursday.",
     },
-    pronouns: "hers",
     shortName: "Juno",
   },
   {
     art: {
-      bill: "clubhouse/bills/ruth-ann-bixby.webp",
       figure: "clubhouse/rivals/ruth-ann-bixby.webp",
     },
     game: {
@@ -52,12 +49,10 @@ export const ordinaryRiders = [
       taunt: "I've seen heifers take a corner cleaner than you.",
       youBeatThem: "Well. Even a blind sow finds an acorn.",
     },
-    pronouns: "hers",
     shortName: "Ruth Ann",
   },
   {
     art: {
-      bill: "clubhouse/bills/dee-santangelo.webp",
       figure: "clubhouse/rivals/dee-santangelo.webp",
     },
     game: {
@@ -81,12 +76,10 @@ export const ordinaryRiders = [
       youBeatThem:
         "Fine. You win. I'm still getting a one-star review because of you.",
     },
-    pronouns: "hers",
     shortName: "Dee",
   },
   {
     art: {
-      bill: "clubhouse/bills/ines-marchetti.webp",
       figure: "clubhouse/rivals/ines-marchetti.webp",
     },
     game: {
@@ -111,12 +104,10 @@ export const ordinaryRiders = [
         "I was left at the altar by a man named Kevin. You look like a Kevin.",
       youBeatThem: "Fine. Throw the bouquet. Throw it at your own face.",
     },
-    pronouns: "hers",
     shortName: "Ines",
   },
   {
     art: {
-      bill: "clubhouse/bills/mags-dunleavy.webp",
       figure: "clubhouse/rivals/mags-dunleavy.webp",
     },
     game: {
@@ -142,12 +133,10 @@ export const ordinaryRiders = [
       youBeatThem:
         "Not bad. Your clutch sounds like a goose with a cough, though.",
     },
-    pronouns: "hers",
     shortName: "Mags",
   },
   {
     art: {
-      bill: "clubhouse/bills/lyle-gorski.webp",
       figure: "clubhouse/rivals/lyle-gorski.webp",
     },
     game: {
@@ -172,12 +161,10 @@ export const ordinaryRiders = [
       youBeatThem:
         "This doesn't go in the report. There is no report. I'm not a deputy anymore.",
     },
-    pronouns: "his",
     shortName: "Lyle",
   },
   {
     art: {
-      bill: "clubhouse/bills/tristan-lux.webp",
       figure: "clubhouse/rivals/tristan-lux.webp",
     },
     game: {
@@ -201,12 +188,10 @@ export const ordinaryRiders = [
       youBeatThem:
         "Chat, that was a sponsored loss. Use code CRASH for ten percent off.",
     },
-    pronouns: "his",
     shortName: "Tristan",
   },
   {
     art: {
-      bill: "clubhouse/bills/coach-dale-hutto.webp",
       figure: "clubhouse/rivals/coach-dale-hutto.webp",
     },
     game: {
@@ -231,12 +216,10 @@ export const ordinaryRiders = [
       youBeatThem:
         "Failure is just success that hasn't been invoiced yet. Tape six, side B.",
     },
-    pronouns: "his",
     shortName: "Coach",
   },
   {
     art: {
-      bill: "clubhouse/bills/smoke-fuel.webp",
       figure: "clubhouse/rivals/moose-kowalczyk.webp",
     },
     game: {
@@ -260,12 +243,10 @@ export const ordinaryRiders = [
         "Hello. I'm going to hit you with this club. I wanted to say hello first.",
       youBeatThem: "You were very fast. I'll be faster after a sandwich.",
     },
-    pronouns: "his",
     shortName: "Moose",
   },
   {
     art: {
-      bill: "clubhouse/bills/gus-abernathy.webp",
       figure: "clubhouse/rivals/gus-abernathy.webp",
     },
     game: {
@@ -288,12 +269,10 @@ export const ordinaryRiders = [
       youBeatThem:
         "Back in my day the road was shorter. And I was faster. And it was uphill.",
     },
-    pronouns: "his",
     shortName: "Gus",
   },
   {
     art: {
-      bill: "clubhouse/bills/benny-okafor.webp",
       figure: "clubhouse/rivals/benny-okafor.webp",
     },
     game: {
@@ -317,12 +296,10 @@ export const ordinaryRiders = [
         "I'll be singing the whole way. You'll know where I am. You won't catch up.",
       youBeatThem: "Fine. Encore next week. Bring a bike this time.",
     },
-    pronouns: "his",
     shortName: "Benny",
   },
   {
     art: {
-      bill: "clubhouse/bills/wanda-pruitt.webp",
       figure: "clubhouse/rivals/wanda-pruitt.webp",
     },
     game: {
@@ -345,12 +322,10 @@ export const ordinaryRiders = [
       taunt: "Today's forecast: you, behind me, with a chance of gravel.",
       youBeatThem: "An unexpected front. I'll be issuing an apology at six.",
     },
-    pronouns: "hers",
     shortName: "Wanda",
   },
   {
     art: {
-      bill: "clubhouse/bills/orrin-blackwell.webp",
       figure: "clubhouse/rivals/orrin-blackwell.webp",
     },
     game: {
@@ -376,12 +351,10 @@ export const ordinaryRiders = [
       youBeatThem:
         "The wild is unpredictable. So are you, apparently. Cut that bit.",
     },
-    pronouns: "his",
     shortName: "Orrin",
   },
   {
     art: {
-      bill: "clubhouse/bills/agnes-mulcahy.webp",
       figure: "clubhouse/rivals/agnes-mulcahy.webp",
     },
     game: {
@@ -405,12 +378,10 @@ export const ordinaryRiders = [
       taunt: "I'll pray for you. From ahead. The reception's better up there.",
       youBeatThem: "Well done. Put something in the tin on your way out.",
     },
-    pronouns: "hers",
     shortName: "Agnes",
   },
   {
     art: {
-      bill: "clubhouse/bills/hollis-thorne.webp",
       figure: "clubhouse/rivals/hollis-thorne.webp",
     },
     game: {
@@ -434,12 +405,10 @@ export const ordinaryRiders = [
         "If you go off at the Saddle, stay with the bike. Makes you easier to find.",
       youBeatThem: "Good ride. Hydrate. I mean it, hydrate.",
     },
-    pronouns: "his",
     shortName: "Hollis",
   },
   {
     art: {
-      bill: "clubhouse/bills/felix-aurand.webp",
       figure: "clubhouse/rivals/felix-aurand.webp",
     },
     game: {
@@ -463,7 +432,6 @@ export const ordinaryRiders = [
       youBeatThem:
         "Congratulations. Here's my card. You'll need it eventually.",
     },
-    pronouns: "his",
     shortName: "Felix",
   },
 ] as const;

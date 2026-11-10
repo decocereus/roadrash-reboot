@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { cleanGuestName } from "../src/messages.ts";
+import { cleanGuestName } from "../src/guest-name.ts";
 
 describe("a guest's name", () => {
   it("keeps letters from any language, digits and plain marks", () => {

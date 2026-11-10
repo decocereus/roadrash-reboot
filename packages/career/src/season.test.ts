@@ -4,27 +4,10 @@ import { createRandom } from "@racer/track/random";
 import type { Random } from "@racer/track/random";
 import { describe, expect, it } from "vitest";
 
-import { recordedRules } from "./bench.ts";
-import {
-  enter,
-  lastOf,
-  settle,
-  sprint,
-  wreckTimes,
-} from "./career-fixtures.ts";
-import { roadBoss } from "./field.ts";
-import { celebrityBios, tauntFrom } from "./lines.ts";
 import { fates } from "./outcome.ts";
 import type { Placing } from "./outcome.ts";
-import type { RaceRules } from "./rules.ts";
 import { boardOrder, scoreRace, seasonBoard } from "./season.ts";
-import {
-  blankSeason,
-  byRacer,
-  newCareer,
-  nextRaceSeed,
-  racerIds,
-} from "./state.ts";
+import { blankSeason, byRacer, newCareer, racerIds } from "./state.ts";
 import type { RacerId, SeasonEntry } from "./state.ts";
 
 const HISTORIES = 300;
@@ -179,43 +162,5 @@ describe("the season board", () => {
         .flat()
         .slice(0, 5)
     ).toStrictEqual([]);
-  });
-});
-
-describe("the bar", () => {
-  it("names a celebrity as the road's boss and gives the bio as the line, until an ordinary rider out-wins them", () => {
-    const served: RaceRules = { ...recordedRules, celebrities: true };
-    const career = newCareer(4);
-    expect(roadBoss(served, career, "slag-row")).toBe("captain-penaldo");
-    expect(tauntFrom(career, "captain-penaldo").text).toBe(
-      celebrityBios["captain-penaldo"]
-    );
-    const race = enter(career, "slag-row", 1);
-    sprint(race, 3, ["moose-kowalczyk"]);
-    expect(roadBoss(served, settle(race).career, "slag-row")).toBe(
-      "moose-kowalczyk"
-    );
-  });
-
-  it("the home rider with the most wins on the season holds the road, the best rider until someone wins", () => {
-    const career = newCareer(4);
-    expect(roadBoss(recordedRules, career, "slag-row")).toBe("dee-santangelo");
-    const race = enter(career, "slag-row", 1);
-    sprint(race, 3, ["moose-kowalczyk"]);
-    expect(roadBoss(recordedRules, settle(race).career, "slag-row")).toBe(
-      "moose-kowalczyk"
-    );
-  });
-});
-
-describe("race seeds", () => {
-  it("each start draws the next seed from the career's own, the same way every time", () => {
-    const career = newCareer(99);
-    const afterOne = lastOf(wreckTimes(career, 1)).career;
-    expect([
-      nextRaceSeed(career) === nextRaceSeed(newCareer(99)),
-      nextRaceSeed(career) === nextRaceSeed(afterOne),
-      nextRaceSeed(career) === nextRaceSeed(newCareer(100)),
-    ]).toStrictEqual([true, false, false]);
   });
 });

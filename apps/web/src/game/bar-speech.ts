@@ -28,7 +28,6 @@ interface Speaking {
 export interface BarSpeech {
   readonly say: (line: BarLine, head: THREE.Vector3, time: number) => void;
   readonly ambient: (turn: number, head: THREE.Vector3, time: number) => void;
-  readonly reset: () => void;
   readonly update: (
     time: number,
     camera: THREE.Camera,
@@ -61,11 +60,6 @@ export const createSpeech = (tags: TagLayer): BarSpeech => {
         hushHead(head);
         line.head = head;
         line.until = time + AMBIENT_SECONDS;
-      }
-    },
-    reset() {
-      for (const speaking of every) {
-        speaking.until = 0;
       }
     },
     say(line, head, time) {

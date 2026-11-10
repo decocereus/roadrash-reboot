@@ -1,50 +1,10 @@
 import type { RivalIncidents } from "@racer/career/outcome";
-import type { BoardNote, RacerId } from "@racer/career/state";
-import { roads } from "@racer/career/tables";
-import { formatMoney } from "@racer/ui/components/money";
+import type { RacerId } from "@racer/career/state";
 
-import { pronouns, shortNames } from "./copy.ts";
-import { bikeName, kmMark, weaponLabel } from "./format.ts";
+import { shortNames } from "./copy.ts";
+import { kmMark, weaponLabel } from "./format.ts";
 
 const INCIDENT_LINES = 2;
-
-const racerName = (racer: RacerId): string =>
-  racer === "player" ? "You" : shortNames[racer];
-
-export const boardNote = (note: BoardNote): string => {
-  switch (note.kind) {
-    case "weaponWanted": {
-      return `${shortNames[note.rival]} wants ${pronouns[note.rival].their} ${weaponLabel(note.weapon)} back.`;
-    }
-    case "wentDown": {
-      return `${shortNames[note.rival]} went down at ${kmMark(note.km)} km on ${roads[note.roadId].name}. Ask ${pronouns[note.rival].them} about it.`;
-    }
-    case "knockedPlayerDown": {
-      return `${shortNames[note.rival]} put you down at ${kmMark(note.km)} km on ${roads[note.roadId].name}. Everybody saw.`;
-    }
-    case "photoFinish": {
-      return `Photo finish: ${racerName(note.winner)} by a wheel over ${racerName(note.loser)}.`;
-    }
-    case "busted": {
-      return `${shortNames[note.rival]}: busted on ${roads[note.roadId].name}. Fine ${formatMoney(note.fine)}.`;
-    }
-    case "newBike": {
-      return `New at the garage: ${bikeName(note.bikeId)}.`;
-    }
-    case "repossessed": {
-      return `The garage took the ${bikeName(note.bikeId)}. You ride the Gutter Pup now. Stay on it.`;
-    }
-    case "leftRace": {
-      return "You left a race. The bike didn't make it home.";
-    }
-    default: {
-      return note satisfies never;
-    }
-  }
-};
-
-export const signedByVic = (note: BoardNote): boolean =>
-  note.kind === "leftRace";
 
 export interface IncidentLine {
   readonly racer: RacerId;

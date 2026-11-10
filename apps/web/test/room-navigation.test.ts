@@ -7,11 +7,15 @@ import {
   ELSEWHERE,
   EMPTY,
   entered,
+  finding,
   fresh,
+  home,
   LEFT,
   leftWith,
+  invite,
   linkVisit,
   LOADING,
+  lobbyOf,
   racing,
   readySave,
   ROOM_ID,
@@ -35,7 +39,7 @@ describe("a room's race", () => {
   it("leaves results for the bar in place, with no page load", () => {
     expect(stepNavigation(roomResults, LEFT)).toStrictEqual({
       effect: null,
-      state: { screen: "clubhouse" },
+      state: home,
     });
   });
 
@@ -44,11 +48,7 @@ describe("a room's race", () => {
       stepNavigation(roomResults, { entry: toSingleRace, kind: "ridePicked" })
     ).toStrictEqual({
       effect: null,
-      state: {
-        screen: "room",
-        turn: 0,
-        visit: { arrival: "rematch", rejoin: null, roomId: ROOM_ID },
-      },
+      state: lobbyOf({ arrival: "rematch", rejoin: null, roomId: ROOM_ID }),
     });
   });
 
@@ -63,16 +63,12 @@ describe("a room's race", () => {
       ELSEWHERE,
     ].map((save) => walk(roomLobby, leftWith(save)));
     expect(homes).toStrictEqual([
-      { at: { screen: "clubhouse" }, effects: [], trail: ["clubhouse"] },
-      { at: { screen: "gameOver" }, effects: [], trail: ["gameOver"] },
-      {
-        at: { screen: "clubhouse" },
-        effects: ["beginCareer"],
-        trail: ["clubhouse"],
-      },
-      { at: { screen: "backRoom" }, effects: [], trail: ["backRoom"] },
-      { at: { screen: "backRoom" }, effects: [], trail: ["backRoom"] },
-      { at: { screen: "backRoom" }, effects: [], trail: ["backRoom"] },
+      { at: home, effects: [], trail: ["bar/home"] },
+      { at: home, effects: [], trail: ["bar/home"] },
+      { at: home, effects: ["beginCareer"], trail: ["bar/home"] },
+      { at: home, effects: [], trail: ["bar/home"] },
+      { at: home, effects: [], trail: ["bar/home"] },
+      { at: home, effects: [], trail: ["bar/home"] },
       { at: { screen: "elsewhere" }, effects: [], trail: ["elsewhere"] },
     ]);
   });
@@ -84,27 +80,20 @@ describe("a room's race", () => {
       { kind: "roomMoved", visit: moved },
       { kind: "roomMoved", visit: { ...moved, rejoin: "taken" } }
     );
-    expect(trail).toStrictEqual(["room", "room"]);
-    expect(at).toStrictEqual({
-      screen: "room",
-      turn: 2,
-      visit: { ...moved, rejoin: "taken" },
-    });
+    expect(trail).toStrictEqual(["bar/lobby", "bar/lobby"]);
+    expect(at).toStrictEqual(lobbyOf({ ...moved, rejoin: "taken" }, 2));
   });
 
-  it("opens a room from the bar, the queue and a lost race", () => {
+  it("opens a room from home, the queue and a lost race", () => {
     const made = { arrival: "made", rejoin: null, roomId: ROOM_ID } as const;
     for (const view of [
-      { screen: "clubhouse" },
-      { screen: "queue" },
+      home,
+      finding,
       { ...inRoomRace, stage: { kind: "signalLost", lostAt: 0 } },
     ] as const satisfies readonly View[]) {
       expect(
         stepNavigation(view, { kind: "roomMoved", visit: made })
-      ).toStrictEqual({
-        effect: null,
-        state: { screen: "room", turn: 0, visit: made },
-      });
+      ).toStrictEqual({ effect: null, state: lobbyOf(made) });
     }
   });
 
@@ -117,7 +106,7 @@ describe("a room's race", () => {
   it("leaves the race from its menu for home, with no rejoin", () => {
     expect(stepNavigation(raceMenu, LEFT)).toStrictEqual({
       effect: null,
-      state: { screen: "clubhouse" },
+      state: home,
     });
   });
 
@@ -150,7 +139,7 @@ describe("a room's race", () => {
       LEFT
     );
     expect(trail).toStrictEqual([
-      "room",
+      "bar/lobby",
       "race/riding",
       "race/finishing",
       "results",
@@ -160,16 +149,24 @@ describe("a room's race", () => {
 
   it("names the room in the address while the room is on screen", () => {
     expect(
-      [roomLobby, inRoomRace, roomResults, racing(singlePlan)].map(
-        roomAddressOf
-      )
+      [
+        roomLobby,
+        { ...roomLobby, tab: "settings" as const },
+        invite,
+        inRoomRace,
+        roomResults,
+        racing(singlePlan),
+      ].map(roomAddressOf)
     ).toStrictEqual([
+      { arrival: "link", roomId: ROOM_ID },
+      { arrival: "link", roomId: ROOM_ID },
       { arrival: "link", roomId: ROOM_ID },
       { arrival: null, roomId: ROOM_ID },
       { arrival: null, roomId: ROOM_ID },
       null,
     ]);
-    expect(roomAddressOf({ screen: "clubhouse" })).toBeNull();
+    expect(roomAddressOf(home)).toBeNull();
+    expect(roomAddressOf(finding)).toBeNull();
   });
 });
 
@@ -199,8 +196,11 @@ describe("one page load", () => {
     settled("finished", roomResult),
     settled("quit", null),
     { kind: "raceOver" },
-    { kind: "barDecoded" },
     { kind: "careerBegun" },
+    { kind: "tabbed", tab: "garage" },
+    { kind: "picked", panel: "finding" },
+    { kind: "joined" },
+    { kind: "doorOpened" },
     { kind: "raceRefused" },
     { kind: "raceBegun", plan: roomPlan },
     entered(rulesReady, EMPTY, roomVisit),
@@ -214,7 +214,7 @@ describe("one page load", () => {
     }
   });
 
-  it("leaves every room screen with no effect but a new career", () => {
+  it("leaves every room screen with no effect but a new career or the joined room kept", () => {
     const roomScreens = views.filter((view) => roomAddressOf(view) !== null);
     const effects = new Set(
       roomScreens.flatMap((view) =>
@@ -224,6 +224,6 @@ describe("one page load", () => {
         })
       )
     );
-    expect([...effects]).toStrictEqual(["beginCareer"]);
+    expect([...effects]).toStrictEqual(["beginCareer", "rememberRoom"]);
   });
 });

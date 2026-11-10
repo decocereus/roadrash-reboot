@@ -1,3 +1,5 @@
+import { riderBlocks } from "@racer/sim/palette";
+
 export const barCameras = ["angled", "follow", "room"] as const;
 export type BarCamera = (typeof barCameras)[number];
 
@@ -26,3 +28,5 @@ export const saveBarCamera = (camera: BarCamera): boolean => {
     return false;
   }
 };
+
+export const SOLO_SLOT = riderBlocks.length - 1;

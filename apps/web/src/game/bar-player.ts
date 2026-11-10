@@ -3,7 +3,6 @@ import {
   holdPose,
   LOBBY_TICK,
   pullTheTaps,
-  respawnRider,
   sendRiderTo,
   SHOVE,
   sitOnStool,
@@ -66,7 +65,6 @@ export interface BarPlayer {
     viewYaw: number,
     time: number
   ) => number;
-  readonly reset: () => void;
 }
 
 const headingToward = (x: number, z: number): number =>
@@ -242,13 +240,6 @@ export const createBarPlayer = ({
     advance,
     pose(pose) {
       holdPose(rider, pose);
-    },
-    reset() {
-      respawnRider(rider);
-      bikeOut = false;
-      fromX = rider.x;
-      fromZ = rider.z;
-      fromHeading = rider.heading;
     },
     stance: () => ({
       place: rider.place.kind,

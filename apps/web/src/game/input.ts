@@ -1,6 +1,7 @@
 import type { SteerSource } from "@racer/sim/control";
 import type { RiderInput } from "@racer/sim/state";
 
+import { onTextField } from "../key-target.ts";
 import { createHeldKeys } from "./held-keys.ts";
 import type { KeyPress } from "./held-keys.ts";
 
@@ -51,7 +52,7 @@ export interface InputHost {
 }
 
 const browserHost: InputHost = {
-  isTextField: (target) => target instanceof HTMLInputElement,
+  isTextField: onTextField,
   listen(press, release, blur) {
     window.addEventListener("keydown", press);
     window.addEventListener("keyup", release);
@@ -85,6 +86,7 @@ export interface Controls {
 
 export const createControls = (
   onCommand: (code: string) => void,
+  racing: () => boolean,
   host: InputHost = browserHost
 ): Controls => {
   const held = createHeldKeys();
@@ -93,7 +95,7 @@ export const createControls = (
     if (host.isTextField(event.target)) {
       return;
     }
-    if (handled.has(event.code)) {
+    if (racing() && handled.has(event.code)) {
       event.preventDefault();
     }
     if (held.press(event)) {

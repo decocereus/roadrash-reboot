@@ -28,7 +28,7 @@ export const rivalLines: Readonly<Record<OrdinaryRivalId, RivalLines>> = byId(
   ({ lines }) => lines
 );
 
-export const celebrityBios: Readonly<Record<CelebrityRivalId, string>> = byId(
+const celebrityBios: Readonly<Record<CelebrityRivalId, string>> = byId(
   celebrityRiders,
   ({ bio }) => bio
 );
@@ -56,7 +56,7 @@ export interface RivalLine {
   readonly text: string;
 }
 
-export const tauntFrom = (career: CareerState, rival: RivalId): RivalLine => {
+const tauntFrom = (career: CareerState, rival: RivalId): RivalLine => {
   if (isCelebrity(rival)) {
     return { rival, text: celebrityBios[rival] };
   }

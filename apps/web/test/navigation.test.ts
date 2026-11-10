@@ -1,15 +1,17 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  barTabs,
   firstView,
+  graphicsPlaceOf,
   raceAgainOffered,
   stageOf,
   stepNavigation,
 } from "../src/navigation.ts";
-import type { NavigationEvent } from "../src/navigation.ts";
+import type { NavigationEvent, View } from "../src/navigation.ts";
 import {
   afterResultsOf,
-  backRoomHome,
+  barAt,
   broke,
   careerPlan,
   careerResult,
@@ -19,18 +21,22 @@ import {
   EMPTY,
   entered,
   fallenTrail,
+  finding,
   fresh,
+  home,
+  invite,
   LEFT,
+  leftWith,
   linkVisit,
   LOADING,
   nameOf,
-  picked,
+  panels,
   promoted,
-  promotion,
   quitTo,
   raced,
   racing,
   readySave,
+  ROOM_ID,
   roomLobby,
   roomResult,
   rulesFailed,
@@ -39,6 +45,7 @@ import {
   settled,
   singlePlan,
   singleResult,
+  solo,
   toCareerRace,
   toSingleRace,
   UNREAD,
@@ -56,47 +63,59 @@ describe("the way into the game", () => {
     expect(effects).toStrictEqual([]);
   });
 
-  it("begins a career on an empty save and opens the bar once its art decodes", () => {
+  it("begins a career on an empty save and opens the bar at home", () => {
     const { at, effects, trail } = walk(
       firstView(),
       entered(rulesReady, EMPTY),
-      entered(rulesReady, readySave(fresh)),
-      { kind: "barDecoded" }
+      entered(rulesReady, readySave(fresh))
     );
-    expect(trail).toStrictEqual(["boot", "boot", "clubhouse"]);
-    expect(effects).toStrictEqual(["beginCareer", "decodeBar"]);
-    expect(at).toStrictEqual({ screen: "clubhouse" });
+    expect(trail).toStrictEqual(["boot", "bar/home"]);
+    expect(effects).toStrictEqual(["beginCareer"]);
+    expect(at).toStrictEqual(home);
   });
 
-  it("opens a finished career on its last screen, with no bar art to decode", () => {
+  it("opens the bar at home on every save it can read, a finished career included", () => {
     const over = { ...fresh, gameOver: true };
     const ended = {
       ...fresh,
       story: { ...fresh.story, ending: "clean-crown" as const },
     };
-    expect(
-      walk(firstView(), entered(rulesReady, readySave(over)))
-    ).toMatchObject({ effects: [], trail: ["gameOver"] });
-    expect(
-      walk(firstView(), entered(rulesReady, readySave(ended)))
-    ).toMatchObject({ effects: [], trail: ["ending"] });
+    for (const save of [
+      readySave(fresh),
+      readySave(over),
+      readySave(ended),
+      CORRUPT,
+      UNREAD,
+    ]) {
+      expect(walk(firstView(), entered(rulesReady, save))).toStrictEqual({
+        at: home,
+        effects: [],
+        trail: ["bar/home"],
+      });
+    }
   });
 
-  it("seats a room link whatever the save says", () => {
+  it("opens the bar at home when the rules fail, ahead of a room or a URL ride", () => {
+    expect(
+      walk(firstView(), entered(rulesFailed, LOADING, linkVisit, true)).trail
+    ).toStrictEqual(["bar/home"]);
+  });
+
+  it("seats a room link in the bar's lobby whatever the save says", () => {
     for (const save of [EMPTY, CORRUPT, UNREAD, ELSEWHERE, readySave(fresh)]) {
       expect(
         walk(firstView(), entered(rulesReady, save, linkVisit))
-      ).toStrictEqual({ at: roomLobby, effects: [], trail: ["room"] });
+      ).toStrictEqual({ at: roomLobby, effects: [], trail: ["bar/lobby"] });
     }
   });
 
-  it("stops at the back room for a damaged or unread save", () => {
-    for (const save of [CORRUPT, UNREAD]) {
-      expect(walk(firstView(), entered(rulesReady, save))).toMatchObject({
-        effects: [],
-        trail: ["backRoom"],
-      });
-    }
+  it("shows a friend's link as an invite until the player answers it", () => {
+    expect(
+      walk(
+        firstView(),
+        entered(rulesReady, readySave(fresh), linkVisit, false, true)
+      )
+    ).toStrictEqual({ at: invite, effects: [], trail: ["bar/invite"] });
   });
 
   it("stops a tab whose career is open in another tab, with no way on and no career begun", () => {
@@ -107,12 +126,6 @@ describe("the way into the game", () => {
     );
     expect(trail).toStrictEqual(["elsewhere", "elsewhere"]);
     expect(effects).toStrictEqual([]);
-  });
-
-  it("stops at the back room when the rules fail, ahead of a room or a URL ride", () => {
-    expect(
-      walk(firstView(), entered(rulesFailed, LOADING, linkVisit, true)).trail
-    ).toStrictEqual(["backRoom"]);
   });
 
   it("holds a URL ride at boot until the game starts it, ahead of a room or a save", () => {
@@ -134,90 +147,211 @@ describe("the way into the game", () => {
   });
 });
 
-describe("leaving each screen", () => {
-  it("has one way out per screen", () => {
-    const outs = Object.fromEntries(
-      screens.map((view) => {
-        const { effect, state } = stepNavigation(view, LEFT);
-        return [view.screen, effect ? effect.kind : nameOf(state)];
-      })
+describe("the bar", () => {
+  it("walks every panel of the Race tab and back home", () => {
+    const { at, trail } = walk(
+      home,
+      { kind: "picked", panel: "solo" },
+      LEFT,
+      { kind: "picked", panel: "finding" },
+      {
+        kind: "roomMoved",
+        visit: { arrival: "queue", rejoin: null, roomId: "pub-one" },
+      },
+      LEFT,
+      {
+        kind: "roomMoved",
+        visit: { arrival: "made", rejoin: null, roomId: "room-two" },
+      },
+      LEFT
     );
-    expect(outs).toStrictEqual({
-      backRoom: "clubhouse",
-      boot: "boot",
-      clubhouse: "backRoom",
-      elsewhere: "elsewhere",
-      ending: "backRoom",
-      gameOver: "backRoom",
-      garage: "clubhouse",
-      queue: "clubhouse",
-      race: "race/riding",
-      results: "clubhouse",
-      rideOut: "clubhouse",
-      room: "clubhouse",
-      routeBoard: "backRoom",
+    expect(trail).toStrictEqual([
+      "bar/solo",
+      "bar/home",
+      "bar/finding",
+      "bar/lobby",
+      "bar/home",
+      "bar/lobby",
+      "bar/home",
+    ]);
+    expect(at).toStrictEqual(home);
+  });
+
+  it("cancels the queue back home", () => {
+    expect(walk(finding, LEFT).at).toStrictEqual(home);
+  });
+
+  it("joins from an invite into the same room, or turns it down for home", () => {
+    expect(walk(invite, { kind: "joined" }).at).toStrictEqual(roomLobby);
+    expect(walk(invite, LEFT).at).toStrictEqual(home);
+  });
+
+  it("remembers the room an invite was joined in, so a refresh in its lobby is no invite", () => {
+    expect(stepNavigation(invite, { kind: "joined" })).toStrictEqual({
+      effect: { kind: "rememberRoom", roomId: ROOM_ID },
+      state: roomLobby,
+    });
+    expect(walk(invite, LEFT).effects).toStrictEqual([]);
+  });
+
+  it("opens Garage and Settings from every panel and keeps the panel under them", () => {
+    for (const view of panels) {
+      for (const tab of barTabs) {
+        expect(
+          stepNavigation(view, { kind: "tabbed", tab }).state
+        ).toStrictEqual({ ...view, tab });
+      }
+    }
+  });
+
+  it("leaves Garage or Settings for the Race tab with the panel as it was", () => {
+    for (const view of panels) {
+      for (const tab of ["garage", "settings"] as const) {
+        expect(walk({ ...view, tab }, LEFT).at).toStrictEqual(view);
+      }
+    }
+  });
+
+  it("keeps the tab when the queue places the player", () => {
+    const placed = {
+      kind: "roomMoved",
+      visit: { arrival: "queue", rejoin: null, roomId: "pub-one" },
+    } as const;
+    expect(
+      stepNavigation({ ...finding, tab: "settings" }, placed).state
+    ).toStrictEqual({
+      ...barAt({ kind: "lobby", turn: 0, visit: placed.visit }),
+      tab: "settings",
     });
   });
 
-  it("sends the back room home to the screen the career has reached", () => {
-    expect(backRoomHome(null)).toBe("backRoom");
-    expect(backRoomHome(fresh)).toBe("clubhouse");
-    expect(backRoomHome({ ...fresh, gameOver: true })).toBe("gameOver");
-    expect(
-      backRoomHome({ ...fresh, story: { ...fresh.story, ending: "runner-up" } })
-    ).toBe("ending");
+  it("takes the player to the door on the Race tab whatever tab is open", () => {
+    for (const tab of barTabs) {
+      expect(
+        stepNavigation({ ...roomLobby, tab }, { kind: "doorOpened" }).state
+      ).toStrictEqual(roomLobby);
+    }
   });
 
-  it("backs out of a single race's ride-out card to the route board", () => {
-    expect(
-      walk({ entry: toSingleRace, screen: "rideOut" }, LEFT).trail
-    ).toStrictEqual(["routeBoard"]);
+  it("picks a panel only from home or Ride solo", () => {
+    for (const view of [finding, invite, roomLobby]) {
+      expect(
+        stepNavigation(view, { kind: "picked", panel: "solo" }).state
+      ).toBe(view);
+    }
   });
 
-  it("moves on from results to where the race left the career", () => {
-    expect(afterResultsOf(careerResult)).toStrictEqual({ screen: "clubhouse" });
-    expect(afterResultsOf(singleResult)).toStrictEqual({
-      screen: "routeBoard",
-    });
-    expect(afterResultsOf(broke)).toStrictEqual({ screen: "gameOver" });
-    expect(afterResultsOf(crowned)).toStrictEqual({ screen: "ending" });
-    expect(afterResultsOf(promoted)).toStrictEqual({
-      promotion,
-      screen: "clubhouse",
-    });
-  });
-});
-
-describe("the menus", () => {
-  it("opens the screen each menu names", () => {
-    expect(picked("garage")).toBe("garage");
-    expect(picked("queue")).toBe("queue");
-    expect(picked("routeBoard")).toBe("routeBoard");
+  it("stays home when home is left", () => {
+    expect(walk(home, LEFT).at).toBe(home);
   });
 
-  it("starts a new career at the bar", () => {
-    expect(
-      walk({ screen: "gameOver" }, { kind: "careerBegun" }).at
-    ).toStrictEqual({ screen: "clubhouse" });
-    expect(
-      walk({ screen: "backRoom" }, { kind: "careerBegun" }).at
-    ).toStrictEqual({ screen: "clubhouse" });
+  it("starts a new career in place, from Settings or Ride solo", () => {
+    for (const view of [solo, { ...roomLobby, tab: "settings" as const }]) {
+      expect(stepNavigation(view, { kind: "careerBegun" }).state).toBe(view);
+    }
   });
 
   it("goes home when the career refuses the race at the green light", () => {
-    expect(walk(racing(careerPlan), { kind: "raceRefused" }).at).toStrictEqual({
-      screen: "clubhouse",
+    expect(walk(racing(careerPlan), { kind: "raceRefused" }).at).toStrictEqual(
+      home
+    );
+  });
+});
+
+describe("leaving each screen", () => {
+  it("has one way out per screen", () => {
+    const outs = Object.fromEntries(
+      screens.map((view) => [
+        nameOf(view),
+        nameOf(stepNavigation(view, LEFT).state),
+      ])
+    );
+    expect(outs).toStrictEqual({
+      "bar/finding": "bar/home",
+      "bar/finding/garage": "bar/finding",
+      "bar/finding/settings": "bar/finding",
+      "bar/home": "bar/home",
+      "bar/home/garage": "bar/home",
+      "bar/home/settings": "bar/home",
+      "bar/invite": "bar/home",
+      "bar/invite/garage": "bar/invite",
+      "bar/invite/settings": "bar/invite",
+      "bar/lobby": "bar/home",
+      "bar/lobby/garage": "bar/lobby",
+      "bar/lobby/settings": "bar/lobby",
+      "bar/solo": "bar/home",
+      "bar/solo/garage": "bar/solo",
+      "bar/solo/settings": "bar/solo",
+      boot: "boot",
+      elsewhere: "elsewhere",
+      ending: "bar/home",
+      gameOver: "bar/home",
+      "race/riding": "race/riding",
+      results: "bar/home",
+      rideOut: "bar/solo",
     });
   });
 
-  it("leaves a garage visit with no promotion left to say", () => {
-    const { at, trail } = walk(
-      { promotion, screen: "clubhouse" },
-      { kind: "picked", screen: "garage" },
-      LEFT
-    );
-    expect(trail).toStrictEqual(["garage", "clubhouse"]);
-    expect(at).toStrictEqual({ screen: "clubhouse" });
+  it("backs out of a ride-out card to Ride solo", () => {
+    expect(
+      walk({ entry: toSingleRace, screen: "rideOut" }, LEFT).at
+    ).toStrictEqual(solo);
+  });
+
+  it("moves on from results to where the race left the career", () => {
+    expect(afterResultsOf(careerResult)).toStrictEqual(home);
+    expect(afterResultsOf(promoted)).toStrictEqual(home);
+    expect(afterResultsOf(broke)).toStrictEqual({ screen: "gameOver" });
+    expect(afterResultsOf(crowned)).toStrictEqual({ screen: "ending" });
+    expect(afterResultsOf(singleResult)).toStrictEqual(home);
+  });
+
+  it("begins a career when a lobby is left on an empty save", () => {
+    expect(walk(roomLobby, leftWith(EMPTY))).toStrictEqual({
+      at: home,
+      effects: ["beginCareer"],
+      trail: ["bar/home"],
+    });
+  });
+
+  it("begins a career for a first-time rider who turns down a friend's invite", () => {
+    expect(
+      walk(
+        firstView(),
+        entered(rulesReady, EMPTY, linkVisit, false, true),
+        leftWith(EMPTY),
+        entered(rulesReady, readySave(fresh))
+      )
+    ).toStrictEqual({
+      at: home,
+      effects: ["beginCareer"],
+      trail: ["bar/invite", "bar/home", "bar/home"],
+    });
+  });
+
+  it("begins a career when Start over empties a damaged save in Ride solo", () => {
+    expect(
+      walk(
+        firstView(),
+        entered(rulesReady, CORRUPT),
+        { kind: "picked", panel: "solo" },
+        entered(rulesReady, EMPTY),
+        entered(rulesReady, readySave(fresh))
+      )
+    ).toStrictEqual({
+      at: solo,
+      effects: ["beginCareer"],
+      trail: ["bar/home", "bar/solo", "bar/solo", "bar/solo"],
+    });
+  });
+
+  it("begins no career in a room while the save is empty", () => {
+    for (const view of [invite, roomLobby]) {
+      expect(stepNavigation(view, entered(rulesReady, EMPTY))).toStrictEqual({
+        effect: null,
+        state: view,
+      });
+    }
   });
 });
 
@@ -226,7 +360,7 @@ describe("a race", () => {
     const { at, effects, trail } = walk(
       firstView(),
       entered(rulesReady, readySave(fresh)),
-      { kind: "barDecoded" },
+      { kind: "picked", panel: "solo" },
       { entry: toCareerRace, kind: "ridePicked" },
       { kind: "raceBegun", plan: careerPlan },
       { kind: "paused" },
@@ -237,8 +371,8 @@ describe("a race", () => {
       LEFT
     );
     expect(trail).toStrictEqual([
-      "boot",
-      "clubhouse",
+      "bar/home",
+      "bar/solo",
       "rideOut",
       "race/riding",
       "race/paused",
@@ -246,10 +380,10 @@ describe("a race", () => {
       "race/finishing",
       "race/finishing",
       "results",
-      "clubhouse",
+      "bar/home",
     ]);
-    expect(effects).toStrictEqual(["decodeBar"]);
-    expect(at).toStrictEqual({ screen: "clubhouse" });
+    expect(effects).toStrictEqual([]);
+    expect(at).toStrictEqual(home);
   });
 
   it("carries a wreck's report through the consequence to results", () => {
@@ -272,17 +406,17 @@ describe("a race", () => {
       walk(racing(careerPlan), settled("finished", null), {
         kind: "raceOver",
       }).at
-    ).toStrictEqual({ screen: "clubhouse" });
+    ).toStrictEqual(home);
   });
 
-  it("goes home from a bust with no report, by the race's mode", () => {
+  it("goes home from a bust with no report, whatever the race's mode", () => {
     expect(fallenTrail(careerPlan)).toStrictEqual([
       "race/consequence",
-      "clubhouse",
+      "bar/home",
     ]);
     expect(fallenTrail(singlePlan)).toStrictEqual([
       "race/consequence",
-      "routeBoard",
+      "bar/home",
     ]);
   });
 
@@ -299,8 +433,8 @@ describe("a race", () => {
 
   it("settles a quit with the bill's report, or goes home without one", () => {
     expect(quitTo(careerPlan, careerResult)).toBe("results");
-    expect(quitTo(careerPlan, null)).toBe("clubhouse");
-    expect(quitTo(singlePlan, null)).toBe("routeBoard");
+    expect(quitTo(careerPlan, null)).toBe("bar/home");
+    expect(quitTo(singlePlan, null)).toBe("bar/home");
   });
 
   it("ignores race news on every other screen", () => {
@@ -321,14 +455,32 @@ describe("a race", () => {
     }
   });
 
-  it("runs the game only on the race screen", () => {
+  it("runs the game only on the race screen and counts the bar as its own place", () => {
     const stages = screens.map((view) => [view.screen, stageOf(view)]);
     expect(Object.fromEntries(stages)).toMatchObject({
-      backRoom: "menu",
+      bar: "menu",
       boot: "boot",
       race: "race",
       results: "menu",
     });
+    expect(graphicsPlaceOf.bar).toBe("bar");
+  });
+
+  it("ignores bar events away from the bar", () => {
+    const barNews: readonly NavigationEvent[] = [
+      { kind: "tabbed", tab: "settings" },
+      { kind: "picked", panel: "solo" },
+      { kind: "joined" },
+      { kind: "doorOpened" },
+    ];
+    const away: readonly View[] = screens.filter(
+      ({ screen }) => screen !== "bar"
+    );
+    for (const view of away) {
+      for (const event of barNews) {
+        expect(stepNavigation(view, event).state).toBe(view);
+      }
+    }
   });
 });
 
@@ -338,7 +490,7 @@ describe("race again", () => {
     expect(raceAgainOffered(roomResult, raced)).toBeTruthy();
   });
 
-  it("is on offer after a career race only when the bar comes back as it was", () => {
+  it("is on offer after a career race only when the career carries on as it was", () => {
     expect(raceAgainOffered(careerResult, raced)).toBeTruthy();
     expect(raceAgainOffered(careerResult, null)).toBeFalsy();
     expect(raceAgainOffered(promoted, raced)).toBeFalsy();

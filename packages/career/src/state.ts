@@ -6,13 +6,7 @@ import type { WeaponKind } from "@racer/sim/state";
 import { nextSeed } from "@racer/track/random";
 
 import type { LastResult } from "./result.ts";
-import {
-  byTier,
-  creditLimitOf,
-  roadList,
-  STARTING_BIKE,
-  STARTING_CASH,
-} from "./tables.ts";
+import { byTier, roadList, STARTING_BIKE, STARTING_CASH } from "./tables.ts";
 import type { Tier, RoadId } from "./tables.ts";
 
 export const SAVE_VERSION = 7;
@@ -204,9 +198,6 @@ export const newCareer = (seed: number): CareerState => ({
 
 export const debtOf = (career: CareerState): number =>
   Math.max(0, -career.cash);
-
-export const creditLimit = (career: CareerState): number =>
-  creditLimitOf(career.bikeId);
 
 export const qualifiedCount = (roads: QualifiedRoads): number =>
   roadList.filter((road) => roads[road.id] !== undefined).length;

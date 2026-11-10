@@ -485,7 +485,7 @@ describe("a graphics loss", () => {
   it("reports no when the wait runs out, and stays one report if they return later", () => {
     const { giveUp, loss, screen, sent } = lossTracker();
     const canvas = new EventTarget();
-    screen.shown = "clubhouse";
+    screen.shown = "rideOut";
     loss.watch(canvas, "game");
     fire(canvas, LOST);
     giveUp();
@@ -510,7 +510,7 @@ describe("a graphics loss", () => {
     const canvas = new EventTarget();
     loss.watch(canvas, "game");
     fire(canvas, LOST);
-    screen.shown = "clubhouse";
+    screen.shown = "rideOut";
     fire(canvas, RESTORED);
     expect(sent).toStrictEqual(report("race", "yes"));
   });
@@ -529,7 +529,7 @@ describe("a graphics loss", () => {
     const { loss, screen, sent } = lossTracker();
     const game = new EventTarget();
     const bar = new EventTarget();
-    screen.shown = "room";
+    screen.shown = "bar";
     loss.watch(game, "game");
     loss.watch(bar, "bar");
     fire(game, LOST);
@@ -543,7 +543,7 @@ describe("a graphics loss", () => {
   it("reports a second loss on its own", () => {
     const { loss, screen, sent } = lossTracker();
     const canvas = new EventTarget();
-    screen.shown = "room";
+    screen.shown = "bar";
     loss.watch(canvas, "bar");
     fire(canvas, LOST);
     fire(canvas, RESTORED);
@@ -555,14 +555,14 @@ describe("a graphics loss", () => {
     ]);
   });
 
-  it("counts a room's invitation screen as a menu until the bar is drawn", () => {
+  it("counts the bar as the bar before its own canvas is drawn", () => {
     const { loss, screen, sent } = lossTracker();
     const game = new EventTarget();
-    screen.shown = "room";
+    screen.shown = "bar";
     loss.watch(game, "game");
     fire(game, LOST);
     fire(game, RESTORED);
-    expect(sent).toStrictEqual(report("menu", "yes"));
+    expect(sent).toStrictEqual(report("bar", "yes"));
   });
 
   it("says nothing when the bar closes its own healthy canvas", () => {
@@ -578,13 +578,13 @@ describe("a graphics loss", () => {
     const { loss, screen, sent } = lossTracker();
     const game = new EventTarget();
     const bar = new EventTarget();
-    screen.shown = "room";
+    screen.shown = "bar";
     loss.watch(game, "game");
     const unwatch = loss.watch(bar, "bar");
     fire(bar, LOST);
     unwatch();
     expect(sent).toStrictEqual(report("bar", "no"));
-    screen.shown = "clubhouse";
+    screen.shown = "rideOut";
     fire(game, LOST);
     fire(game, RESTORED);
     expect(sent.at(-1)).toStrictEqual(report("menu", "yes")[0]);
@@ -594,7 +594,7 @@ describe("a graphics loss", () => {
     const { loss, screen, sent } = lossTracker();
     const game = new EventTarget();
     const bar = new EventTarget();
-    screen.shown = "room";
+    screen.shown = "bar";
     loss.watch(game, "game");
     const unwatch = loss.watch(bar, "bar");
     fire(game, LOST);

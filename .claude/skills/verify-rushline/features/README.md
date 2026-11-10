@@ -43,7 +43,7 @@ Keep implementation detail out of the map: name player paths, stable handles, re
 - [Casa de Campo hook](./madrid-hook.md): the development-only Madrid park greybox, ridden alone, with the field or with traffic, and its two forced places.
 - [Puerta de Alcalá into Gran Vía](./madrid-gran-via.md): the development-only Madrid city greybox, 2,348 m from the gate to Plaza de España, its two slow places and its six landmarks.
 
-- [Back room and single race](./single-race.md): the back room, route board, ride-out card, starting, pausing, restarting, and quitting a single race.
+- [Ride solo and single race](./single-race.md): the Ride solo panel, the ride-out card, starting, pausing, restarting, and quitting a single race, and the Settings tab.
 - [Riding and fighting](./riding-and-fighting.md): throttle, brake, steering, punches and kicks, crashing, getting back on, the cop warning, and the finish.
 - [Jumps](./jumps.md): car carrier trucks, time in the air, landings, and landing dust.
 - [Roadside clearance](./roadside-clearance.md): signs, trees and posts that give way to the chase camera on the shoulder, and signs that never show what stands behind them.
@@ -51,7 +51,7 @@ Keep implementation detail out of the map: name player paths, stable handles, re
 - [Road hazards](./hazards.md): where oil, rocks, and potholes lie, how each draws, what contact costs by speed, what missing one costs, and the frame rate with them on screen.
 - [Junctions and crossings](./junctions.md): where a road's junctions and pedestrian crossings stand, how the arms, zebras, stop lines and signals draw, and the light cycle.
 - [Walkable bar](./walkable-bar.md): the bar the player walks around, which is every race room's lobby in production (only the `/bar` route is development-only), its cameras, the hidden bike, the cast, the door cutscene and the clock.
-- [Career](./career.md): a new career, the clubhouse, a career race settled into money and qualification, the garage, and the save across reloads.
+- [Career](./career.md): a new career, Ride solo's career line, a career race settled into money and qualification, the garage, and the save across reloads.
 - [Player events](./player-events.md): the race data notice, the Race data switch and player ID in Settings, and the events sent to `/api/events`.
 - [Race room](./race-room.md): the Durable Object that runs a race at 60 Hz for WebSocket seats, raced by scripted clients.
 - [Netcode compare](./netcode-compare.md): `pnpm rooms:fights` on a change's base and head builds, alternating, and `pnpm rooms:compare` holding the head to one rule table for drawn places, snaps, strikes and dropped presses.

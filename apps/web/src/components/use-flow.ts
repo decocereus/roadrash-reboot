@@ -9,7 +9,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 
 import { bootGame } from "../asset-load.ts";
-import { barCast, barPlates, firstRoad, preload } from "../career/bar.ts";
 import { benchOf, benchPlan, rideOf } from "../career/bench.ts";
 import { firstQuickPick, quickReport, rideEntry } from "../career/flow.ts";
 import type { RaceReport } from "../career/flow.ts";
@@ -43,6 +42,7 @@ import type { NavigationEvent, RoomVisit, View } from "../navigation.ts";
 import type { PrepareOutcome } from "../prepare-outcome.ts";
 import { loadRaceRules } from "../rules/load.ts";
 import type { RulesLoad } from "../rules/load.ts";
+import { joinedRoom, rememberRoom } from "./guest-name.ts";
 import { roomArrivalOf, showAddress } from "./room-url.ts";
 import { useHandoff } from "./use-handoff.ts";
 
@@ -318,15 +318,8 @@ export const useFlow = (): Flow => {
           commit(freshCareer(randomUnit()));
           break;
         }
-        case "decodeBar": {
-          const decode = async (): Promise<void> => {
-            const roadId = firstRoad(effect.rules, effect.career);
-            await preload(
-              barPlates(barCast(effect.rules, effect.career, roadId))
-            );
-            send({ kind: "barDecoded" });
-          };
-          void decode();
+        case "rememberRoom": {
+          rememberRoom(effect.roomId);
           break;
         }
         default: {
@@ -339,9 +332,12 @@ export const useFlow = (): Flow => {
     rulesLoad?.status === "failed" ? rulesLoad.failure.message : gameFailure;
   const career = save.status === "ready" ? save.career : null;
   useEffect(() => {
+    const room = roomOf(globalThis.location.search);
     send({
+      invited:
+        room !== null && room.arrival === "link" && !joinedRoom(room.roomId),
       kind: "entered",
-      room: roomOf(globalThis.location.search),
+      room,
       rules: rulesLoad,
       save,
       urlRide:

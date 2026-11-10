@@ -321,18 +321,25 @@ const startGame = (
 
   const halted = (): boolean => ticksHalted(session) || stage.warming;
 
-  const controls = createControls((code) => {
-    if (code === "KeyM") {
-      toggleMute();
-    }
-    const race = liveRaceOf(session);
-    if (code === MARKER_KEY && race && recorder.marker(stage.race.view.tick)) {
-      say("marked");
-    }
-    if (code === "KeyR" && race?.plan.mode === "quick" && !race.plan.room) {
-      restart(race);
-    }
-  });
+  const controls = createControls(
+    (code) => {
+      if (code === "KeyM") {
+        toggleMute();
+      }
+      const race = liveRaceOf(session);
+      if (
+        code === MARKER_KEY &&
+        race &&
+        recorder.marker(stage.race.view.tick)
+      ) {
+        say("marked");
+      }
+      if (code === "KeyR" && race?.plan.mode === "quick" && !race.plan.room) {
+        restart(race);
+      }
+    },
+    () => liveRaceOf(session) !== null
+  );
   owners.push(() => {
     controls.dispose();
   });

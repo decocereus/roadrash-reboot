@@ -14,7 +14,7 @@ const POLL_MS = 100;
 const readySignals = new Map([
   [
     "bar",
-    "document.querySelector('[role=menu][aria-label=\"Clubhouse\"]') !== null",
+    "document.querySelector('[role=tablist][aria-label=\"The bar\"]') !== null",
   ],
   ["held", "globalThis.__rushlineHeld === true"],
   [

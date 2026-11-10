@@ -7,6 +7,8 @@
   --color-neon-cyan: #19e6ff;
   --color-neon-red: #ff2e3d;
   --color-neon-magenta: #ff2fb5;
+  --color-night: #150c26;
+  --color-night-raised: #1a0f2e;
 }
 
 @keyframes bar-dusk {

@@ -68,12 +68,13 @@ How the bike answers the keys and the gamepad: throttle, brakes, steering, the p
 - Docs: [docs/architecture/riding-model.md#riding-model](architecture/riding-model.md#riding-model), [docs/handling-matrix.md#fields](handling-matrix.md#fields), [docs/design/game-design.md#6-bike-catalogue](design/game-design.md#6-bike-catalogue)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md)
 - Perf: `sim.ticksPerSecond`, `sim.tick.p95`, `sim.tick.p99`, `sim.allocatedBytesPerTick`
-- Owns: `packages/sim/src/rider.ts`, `packages/sim/src/rider-drive.ts`, `packages/sim/src/engine.ts`, `packages/sim/src/bikes.ts`, `packages/sim/src/riding.test.ts`, `packages/sim/src/braking-and-cornering.test.ts`, `packages/sim/src/engine-and-tuck.test.ts`, `apps/web/src/game/input.ts`, `apps/web/src/game/held-keys.ts`, `apps/web/test/input.test.ts`, `tools/handling/**`
+- Owns: `packages/sim/src/rider.ts`, `packages/sim/src/rider-drive.ts`, `packages/sim/src/engine.ts`, `packages/sim/src/bikes.ts`, `packages/sim/src/riding.test.ts`, `packages/sim/src/braking-and-cornering.test.ts`, `packages/sim/src/engine-and-tuck.test.ts`, `apps/web/src/game/input.ts`, `apps/web/src/game/held-keys.ts`, `apps/web/src/key-target.ts`, `apps/web/test/input.test.ts`, `tools/handling/**`
 
 Source files:
 
 - `apps/web/src/game/held-keys.ts`
 - `apps/web/src/game/input.ts`
+- `apps/web/src/key-target.ts`
 - `packages/sim/src/bikes.ts`
 - `packages/sim/src/engine.ts`
 - `packages/sim/src/rider-drive.ts`
@@ -397,46 +398,45 @@ Test files:
 
 ### Menus and screens
 
-Every screen React draws around a race, from the bar and the back room to the garage, the ride-out card, pause and results, with the screen flow, the menu art and the copy.
+Every screen React draws around a race: the bar's Race, Garage and Settings tabs and their panels, the ride-out card, pause and results, with the screen flow, the menu art and the copy.
 
 - Id: `menus`
 - Start: `apps/web/src/navigation.ts`, `apps/web/src/components/use-flow.ts`, `apps/web/src/components/game-shell.tsx`
 - Docs: [docs/design/screens.md#flow](design/screens.md#flow), [docs/design/game-design.md#3-modes](design/game-design.md#3-modes), [DESIGN.md#components](../DESIGN.md#components)
 - Verify: [single-race.md](../.claude/skills/verify-rushline/features/single-race.md), [career.md](../.claude/skills/verify-rushline/features/career.md)
 - Perf: `bytes.route.root.gzip`, `bytes.route.root.raw`
-- Owns: `apps/web/src/components/screens/**`, `apps/web/test/bar-nav.test.tsx`, `apps/web/test/career-screens.test.tsx`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/navigation.ts`, `apps/web/test/navigation.test.ts`, `apps/web/test/navigation-walk.ts`, `apps/web/src/assets/*-art.ts`, `apps/web/src/game/showroom.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bar.ts`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/copy.test.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`, `apps/web/src/career/notes.ts`
+- Owns: `apps/web/src/components/screens/**`, `apps/web/test/bar-nav.test.tsx`, `apps/web/test/escape-layers.test.ts`, `apps/web/test/career-screens.test.tsx`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/navigation.ts`, `apps/web/test/navigation.test.ts`, `apps/web/test/navigation-walk.ts`, `apps/web/src/assets/*-art.ts`, `apps/web/src/game/showroom.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`, `apps/web/src/career/notes.ts`
 
 Source files:
 
 - `apps/web/src/assets/clubhouse-art.ts`
-- `apps/web/src/career/bar.ts`
 - `apps/web/src/career/bike-stats.ts`
 - `apps/web/src/career/copy.ts`
 - `apps/web/src/career/flow.ts`
 - `apps/web/src/career/format.ts`
 - `apps/web/src/career/notes.ts`
 - `apps/web/src/components/game-shell.tsx`
-- `apps/web/src/components/screens/back-room.tsx`
 - `apps/web/src/components/screens/bar-chrome.tsx`
 - `apps/web/src/components/screens/bike-stand.tsx`
 - `apps/web/src/components/screens/boot.tsx`
 - `apps/web/src/components/screens/clubhouse-bar.tsx`
 - `apps/web/src/components/screens/clubhouse-stage.tsx`
 - `apps/web/src/components/screens/clubhouse-wall.tsx`
-- `apps/web/src/components/screens/clubhouse.tsx`
 - `apps/web/src/components/screens/confirm.tsx`
 - `apps/web/src/components/screens/data-notice.tsx`
+- `apps/web/src/components/screens/escape-layers.ts`
 - `apps/web/src/components/screens/finish.tsx`
 - `apps/web/src/components/screens/game-over.tsx`
 - `apps/web/src/components/screens/garage.tsx`
+- `apps/web/src/components/screens/name-card.tsx`
 - `apps/web/src/components/screens/pause.tsx`
 - `apps/web/src/components/screens/pinned-list.tsx`
 - `apps/web/src/components/screens/race-hud.tsx`
+- `apps/web/src/components/screens/race-panel.tsx`
 - `apps/web/src/components/screens/rejoin.tsx`
 - `apps/web/src/components/screens/results.tsx`
 - `apps/web/src/components/screens/ride-out.tsx`
 - `apps/web/src/components/screens/room-lobby.tsx`
-- `apps/web/src/components/screens/route-board.tsx`
 - `apps/web/src/components/screens/settings.tsx`
 - `apps/web/src/components/screens/shared.tsx`
 - `apps/web/src/components/use-flow.ts`
@@ -446,9 +446,9 @@ Source files:
 
 Test files:
 
-- `apps/web/src/career/copy.test.ts`
 - `apps/web/test/bar-nav.test.tsx`
 - `apps/web/test/career-screens.test.tsx`
+- `apps/web/test/escape-layers.test.ts`
 - `apps/web/test/navigation-walk.ts`
 - `apps/web/test/navigation.test.ts`
 
@@ -678,7 +678,7 @@ Test files:
 
 ### Walkable bar lobby
 
-The bar players walk around before a race, with the movement rules and floor in the simulation package, three saved cameras, greet, shove, sit and pose, the hidden bike, the stand-in cast and the door cutscene.
+The walkable bar is the game's home: one scene that stays up through home, the queue, invites and the lobby, with the movement rules and floor in the simulation package, three saved cameras, greet, shove, sit and pose, the hidden bike, the stand-in cast with no room and the door cutscene when a lobby starts.
 
 - Id: `bar-lobby`
 - Start: `packages/sim/src/lobby.ts`, `apps/web/src/game/bar.ts`, `apps/web/src/game/bar-player.ts`
@@ -690,6 +690,7 @@ The bar players walk around before a race, with the movement rules and floor in 
 Source files:
 
 - `apps/web/src/bar-view.ts`
+- `apps/web/src/components/bar-home.tsx`
 - `apps/web/src/components/bar-lobby.tsx`
 - `apps/web/src/components/bar-stage.tsx`
 - `apps/web/src/game/bar-camera.ts`
@@ -1153,16 +1154,22 @@ The shared components and global styles in `packages/ui`, and the `/kit` page th
 
 Source files:
 
+- `apps/web/src/components/kit/bar-board.tsx`
 - `apps/web/src/components/kit/kit-board.tsx`
 - `apps/web/src/components/kit/paper-boards.tsx`
 - `apps/web/src/components/kit/race-board.tsx`
 - `apps/web/src/routes/kit.tsx`
 - `packages/ui/src/components/dial.tsx`
+- `packages/ui/src/components/hint-strip.tsx`
+- `packages/ui/src/components/kit-panel.tsx`
+- `packages/ui/src/components/kit-rows.tsx`
 - `packages/ui/src/components/menu-list.tsx`
 - `packages/ui/src/components/money.tsx`
 - `packages/ui/src/components/notice.tsx`
 - `packages/ui/src/components/screen.tsx`
+- `packages/ui/src/components/skew-button.tsx`
 - `packages/ui/src/components/stencil.tsx`
+- `packages/ui/src/components/tab-strip.tsx`
 - `packages/ui/src/styles/globals.css`
 - `packages/ui/src/utils.ts`
 
@@ -1508,13 +1515,14 @@ The race room's rules: the setup that seats up to eight humans with pacing off, 
 - Docs: [docs/architecture/race-rooms.md#race-rooms](architecture/race-rooms.md#race-rooms), [docs/standards/simulation.md#keep-the-simulation-deterministic](standards/simulation.md#keep-the-simulation-deterministic), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
 - Verify: [race-room.md](../.claude/skills/verify-rushline/features/race-room.md), [netcode-compare.md](../.claude/skills/verify-rushline/features/netcode-compare.md)
 - Perf: `room.tick.p95`, `room.confirm.p95`, `room.rollback.p95`, `room.checkpoint.p95`, `room.allocatedBytesPerTick`, `room.client.allocatedBytesPerTick`, `room.frame.allocatedBytesPerTick`
-- Owns: `packages/sim/src/room*.ts`, `packages/career/src/room-race*.ts`, `apps/rooms/**`, `scripts/rooms-build.test.ts`, `scripts/sim-fingerprint.test.ts`, `apps/web/src/components/guest-name.ts`, `apps/web/test/member-key.test.ts`, `apps/web/test/member-rows.test.tsx`, `apps/web/test/rejoin-cards.test.tsx`, `apps/web/src/components/room-lobby.tsx`, `apps/web/src/components/room-race-screens.tsx`, `apps/web/src/components/use-handoff.ts`, `apps/web/src/prepare-outcome.ts`, `apps/web/src/race-handoff.ts`, `apps/web/src/room-handoff.ts`, `apps/web/test/prepare-outcome.test.ts`, `apps/web/test/race-handoff.test.ts`, `apps/web/test/room-boot-failure.test.tsx`, `apps/web/test/room-limited.test.tsx`, `apps/web/test/queue-screen.test.tsx`, `apps/web/test/room-address.test.ts`, `apps/web/test/room-navigation.test.ts`, `apps/web/test/room-run-stub.ts`, `apps/web/src/components/room-url.ts`, `apps/web/src/components/room-preview.ts`, `apps/web/test/room-preview.test.ts`, `apps/web/test/room-pacing.test.ts`, `apps/web/test/room-screen.test.ts`, `tools/rooms/**`
+- Owns: `packages/sim/src/room*.ts`, `packages/career/src/room-race*.ts`, `apps/rooms/**`, `scripts/rooms-build.test.ts`, `scripts/sim-fingerprint.test.ts`, `apps/web/src/components/guest-name.ts`, `apps/web/test/member-key.test.ts`, `apps/web/test/member-rows.test.tsx`, `apps/web/test/rejoin-cards.test.tsx`, `apps/web/src/components/room-lobby.tsx`, `apps/web/src/components/room-race-screens.tsx`, `apps/web/src/components/use-handoff.ts`, `apps/web/src/prepare-outcome.ts`, `apps/web/src/race-handoff.ts`, `apps/web/src/room-handoff.ts`, `apps/web/test/prepare-outcome.test.ts`, `apps/web/test/race-handoff.test.ts`, `apps/web/test/room-boot-failure.test.tsx`, `apps/web/test/room-limited.test.tsx`, `apps/web/test/finding-riders.test.tsx`, `apps/web/test/room-address.test.ts`, `apps/web/test/room-navigation.test.ts`, `apps/web/test/room-run-stub.ts`, `apps/web/src/components/room-url.ts`, `apps/web/src/components/room-preview.ts`, `apps/web/test/room-preview.test.ts`, `apps/web/test/room-pacing.test.ts`, `apps/web/test/room-screen.test.ts`, `tools/rooms/**`
 
 Source files:
 
 - `apps/rooms/src/build-id.ts`
 - `apps/rooms/src/contract.ts`
 - `apps/rooms/src/gate.ts`
+- `apps/rooms/src/guest-name.ts`
 - `apps/rooms/src/heartbeat.ts`
 - `apps/rooms/src/host-memory.ts`
 - `apps/rooms/src/host-phase.ts`
@@ -1609,6 +1617,7 @@ Source files:
 Test files:
 
 - `apps/rooms/test/build-id.test.ts`
+- `apps/rooms/test/guest-name.test.ts`
 - `apps/rooms/test/host-budget.test.ts`
 - `apps/rooms/test/host-harness.ts`
 - `apps/rooms/test/host-leave.test.ts`
@@ -1624,7 +1633,6 @@ Test files:
 - `apps/rooms/test/host.test.ts`
 - `apps/rooms/test/input-latency.test.ts`
 - `apps/rooms/test/lobby.test.ts`
-- `apps/rooms/test/messages.test.ts`
 - `apps/rooms/test/queue-client.test.ts`
 - `apps/rooms/test/queue.test.ts`
 - `apps/rooms/test/race-tally.test.ts`
@@ -1639,10 +1647,10 @@ Test files:
 - `apps/rooms/test/seat-socket.ts`
 - `apps/rooms/test/socket-role.test.ts`
 - `apps/rooms/test/tape.test.ts`
+- `apps/web/test/finding-riders.test.tsx`
 - `apps/web/test/member-key.test.ts`
 - `apps/web/test/member-rows.test.tsx`
 - `apps/web/test/prepare-outcome.test.ts`
-- `apps/web/test/queue-screen.test.tsx`
 - `apps/web/test/race-handoff.test.ts`
 - `apps/web/test/rejoin-cards.test.tsx`
 - `apps/web/test/room-address.test.ts`

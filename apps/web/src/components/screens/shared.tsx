@@ -3,6 +3,8 @@ import { MenuItem, MenuList } from "@racer/ui/components/menu-list";
 import type { KeyboardEvent, ReactNode } from "react";
 import { useEffect, useRef } from "react";
 
+import { createEscapeLayers } from "./escape-layers.ts";
+
 export interface MenuAction {
   readonly id: string;
   readonly label: string;
@@ -55,25 +57,27 @@ export const ActionMenu = ({
   </MenuList>
 );
 
+const escapeLayers = createEscapeLayers((press) => {
+  window.addEventListener("keydown", press);
+  return () => {
+    window.removeEventListener("keydown", press);
+  };
+});
+
 export const useEscape = (run: () => void, enabled = true): void => {
   const latest = useRef(run);
   useEffect(() => {
     latest.current = run;
   }, [run]);
-  useEffect(() => {
-    const pressed = (event: globalThis.KeyboardEvent) => {
-      if (event.key === "Escape" && !event.repeat) {
-        event.preventDefault();
-        latest.current();
-      }
-    };
-    if (enabled) {
-      window.addEventListener("keydown", pressed);
-    }
-    return () => {
-      window.removeEventListener("keydown", pressed);
-    };
-  }, [enabled]);
+  useEffect(
+    () =>
+      enabled
+        ? escapeLayers.open(() => {
+            latest.current();
+          })
+        : undefined,
+    [enabled]
+  );
 };
 
 export const standingTag = (
@@ -87,17 +91,6 @@ export const standingTag = (
     return "Holds a grudge";
   }
   return undefined;
-};
-
-export const stepped = <Item,>(
-  items: readonly Item[],
-  current: Item,
-  step: number
-): Item => {
-  const index = items.indexOf(current);
-  return (
-    items[(Math.max(0, index) + step + items.length) % items.length] ?? current
-  );
 };
 
 export const RiderChip = ({ colour }: { readonly colour: number }) => (

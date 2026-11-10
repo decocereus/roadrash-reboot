@@ -1,14 +1,15 @@
 import { launchRules } from "@racer/career/rules";
 import { STARTING_BIKE } from "@racer/career/tables";
 import { createInputLatency } from "@racer/rooms/input-latency";
-import { cleanGuestName } from "@racer/rooms/messages";
 import type { RoomPreview } from "@racer/rooms/messages";
 import { enterQueue } from "@racer/rooms/queue-client";
 import type { QueueRefusal } from "@racer/rooms/queue-messages";
 import { launchRoomConfig, msOf } from "@racer/rooms/room-config";
+import { roomKindOf } from "@racer/rooms/room-id";
 import { createRoomRun } from "@racer/rooms/room-run";
 import { openRoomSeat } from "@racer/rooms/seat-client";
 import type { RoomSeat, SeatRace } from "@racer/rooms/seat-client";
+import { Panel, PanelRule, PanelTitle } from "@racer/ui/components/kit-panel";
 import {
   useEffect,
   useEffectEvent,
@@ -16,8 +17,9 @@ import {
   useReducer,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
-import type { RefObject } from "react";
+import type { ReactNode, RefObject } from "react";
 
 import { diagnostics } from "../diagnostics/hub.ts";
 import { graphicsCard } from "../diagnostics/player-events.ts";
@@ -26,28 +28,63 @@ import type { RoomVisit } from "../navigation.ts";
 import { preparedRace } from "../prepare-outcome.ts";
 import type { PrepareOutcome } from "../prepare-outcome.ts";
 import { seatChange, seatClosing, stepRoom } from "../room-handoff.ts";
-import type { RoomHandoff } from "../room-handoff.ts";
-import { BarLobby } from "./bar-lobby.tsx";
+import type { RoomEvent, RoomHandoff } from "../room-handoff.ts";
+import { LobbyPart } from "./bar-lobby.tsx";
 import {
   memberKey,
-  racedIn,
-  rememberRaceRoom,
+  rememberRoom,
   storedGuestName,
-  storeGuestName,
+  watchGuestName,
 } from "./guest-name.ts";
 import { NO_HOLD, readRoomPreview } from "./room-preview.ts";
 import { roomLink } from "./room-url.ts";
+import { NameCard } from "./screens/name-card.tsx";
 import { GettingBackOn, TooLate } from "./screens/rejoin.tsx";
 import {
-  GuestNameScreen,
-  QueueScreen,
-  RoomFailedScreen,
-  RoomInviteScreen,
-  RoomLobbyScreen,
+  FindingPart,
+  InvitePart,
+  RoomFailedPart,
+  RoomStatusPart,
 } from "./screens/room-lobby.tsx";
 import { useHandoff } from "./use-handoff.ts";
 
 const DOOR_MOMENT_MS = 5000;
+
+const useGuestName = (): string | null =>
+  useSyncExternalStore(watchGuestName, storedGuestName, () => null);
+
+const PanelPart = ({
+  shown,
+  label,
+  children,
+}: {
+  readonly shown: boolean;
+  readonly label: string;
+  readonly children: ReactNode;
+}) => (
+  <Panel aria-label={label} hidden={!shown}>
+    {children}
+  </Panel>
+);
+
+const lobbyName = (roomId: string): string =>
+  roomKindOf(roomId) === "public" ? "Public lobby" : roomId;
+
+const RoomStatusPanel = ({
+  shown,
+  roomId,
+  children,
+}: {
+  readonly shown: boolean;
+  readonly roomId: string;
+  readonly children: ReactNode;
+}) => (
+  <PanelPart label="This lobby" shown={shown}>
+    <PanelTitle face="stencil">{lobbyName(roomId)}</PanelTitle>
+    <PanelRule />
+    {children}
+  </PanelPart>
+);
 const REDRAW_MS = 1000;
 const REOPEN_MS = 2000;
 
@@ -82,7 +119,7 @@ const planOf = (seat: RoomSeat, roomId: string): RacePlan | null => {
       requestAnimationFrame(done);
     }
   );
-  rememberRaceRoom(roomId);
+  rememberRoom(roomId);
   const room = createRoomRun(seat, race, roomId, latency);
   Reflect.set(globalThis, "__rushlineRoom", {
     client: race.client,
@@ -103,6 +140,8 @@ interface RoomProps {
   readonly visit: RoomVisit;
   readonly ready: boolean;
   readonly failure: string;
+  readonly shown: boolean;
+  readonly onSeat: (seat: RoomSeat | null) => void;
   readonly onBack: () => void;
   readonly onMove: (visit: RoomVisit) => void;
   readonly onDoorMoment: (atDoor: boolean) => void;
@@ -115,22 +154,57 @@ interface BootFailed {
   readonly bootFailed: RefObject<boolean>;
 }
 
+const useDoorMoment = ({
+  open,
+  inLobby,
+  roomId,
+  seat,
+  send,
+}: {
+  readonly open: boolean;
+  readonly inLobby: boolean;
+  readonly roomId: string;
+  readonly seat: RoomSeat | null;
+  readonly send: (event: RoomEvent<SeatRide>) => void;
+}): void => {
+  const doorMoment = seat !== null && open;
+  const doorMs = doorWaitOf(seat?.race() ?? null);
+  useEffect(
+    () =>
+      doorMoment
+        ? afterDoorMoment(doorMs, () => {
+            send({ kind: "doorElapsed" });
+          })
+        : undefined,
+    [doorMoment, doorMs, send]
+  );
+  useEffect(() => {
+    if (!(seat && doorMoment && inLobby)) {
+      return;
+    }
+    const plan = planOf(seat, roomId);
+    if (plan) {
+      send({ kind: "raceBegun", ride: { plan, seat } });
+    }
+  }, [doorMoment, inLobby, roomId, seat, send]);
+};
+
 const SeatedLobby = ({
   bootFailed,
   name,
-  onChangeName,
   visit,
   ready,
+  shown,
   onBack,
   onDoorMoment,
   onLost,
   onMove,
   onPrepare,
+  onSeat,
   onStart,
 }: RoomProps &
   BootFailed & {
     readonly name: string;
-    readonly onChangeName: () => void;
   }) => {
   const [copied, setCopied] = useState(false);
   const [seat, setSeat] = useState<RoomSeat | null>(null);
@@ -141,6 +215,7 @@ const SeatedLobby = ({
   const gaveUp = useRef(rejoin === "no");
   const joinedTold = useRef(false);
   const lost = useEffectEvent(onLost);
+  const seated = useEffectEvent(onSeat);
   const moveIn = useEffectEvent((next: RoomVisit["rejoin"]) => {
     onMove({ arrival: "moved", rejoin: next, roomId });
   });
@@ -256,7 +331,9 @@ const SeatedLobby = ({
       },
     });
     setSeat(opened);
+    seated(opened);
     return () => {
+      seated(null);
       if (reopening) {
         clearTimeout(reopening);
       }
@@ -308,28 +385,14 @@ const SeatedLobby = ({
       clearInterval(redrawing);
     };
   }, []);
-  const doorMoment = seat !== null && raceBegun && ready;
+  useDoorMoment({
+    inLobby: handoff.kind === "lobby",
+    open: raceBegun && ready,
+    roomId,
+    seat,
+    send,
+  });
   const race = seat?.race() ?? null;
-  const doorMs = doorWaitOf(race);
-  useEffect(
-    () =>
-      doorMoment
-        ? afterDoorMoment(doorMs, () => {
-            send({ kind: "doorElapsed" });
-          })
-        : undefined,
-    [doorMoment, doorMs, send]
-  );
-  const inLobby = handoff.kind === "lobby";
-  useEffect(() => {
-    if (!(seat && doorMoment && inLobby)) {
-      return;
-    }
-    const plan = planOf(seat, roomId);
-    if (plan) {
-      send({ kind: "raceBegun", ride: { plan, seat } });
-    }
-  }, [doorMoment, inLobby, roomId, seat, send]);
   useEffect(() => {
     if (racing) {
       send({ kind: "roomRacing" });
@@ -354,96 +417,65 @@ const SeatedLobby = ({
             lostRace={lobby.lostRace}
           />
         )}
-        <BarLobby
-          copied={copied}
-          lobby={lobby}
-          name={name}
-          onBack={leaveRoom}
-          onChangeName={onChangeName}
-          onCopyLink={() => {
-            void copyLink();
-          }}
-          roomId={roomId}
-          seat={seat}
-          startsInSeconds={secondsOf(seat.startsInMs())}
-        />
+        {!seat.race() && (
+          <PanelPart label="This lobby" shown={shown}>
+            <LobbyPart
+              copied={copied}
+              lobby={lobby}
+              onCopyLink={() => {
+                void copyLink();
+              }}
+              onLeave={leaveRoom}
+              roomId={roomId}
+              seat={seat}
+              shown={shown}
+              startsInSeconds={secondsOf(seat.startsInMs())}
+            />
+          </PanelPart>
+        )}
       </>
     );
   }
   return (
-    <RoomLobbyScreen
-      name={name}
-      onBack={leaveRoom}
-      phase={phase}
-      refusal={seat?.refusal() ?? null}
-      roomId={roomId}
-    />
+    <RoomStatusPanel roomId={roomId} shown={shown}>
+      <RoomStatusPart
+        onLeave={leaveRoom}
+        phase={phase}
+        refusal={seat?.refusal() ?? null}
+      />
+    </RoomStatusPanel>
   );
 };
 
 const RoomEntry = (props: RoomProps & BootFailed) => {
-  const { arrival, rejoin, roomId } = props.visit;
-  const [name, setName] = useState(storedGuestName);
-  const [invited, setInvited] = useState(
-    () => arrival === "link" && !racedIn(roomId)
-  );
-  const [preview, setPreview] = useState<RoomPreview | null>(null);
-  useEffect(
-    () =>
-      invited
-        ? readRoomPreview(
-            import.meta.env.VITE_ROOMS_URL,
-            roomId,
-            NO_HOLD,
-            setPreview
-          )
-        : undefined,
-    [invited, roomId]
-  );
-  if (invited) {
-    return (
-      <RoomInviteScreen
-        onBack={props.onBack}
-        onJoin={() => {
-          setInvited(false);
-        }}
-        preview={preview}
-        roomId={roomId}
-      />
-    );
-  }
+  const { rejoin, roomId } = props.visit;
+  const name = useGuestName();
   if (name === null) {
     return (
-      <GuestNameScreen
-        onBack={props.onBack}
-        onName={(typed) => {
-          const clean = cleanGuestName(typed);
-          storeGuestName(clean);
-          setName(clean);
-        }}
-      />
+      <>
+        <RoomStatusPanel roomId={roomId} shown={props.shown}>
+          <RoomStatusPart
+            onLeave={props.onBack}
+            phase="connecting"
+            refusal={null}
+          />
+        </RoomStatusPanel>
+        <NameCard onCancel={props.onBack} start={null} />
+      </>
     );
   }
   if (rejoin === "taken" || rejoin === "flooded") {
     return (
-      <RoomLobbyScreen
-        name={name}
-        onBack={props.onBack}
-        phase="refused"
-        refusal={rejoin === "taken" ? "replaced" : "flooded"}
-        roomId={roomId}
-      />
+      <RoomStatusPanel roomId={roomId} shown={props.shown}>
+        <RoomStatusPart
+          onLeave={props.onBack}
+          phase="refused"
+          refusal={rejoin === "taken" ? "replaced" : "flooded"}
+        />
+      </RoomStatusPanel>
     );
   }
-  return (
-    <SeatedLobby
-      {...props}
-      name={name}
-      onChangeName={() => {
-        setName(null);
-      }}
-    />
-  );
+  return <SeatedLobby {...props} name={name} />;
 };
 
 export const RoomLobby = (props: RoomProps) => {
@@ -454,20 +486,53 @@ export const RoomLobby = (props: RoomProps) => {
   return props.failure === "" ? (
     <RoomEntry {...props} bootFailed={bootFailed} />
   ) : (
-    <RoomFailedScreen
-      failure={props.failure}
-      onBack={props.onBack}
-      roomId={props.visit.roomId}
-    />
+    <RoomStatusPanel roomId={props.visit.roomId} shown={props.shown}>
+      <RoomFailedPart failure={props.failure} onLeave={props.onBack} />
+    </RoomStatusPanel>
+  );
+};
+
+export const RoomInvite = ({
+  roomId,
+  shown,
+  onJoin,
+  onNotNow,
+}: {
+  readonly roomId: string;
+  readonly shown: boolean;
+  readonly onJoin: () => void;
+  readonly onNotNow: () => void;
+}) => {
+  const [preview, setPreview] = useState<RoomPreview | null>(null);
+  useEffect(
+    () =>
+      readRoomPreview(
+        import.meta.env.VITE_ROOMS_URL,
+        roomId,
+        NO_HOLD,
+        setPreview
+      ),
+    [roomId]
+  );
+  return (
+    <PanelPart label="Invite" shown={shown}>
+      <InvitePart
+        onJoin={onJoin}
+        onNotNow={onNotNow}
+        preview={preview}
+        roomId={roomId}
+      />
+    </PanelPart>
   );
 };
 
 interface QueueProps {
+  readonly shown: boolean;
   readonly onBack: () => void;
   readonly onPlaced: (roomId: string) => void;
 }
 
-const FindingRiders = ({ onBack, onPlaced }: QueueProps) => {
+const FindingRiders = ({ shown, onBack, onPlaced }: QueueProps) => {
   const placed = useEffectEvent(onPlaced);
   const [riders, setRiders] = useState(1);
   const [refusal, setRefusal] = useState<QueueRefusal | null>(null);
@@ -511,30 +576,35 @@ const FindingRiders = ({ onBack, onPlaced }: QueueProps) => {
     };
   }, [opening]);
   return (
-    <QueueScreen
-      onBack={onBack}
-      refusal={refusal}
-      riders={riders}
-      waitSeconds={launchRoomConfig.queueWaitSeconds}
-    />
+    <PanelPart label="Finding riders" shown={shown}>
+      <FindingPart
+        onCancel={onBack}
+        refusal={refusal}
+        riders={riders}
+        waitSeconds={launchRoomConfig.queueWaitSeconds}
+      />
+    </PanelPart>
   );
 };
 
-export const QuickRace = ({ onBack, onPlaced }: QueueProps) => {
-  const [name, setName] = useState(storedGuestName);
+export const QuickRace = (props: QueueProps) => {
+  const name = useGuestName();
   if (name === null) {
     return (
-      <GuestNameScreen
-        onBack={onBack}
-        onName={(typed) => {
-          const clean = cleanGuestName(typed);
-          storeGuestName(clean);
-          setName(clean);
-        }}
-      />
+      <>
+        <PanelPart label="Finding riders" shown={props.shown}>
+          <FindingPart
+            onCancel={props.onBack}
+            refusal={null}
+            riders={0}
+            waitSeconds={launchRoomConfig.queueWaitSeconds}
+          />
+        </PanelPart>
+        <NameCard onCancel={props.onBack} start={null} />
+      </>
     );
   }
-  return <FindingRiders onBack={onBack} onPlaced={onPlaced} />;
+  return <FindingRiders {...props} />;
 };
 
 export const RejoinWatch = ({

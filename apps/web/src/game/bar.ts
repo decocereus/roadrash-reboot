@@ -4,6 +4,7 @@ import { doorSpot, GARAGE_PLINTH, PLINTH, ROOM } from "@racer/sim/lobby-floor";
 import { riderBlocks } from "@racer/sim/palette";
 import * as THREE from "three";
 
+import { SOLO_SLOT } from "../bar-view.ts";
 import type { BarCamera } from "../bar-view.ts";
 import { diagnostics } from "../diagnostics/hub.ts";
 import { graphicsCard } from "../diagnostics/player-events.ts";
@@ -16,9 +17,10 @@ import { createBarInput } from "./bar-input.ts";
 import { createKit } from "./bar-kit.ts";
 import { duskLook, nightLook, toneAt } from "./bar-light.ts";
 import { createMembers } from "./bar-members.ts";
+import type { BarMembers } from "./bar-members.ts";
 import { createOutside } from "./bar-outside.ts";
 import { createBarPlayer } from "./bar-player.ts";
-import type { PlayerSlot } from "./bar-player.ts";
+import type { BarCompany, PlayerSlot } from "./bar-player.ts";
 import { createPools } from "./bar-pools.ts";
 import { buildProps } from "./bar-props.ts";
 import {
@@ -31,7 +33,7 @@ import {
 import { countdownPlate, createSignAtlas, signGeometry } from "./bar-signs.ts";
 import { createSpeech } from "./bar-speech.ts";
 import { createTagLayer } from "./bar-tags.ts";
-import { createWalkers, SOLO_SLOT } from "./bar-walker.ts";
+import { createWalkers } from "./bar-walker.ts";
 import { createShading } from "./cel.ts";
 import { releaseAll } from "./dispose.ts";
 import { createPipeline } from "./post.ts";
@@ -42,7 +44,6 @@ import { createPuffs } from "./puffs.ts";
 
 export { assetParsers } from "./assets.ts";
 
-const LOOP_AFTER_DOOR = 15;
 const BIKE_WAITS = 1.3;
 const BIKE_PULL = 1.6;
 const DOOR_REACH = Math.hypot(
@@ -58,7 +59,6 @@ const SHADOW_SPAN = 18;
 const SHADOW_DISTANCE = 26;
 const LONGEST_STEP = 0.1;
 const CYCLE_SECONDS = 150;
-const COUNTDOWN_START = 90;
 const DOOR_SECONDS = 2.6;
 const DOOR_RISE = 4.5;
 const TURN_SECONDS = 14;
@@ -99,6 +99,7 @@ const pinsFrom = (search: string): Pins => {
 
 export interface BarScene {
   readonly setCamera: (mode: BarCamera) => void;
+  readonly setSeat: (seat: RoomSeat | null) => void;
   readonly dispose: () => void;
 }
 
@@ -106,7 +107,6 @@ const openRoom = (
   canvas: HTMLCanvasElement,
   assets: Assets,
   startCamera: BarCamera,
-  seat: RoomSeat | null,
   owners: (() => void)[]
 ): BarScene => {
   const pins = pinsFrom(globalThis.location.search);
@@ -313,7 +313,7 @@ const openRoom = (
     heroBike,
     garageBike,
     pins.riders,
-    seat === null
+    true
   );
   scene.add(cast.group);
   owners.push(() => {
@@ -324,16 +324,19 @@ const openRoom = (
     walkers.dispose();
   });
   const rider = createLobbyRider();
-  const members =
-    seat &&
-    createMembers({
-      bikes,
-      firstBike: FIRST_WALKER_BIKE,
-      rider,
-      seat,
-      speech,
-      walkers,
-    });
+  let seat: RoomSeat | null = null;
+  let members: BarMembers | null = null;
+  const company: BarCompany = {
+    crowd: () => (members ?? cast).crowd(),
+    greet(index, x, z, time) {
+      (members ?? cast).greet(index, x, z, time);
+    },
+    nearest: (x, z, reach) => (members ?? cast).nearest(x, z, reach),
+    shove(index, x, z, time) {
+      (members ?? cast).shove(index, x, z, time);
+    },
+    spotOf: (index) => (members ?? cast).spotOf(index),
+  };
   const yourSlot = (): PlayerSlot => {
     const slot = members?.mine() ?? SOLO_SLOT;
     const bikeIndex = FIRST_WALKER_BIKE + slot;
@@ -346,7 +349,7 @@ const openRoom = (
   yourSlot().walker.rename("YOU");
   const player = createBarPlayer({
     bikes,
-    company: members ?? cast,
+    company,
     puffs,
     rider,
     slot: yourSlot,
@@ -365,7 +368,6 @@ const openRoom = (
   const viewSize = { height: 1, width: 1 };
   let clock = 0;
   let neonNow = 1;
-  let timeShift = 0;
   let doorOpenedAt: number | null = null;
   let spinAt = 0;
 
@@ -456,30 +458,48 @@ const openRoom = (
     if (seat?.race()) {
       openDoor();
     }
-    if (
-      !seat &&
-      doorOpenedAt !== null &&
-      clock - doorOpenedAt > LOOP_AFTER_DOOR
-    ) {
-      timeShift += clock;
-      clock = 0;
-      doorOpenedAt = null;
-      cast.reset();
-      speech.reset();
-      player.reset();
-      spinAt = 0;
-      heroBike.position.set(PLINTH.x, PLINTH.height, PLINTH.z);
-    }
-    if (!seat && COUNTDOWN_START <= clock) {
-      openDoor();
-    }
   };
 
   const msToDoor = (): number | null => {
     if (!seat) {
-      return Math.max(0, COUNTDOWN_START - clock) * MS_PER_SECOND;
+      return null;
     }
     return seat.race() ? 0 : seat.startsInMs();
+  };
+
+  const closeDoor = (): void => {
+    doorOpenedAt = null;
+    door.position.y = 0;
+    heroBike.position.set(PLINTH.x, PLINTH.height, PLINTH.z);
+  };
+
+  const setSeat = (next: RoomSeat | null): void => {
+    if (next === seat) {
+      return;
+    }
+    const left = yourSlot();
+    seat = next;
+    members =
+      next &&
+      createMembers({
+        bikes,
+        firstBike: FIRST_WALKER_BIKE,
+        rider,
+        seat: next,
+        speech,
+        walkers,
+      });
+    cast.setStandIns(next === null);
+    closeDoor();
+    if (next === null) {
+      for (let slot = 0; slot < riderBlocks.length; slot += 1) {
+        if (slot !== SOLO_SLOT) {
+          walkers.hide(slot);
+        }
+      }
+    } else {
+      left.walker.show(false);
+    }
   };
 
   const frame = (now: number): void => {
@@ -492,8 +512,7 @@ const openRoom = (
     clock += seconds;
 
     const cycle =
-      pins.time ??
-      0.5 - 0.5 * Math.cos(((clock + timeShift) / CYCLE_SECONDS) * Math.PI * 2);
+      pins.time ?? 0.5 - 0.5 * Math.cos((clock / CYCLE_SECONDS) * Math.PI * 2);
     const step = Math.round(cycle * 240);
     if (step !== timeStep) {
       timeStep = step;
@@ -630,18 +649,18 @@ const openRoom = (
     setCamera(mode) {
       eye.setMode(mode, rider.heading);
     },
+    setSeat,
   };
 };
 
 export const createBar = (
   canvas: HTMLCanvasElement,
   assets: Decoded<Assets>,
-  startCamera: BarCamera,
-  seat: RoomSeat | null
+  startCamera: BarCamera
 ): BarScene => {
   const owners = [assets.release];
   try {
-    return openRoom(canvas, assets.value, startCamera, seat, owners);
+    return openRoom(canvas, assets.value, startCamera, owners);
   } catch (error) {
     releaseAll(owners);
     throw error;

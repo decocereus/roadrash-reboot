@@ -77,8 +77,8 @@ Read `features/README.md`, then the feature file for what you changed. Each reci
 
 | Command | What it does |
 | --- | --- |
-| `rv open --run <id> "/?flags" [--until bar\|race\|held\|<js>]` | Navigate the page, wait for load, then optionally until a signal. Prints both times. `bar` is the Lowside's menu, `race` is the race HUD's speed meter, `held` is a `?hold=` freeze. |
-| `rv click --run <id> "<label>" [--within "<aria-label>"]` | Click the visible control whose text reads the label (case does not matter; menus render upper case). `--within` scopes to the element with that `aria-label`: a menu (`Clubhouse`, `Back room`, `Route board`, `Settings`, `Pause`, `Finish`, `Results`, `Garage`, `Catalogue`) or a confirm dialog (`Quit race`, `Buy`, `Sell`, `Start over`, `The envelope`). It fails if the control is disabled, hidden under an `inert` overlay, or covered at its centre, and lists what is on screen. |
+| `rv open --run <id> "/?flags" [--until bar\|race\|held\|<js>]` | Navigate the page, wait for load, then optionally until a signal. Prints both times. `bar` is the bar's tab strip, `race` is the race HUD's speed meter, `held` is a `?hold=` freeze. |
+| `rv click --run <id> "<label>" [--within "<aria-label>"]` | Click the visible control whose text reads the label (case does not matter; menus render upper case). `--within` scopes to the element with that `aria-label`: the bar's tab strip (`The bar`), a panel (`Race`, `Ride solo`, `This lobby`, `Settings`), the name card (`Your name`), a menu (`Pause`, `Race menu`, `Finish`, `Results`, `Garage`, `Catalogue`) or a confirm dialog (`Quit race`, `Buy`, `Sell`, `Start over`). It fails if the control is disabled, hidden under an `inert` overlay, or covered at its centre, and lists what is on screen. |
 | `rv press --run <id> ArrowUp KeyJ [--hold ms]` | Hold the keys together for `--hold` ms (default 120), then release. Uses `KeyboardEvent.code` names. |
 | `rv wait --run <id> <signal or js> [--timeout s]` | Poll until the expression is truthy. Default timeout 60 s. |
 | `rv js --run <id> '<expression>'` | `Runtime.evaluate` with promises awaited; prints the JSON value. |

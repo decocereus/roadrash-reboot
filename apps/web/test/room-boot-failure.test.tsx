@@ -1,3 +1,4 @@
+import type { RoomSeat } from "@racer/rooms/seat-client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
@@ -18,8 +19,10 @@ const roomScreen = (failure: string): string =>
       onLost={vi.fn<() => void>()}
       onMove={vi.fn<(visit: RoomVisit) => void>()}
       onPrepare={vi.fn<(plan: RacePlan) => Promise<PrepareOutcome>>()}
+      onSeat={vi.fn<(seat: RoomSeat | null) => void>()}
       onStart={vi.fn<(plan: RacePlan) => void>()}
       ready={false}
+      shown
       visit={{ arrival: "made", rejoin: null, roomId: ROOM_ID }}
     />
   );

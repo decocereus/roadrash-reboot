@@ -30,7 +30,7 @@ export const roomFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/bar-player.ts",
     ],
     summary:
-      "The bar players walk around before a race, with the movement rules and floor in the simulation package, three saved cameras, greet, shove, sit and pose, the hidden bike, the stand-in cast and the door cutscene.",
+      "The walkable bar is the game's home: one scene that stays up through home, the queue, invites and the lobby, with the movement rules and floor in the simulation package, three saved cameras, greet, shove, sit and pose, the hidden bike, the stand-in cast with no room and the door cutscene when a lobby starts.",
     title: "Walkable bar lobby",
     verify: ["walkable-bar.md"],
   },
@@ -62,7 +62,7 @@ export const roomFeatures: readonly FeatureEntry[] = [
       "apps/web/test/race-handoff.test.ts",
       "apps/web/test/room-boot-failure.test.tsx",
       "apps/web/test/room-limited.test.tsx",
-      "apps/web/test/queue-screen.test.tsx",
+      "apps/web/test/finding-riders.test.tsx",
       "apps/web/test/room-address.test.ts",
       "apps/web/test/room-navigation.test.ts",
       "apps/web/test/room-run-stub.ts",

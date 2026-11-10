@@ -301,8 +301,11 @@ export const GarageScreen = ({
     }
   };
   return (
-    <Screen className="bg-ink flex" enter="fade">
-      <Stage inert={asking === "nothing" ? undefined : true}>
+    <Screen className="bg-ink flex" enter="fade" fit="parent">
+      <Stage
+        className="w-[min(100cqw,calc(100cqh*1672/941))]"
+        inert={asking === "nothing" ? undefined : true}
+      >
         <Plate
           box={BACKDROP}
           className="object-cover"

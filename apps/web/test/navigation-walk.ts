@@ -19,7 +19,14 @@ import { settledRace } from "../src/career/save.ts";
 import type { SaveState } from "../src/career/save.ts";
 import type { RacePlan } from "../src/game/hud.ts";
 import { stepNavigation } from "../src/navigation.ts";
-import type { NavigationEvent, RoomVisit, View } from "../src/navigation.ts";
+import type {
+  BarPanel,
+  BarTab,
+  BarView,
+  NavigationEvent,
+  RoomVisit,
+  View,
+} from "../src/navigation.ts";
 import type { RulesLoad } from "../src/rules/load.ts";
 import { RulesRequestFailed } from "../src/rules/rules-request-failed.ts";
 import { roomRunStub } from "./room-run-stub.ts";
@@ -74,7 +81,7 @@ const withLedger = (
   return { ...careerResult, ledger: { ...careerResult.ledger, ...change } };
 };
 
-export const promotion = { bikes: [], tier: 2 } as const;
+const promotion = { bikes: [], tier: 2 } as const;
 export const promoted = withLedger({ tierUp: promotion });
 export const broke = withLedger({ gameOver: true });
 export const crowned = withLedger({ ending: "clean-crown" });
@@ -92,7 +99,21 @@ export const linkVisit: RoomVisit = {
   rejoin: null,
   roomId: ROOM_ID,
 };
-export const roomLobby: View = { screen: "room", turn: 0, visit: linkVisit };
+export const barAt = (panel: BarPanel, tab: BarTab = "race"): BarView => ({
+  panel,
+  screen: "bar",
+  tab,
+});
+
+export const home = barAt({ kind: "home" });
+export const solo = barAt({ kind: "solo" });
+export const finding = barAt({ kind: "finding" });
+export const invite = barAt({ kind: "invite", roomId: ROOM_ID });
+
+export const lobbyOf = (visit: RoomVisit, turn = 0): BarView =>
+  barAt({ kind: "lobby", turn, visit });
+
+export const roomLobby: BarView = lobbyOf(linkVisit);
 
 export const singleResult: RaceReport = quickReport(
   singlePlan,
@@ -128,8 +149,16 @@ export const entered = (
   rules: RulesLoad | null,
   save: SaveState,
   room: RoomVisit | null = null,
-  urlRide = false
-): NavigationEvent => ({ kind: "entered", room, rules, save, urlRide });
+  urlRide = false,
+  invited = false
+): NavigationEvent => ({
+  invited,
+  kind: "entered",
+  room,
+  rules,
+  save,
+  urlRide,
+});
 
 export const readySave = (career: CareerState): SaveState => ({
   career,
@@ -159,8 +188,29 @@ export const settled = (
   report: RaceReport | null
 ): NavigationEvent => ({ kind: "raceSettled", report, result });
 
-export const nameOf = (view: View): string =>
-  view.screen === "race" ? `race/${view.stage.kind}` : view.screen;
+export const nameOf = (view: View): string => {
+  switch (view.screen) {
+    case "race": {
+      return `race/${view.stage.kind}`;
+    }
+    case "bar": {
+      return view.tab === "race"
+        ? `bar/${view.panel.kind}`
+        : `bar/${view.panel.kind}/${view.tab}`;
+    }
+    case "boot":
+    case "elsewhere":
+    case "ending":
+    case "gameOver":
+    case "results":
+    case "rideOut": {
+      return view.screen;
+    }
+    default: {
+      return view satisfies never;
+    }
+  }
+};
 
 export const walk = (first: View, ...events: readonly NavigationEvent[]) => {
   let at = first;
@@ -185,19 +235,6 @@ export const racing = (
   stage: { kind: "riding" },
 });
 
-export const picked = (screen: "garage" | "queue" | "routeBoard") =>
-  nameOf(
-    stepNavigation({ screen: "clubhouse" }, { kind: "picked", screen }).state
-  );
-
-export const backRoomHome = (career: CareerState | null) =>
-  nameOf(
-    stepNavigation(
-      { screen: "backRoom" },
-      leftWith(career ? readySave(career) : EMPTY)
-    ).state
-  );
-
 export const afterResultsOf = (report: RaceReport) =>
   stepNavigation({ report, screen: "results" }, LEFT).state;
 
@@ -210,19 +247,31 @@ export const quitTo = (plan: RacePlan, report: RaceReport | null) =>
   }).trail.at(-1);
 
 const everyScreen = {
-  backRoom: { screen: "backRoom" },
+  bar: home,
   boot: { screen: "boot" },
-  clubhouse: { screen: "clubhouse" },
   elsewhere: { screen: "elsewhere" },
   ending: { screen: "ending" },
   gameOver: { screen: "gameOver" },
-  garage: { screen: "garage" },
-  queue: { screen: "queue" },
   race: racing(careerPlan),
   results: { report: careerResult, screen: "results" },
   rideOut: { entry: toCareerRace, screen: "rideOut" },
-  room: roomLobby,
-  routeBoard: { screen: "routeBoard" },
 } as const satisfies Record<View["screen"], View>;
 
-export const screens = Object.values(everyScreen);
+const everyPanel = {
+  finding,
+  home,
+  invite,
+  lobby: roomLobby,
+  solo,
+} as const satisfies Record<BarPanel["kind"], BarView>;
+
+export const panels: readonly BarView[] = Object.values(everyPanel);
+
+export const screens: readonly View[] = [
+  ...Object.values(everyScreen),
+  ...panels.flatMap((view) => [
+    view,
+    { ...view, tab: "garage" as const },
+    { ...view, tab: "settings" as const },
+  ]),
+];
