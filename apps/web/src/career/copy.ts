@@ -1,7 +1,6 @@
 import type { BillConsequence } from "@racer/career/settle";
 import { chapterOf } from "@racer/career/story";
-import { prizeFor } from "@racer/career/tables";
-import type { Tier, RoadId } from "@racer/career/tables";
+import type { Tier } from "@racer/career/tables";
 import { celebrityRiders } from "@racer/content/celebrities";
 import { ordinaryRiders } from "@racer/content/riders";
 import { byId } from "@racer/content/rows";
@@ -13,22 +12,7 @@ export const TAGLINE = "Race. Fight. Pay for it.";
 export const CONTROLS =
   "Arrows to steer, Space to punch, Shift to kick, E to get back on";
 
-export const introCards = [
-  "You've got $1,500, a Halden Wren, and nobody knows your name.",
-  "Top three on every road and you move up.",
-  "Don't go broke.",
-] as const;
-
 export const tierName = (tier: Tier): string => chapterOf(tier).name;
-
-export const roadDescriptions = {
-  "breakwater-run":
-    "Harbour to pier along the seawall. One long bend by the water, one tunnel, and a kink at the tunnel mouth that nobody sees coming twice.",
-  "ridge-road":
-    "The home road. Ten bends and two crests on the way up to the lookout.",
-  "slag-row":
-    "Two lanes and a lot of nothing, then a right angle. Rail tracks, an underpass, a drawbridge, and more traffic than anywhere else.",
-} as const satisfies Record<RoadId, string>;
 
 export const classNames = {
   featherweight: "Featherweight",
@@ -66,41 +50,14 @@ const magsLines = [
 export const magsLine = (raceId: number): string =>
   magsLines[Math.abs(raceId) % magsLines.length] ?? magsLines[0];
 
-const vicCards = {
-  1: "Top three on every road and you move up. Don't go broke.",
-  2: "Bigger purses. The garage got a delivery. The new cops are quicker.",
-  3: "Everyone's armed now. Try to keep up. One more round. The Ridge is last. She'll be waiting.",
-} as const satisfies Record<Tier, string>;
-
-export const vicCard = (tier: Tier): string => vicCards[tier];
-
-export const firstPrize = (tier: Tier): number => prizeFor(tier, 1);
-
 export const BROKE_CARD =
   "You owe more than a Gutter Pup is worth, which is saying something. We're done.";
-
-export const ENVELOPE_INSIDE = "$1,500 inside.";
 
 const riders = [...ordinaryRiders, ...celebrityRiders];
 
 export const shortNames: Readonly<Record<RivalId, string>> = byId(
   riders,
   ({ shortName }) => shortName
-);
-
-interface Pronouns {
-  readonly their: string;
-  readonly them: string;
-}
-
-const pronounForms = {
-  hers: { their: "her", them: "her" },
-  his: { their: "his", them: "him" },
-} as const satisfies Record<string, Pronouns>;
-
-export const pronouns: Readonly<Record<RivalId, Pronouns>> = byId(
-  riders,
-  (row) => pronounForms[row.pronouns]
 );
 
 export const saveErrors = {

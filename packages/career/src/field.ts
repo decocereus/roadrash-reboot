@@ -2,7 +2,7 @@ import { bikes } from "@racer/sim/bikes";
 import type { BikeId } from "@racer/sim/bikes";
 import { celebrityCast, ordinaryCast, rivalAt, rivals } from "@racer/sim/cast";
 import type { Rival, RivalId } from "@racer/sim/cast";
-import { difficulties, tiers, TOP_TIER } from "@racer/sim/difficulty";
+import { difficulties, TOP_TIER } from "@racer/sim/difficulty";
 import { defaultPlayer } from "@racer/sim/race";
 import { clamp, PLAYER_RIDER } from "@racer/sim/state";
 import type { RaceSetup, RivalSetup } from "@racer/sim/state";
@@ -183,23 +183,8 @@ export interface PracticeRace extends PracticePick {
   readonly seed: number;
 }
 
-export interface PracticeChoices {
-  readonly tiers: readonly Tier[];
-  readonly bikes: readonly BikeId[];
-}
-
 const reachOf = (career: CareerState | null): CareerState =>
   career ?? newCareer(0);
-
-export const practiceChoices = (
-  career: CareerState | null
-): PracticeChoices => {
-  const reach = reachOf(career);
-  return {
-    bikes: reach.garage,
-    tiers: tiers.filter((tier) => tier <= reach.tier),
-  };
-};
 
 export const pickWithin = (
   pick: PracticePick,
@@ -236,7 +221,7 @@ export const practiceSetup = (
     track
   );
 
-export interface RoadStatus {
+interface RoadStatus {
   readonly road: Road;
   readonly lengthMetres: number;
   readonly open: boolean;
@@ -266,21 +251,6 @@ export const finaleOpen = (career: CareerState): boolean =>
 
 export const roadOpen = (career: CareerState, roadId: RoadId): boolean =>
   !isFinale(roadId, career.tier) || finaleOpen(career);
-
-export const roadBoss = (
-  rules: RaceRules,
-  career: CareerState,
-  roadId: RoadId
-): RivalId => {
-  const { season } = career;
-  const [boss] = homeRiders(rules, roadId, career.tier).toSorted(
-    (left, right) =>
-      season[right].wins - season[left].wins ||
-      season[right].points - season[left].points ||
-      rivals[right].skill - rivals[left].skill
-  );
-  return boss ?? CHAMPION_STAND_IN;
-};
 
 export const roadsFor = (rules: RaceRules, career: CareerState): RoadBoard => {
   const { tier } = career;

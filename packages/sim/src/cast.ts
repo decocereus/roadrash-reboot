@@ -16,7 +16,7 @@ import type { OfficerProfile, RivalSetup, WeaponKind } from "./state.ts";
 
 export type { RegionId } from "@racer/track/regions";
 
-export const ordinaryRivalIds = idsOf<OrdinaryRider>(ordinaryRiders);
+const ordinaryRivalIds = idsOf<OrdinaryRider>(ordinaryRiders);
 
 export type OrdinaryRivalId = (typeof ordinaryRivalIds)[number];
 

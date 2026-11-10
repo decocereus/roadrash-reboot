@@ -89,17 +89,6 @@ export const standingTag = (
   return undefined;
 };
 
-export const stepped = <Item,>(
-  items: readonly Item[],
-  current: Item,
-  step: number
-): Item => {
-  const index = items.indexOf(current);
-  return (
-    items[(Math.max(0, index) + step + items.length) % items.length] ?? current
-  );
-};
-
 export const RiderChip = ({ colour }: { readonly colour: number }) => (
   <span
     aria-hidden

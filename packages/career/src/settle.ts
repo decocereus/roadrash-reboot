@@ -61,7 +61,7 @@ export type StartResult =
 
 export type RepairOffer = "full" | "half";
 
-export interface TierUp {
+interface TierUp {
   readonly tier: Tier;
   readonly bikes: readonly BikeId[];
 }

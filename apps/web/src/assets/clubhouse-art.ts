@@ -33,10 +33,6 @@ export const officerFigures = {
   "wendell-haverty": artUrl("clubhouse/officers/wendell-haverty.webp"),
 } as const satisfies Record<OfficerId, string>;
 
-export const backRoomPlates = {
-  backdrop: artUrl("clubhouse/back-room/backdrop.webp"),
-} as const;
-
 export const gameOverPlates = {
   backdrop: artUrl("clubhouse/game-over/backdrop.webp"),
 } as const;
@@ -45,20 +41,6 @@ export const garagePlates = {
   backdrop: artUrl("clubhouse/garage/backdrop.webp"),
   mechanic: artUrl("clubhouse/garage/mechanic.webp"),
 } as const;
-
-export const bills: Readonly<Record<OrdinaryRivalId, string>> = byId(
-  ordinaryRiders,
-  ({ art }) => artUrl(art.bill)
-);
-
-export const stickers: readonly string[] = [
-  artUrl("clubhouse/stickers/stencil-m.webp"),
-  artUrl("clubhouse/stickers/antler-wing.webp"),
-  artUrl("clubhouse/stickers/chequered-tyre.webp"),
-  artUrl("clubhouse/stickers/club-m.webp"),
-  artUrl("clubhouse/stickers/crossed-crown.webp"),
-  artUrl("clubhouse/stickers/skull-helmet.webp"),
-];
 
 export const flyers = {
   "breakwater-run": artUrl("clubhouse/flyers/breakwater-run.webp"),

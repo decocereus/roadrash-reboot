@@ -39,7 +39,6 @@ export const endings = {
 
 export const chapterOf = (tier: Tier): StoryChapter => chapters[tier];
 
-export const ENVELOPE_NOTE = "Breakwater Run. Behind the boy. V.";
 export const LEFT_RACE_NOTE =
   "You left a race. The bike didn't make it home. V.";
 
