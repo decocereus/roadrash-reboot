@@ -227,8 +227,8 @@ describe("pilot replays to every race's outcome", () => {
         playBack(recorded)
       );
       expect(recorded).toHaveLength(TRACE_TICKS);
-      expect(new Set(recorded.map(({ steer }) => steer)).size).toBeGreaterThan(
-        3
+      expect(new Set(recorded.map(({ steer }) => steer))).toStrictEqual(
+        new Set([-1, 0, 1])
       );
       expect(replayed.frames).toStrictEqual(original.frames);
       expect(close(replayed)).toStrictEqual(close(original));
