@@ -1,7 +1,7 @@
 import { openRoomSeat } from "@racer/rooms/seat-client";
 import type { RoomSeat } from "@racer/rooms/seat-client";
 import { controlOf } from "@racer/sim/control";
-import { TICK_SECONDS } from "@racer/sim/state";
+import { riderOf, TICK_SECONDS } from "@racer/sim/state";
 import type { Control } from "@racer/sim/state";
 
 const TICK_MS = TICK_SECONDS * 1000;
@@ -13,6 +13,7 @@ export interface SeatReport {
   readonly ticks: number;
   readonly hashesCompared: number;
   readonly desyncs: number;
+  readonly repairs: number;
   readonly rollbacks: number;
   readonly resimulatedTicks: number;
   readonly refusedPredictions: number;
@@ -27,6 +28,7 @@ export interface SeatReport {
 }
 
 export interface Seat {
+  readonly drift: () => void;
   readonly leave: () => void;
   readonly opened: () => boolean;
   readonly over: () => boolean;
@@ -135,6 +137,13 @@ export const openSeat = (
     );
   };
   return {
+    drift: () => {
+      const race = seat.race();
+      const mine = race && riderOf(race.client.confirmed.riders, race.me);
+      if (mine) {
+        mine.s += 1;
+      }
+    },
     leave: () => {
       stopPump();
       seat.leave();
@@ -156,6 +165,7 @@ export const openSeat = (
         raceId: race?.raceId ?? null,
         refused: seat.refusal(),
         refusedPredictions,
+        repairs: race?.client.stats.repairs ?? 0,
         resimulatedTicks: race?.client.stats.resimulatedTicks ?? 0,
         rollbacks: race?.client.stats.rollbacks ?? 0,
         rttMs: seat.rttMs(),

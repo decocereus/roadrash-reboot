@@ -218,6 +218,7 @@ export const createRaceTally = (sharing: boolean): RaceTally => {
       jumpsOwnControl: stats.jumps.ownControl.felt,
       mostReplayedTicks,
       refusedPredictions: stats.refusedPredictions,
+      repairs: stats.repairs,
       resimulatedTicks: stats.resimulatedTicks,
       retriedPresses: stats.retriedPresses,
       rivalsSurgedFrames,

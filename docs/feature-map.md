@@ -290,6 +290,8 @@ Source files:
 
 Test files:
 
+- `apps/web/test/pilot-replay-baseline.ts`
+- `apps/web/test/pilot-replay-record.test.ts`
 - `apps/web/test/pilot-replay-record.ts`
 - `apps/web/test/pilot-replay.test.ts`
 - `apps/web/test/pilot-replay.ts`
@@ -1612,6 +1614,7 @@ Test files:
 - `apps/rooms/test/host-ownership.test.ts`
 - `apps/rooms/test/host-phases.test.ts`
 - `apps/rooms/test/host-rejoin.test.ts`
+- `apps/rooms/test/host-repair.test.ts`
 - `apps/rooms/test/host-restart.test.ts`
 - `apps/rooms/test/host-walk.test.ts`
 - `apps/rooms/test/host.test.ts`
@@ -1628,6 +1631,7 @@ Test files:
 - `apps/rooms/test/seat-catch-up.test.ts`
 - `apps/rooms/test/seat-client.test.ts`
 - `apps/rooms/test/seat-phases.test.ts`
+- `apps/rooms/test/seat-repair.test.ts`
 - `apps/rooms/test/seat-socket.ts`
 - `apps/rooms/test/socket-role.test.ts`
 - `apps/rooms/test/tape.test.ts`
@@ -1653,6 +1657,7 @@ Test files:
 - `packages/sim/src/room-limit.test.ts`
 - `packages/sim/src/room-mend.test.ts`
 - `packages/sim/src/room-missed.test.ts`
+- `packages/sim/src/room-repair.test.ts`
 - `packages/sim/src/room-restore.test.ts`
 - `packages/sim/src/room.test.ts`
 - `scripts/rooms-build.test.ts`

@@ -12,6 +12,7 @@ const PONG_KIND = 4;
 const READY_KIND = 6;
 const RACE_STATS_KIND = 7;
 const SNAPSHOT_KIND = 9;
+const REPAIR_KIND = 10;
 const KIND_BYTES = 1;
 const TICK_BYTES = 4;
 const COUNT_BYTES = 1;
@@ -22,7 +23,7 @@ const WORD_BYTES = 4;
 const HASH_BYTES = HASH_WORDS * WORD_BYTES;
 const LARGEST_TICK = 0xff_ff_ff_ff;
 
-export const ROOM_PROTOCOL = 5;
+export const ROOM_PROTOCOL = 6;
 
 export const MOST_BATCHED_CONTROLS = 8;
 
@@ -340,6 +341,21 @@ export const readReady = (view: DataView, into: Uint32Array): boolean => {
   return true;
 };
 
+export const REPAIR_PACKET_BYTES = KIND_BYTES + TICK_BYTES;
+
+export const MOST_REPAIRS = 3;
+
+export const writeRepair = (view: DataView, tick: number): number => {
+  view.setUint8(0, REPAIR_KIND);
+  view.setUint32(KIND_BYTES, tick, true);
+  return REPAIR_PACKET_BYTES;
+};
+
+export const readRepair = (view: DataView): number | null =>
+  view.byteLength === REPAIR_PACKET_BYTES && view.getUint8(0) === REPAIR_KIND
+    ? view.getUint32(KIND_BYTES, true)
+    : null;
+
 const RACE_STAT_FIELDS = [
   "crashes",
   "crashesAfterCorrection",
@@ -379,6 +395,7 @@ const RACE_STAT_FIELDS = [
   "mostReplayedTicks",
   "inputDelayMeanMs",
   "inputDelayWorstMs",
+  "repairs",
 ] as const;
 
 export type RaceStats = Readonly<

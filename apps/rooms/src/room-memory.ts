@@ -2,6 +2,7 @@ import { seatsCapacity } from "@racer/sim/room";
 import type { Room } from "@racer/sim/room";
 import type { TapeWriter } from "@racer/sim/room-tape";
 import { snapshotCapacity, writeSnapshot } from "@racer/sim/snapshot";
+import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 
 import { RaceManifestSchema } from "./manifest.ts";
@@ -40,6 +41,10 @@ const SeatMemorySchema = Schema.Struct({
   memberId: Schema.String,
   name: Schema.String,
   readyMs: Schema.NullOr(Schema.Number),
+  repairedAtTick: Schema.NullOr(Schema.Number).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed(null))
+  ),
+  repairs: Schema.Number.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
   reported: Schema.Boolean,
   rider: Schema.Number,
 });

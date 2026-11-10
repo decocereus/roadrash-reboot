@@ -6,6 +6,7 @@ import type {
   RaceLeft,
   RaceLost,
   RaceRejoined,
+  RaceRepaired,
   RaceRestored,
   RaceSeat,
   RaceStarted,
@@ -25,6 +26,7 @@ interface RaceRecord {
   readonly drops: (RaceHeld | RaceRejoined)[];
   ended?: RaceEnded;
   readonly left: RaceLeft[];
+  readonly repairs: RaceRepaired[];
   readonly restarts: (RaceRestored | RaceLost)[];
   started?: RaceStarted;
   readonly stats: RaceStatsNote[];
@@ -43,6 +45,7 @@ const recordOf = (
     drops: [],
     left: [],
     raceId,
+    repairs: [],
     restarts: [],
     stats: [],
   };
@@ -82,6 +85,10 @@ export const groupRaces = (
       }
       case "left": {
         recordOf(records, note.raceId).left.push(note);
+        break;
+      }
+      case "repaired": {
+        recordOf(records, note.raceId).repairs.push(note);
         break;
       }
       case "stats": {
@@ -140,7 +147,7 @@ const browserLines = (note: RaceStatsNote): readonly string[] => [
   `    round trip: mean ${stat(note, "rttMeanMs")} ms, worst ${stat(note, "rttWorstMs")} ms`,
   `    frame times: ${stat(note, "frameCount")} frames, p50 ${stat(note, "frameP50Ms")} ms, p95 ${stat(note, "frameP95Ms")} ms, p99 ${stat(note, "frameP99Ms")} ms`,
   `    frames: slowest ${stat(note, "worstFrameMs")} ms at ${stat(note, "worstFrameRoadMetres")} m, ${stat(note, "slowFrames")} slow`,
-  `    desyncs ${stat(note, "desyncs")}, rollbacks ${stat(note, "rollbacks")}, refused predictions ${stat(note, "refusedPredictions")}, retried presses ${stat(note, "retriedPresses")}`,
+  `    desyncs ${stat(note, "desyncs")}, repairs ${stat(note, "repairs")}, rollbacks ${stat(note, "rollbacks")}, refused predictions ${stat(note, "refusedPredictions")}, retried presses ${stat(note, "retriedPresses")}`,
 ];
 
 const browserIdentity = ({ build, gpu, graphics }: RaceBrowserNote): string =>
@@ -268,12 +275,21 @@ const dropLine = (note: RaceHeld | RaceRejoined): string => {
   }
 };
 
+const repairLine = ({
+  desyncTick,
+  repairs,
+  rider,
+  tick,
+}: RaceRepaired): string =>
+  `  Rider ${rider}'s race differed from the room's at tick ${desyncTick}, and the room sent its race at tick ${tick}, repair ${repairs}`;
+
 export const raceReport = (record: RaceRecord): string =>
   [
     headline(record),
     timelineLine(record),
     ...record.restarts.map(restartLine),
     ...record.drops.map(dropLine),
+    ...record.repairs.map(repairLine),
     ...(record.ended
       ? [
           serverLine(record.ended),

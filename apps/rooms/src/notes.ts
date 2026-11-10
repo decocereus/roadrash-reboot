@@ -105,6 +105,15 @@ const Rejoined = Schema.Struct({
   rider: Schema.Number,
 });
 
+const Repaired = Schema.Struct({
+  desyncTick: Schema.Number,
+  kind: Schema.Literal("repaired"),
+  raceId: Schema.String,
+  repairs: Schema.Number,
+  rider: Schema.Number,
+  tick: Schema.Number,
+});
+
 const Stats = Schema.Struct({
   kind: Schema.Literal("stats"),
   raceId: Schema.String,
@@ -191,6 +200,7 @@ export const RoomNoteSchema = Schema.Union([
   Left,
   Held,
   Rejoined,
+  Repaired,
   Stats,
   Browser,
   Ended,
@@ -205,5 +215,6 @@ export type RaceBrowserNote = typeof Browser.Type;
 export type RaceLeft = typeof Left.Type;
 export type RaceHeld = typeof Held.Type;
 export type RaceRejoined = typeof Rejoined.Type;
+export type RaceRepaired = typeof Repaired.Type;
 export type RaceRestored = typeof Restored.Type;
 export type RaceLost = typeof Lost.Type;

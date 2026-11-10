@@ -5,6 +5,7 @@ import {
   PING_PACKET_BYTES,
   RACE_STATS_PACKET_BYTES,
   READY_PACKET_BYTES,
+  REPAIR_PACKET_BYTES,
 } from "@racer/sim/room-wire";
 import { TICK_SECONDS } from "@racer/sim/state";
 
@@ -50,7 +51,8 @@ export const MOST_PACKET_BYTES = Math.max(
   inputBytes(MOST_BATCHED_CONTROLS),
   PING_PACKET_BYTES,
   RACE_STATS_PACKET_BYTES,
-  READY_PACKET_BYTES
+  READY_PACKET_BYTES,
+  REPAIR_PACKET_BYTES
 );
 
 const messageOf = (data: string | ArrayBuffer): SocketMessage | null => {
