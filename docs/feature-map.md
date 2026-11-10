@@ -68,12 +68,13 @@ How the bike answers the keys and the gamepad: throttle, brakes, steering, the p
 - Docs: [docs/architecture/riding-model.md#riding-model](architecture/riding-model.md#riding-model), [docs/handling-matrix.md#fields](handling-matrix.md#fields), [docs/design/game-design.md#6-bike-catalogue](design/game-design.md#6-bike-catalogue)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md)
 - Perf: `sim.ticksPerSecond`, `sim.tick.p95`, `sim.tick.p99`, `sim.allocatedBytesPerTick`
-- Owns: `packages/sim/src/rider.ts`, `packages/sim/src/rider-drive.ts`, `packages/sim/src/engine.ts`, `packages/sim/src/bikes.ts`, `packages/sim/src/riding.test.ts`, `packages/sim/src/braking-and-cornering.test.ts`, `packages/sim/src/engine-and-tuck.test.ts`, `apps/web/src/game/input.ts`, `apps/web/src/game/held-keys.ts`, `apps/web/test/input.test.ts`, `tools/handling/**`
+- Owns: `packages/sim/src/rider.ts`, `packages/sim/src/rider-drive.ts`, `packages/sim/src/engine.ts`, `packages/sim/src/bikes.ts`, `packages/sim/src/riding.test.ts`, `packages/sim/src/braking-and-cornering.test.ts`, `packages/sim/src/engine-and-tuck.test.ts`, `apps/web/src/game/input.ts`, `apps/web/src/game/held-keys.ts`, `apps/web/src/key-target.ts`, `apps/web/test/input.test.ts`, `tools/handling/**`
 
 Source files:
 
 - `apps/web/src/game/held-keys.ts`
 - `apps/web/src/game/input.ts`
+- `apps/web/src/key-target.ts`
 - `packages/sim/src/bikes.ts`
 - `packages/sim/src/engine.ts`
 - `packages/sim/src/rider-drive.ts`

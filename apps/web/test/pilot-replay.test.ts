@@ -103,9 +103,13 @@ const keyScript: readonly (readonly [number, (keys: Keyboard) => void])[] = [
 
 const recordControls = (recorded: RiderInput[]) => {
   const keys = createKeyboard();
-  const controls = createControls((code) => {
-    keys.commands.push(code);
-  }, keys.host);
+  const controls = createControls(
+    (code) => {
+      keys.commands.push(code);
+    },
+    () => true,
+    keys.host
+  );
   return (run: Run) => {
     for (const [tick, act] of keyScript) {
       if (tick === run.state.tick) {

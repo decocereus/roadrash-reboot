@@ -32,6 +32,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "packages/sim/src/engine-and-tuck.test.ts",
       "apps/web/src/game/input.ts",
       "apps/web/src/game/held-keys.ts",
+      "apps/web/src/key-target.ts",
       "apps/web/test/input.test.ts",
       "tools/handling/**",
     ],

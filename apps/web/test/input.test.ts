@@ -17,11 +17,15 @@ import type { Controls, Pad } from "../src/game/input.ts";
 import { createKeyboard } from "./hosts.ts";
 import type { Keyboard } from "./hosts.ts";
 
-const setUp = () => {
+const setUp = (racing = true) => {
   const keyboard = createKeyboard();
-  const controls = createControls((code) => {
-    keyboard.commands.push(code);
-  }, keyboard.host);
+  const controls = createControls(
+    (code) => {
+      keyboard.commands.push(code);
+    },
+    () => racing,
+    keyboard.host
+  );
   return { controls, keyboard };
 };
 
@@ -125,6 +129,14 @@ describe("keyboard controls", () => {
     expect(keyboard.prevented()).toBe(0);
     expect(keyboard.commands).toStrictEqual([]);
     expect(readOnce(controls).steer).toBe(0);
+  });
+
+  it("leaves Space and the arrows to the page outside a race, so Space presses a focused button in the bar", () => {
+    const { controls, keyboard } = setUp(false);
+    keyboard.press("Space");
+    keyboard.press("ArrowRight");
+    expect(keyboard.prevented()).toBe(0);
+    controls.dispose();
   });
 
   it("punch and kick stay held while their keys are down", () => {

@@ -21,6 +21,7 @@ import {
 import type { BarCamera } from "../bar-view.ts";
 import { diagnostics } from "../diagnostics/hub.ts";
 import { idleHud } from "../hud-feed.ts";
+import { onControl } from "../key-target.ts";
 import { barTabs } from "../navigation.ts";
 import type { BarTab, BarView, RoomVisit } from "../navigation.ts";
 import { BarStage } from "./bar-stage.tsx";
@@ -87,7 +88,7 @@ const useCamera = (): readonly [BarCamera, (camera: BarCamera) => void] => {
         event.code === NEXT_CAMERA_KEY &&
         !event.repeat &&
         !event.metaKey &&
-        !(event.target instanceof HTMLInputElement)
+        !onControl(event.target)
       ) {
         setCamera((current) => {
           const next = nextCamera(current);

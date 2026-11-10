@@ -1,6 +1,7 @@
 import type { LobbyControl } from "@racer/sim/lobby";
 import type { LobbyPose } from "@racer/sim/lobby-walk";
 
+import { onControl } from "../key-target.ts";
 import { createHeldKeys } from "./held-keys.ts";
 
 const POSE_KEYS = {
@@ -43,8 +44,7 @@ export const createBarInput = (
     HTMLCanvasElement,
     "addEventListener" | "getBoundingClientRect" | "removeEventListener"
   >,
-  events: BarInputEvents,
-  isTextField: (target: EventTarget | null) => boolean
+  events: BarInputEvents
 ): BarInput => {
   const held = createHeldKeys();
   const control = { forward: 0, right: 0, sprint: false };
@@ -52,7 +52,7 @@ export const createBarInput = (
   let dragged = false;
 
   const onKeyDown = (event: KeyboardEvent): void => {
-    if (isTextField(event.target) || !held.press(event)) {
+    if (onControl(event.target) || !held.press(event)) {
       return;
     }
     if (isPoseKey(event.code)) {

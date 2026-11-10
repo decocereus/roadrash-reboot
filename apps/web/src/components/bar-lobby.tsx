@@ -12,6 +12,7 @@ import {
 } from "@racer/ui/components/skew-button";
 import { useEffect, useEffectEvent, useState } from "react";
 
+import { onControl } from "../key-target.ts";
 import {
   MemberRows,
   RuleChoices,
@@ -57,8 +58,7 @@ export const LobbyPart = ({
       if (
         event.code === READY_KEY &&
         !event.repeat &&
-        !(event.target instanceof HTMLButtonElement) &&
-        !(event.target instanceof HTMLInputElement)
+        !onControl(event.target)
       ) {
         toggleReady();
       }

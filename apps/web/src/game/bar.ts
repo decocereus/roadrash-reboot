@@ -393,28 +393,24 @@ const openRoom = (
   });
   resize();
 
-  const input = createBarInput(
-    canvas,
-    {
-      action(action) {
-        player.act(action, clock);
-      },
-      click(x, y) {
-        clicked.set(x, y);
-        ray.setFromCamera(clicked, camera);
-        if (ray.ray.intersectPlane(floorPlane, hit)) {
-          player.walkTo(hit.x, hit.z);
-        }
-      },
-      drag(pixels) {
-        eye.orbit(pixels);
-      },
-      pose(pose) {
-        player.pose(pose);
-      },
+  const input = createBarInput(canvas, {
+    action(action) {
+      player.act(action, clock);
     },
-    (target) => target instanceof HTMLInputElement
-  );
+    click(x, y) {
+      clicked.set(x, y);
+      ray.setFromCamera(clicked, camera);
+      if (ray.ray.intersectPlane(floorPlane, hit)) {
+        player.walkTo(hit.x, hit.z);
+      }
+    },
+    drag(pixels) {
+      eye.orbit(pixels);
+    },
+    pose(pose) {
+      player.pose(pose);
+    },
+  });
   owners.push(() => {
     input.dispose();
   });
