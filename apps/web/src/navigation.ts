@@ -11,7 +11,7 @@ import type { RacePlan } from "./game/hud.ts";
 import type { Step } from "./race-handoff.ts";
 import type { RulesLoad } from "./rules/load.ts";
 
-type RaceStage =
+export type RaceStage =
   | { readonly kind: "riding" }
   | { readonly kind: "paused" }
   | { readonly kind: "signalLost"; readonly lostAt: number }

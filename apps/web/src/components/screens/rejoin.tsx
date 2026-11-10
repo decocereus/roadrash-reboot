@@ -1,8 +1,10 @@
+import type { RoomRun } from "@racer/rooms/room-run";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { ordinal } from "../../career/format.ts";
 import { idleHud } from "../../hud-feed.ts";
 import type { HudFeed } from "../../hud-feed.ts";
+import type { RaceStage } from "../../navigation.ts";
 import { moveToRoom } from "../room-url.ts";
 
 const TICK_MS = 250;
@@ -152,7 +154,7 @@ export const TooLate = ({
   );
 };
 
-export const SignalLost = ({
+const SignalLost = ({
   holdSeconds,
   lostAt,
   roomId,
@@ -205,7 +207,7 @@ export const GettingBackOn = ({
   );
 };
 
-export const BikeUp = ({ feed }: { readonly feed: HudFeed }) => {
+const BikeUp = ({ feed }: { readonly feed: HudFeed }) => {
   const { position } = useSyncExternalStore(
     feed.subscribe,
     feed.read,
@@ -233,4 +235,79 @@ export const BikeUp = ({ feed }: { readonly feed: HudFeed }) => {
       </span>
     </div>
   ) : null;
+};
+
+const RoomStall = ({ feed }: { readonly feed: HudFeed }) => {
+  const read = (): number | null => {
+    const { stallLeftMs } = feed.read();
+    return stallLeftMs === null
+      ? null
+      : Math.max(0, Math.ceil(stallLeftMs / 1000));
+  };
+  const seconds = useSyncExternalStore(feed.subscribe, read, read);
+  return (
+    <>
+      <p className="sr-only" role="status">
+        {seconds === null ? null : "Waiting for the room. Your link stalled."}
+      </p>
+      {seconds !== null && (
+        <div
+          aria-hidden="true"
+          className="bg-ink/95 text-paper notice-in border-neon-yellow absolute top-[12%] left-1/2 flex -translate-x-1/2 flex-col border-l-4 px-6 py-2 whitespace-nowrap shadow-xl"
+        >
+          <span className="font-display tracking-display text-3xl font-extrabold uppercase">
+            Waiting for the room
+          </span>
+          <span className="text-paper/70">
+            Your link stalled.{" "}
+            {seconds > 0 ? (
+              <>
+                Reconnecting in <span className="numeric">{seconds}</span> s.
+              </>
+            ) : (
+              "Reconnecting now."
+            )}
+          </span>
+        </div>
+      )}
+    </>
+  );
+};
+
+export const RoomNotices = ({
+  feed,
+  room,
+  stage,
+}: {
+  readonly feed: HudFeed;
+  readonly room: Pick<RoomRun, "awayMs" | "holdSeconds" | "roomId">;
+  readonly stage: RaceStage;
+}) => {
+  switch (stage.kind) {
+    case "riding": {
+      return (
+        <>
+          {room.awayMs !== null && <BikeUp feed={feed} />}
+          <RoomStall feed={feed} />
+        </>
+      );
+    }
+    case "signalLost": {
+      return (
+        <SignalLost
+          holdSeconds={room.holdSeconds}
+          lostAt={stage.lostAt}
+          roomId={room.roomId}
+        />
+      );
+    }
+    case "paused":
+    case "finishing":
+    case "consequence": {
+      return null;
+    }
+    default: {
+      return stage satisfies never;
+    }
+  }
 };

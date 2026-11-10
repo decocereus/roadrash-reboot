@@ -250,6 +250,7 @@ export interface RoomSeat {
   readonly inputDelay: () => number;
   readonly leadBloated: () => boolean;
   readonly silenced: () => boolean;
+  readonly stallLeftMs: () => number | null;
   readonly rttMs: () => number;
   readonly worstRttMs: () => number;
   readonly pace: () => number;
@@ -698,6 +699,12 @@ export const openRoomSeat = (
       }
     },
     silenced: () => clock.silenced(performance.now()),
+    stallLeftMs: () => {
+      const now = performance.now();
+      return state.phase === "racing" && clock.stopped(now)
+        ? DEAD_AFTER_MS - clock.silentMs(now)
+        : null;
+    },
     startsInMs: () =>
       lobby?.startsInMs === null || lobby === null
         ? null

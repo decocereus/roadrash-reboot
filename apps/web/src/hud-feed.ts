@@ -20,6 +20,7 @@ export const idleHud: HudState = {
   roadLength: 0,
   roadName: "",
   speedKmh: 0,
+  stallLeftMs: null,
   stamina: 1,
   weaponCapacity: 0,
   weaponHits: 0,

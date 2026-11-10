@@ -39,6 +39,7 @@ export interface RoomRun extends RaceRun {
   readonly listen: (onConfirmed: (view: RaceView) => void) => void;
   readonly report: () => RoomReport;
   readonly pace: () => number;
+  readonly stallLeftMs: () => number | null;
   readonly stepsDue: () => number;
 }
 
@@ -98,6 +99,7 @@ export const createRoomRun = (
     },
     riderColours,
     roomId,
+    stallLeftMs: seat.stallLeftMs,
     step: (frame) => {
       const control = frame.controls.get(me) ?? coasting;
       const changed = control !== sent;

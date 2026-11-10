@@ -190,6 +190,44 @@ describe("a seat's way through a room", () => {
     expect(seat.phase()).toBe("lost");
   });
 
+  it("counts down to its hang-up once a silent room has stopped the race, not while it rides through", () => {
+    const { seat, socket } = loadingSeat();
+    socket.hear(countdown);
+    vi.advanceTimersByTime(PING_EVERY_MS);
+    hearTick(socket, 1);
+    vi.advanceTimersByTime(400);
+    expect(seat.stallLeftMs()).toBeNull();
+    vi.advanceTimersByTime(500);
+    expect(seat.stallLeftMs()).toBeNull();
+    vi.advanceTimersByTime(100);
+    expect(seat.stallLeftMs()).toBe(DEAD_AFTER_MS - 1000);
+    vi.advanceTimersByTime(1500);
+    expect(seat.stallLeftMs()).toBe(DEAD_AFTER_MS - 2500);
+  });
+
+  it("stops counting down the moment the room's ticks resume", () => {
+    const { seat, socket } = loadingSeat();
+    socket.hear(countdown);
+    vi.advanceTimersByTime(PING_EVERY_MS);
+    hearTick(socket, 1);
+    vi.advanceTimersByTime(2500);
+    hearTick(socket, 2);
+    expect(seat.stallLeftMs()).toBeNull();
+  });
+
+  it("reaches zero as the silence rule hangs up, and counts nothing once lost", () => {
+    const { seat, socket } = loadingSeat();
+    socket.hear(countdown);
+    vi.advanceTimersByTime(PING_EVERY_MS);
+    hearTick(socket, 1);
+    vi.advanceTimersByTime(DEAD_AFTER_MS);
+    expect(seat.phase()).toBe("racing");
+    expect(seat.stallLeftMs()).toBe(0);
+    vi.advanceTimersByTime(2 * PING_EVERY_MS);
+    expect(seat.phase()).toBe("lost");
+    expect(seat.stallLeftMs()).toBeNull();
+  });
+
   it.each([
     {
       finish: (socket: FakeSocket) => {

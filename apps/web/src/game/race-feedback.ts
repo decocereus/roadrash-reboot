@@ -184,6 +184,7 @@ export const bindFeedback = ({
     const me = player();
     const order = standings(stage.race.view);
     const state = session();
+    const room = roomOf(state);
     events.onHud({
       bikeName: me.bike.name,
       condition: me.condition / FULL_CONDITION,
@@ -191,7 +192,7 @@ export const bindFeedback = ({
       countdown: hudCountdown(state),
       distanceLeft: distanceLeft(stage.track, me),
       gear: me.gear,
-      lagging: roomOf(state)?.lagging() ?? false,
+      lagging: room?.lagging() ?? false,
       muted: feedback.muted,
       notice: feedback.noticeLeft > 0 ? feedback.notice : "",
       noticeDetail: feedback.noticeDetail,
@@ -207,6 +208,7 @@ export const bindFeedback = ({
       roadLength: stage.track.length,
       roadName: stage.track.plan.name,
       speedKmh: Math.abs(drawnSpeed()) * 3.6,
+      stallLeftMs: room?.stallLeftMs() ?? null,
       stamina: me.stamina / MAX_STAMINA,
       weaponCapacity: weaponCapacity(me),
       weaponHits: me.weaponHits,
