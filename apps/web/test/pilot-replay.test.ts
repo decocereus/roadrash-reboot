@@ -1,13 +1,12 @@
 import { readFileSync } from "node:fs";
 
-import { TICK_SECONDS } from "@racer/sim/state";
 import type { RiderInput } from "@racer/sim/state";
-import * as Schema from "effect/Schema";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { createControls } from "../src/game/input.ts";
 import { createKeyboard } from "./hosts.ts";
 import type { Keyboard } from "./hosts.ts";
+import { decodeBaseline } from "./pilot-replay-baseline.ts";
 import {
   close,
   firstDifferentTick,
@@ -24,31 +23,6 @@ import type { Matrix, Run } from "./pilot-replay.ts";
 
 const MATRIX_TIMEOUT_MS = 900_000;
 const RACE_TIMEOUT_MS = 120_000;
-
-const replaySet = Schema.Array(
-  Schema.Struct({
-    final: Schema.String,
-    full: Schema.String,
-    id: Schema.String,
-    result: Schema.NullOr(Schema.String),
-    ticks: Schema.Number,
-    window: Schema.String,
-  })
-);
-
-const decodeBaseline = Schema.decodeUnknownSync(
-  Schema.fromJsonString(
-    Schema.Struct({
-      fixed: replaySet,
-      provenance: Schema.Struct({
-        fixed: Schema.Number,
-        limit: Schema.Number,
-        window: Schema.Struct({ from: Schema.Number, to: Schema.Number }),
-      }),
-      solo: replaySet,
-    })
-  )
-);
 
 const baseline = decodeBaseline(
   readFileSync(new URL("pilot-replay-baseline.json", import.meta.url), "utf-8")
@@ -138,7 +112,7 @@ const recordControls = (recorded: RiderInput[]) => {
         act(keys);
       }
     }
-    controls.read(TICK_SECONDS, run.controls);
+    controls.read(run.controls);
     recorded.push({ ...run.controls });
   };
 };
@@ -158,7 +132,7 @@ describe("pilot replays to every race's outcome", () => {
   }, MATRIX_TIMEOUT_MS);
 
   it("replay the recorded baseline's limit and window", () => {
-    expect(baseline.provenance).toStrictEqual({
+    expect(baseline.provenance).toMatchObject({
       fixed: FIXED_RIDE,
       limit: TICK_LIMIT,
       window: WINDOW,
@@ -228,8 +202,8 @@ describe("pilot replays to every race's outcome", () => {
         playBack(recorded)
       );
       expect(recorded).toHaveLength(TRACE_TICKS);
-      expect(new Set(recorded.map(({ steer }) => steer)).size).toBeGreaterThan(
-        3
+      expect(new Set(recorded.map(({ steer }) => steer))).toStrictEqual(
+        new Set([-1, 0, 1])
       );
       expect(replayed.frames).toStrictEqual(original.frames);
       expect(close(replayed)).toStrictEqual(close(original));

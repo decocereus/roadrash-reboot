@@ -1,5 +1,5 @@
 import { stepRace } from "@racer/sim/race";
-import { approach, curvePushOf, TICK_RATE } from "@racer/sim/state";
+import { curvePushOf, TICK_RATE } from "@racer/sim/state";
 import type { BikeSpec } from "@racer/sim/state";
 import { compileTrack, curvatureAt } from "@racer/track/track";
 import type { Track, TrackPlan } from "@racer/track/track";
@@ -12,8 +12,6 @@ const REACTION_TICKS = 15;
 const DECISION_TICKS = 9;
 const FORESIGHT_SECONDS = 0.65;
 const CORRECTS_AT = 0.32;
-const KEY_ATTACK = 9;
-const KEY_RELEASE = 18;
 
 interface Held {
   readonly widest: number;
@@ -71,11 +69,7 @@ const ridden = (
       presses += wanted !== 0 && wanted !== key ? 1 : 0;
       key = wanted;
     }
-    input.steer = approach(
-      input.steer,
-      key,
-      (key === 0 ? KEY_RELEASE : KEY_ATTACK) / TICK_RATE
-    );
+    input.steer = key;
     seen.push({
       drift:
         rider.lateralSpeed -

@@ -1,4 +1,4 @@
-import { clamp } from "./state.ts";
+import { approach, clamp, TICK_SECONDS } from "./state.ts";
 import type { Control, RiderInput } from "./state.ts";
 
 export const CONTROL_BYTES = 4;
@@ -14,12 +14,17 @@ const PUNCH = 1;
 const KICK = 2;
 const REMOUNT = 4;
 const BUTTONS = PUNCH + KICK + REMOUNT;
+const STICK = 8;
+
+const steerSources = ["keys", "stick"] as const;
+
+export type SteerSource = (typeof steerSources)[number];
 
 const isControl = (word: number): word is Control =>
   Number.isSafeInteger(word) &&
   word >= 0 &&
   word % BYTE !== UNUSED_STEER &&
-  Math.floor(word / BUTTONS_PLACE) <= BUTTONS;
+  Math.floor(word / BUTTONS_PLACE) <= BUTTONS + STICK;
 
 const steerByteOf = (steer: number): number => {
   const step =
@@ -41,27 +46,42 @@ const finite = (input: Readonly<RiderInput>): boolean =>
   Number.isFinite(input.throttle) &&
   Number.isFinite(input.brake);
 
-export const controlOf = (input: Readonly<RiderInput>): Control => {
+export const controlOf = (
+  input: Readonly<RiderInput>,
+  steerFrom: SteerSource = "keys"
+): Control => {
   const word =
     steerByteOf(input.steer) +
     pedalByteOf(input.throttle) * THROTTLE_PLACE +
     pedalByteOf(input.brake) * BRAKE_PLACE +
     ((input.punch ? PUNCH : 0) +
       (input.kick ? KICK : 0) +
-      (input.remount ? REMOUNT : 0)) *
+      (input.remount ? REMOUNT : 0) +
+      (steerFrom === "stick" ? STICK : 0)) *
       BUTTONS_PLACE;
   return finite(input) && isControl(word) ? word : refuse(input);
 };
 
+const STEER_ATTACK = 9;
+const STEER_RELEASE = 18;
+
+const steerToward = (steer: number, target: number): number =>
+  approach(
+    steer,
+    target,
+    (target === 0 ? STEER_RELEASE : STEER_ATTACK) * TICK_SECONDS
+  );
+
 export const applyControl = (control: Control, input: RiderInput): void => {
   const steer = control % BYTE;
-  input.steer = (steer > UNUSED_STEER ? steer - BYTE : steer) / STEER_STEPS;
+  const target = (steer > UNUSED_STEER ? steer - BYTE : steer) / STEER_STEPS;
+  const buttons = Math.floor(control / BUTTONS_PLACE);
+  input.steer = buttons >= STICK ? target : steerToward(input.steer, target);
   input.throttle = (Math.floor(control / THROTTLE_PLACE) % BYTE) / PEDAL_STEPS;
   input.brake = (Math.floor(control / BRAKE_PLACE) % BYTE) / PEDAL_STEPS;
-  const buttons = Math.floor(control / BUTTONS_PLACE);
   input.punch = buttons % KICK === PUNCH;
   input.kick = buttons % REMOUNT >= KICK;
-  input.remount = buttons >= REMOUNT;
+  input.remount = buttons % STICK >= REMOUNT;
 };
 
 export const writeControl = (
@@ -90,7 +110,8 @@ export const coasting: Control = controlOf({
 });
 
 export const withoutButtons = (control: Control): Control => {
-  const movement = control % BUTTONS_PLACE;
+  const buttons = Math.floor(control / BUTTONS_PLACE);
+  const movement = control - (buttons % STICK) * BUTTONS_PLACE;
   return isControl(movement) ? movement : coasting;
 };
 
