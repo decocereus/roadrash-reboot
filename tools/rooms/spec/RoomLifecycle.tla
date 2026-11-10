@@ -26,7 +26,8 @@
 (* Time moves in steps of about five seconds (Tick).  Everything a live   *)
 (* link or a timer at zero must do happens before the next Tick, so a     *)
 (* message on a working link always beats the next timer.  A player's     *)
-(* own actions, a page load and a race preparation take any time.         *)
+(* own actions, a page load, a move between screens and a race          *)
+(* preparation take any time.                                              *)
 (*                                                                         *)
 (* Each Guard constant is TRUE in the real code.  Setting one FALSE       *)
 (* removes the behaviour that protects one rule, and TLC must then find   *)
@@ -53,7 +54,7 @@ CONSTANTS
     Door,           \* room-lobby.tsx DOOR_MOMENT_MS 5 s
     Reopen,         \* room-lobby.tsx REOPEN_MS 2 s
     ClientDead,     \* heartbeat.ts DEAD_AFTER_MS 5 s
-    OldPageFirst,   \* TRUE: the room hears a reloaded page's old sockets before its new seat (Reloaded)
+    OldPageFirst,   \* TRUE: the room hears a moved or reloaded tab's old sockets before its new seat (Moved, Reloaded)
     Restarts,       \* Durable Object restarts the room may suffer in one behaviour (race-server.ts: a deploy past its deferral, an eviction, a crash)
     GuardRetireReplaced, GuardJoinByKey, GuardSweepWaits, GuardLeaveCode,
     GuardBootLeavesRoom, GuardFreeColour, GuardDropMarks, GuardDropRetires,
@@ -391,25 +392,26 @@ SeatNext(t, ev) ==
                 [ok |-> TRUE, seat |-> "left", race |-> t.race]
 
 \* room-lobby.tsx SeatedLobby onChange through room-handoff.ts seatChange.
-\* A seat lost to another tab moves to rejoin=taken (seatTaken).  A lost
-\* lobby seat reopens after REOPEN_MS (reopen).  A lost race seat shows
-\* SignalLost while riding (raceLost), and otherwise moves with rejoin=try
-\* (tryRejoin).  A seat whose race ended before its tab rode moves back to
-\* the room (backToLobby).  The address "try" also stands for no choice,
-\* since both ask for a held bike.
+\* A seat lost to another tab moves in place with the rejoin choice taken
+\* (seatTaken).  A lost lobby seat reopens after REOPEN_MS (reopen).  A lost
+\* race seat shows SignalLost while riding (raceLost), and otherwise moves
+\* with the choice try (tryRejoin).  A seat whose race ended before its tab
+\* rode moves back to the room (backToLobby).  The choice "try" also stands
+\* for no choice, since both ask for a held bike.  Each move is a
+\* navigation.ts roomMoved event, in the same page.
 OnChange(t, taken) ==
     LET t1 == IF t.seat = "racing" /\ ~GuardLateRoomRacing
               THEN [t EXCEPT !.fresh = TRUE] ELSE t
     IN CASE t1.seat = "lost" /\ taken /\ GuardTakenStaysPut ->
-              [t1 EXCEPT !.page = "reloading", !.url = "taken"]
+              [t1 EXCEPT !.page = "moving", !.url = "taken"]
          [] t1.seat = "lost" /\ ~t1.race ->
               IF GuardReopen THEN [t1 EXCEPT !.reopen = Reopen] ELSE t1
          [] t1.seat = "lost" /\ t1.handoff = "riding" ->
               [t1 EXCEPT !.page = "lost"]
          [] t1.seat = "lost" ->
-              [t1 EXCEPT !.page = "reloading", !.url = "try"]
+              [t1 EXCEPT !.page = "moving", !.url = "try"]
          [] t1.seat = "ended" /\ t1.handoff # "riding" /\ GuardEndedBackToLobby ->
-              [t1 EXCEPT !.page = "reloading", !.url = "try"]
+              [t1 EXCEPT !.page = "moving", !.url = "try"]
          [] OTHER -> t1
 
 \* seat-client.ts hangUp: close() on an open socket sends its code; on a
@@ -627,8 +629,8 @@ HostConsider ==
 (***************************************************************************)
 
 \* the WebSocket open event, once the room took the upgrade, and with it the
-\* seat's rejoin choice; room-lobby.tsx onOpen then takes rejoin=no out of
-\* the address (room-url.ts clearRejoinNo), so later seats rejoin
+\* seat's rejoin choice; room-lobby.tsx onOpen then clears the gaveUp ref
+\* that held the choice no, so later seats rejoin
 ClientOpened(s) ==
     /\ wire.cs[s] = "connecting"
     /\ room.sock[s] # "none"
@@ -754,12 +756,12 @@ DoorElapsed(r) ==
 
 \* prepare-outcome.ts preparedRace and room-handoff.ts roomRows: built goes
 \* on; missing (a failed dress or build) runs the leave effect, seat-client.ts
-\* leave (SEAT_QUIT 4411) and moveToRoom.  A lost graphics context resolves
-\* as built.  The effect runs even after SeatedLobby unmounted, as long as
-\* the page lives.
+\* leave (SEAT_QUIT 4411) and a roomMoved event back into the room.  A lost
+\* graphics context resolves as built.  use-handoff.ts drops the outcome once
+\* SeatedLobby has unmounted, so it lands only while the lobby is on screen.
 PrepareDone(r, o) ==
     /\ tab[r].prep
-    /\ tab[r].page \notin {"reloading", "gone"}
+    /\ tab[r].page = "room"
     /\ LET t == tab[r]
            h == t.handoff
            s == CurOf(r)
@@ -773,7 +775,7 @@ PrepareDone(r, o) ==
                                         [] leaving -> "left"
                                         [] OTHER -> h,
                           !.seat = IF leaving /\ nx.ok THEN "left" ELSE @,
-                          !.page = IF leaving THEN "reloading" ELSE @,
+                          !.page = IF leaving THEN "moving" ELSE @,
                           !.url = IF leaving THEN "try" ELSE @]]
           /\ wire' = CASE o = "built" /\ h = "preparingPastDoor" -> ReportLoaded(wire, s)
                        [] leaving /\ nx.ok -> CloseFrom(wire, s, "quit4411")
@@ -804,34 +806,45 @@ Reopened(r) ==
     /\ \E i \in FreeSlots(r) : OpenSeat(r, i, tab[r])
     /\ UNCHANGED room
 
-\* room-lobby.tsx raceLost polls the room with readRoomPreview while
-\* rejoin.tsx SignalLost shows, and moves back with rejoin=try once the room
-\* answers
+\* room-lobby.tsx RejoinWatch polls the room with readRoomPreview while
+\* rejoin.tsx SignalLost shows, and moves back with the choice try once the
+\* room answers
 RetryBack(r) ==
     /\ tab[r].page = "lost"
-    /\ tab' = [tab EXCEPT ![r].page = "reloading", ![r].url = "try"]
+    /\ tab' = [tab EXCEPT ![r].page = "moving", ![r].url = "try"]
     /\ UNCHANGED <<room, wire>>
 
-\* a page load (moveToRoom or a reload) keeps the address: the game boots
-\* again, and RoomEntry shows the taken screen for rejoin=taken, or
-\* SeatedLobby opens a seat with the same member key.  The old page's last
-\* messages and the new page's seat travel on different sockets, so the
-\* room may hear them in either order; a dead link (Break) loses them.
-\* OldPageFirst keeps only the order in which the old page's messages arrive
-\* first.
+\* the room screen comes back with a fresh lobby: RoomEntry shows the taken
+\* screen for the choice taken, or SeatedLobby opens a seat with the same
+\* member key.  The old seat's last messages and the new seat travel on
+\* different sockets, so the room may hear them in either order; a dead
+\* link (Break) loses them.  OldPageFirst keeps only the order in which the
+\* old seat's messages arrive first.
 \* The checks set it, because without it pair alone runs past ten minutes.
 \* The known defect lateQuitRejoins clears it.
-Reloaded(r) ==
-    /\ tab[r].page = "reloading"
+BackInRoom(r, game) ==
     /\ OldPageFirst => Delivered(r)
     /\ LET t == [tab[r] EXCEPT !.handoff = "lobby", !.prep = FALSE, !.door = -1,
-                               !.game = "booting", !.fresh = FALSE, !.quit = FALSE,
+                               !.game = game, !.fresh = FALSE, !.quit = FALSE,
                                !.bootQuit = FALSE]
        IN IF t.url = "taken"
           THEN /\ tab' = [tab EXCEPT ![r] = [t EXCEPT !.page = "taken"]]
                /\ UNCHANGED wire
           ELSE \E i \in FreeSlots(r) : OpenSeat(r, i, [t EXCEPT !.page = "room"])
     /\ UNCHANGED room
+
+\* a page load (a reload, or an opened link) keeps the address, and the game
+\* boots again
+Reloaded(r) ==
+    /\ tab[r].page = "reloading"
+    /\ BackInRoom(r, "booting")
+
+\* navigation.ts roomMoved in the same page: game-shell.tsx keys the lobby by
+\* the view's turn, so the old SeatedLobby unmounts and closes its seat
+\* before the new one opens, and the game stays booted
+Moved(r) ==
+    /\ tab[r].page = "moving"
+    /\ BackInRoom(r, tab[r].game)
 
 \* the game module boots (use-flow.ts ready)
 GameReady(r) ==
@@ -904,12 +917,12 @@ GameFail(r) ==
                                       !.door = -1, !.reopen = -1]]
     /\ UNCHANGED room
 
-\* rejoin.tsx SignalLost Back to bar: moveToRoom with rejoin=no.  gaveUp is
-\* a ghost that records the race the player gave up.
+\* rejoin.tsx SignalLost Back to bar: roomMoved with the choice no.  gaveUp
+\* is a ghost that records the race the player gave up.
 GiveUp(r) ==
     /\ Acting(r)
     /\ tab[r].page = "lost"
-    /\ tab' = [tab EXCEPT ![r] = [Act(@) EXCEPT !.page = "reloading", !.url = "no",
+    /\ tab' = [tab EXCEPT ![r] = [Act(@) EXCEPT !.page = "moving", !.url = "no",
                                                  !.gaveUp = room.run]]
     /\ UNCHANGED <<room, wire>>
 
@@ -931,12 +944,28 @@ CloseTab(r) ==
                                                  !.door = -1, !.reopen = -1]]
     /\ UNCHANGED room
 
-\* results: Back to the lobby (navigation.ts rematch, moveToRoom)
+\* results: Back to the lobby (navigation.ts ridePicked on room results, a
+\* move in the same page)
 Rematch(r) ==
     /\ Acting(r)
     /\ tab[r].page = "results"
-    /\ tab' = [tab EXCEPT ![r] = [Act(@) EXCEPT !.page = "reloading", !.url = "try"]]
+    /\ tab' = [tab EXCEPT ![r] = [Act(@) EXCEPT !.page = "moving", !.url = "try"]]
     /\ UNCHANGED <<room, wire>>
+
+\* the race menu's Leave race: use-flow.ts leaveRace quits the game, whose
+\* stand-down calls room-run.ts leave (seat-client.ts leave, SEAT_QUIT 4411),
+\* and the tab goes home in the same page
+LeaveRaceMenu(r) ==
+    /\ Acting(r)
+    /\ tab[r].page = "race"
+    /\ LET t == tab[r]
+           live == t.seat \in SeatLive
+       IN /\ wire' = IF live THEN CloseFrom(wire, CurOf(r), "quit4411") ELSE wire
+          /\ tab' = [tab EXCEPT ![r] =
+                       [Act(t) EXCEPT !.page = "bar",
+                                      !.seat = IF live THEN "left" ELSE @,
+                                      !.door = -1, !.reopen = -1]]
+    /\ UNCHANGED room
 
 \* results: Continue to the bar with no room
 Continue(r) ==
@@ -1075,15 +1104,15 @@ System ==
          \/ DoorArm(r) \/ DoorDisarm(r) \/ RaceBegun(r) \/ DoorElapsed(r)
          \/ RoomRacing(r) \/ RacingSeen(r)
          \/ \E o \in Outcomes : PrepareDone(r, o)
-         \/ Reopened(r) \/ RetryBack(r) \/ Reloaded(r) \/ GameReady(r)
-         \/ ResultsShown(r)
+         \/ Reopened(r) \/ RetryBack(r) \/ Reloaded(r) \/ Moved(r)
+         \/ GameReady(r) \/ ResultsShown(r)
     \/ Tick
 
 Player ==
     \E r \in Riders :
         \/ EnterRoom(r) \/ PressReady(r) \/ PressLeave(r) \/ GameFail(r)
         \/ GiveUp(r) \/ Reload(r) \/ CloseTab(r) \/ Rematch(r) \/ Continue(r)
-        \/ Hide(r) \/ Break(r)
+        \/ LeaveRaceMenu(r) \/ Hide(r) \/ Break(r)
 
 Next == System \/ Player
 
@@ -1101,7 +1130,7 @@ Fairness ==
          /\ WF_vars(DoorElapsed(r)) /\ WF_vars(RoomRacing(r)) /\ WF_vars(RacingSeen(r))
          /\ WF_vars(\E o \in Outcomes : PrepareDone(r, o))
          /\ WF_vars(Reopened(r)) /\ WF_vars(RetryBack(r)) /\ WF_vars(Reloaded(r))
-         /\ WF_vars(GameReady(r)) /\ WF_vars(ResultsShown(r))
+         /\ WF_vars(Moved(r)) /\ WF_vars(GameReady(r)) /\ WF_vars(ResultsShown(r))
     /\ WF_vars(Tick)
 
 Spec == Init /\ [][Next]_vars /\ Fairness
@@ -1270,7 +1299,7 @@ HoldEndsOnTime ==
 \* by themselves.  Guard: room-handoff.ts seatChange sends a seat refused
 \* as "replaced" to rejoin=taken.
 TakenTabStaysPut ==
-    \A r \in Riders : tab[r].told => tab[r].page \in {"reloading", "taken"}
+    \A r \in Riders : tab[r].told => tab[r].page \in {"moving", "reloading", "taken"}
 
 Settled(r) ==
     \/ tab[r].page \in {"bar", "results", "failed", "gone", "race", "taken"}
