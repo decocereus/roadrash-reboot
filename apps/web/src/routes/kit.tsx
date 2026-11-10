@@ -1,11 +1,8 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 
+import { BarBoard } from "../components/kit/bar-board.tsx";
 import { Palette } from "../components/kit/kit-board.tsx";
-import {
-  ChromeBoard,
-  ConfirmBoard,
-  WallBoard,
-} from "../components/kit/paper-boards.tsx";
+import { ChromeBoard, ConfirmBoard } from "../components/kit/paper-boards.tsx";
 import { RaceBoard } from "../components/kit/race-board.tsx";
 
 const KitPage = () => (
@@ -19,7 +16,7 @@ const KitPage = () => (
     </p>
     <Palette />
     <ChromeBoard />
-    <WallBoard />
+    <BarBoard />
     <ConfirmBoard />
     <RaceBoard />
   </div>
