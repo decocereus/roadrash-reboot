@@ -356,11 +356,13 @@ export const BarHome = ({
         )}
       </div>
       {view.tab === "garage" && career && !atDoor && (
-        <GarageScreen
-          career={career}
-          onBack={flow.leave}
-          onTrade={flow.commit}
-        />
+        <div className="[container-type:size] absolute inset-x-0 top-16 bottom-0">
+          <GarageScreen
+            career={career}
+            onBack={flow.leave}
+            onTrade={flow.commit}
+          />
+        </div>
       )}
     </main>
   );
