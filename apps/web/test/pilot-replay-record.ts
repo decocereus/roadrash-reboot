@@ -52,7 +52,7 @@ const git = (...args: string[]): string =>
 const movedRows = (
   before: Recorded["solo"],
   after: readonly Replay[],
-  set: string
+  set: "fixed" | "solo"
 ): string[] =>
   after.flatMap((row) => {
     const was = before.find(({ id }) => id === row.id);

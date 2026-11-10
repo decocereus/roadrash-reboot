@@ -53,8 +53,8 @@ export const controlOf = (input: Readonly<RiderInput>): Control => {
   return finite(input) && isControl(word) ? word : refuse(input);
 };
 
-export const STEER_ATTACK = 9;
-export const STEER_RELEASE = 18;
+const STEER_ATTACK = 9;
+const STEER_RELEASE = 18;
 
 const steerToward = (steer: number, target: number): number =>
   approach(

@@ -4,8 +4,6 @@ import {
   CONTROL_BYTES,
   controlOf,
   readControl,
-  STEER_ATTACK,
-  STEER_RELEASE,
   writeControl,
 } from "./control.ts";
 import {
@@ -66,9 +64,7 @@ const weaving = (tick: number): RiderInput => ({
 
 const STEER_STEPS = 127;
 const SETTLE_TICKS = 20;
-const ATTACK_STEP = STEER_ATTACK * TICK_SECONDS;
-const RELEASE_STEP = STEER_RELEASE * TICK_SECONDS;
-const HALF_A_STEER_STEP = 1 / (2 * STEER_STEPS);
+const RELEASE_STEP = 18 * TICK_SECONDS;
 
 const steerOf = (state: RaceState): number => player(state).input.steer;
 
@@ -77,18 +73,6 @@ const steerCurve = (state: RaceState, targets: readonly number[]): number[] =>
     stepRace(state, straight, playerFrame({ ...neutralInput, steer }));
     return steerOf(state);
   });
-
-const browserCurve = (targets: readonly number[]): number[] => {
-  let steer = 0;
-  return targets.map((target) => {
-    const step = target === 0 ? RELEASE_STEP : ATTACK_STEP;
-    steer =
-      steer < target
-        ? Math.min(target, steer + step)
-        : Math.max(target, steer - step);
-    return Math.round(steer * STEER_STEPS) / STEER_STEPS;
-  });
-};
 
 const held = (target: number, ticks: number): number[] =>
   Array.from({ length: ticks }, () => target);
@@ -133,7 +117,7 @@ describe("a rider's controls", () => {
     expect(ridden({ ...neutralInput, steer: -0.3 }).steer).toBe(-38 / 127);
   });
 
-  it("the bars follow a held key on the curve the browser used to send, tick for tick", () => {
+  it("a held key moves the bars to lock at 9 per second and back to centre at 18, and a reversal runs at the attack rate", () => {
     const state = field(straight, 1, 0, 0);
     const press = held(1, 8);
     const lift = held(0, 5);
@@ -148,12 +132,6 @@ describe("a rider's controls", () => {
     expect(curve.map((steer) => Number(steer.toFixed(9)))).toStrictEqual(
       expected
     );
-    const browser = browserCurve(targets);
-    for (let tick = 0; tick < targets.length; tick += 1) {
-      expect(Math.abs((curve[tick] ?? 0) - (browser[tick] ?? 0))).toBeLessThan(
-        HALF_A_STEER_STEP
-      );
-    }
   });
 
   it("a stick that moves no faster than the bars passes through each tick, and a flick is held to the bars' rate", () => {
