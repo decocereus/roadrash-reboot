@@ -3,6 +3,7 @@ import { runRule } from "./cases.ts";
 
 const load = { messageId: "load" };
 const push = { messageId: "push" };
+const alias = { messageId: "alias" };
 
 runRule("rushline/no-page-move", noPageMoveRule, {
   invalid: [
@@ -20,10 +21,19 @@ runRule("rushline/no-page-move", noPageMoveRule, {
       code: 'globalThis.history.pushState(null, "", "/?room=abcd1234");',
       errors: [push],
     },
+    {
+      code: 'const destination = window.location; destination.assign("/");',
+      errors: [alias],
+    },
+    {
+      code: 'const { location: destination } = globalThis; destination.assign("/");',
+      errors: [alias],
+    },
   ],
   valid: [
     'globalThis.history.replaceState(globalThis.history.state, "", "/?room=abcd1234");',
     "globalThis.location.reload();",
+    "const { history, location } = globalThis;",
     "const search = new URLSearchParams(globalThis.location.search);",
     'const link = globalThis.location.origin + "/?room=abcd1234";',
     'ids.replace("a", "b");',

@@ -349,6 +349,15 @@ export const raceOf = (state: Session): InRace | null => {
 export const roomOf = (state: Session): RoomRun | undefined =>
   raceOf(state)?.plan.room;
 
+export const standDownThenHangUp = (
+  state: Session,
+  become: (next: Session) => void
+): void => {
+  const room = roomOf(state);
+  become(stoodDownFrom(state));
+  room?.leave();
+};
+
 export const preparationFor = (
   state: Session,
   setup: RaceSetup

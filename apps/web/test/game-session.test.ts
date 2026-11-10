@@ -26,6 +26,7 @@ import {
   settledFrom,
   spendConsequence,
   spendResumeHold,
+  standDownThenHangUp,
   stoodDownFrom,
   throttleOpen,
   ticksHalted,
@@ -240,6 +241,27 @@ describe("pause and resume", () => {
       live: liveRaceOf(inMenu),
     }).toStrictEqual({ halted: false, hands: false, hud: 0, live: inMenu });
     expect(pausedFrom(inMenu)).toBe(inMenu);
+  });
+
+  it("stands down before the room hangs up, so a wreck the room drains settles nothing", () => {
+    const phasesAtHangUp: Session["phase"][] = [];
+    let session: Session = unprepared;
+    const plan: RacePlan = {
+      ...soloPlan,
+      room: {
+        ...roomRunStub(soloPlan.setup, "test-room"),
+        leave: () => {
+          phasesAtHangUp.push(session.phase);
+        },
+      },
+    };
+    session = pausedFrom(racing(plan));
+    expect(session.phase).toBe("racing");
+    standDownThenHangUp(session, (next) => {
+      session = next;
+    });
+    expect(phasesAtHangUp).toStrictEqual(["idle"]);
+    expect(session).toBe(unprepared);
   });
 
   it("gives a room race back to the rider at once when the menu closes", () => {

@@ -60,7 +60,7 @@ import {
   settledFrom,
   spendConsequence,
   spendResumeHold,
-  stoodDownFrom,
+  standDownThenHangUp,
   throttleOpen,
   ticksHalted,
   unprepared,
@@ -301,8 +301,9 @@ const startGame = (
   };
 
   const standDown = () => {
-    roomOf(session)?.leave();
-    session = stoodDownFrom(session);
+    standDownThenHangUp(session, (next) => {
+      session = next;
+    });
     quiet();
     report();
   };
