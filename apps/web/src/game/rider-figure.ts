@@ -66,8 +66,6 @@ export interface RiderFigure {
   ) => void;
 }
 
-await MeshoptSimplifier.ready;
-
 const FAR_TRIANGLES = 4000;
 const FAR_ERROR = 0.4;
 const FAR_BELOW_PIXELS = 80;

@@ -539,6 +539,10 @@ export default defineConfig({
       rules: { "rushline/no-page-move": "error" },
     },
     {
+      files: ["apps/web/src/**/*.{ts,tsx}", "packages/*/src/**/*.{ts,tsx}"],
+      rules: { "rushline/no-top-level-await": "error" },
+    },
+    {
       files: ["apps/web/src/game/**/*.ts"],
       rules: {
         "rushline/no-distance-hide": "error",

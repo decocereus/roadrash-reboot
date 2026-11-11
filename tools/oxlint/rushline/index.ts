@@ -18,6 +18,7 @@ import { noPageMoveRule } from "./rules/no-page-move.ts";
 import { noPromiseRule } from "./rules/no-promise.ts";
 import { noServiceConstructorImportsRule } from "./rules/no-service-constructor-imports.ts";
 import { noSwallowedFailureRule } from "./rules/no-swallowed-failure.ts";
+import { noTopLevelAwaitRule } from "./rules/no-top-level-await.ts";
 import { numericDrawSortRule } from "./rules/numeric-draw-sort.ts";
 import { playerCopyRule } from "./rules/player-copy.ts";
 import { preferCatchTagsRule } from "./rules/prefer-catch-tags.ts";
@@ -52,6 +53,7 @@ const rushlinePlugin = definePlugin({
     "no-promise": noPromiseRule,
     "no-service-constructor-imports": noServiceConstructorImportsRule,
     "no-swallowed-failure": noSwallowedFailureRule,
+    "no-top-level-await": noTopLevelAwaitRule,
     "numeric-draw-sort": numericDrawSortRule,
     "player-copy": playerCopyRule,
     "prefer-catch-tags": preferCatchTagsRule,
