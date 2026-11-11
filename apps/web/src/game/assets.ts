@@ -1,4 +1,5 @@
 import type { CelebrityId } from "@racer/sim/cast";
+import { MeshoptSimplifier } from "meshoptimizer/simplifier";
 import * as THREE from "three";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
@@ -347,7 +348,7 @@ const parsed = async (bytes: ArrayBuffer): Promise<GLTF> =>
   await loader.parseAsync(bytes, "");
 
 const rider: Parse<RiderAsset> = async (bytes, url) => {
-  const gltf = await parsed(bytes);
+  const [gltf] = await Promise.all([parsed(bytes), MeshoptSimplifier.ready]);
   const refused = refuser(gltf.scene, `rider model ${url}`);
   const [clip] = gltf.animations;
   const rootBone = gltf.scene.getObjectByName("Root");
