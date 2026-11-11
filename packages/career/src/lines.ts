@@ -1,8 +1,6 @@
-import { bikeDefinitions } from "@racer/content/bikes";
 import { celebrityRiders } from "@racer/content/celebrities";
 import { ordinaryRiders } from "@racer/content/riders";
 import { byId } from "@racer/content/rows";
-import type { BikeId } from "@racer/sim/bikes";
 import { isCelebrity } from "@racer/sim/cast";
 import type {
   CelebrityRivalId,
@@ -45,11 +43,6 @@ export const officerLines = {
     "I'm supposed to read you your rights, but I left them in my other pants.",
   ],
 } as const satisfies Record<OfficerId, readonly string[]>;
-
-export const bikePitches: Readonly<Record<BikeId, string>> = byId(
-  bikeDefinitions,
-  ({ shop }) => shop.pitch
-);
 
 export interface RivalLine {
   readonly rival: RivalId;

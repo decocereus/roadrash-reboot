@@ -5,7 +5,6 @@ import { celebrityRiders } from "@racer/content/celebrities";
 import { ordinaryRiders } from "@racer/content/riders";
 import { byId } from "@racer/content/rows";
 import type { RivalId } from "@racer/sim/cast";
-import type { BikeClass } from "@racer/sim/state";
 
 export const WORDMARK = "Rushline";
 export const TAGLINE = "Race. Fight. Pay for it.";
@@ -13,27 +12,6 @@ export const CONTROLS =
   "Arrows to steer, Space to punch, Shift to kick, E to get back on";
 
 export const tierName = (tier: Tier): string => chapterOf(tier).name;
-
-export const classNames = {
-  featherweight: "Featherweight",
-  heavyweight: "Heavyweight",
-  middleweight: "Middleweight",
-} as const satisfies Record<BikeClass, string>;
-
-export const classNotes = {
-  featherweight:
-    "Light and quick to turn. Bends barely move them. They run out of speed early.",
-  heavyweight:
-    "Fastest in a straight line. Bends push them wide and they are slow to answer.",
-  middleweight:
-    "The all-rounders. Fast enough that some bends need the brakes.",
-} as const satisfies Record<BikeClass, string>;
-
-export const bikeClasses: readonly BikeClass[] = [
-  "featherweight",
-  "middleweight",
-  "heavyweight",
-];
 
 export const IN_DEBT_AT_THE_GARAGE =
   "The garage doesn't sell to people who owe Vic money. You can still sell.";

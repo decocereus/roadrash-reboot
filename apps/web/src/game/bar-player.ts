@@ -1,5 +1,6 @@
 import {
   angleOff,
+  atTheGarageStand,
   holdPose,
   LOBBY_TICK,
   pullTheTaps,
@@ -17,6 +18,7 @@ import type { Spot } from "@racer/sim/lobby-floor";
 import type { LobbyPose } from "@racer/sim/lobby-walk";
 import type * as THREE from "three";
 
+import type { BarSpot } from "../bar-view.ts";
 import type { Bikes } from "./actors.ts";
 import type { BarAction } from "./bar-input.ts";
 import type { BarSpeech } from "./bar-speech.ts";
@@ -51,6 +53,7 @@ interface PlayerParts {
   readonly rider: LobbyRider;
   readonly slot: () => PlayerSlot;
   readonly speech: Pick<BarSpeech, "say">;
+  readonly walkUp: (spot: BarSpot) => void;
 }
 
 export interface BarPlayer {
@@ -77,6 +80,7 @@ export const createBarPlayer = ({
   rider,
   slot,
   speech,
+  walkUp,
 }: PlayerParts): BarPlayer => {
   const blockers: Spot[] = [];
   const view: WalkerView = {
@@ -124,6 +128,10 @@ export const createBarPlayer = ({
     }
     if (pullTheTaps(rider)) {
       speech.say("NICE! PRESS B FOR YOUR BIKE", slot().walker.head, time);
+      return;
+    }
+    if (atTheGarageStand(rider)) {
+      walkUp("garage");
       return;
     }
     if (rider.place.kind === "foot") {

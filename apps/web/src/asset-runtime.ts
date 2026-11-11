@@ -7,7 +7,6 @@ import type * as Scope from "effect/Scope";
 
 import type {
   AssetRequest,
-  BikesRequest,
   CelebrityRequest,
   LoadRequest,
 } from "./asset-load.ts";
@@ -15,7 +14,6 @@ import {
   AssetDecoder,
   FontReadiness,
   loadAssets,
-  loadBikes,
   loadCelebrity,
   ModelTransport,
 } from "./assets/load.ts";
@@ -31,7 +29,6 @@ interface AssetServices {
 
 export interface AssetRuntime {
   readonly mount: (request: AssetRequest) => void;
-  readonly mountBikes: (request: BikesRequest) => void;
   readonly mountCelebrity: (id: CelebrityId, request: CelebrityRequest) => void;
 }
 
@@ -96,15 +93,11 @@ export const createAssetRuntime = (
     });
   };
 
-  const mountBikes = (request: BikesRequest): void => {
-    hold(loadBikes(cache, urls), request);
-  };
-
   const mountCelebrity = (id: CelebrityId, request: CelebrityRequest): void => {
     hold(loadCelebrity(cache, urls.celebrities[id]), request);
   };
 
-  return { mount, mountBikes, mountCelebrity };
+  return { mount, mountCelebrity };
 };
 
 const pageCache: ByteCache = new Map();

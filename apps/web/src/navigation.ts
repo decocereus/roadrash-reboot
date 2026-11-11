@@ -3,6 +3,7 @@ import type { RaceResult } from "@racer/career/outcome";
 import type { CareerState } from "@racer/career/state";
 import type { GraphicsPlace, RoomArrival } from "@racer/telemetry/limits";
 
+import type { BarSpot } from "./bar-view.ts";
 import type { RaceEntry, RaceReport } from "./career/flow.ts";
 import type { SaveState } from "./career/save.ts";
 import type { RoomAddress } from "./components/room-url.ts";
@@ -23,6 +24,10 @@ export interface RoomVisit {
 export const barTabs = ["race", "garage", "settings"] as const;
 
 export type BarTab = (typeof barTabs)[number];
+
+const spotTabs = {
+  garage: "garage",
+} as const satisfies Record<BarSpot, BarTab>;
 
 export type BarPanel =
   | { readonly kind: "home" }
@@ -78,6 +83,7 @@ export type NavigationEvent =
   | { readonly kind: "careerBegun" }
   | { readonly kind: "raceRefused" }
   | { readonly kind: "tabbed"; readonly tab: BarTab }
+  | { readonly kind: "walkedUp"; readonly spot: BarSpot }
   | { readonly kind: "picked"; readonly panel: "solo" | "finding" }
   | { readonly kind: "joined" }
   | { readonly kind: "doorOpened" }
@@ -471,7 +477,8 @@ type BarNews = Extract<
       | "nextRace"
       | "picked"
       | "ridePicked"
-      | "tabbed";
+      | "tabbed"
+      | "walkedUp";
   }
 >;
 
@@ -491,6 +498,9 @@ const barAfter = (bar: BarView, event: BarNews): View => {
     }
     case "tabbed": {
       return { ...bar, tab: event.tab };
+    }
+    case "walkedUp": {
+      return { ...bar, tab: spotTabs[event.spot] };
     }
     default: {
       return event satisfies never;
@@ -513,7 +523,8 @@ export const stepNavigation = (
     case "nextRace":
     case "picked":
     case "ridePicked":
-    case "tabbed": {
+    case "tabbed":
+    case "walkedUp": {
       return to(inBar(view, (bar) => barAfter(bar, event)));
     }
     case "entered": {

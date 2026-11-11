@@ -1,9 +1,20 @@
-import { heightOfSolidsAt, MEZZANINE, ROOM } from "@racer/sim/lobby-floor";
+import {
+  GARAGE_PLINTH,
+  heightOfSolidsAt,
+  MEZZANINE,
+  ROOM,
+} from "@racer/sim/lobby-floor";
 import * as THREE from "three";
 
 import type { BarCamera } from "../bar-view.ts";
 
-const FOV = { angled: 42, door: 50, follow: 54, room: 44 } as const;
+const FOV = {
+  angled: 42,
+  door: 50,
+  follow: 54,
+  garage: 38,
+  room: 44,
+} as const;
 const FOLLOW = {
   back: 4.6,
   backOnBike: 5.6,
@@ -14,7 +25,20 @@ const FOLLOW = {
 } as const;
 const ANGLED = { back: 8.2, lift: 5.6 } as const;
 const WHOLE_ROOM = { y: 7, z: 18 } as const;
-const EASE = { angled: 5, door: 3.2, follow: 7, room: 3.2 } as const;
+const EASE = {
+  angled: 5,
+  door: 3.2,
+  follow: 7,
+  garage: 3.6,
+  room: 3.2,
+} as const;
+const GARAGE_SHOT = {
+  aimRight: 1.7,
+  aimY: 0.75,
+  eyeX: -3.5,
+  eyeY: 2.5,
+  eyeZ: 4.1,
+} as const;
 const MOVING_PACE = 0.5;
 const FULL_TURN = Math.PI * 2;
 
@@ -45,7 +69,8 @@ export interface BarEye {
     seconds: number,
     view: CameraView,
     door: number,
-    holding: boolean
+    holding: boolean,
+    garage: boolean
   ) => void;
 }
 
@@ -105,11 +130,27 @@ export const createBarEye = (mode: BarCamera, start: CameraView): BarEye => {
     }
   };
 
+  const placeGarage = (): void => {
+    const eyeX = GARAGE_PLINTH.x + GARAGE_SHOT.eyeX;
+    const eyeZ = GARAGE_PLINTH.z + GARAGE_SHOT.eyeZ;
+    const along = Math.hypot(GARAGE_SHOT.eyeX, GARAGE_SHOT.eyeZ);
+    wantEye.set(eyeX, GARAGE_SHOT.eyeY, eyeZ);
+    wantAim.set(
+      GARAGE_PLINTH.x + (GARAGE_SHOT.eyeZ / along) * GARAGE_SHOT.aimRight,
+      GARAGE_SHOT.aimY,
+      GARAGE_PLINTH.z - (GARAGE_SHOT.eyeX / along) * GARAGE_SHOT.aimRight
+    );
+  };
+
   return {
-    aim(seconds, view, door, holding) {
+    aim(seconds, view, door, holding, garage) {
       let wantFov: number = FOV[current];
       let rate: number = EASE[current];
-      if (door > 0) {
+      if (garage && door === 0) {
+        wantFov = FOV.garage;
+        rate = EASE.garage;
+        placeGarage();
+      } else if (door > 0) {
         wantFov = FOV.door;
         rate = EASE.door;
         wantAim.set(ROOM.doorCentre, 2.2, ROOM.backZ - 6);

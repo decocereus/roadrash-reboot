@@ -8,7 +8,6 @@ export const plates = {
   noteCyan: artUrl("clubhouse/note-cyan.webp"),
   noteMagenta: artUrl("clubhouse/note-magenta.webp"),
   rays: artUrl("clubhouse/bar/rays.webp"),
-  speech: artUrl("clubhouse/speech.webp"),
   standings: artUrl("clubhouse/standings.webp"),
   stool: artUrl("clubhouse/bar/stool.webp"),
   wall: artUrl("clubhouse/wall.webp"),
@@ -16,9 +15,4 @@ export const plates = {
 
 export const gameOverPlates = {
   backdrop: artUrl("clubhouse/game-over/backdrop.webp"),
-} as const;
-
-export const garagePlates = {
-  backdrop: artUrl("clubhouse/garage/backdrop.webp"),
-  mechanic: artUrl("clubhouse/garage/mechanic.webp"),
 } as const;

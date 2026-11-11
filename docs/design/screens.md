@@ -118,59 +118,54 @@ A promotion returns to the bar, where Vic says the tier's line. A wreck or a bus
 
 ## 4. Garage
 
-**Purpose.** Buy and sell bikes. Make the trade-off between classes readable without a manual.
+**Purpose.** Buy and sell bikes. Make the trade-off between bikes readable without a manual.
 
-**Layout.** Its own room, the garage next to the Lowside, painted like the bar: a stage of plates over a backdrop of the roller door open on the wet street, a pegboard on the left, a workbench on the right, and an empty stand under a work light. The selected bike is the live 3D bike model from the race, in its showroom paint, turning on the stand. The mechanic stands at the bench on the right with a speech sticker, which says the bike's pitch. The bar header (wordmark, badge, status strip) runs across the top. The price list is the ruled standings paper on the left, grouped by class, with the class note written on the paper below it. The bike's name, class and price sit over the stand, with the five bars in an ink strip under them. The bottom strip holds the buttons and the money.
+Rebuilt on November 11, 2026. The Garage is the bar's second tab, not a painted room. The painted garage, its price list paper, the mechanic and her speech sticker are gone, and so are the bike pitches and the class notes they showed.
+
+**Layout.** The bar's camera eases to the stand in the garage corner, where the selected bike stands as the race draws it, in its showroom paint, with the tuner sitting on it. Dragging across the bar turns the bike. The panel on the right holds the bike's name, a one-line summary, the five bars, the three shelf chips and one action card, with a quiet line at the foot. A stepper sits at the lower left over the bar. The hint strip reads `Drag to turn the bike` on the left and `Back to the bar Esc` on the right. While the Garage is open the rider stands still where they were and the bar's keys and clicks do nothing, so the camera and the rider are where the player left them when the tab closes.
 
 ```
 +------------------------------------------------------------------------------+
-| THE LOWSIDE [badge] | TIER 2 · ... | ROADS 1/3 | CASH $4,900 | HALDEN WREN  |
-+--------------------+-----------------------------------+---------------------+
-|    FOR SALE        | HALDEN KITE 500                   |  .-------------.    |
-| FEATHERWEIGHT      | FEATHERWEIGHT · $5,000            | ( The Wren with )   |
-|  Gutter Pup  $900  | TOP SPEED  ▓▓▓▓▓▓▓▓░░┆  170 km/h  | ( more lungs... )   |
-|  Halden Wren Yours | LAUNCH     ▓▓▓▓▓▓▓░░░┆  6.0 s     |  '---- THE MECHANIC |
-|  Halden Kite $5,000| STEERING   ▓▓▓▓▓▓▓▓▓░  ┆          |                     |
-| MIDDLEWEIGHT       | BEND GRIP  ▓▓▓▓▓▓▓▓▓░   ┆         |   [ the mechanic ]  |
-|  ...               | BRAKES     ▓▓▓▓▓▓▓▓░░┆            |                     |
-| HEAVYWEIGHT        | A wreck at tier 2 costs $...     |                     |
-|  Meridian  Tier 2 |        [ bike turning on stand ]  |                     |
-|  (class note)      |                                   |                     |
-+--------------------+-----------------------------------+---------------------+
-| [BUY] SELL  BACK    PRICE $5,000  WITH TRADE-IN $6,700  LEFT $1,700 |
+| RACE | GARAGE | SETTINGS                                  [■] RIDING AS ALPHA |
++-----------------------------------------------------+------------------------+
+|                                                     | HALDEN WREN 400        |
+|                                                     |------------------------|
+|              [ the bike on its stand ]              | Yours. Top speed       |
+|                                                     | 190 km/h.              |
+|                                                     | TOP SPEED  ■■■■■□□□    |
+|                                                     | LAUNCH     ■■■■□□□□    |
+|                                                     | STEERING   ■■■■■■□□    |
+|                                                     | BEND GRIP  ■■■■■□□□    |
+|                                                     | BRAKES     ■■■■□□□□    |
+|                                                     |------------------------|
+|                                                     | [YOURS] FOR SALE  CATA |
+|                                                     | SELL                   |
+|  < BIKE 1/1 >                                       | The mechanic pays $1,8 |
+|                                                     | Room races put everyon |
++-----------------------------------------------------+------------------------+
+| DRAG TO TURN THE BIKE                                      BACK TO THE BAR ESC |
 +------------------------------------------------------------------------------+
 ```
+
+**Shelves.** `Yours` holds the bike the player rides. `For sale` holds every other bike the player's tier has. `Catalogue` holds every bike, locked ones included. The Garage always opens on `Yours`. The stepper reads `Bike {n}/{count}` and steps through the shelf, wrapping at both ends, and the left and right arrow keys step it too.
 
 **Text.**
 
-- Price list title: `FOR SALE`. The status strip is the bar's.
-- Class headers: `FEATHERWEIGHT`, `MIDDLEWEIGHT`, `HEAVYWEIGHT`
-- Class notes, for the selected bike's class, written under the list:
-  - Featherweight: `Light and quick to turn. Bends barely move them. They run out of speed early.`
-  - Middleweight: `The all-rounders. Fast enough that some bends need the brakes.`
-  - Heavyweight: `Fastest in a straight line. Bends push them wide and they are slow to answer.`
-- Each row's tag: the price, `YOURS` on the owned bike, or `TIER {n}` on a locked one.
-- Bars: `TOP SPEED {km/h}`, `LAUNCH {0 to 100 time} s`, `STEERING`, `BEND GRIP`, `BRAKES`. The dotted mark on each bar is the owned bike.
-- The pitch line from the catalogue, in the mechanic's speech sticker. After a buy or a sale the sticker says the line below instead, until another bike is picked. The name tape reads `THE MECHANIC`.
-- Bottom strip, right of the buttons: `PRICE ${price}` · `WITH TRADE-IN ${cash + trade}` · `LEFT AFTER ${remainder}`
-- When too expensive: `SHORT BY ${amount}` in red, and the buy button is dimmed.
-- When in debt: `THE GARAGE DOESN'T SELL TO PEOPLE WHO OWE VIC MONEY. YOU CAN STILL SELL.`
-- Buy confirm: `Trade your {owned} for the {new}? You'll have ${remainder} left.` Buttons `DO IT` / `NOT YET`.
-- After buying: `It's yours. Try not to bend it.`
-- Why the selected bike cannot be bought, beside the price: `Yours.`, `Arrives at tier {n}.`, `Short by ${amount}.`, or the debt line above.
-- Sell confirm: `Sell the {owned} for ${trade-in}? You'll ride the Gutter Pup and have ${cash + trade}.` Buttons `SELL IT` / `KEEP IT`, with `KEEP IT` selected. The `SELL` button is dimmed on the Gutter Pup.
-- After selling: `Sold. You ride the Gutter Pup now.`
-- Repair bill reminder under the bars: `A wreck at Tier {n} costs ${repair} on this bike.`
+- Summary: `Yours. Top speed {km/h} km/h.`, `${price}. Top speed {km/h} km/h.`, or `Tier {n}. Top speed {km/h} km/h.` on a locked bike.
+- Bars, eight cells each: `Top speed`, `Launch`, `Steering`, `Bend grip`, `Brakes`.
+- Action on the player's own bike: `Sell`, `The mechanic pays ${trade-in}.` On the Gutter Pup it is dimmed: `Nobody wants the Gutter Pup.`
+- Action on a bike for sale: `Buy`, `You have ${cash}. Price ${price}, ${price - trade-in} with your trade-in.`
+- When it cannot be bought, `Buy` is dimmed with the reason: `Arrives at tier {n}.`, the buy numbers and `Short by ${amount}.`, `The garage doesn't sell to people who owe Vic money. You can still sell.`, or `The garage is shut.`
+- Buy confirm, in the panel: `Trade your {owned} for the {new}? You'll have ${remainder} left.` Buttons `Do it` / `Not yet`.
+- Sell confirm, in the panel: `Sell the {owned} for ${trade-in}? You ride the Gutter Pup and have ${cash + trade-in}.` Buttons `Sell it` / `Keep it`.
+- After buying: `It's yours. Try not to bend it.` After selling: `Sold. You ride the Gutter Pup now.` Either moves the stand to `Yours`.
+- Foot of the panel: `Room races put everyone on the same bike.`
 
-**Buttons.** `BUY` (primary), `SELL`, `BACK`. Up and down move through the catalogue.
+**In.** The Garage tab, or walking the rider up to the stand and pressing `E` at the `Garage E` prompt, from any Race panel, a lobby included. The tab is dimmed until a career exists.
 
-**In.** From the Clubhouse, with a fade.
+**Out.** The Race tab or `Esc` returns to the panel the player left, with a lobby still seated. A confirm open in the panel closes first.
 
-**Out.** `BACK` to the Clubhouse.
-
-The wireframe is the decent player's garage at the start of tier 2 (`game-design.md` section 5): $4,900 in cash, a Wren worth $1,800 in trade, and the Kite within reach with $1,700 left over.
-
-**Data.** Catalogue (name, class, price, pitch, `BikeSpec`), unlock tier per bike, owned bike, cash, trade-in (60% of the owned bike's price), debt. The bars are computed from the `BikeSpec`: top speed from power and drag; launch from the 0 to 100 km/h time; steering from `steerRate` and `lateralSpeed`; bend grip from `curvePush`, where a larger `curvePush` is a longer bar because the bike is pushed out less; brakes from `brakeDeceleration`. The Gutter Pup is the one Featherweight with a short steering bar.
+**Data.** `shopStock`, `canSell`, `spendingPower`, `buyBike` and `sellBike` from `packages/career/src/shop.ts`, and `tradeInOf` from its tables; `apps/web/src/career/garage-stand.ts` picks the shelf, the bike on the stand and the action from what they return. The bars are computed from the `BikeSpec`: top speed from power and drag; launch from the 0 to 100 km/h time; steering from `steerRate` and `lateralSpeed`; bend grip from `curvePush`, where a larger `curvePush` is a longer bar because the bike is pushed out less; brakes from `brakeDeceleration`.
 
 ## 5. The door
 

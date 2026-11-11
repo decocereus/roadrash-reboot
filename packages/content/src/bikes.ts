@@ -7,8 +7,6 @@ export const bikeDefinitions = [
     },
     shop: {
       arrivesAt: 1,
-      pitch:
-        "Zip ties, spite, and a seat from a different bike. Too slow to fly off anything.",
     },
     spec: {
       bikeClass: "featherweight",
@@ -37,8 +35,6 @@ export const bikeDefinitions = [
     },
     shop: {
       arrivesAt: 1,
-      pitch:
-        "Light, honest, and forgiving. Takes every bend on the Ridge flat and still loses to people who brake.",
     },
     spec: {
       bikeClass: "featherweight",
@@ -67,8 +63,6 @@ export const bikeDefinitions = [
     },
     shop: {
       arrivesAt: 1,
-      pitch:
-        "The Wren with more lungs. Still turns before you finish deciding to.",
     },
     spec: {
       bikeClass: "featherweight",
@@ -97,8 +91,6 @@ export const bikeDefinitions = [
     },
     shop: {
       arrivesAt: 1,
-      pitch:
-        "The bike everyone measures against. Fast enough to need the brakes, light enough to forgive you.",
     },
     spec: {
       bikeClass: "middleweight",
@@ -127,8 +119,6 @@ export const bikeDefinitions = [
     },
     shop: {
       arrivesAt: 2,
-      pitch:
-        "More of everything the Sesta does, and a little less patience in the bends.",
     },
     spec: {
       bikeClass: "middleweight",
@@ -157,8 +147,6 @@ export const bikeDefinitions = [
     },
     shop: {
       arrivesAt: 2,
-      pitch:
-        "Tops out early, leaves the line like it was kicked. Built for riders who fall off a lot.",
     },
     spec: {
       bikeClass: "middleweight",
@@ -187,7 +175,6 @@ export const bikeDefinitions = [
     },
     shop: {
       arrivesAt: 2,
-      pitch: "The heavyweight that still listens to the handlebars.",
     },
     spec: {
       bikeClass: "heavyweight",
@@ -216,7 +203,6 @@ export const bikeDefinitions = [
     },
     shop: {
       arrivesAt: 3,
-      pitch: "Straights are a formality. Bends are a negotiation.",
     },
     spec: {
       bikeClass: "heavyweight",
@@ -245,8 +231,6 @@ export const bikeDefinitions = [
     },
     shop: {
       arrivesAt: 3,
-      pitch:
-        "The fastest thing in the Lowside car park, and it knows it. Brake early or brake in the trees.",
     },
     spec: {
       bikeClass: "heavyweight",

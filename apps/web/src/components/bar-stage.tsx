@@ -1,17 +1,28 @@
 import type { RoomSeat } from "@racer/rooms/seat-client";
+import type { BikeId } from "@racer/sim/bikes";
 import { useEffect, useRef, useState } from "react";
 
 import { openBar } from "../asset-load.ts";
-import type { BarCamera } from "../bar-view.ts";
+import type { BarCamera, BarSpot } from "../bar-view.ts";
 import type { BarScene } from "../game/bar.ts";
 
 interface BarStageProps {
   readonly camera: BarCamera;
   readonly seat: RoomSeat | null;
   readonly doorOpen: boolean;
+  readonly garageOpen: boolean;
+  readonly standBike: BikeId;
+  readonly onWalkUp: ((spot: BarSpot) => void) | null;
 }
 
-export const BarStage = ({ camera, seat, doorOpen }: BarStageProps) => {
+export const BarStage = ({
+  camera,
+  seat,
+  doorOpen,
+  garageOpen,
+  standBike,
+  onWalkUp,
+}: BarStageProps) => {
   const canvas = useRef<HTMLCanvasElement>(null);
   const firstCamera = useRef(camera);
   const [scene, setScene] = useState<BarScene | null>(null);
@@ -49,6 +60,12 @@ export const BarStage = ({ camera, seat, doorOpen }: BarStageProps) => {
   useEffect(() => {
     scene?.setDoor(doorOpen);
   }, [doorOpen, scene]);
+  useEffect(() => {
+    scene?.setGarage({ bikeId: standBike, open: garageOpen });
+  }, [garageOpen, scene, standBike]);
+  useEffect(() => {
+    scene?.setWalkUp(onWalkUp);
+  }, [onWalkUp, scene]);
   return (
     <>
       <canvas

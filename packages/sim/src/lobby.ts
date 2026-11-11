@@ -2,6 +2,7 @@ import { atan, cos, hypot2, sin } from "@racer/track/math";
 
 import {
   FURNITURE,
+  GARAGE_PLINTH,
   routeAcrossFloor,
   settleOnFloor,
   STOOLS,
@@ -94,6 +95,7 @@ const BAR_RIGHT_END = 0.25;
 const OUT_FRONT = { maxX: -2.5, minX: -9.5, z: -1.2 } as const;
 const TAPS_REACH = 1.15;
 const TAPS_BEHIND = FURNITURE.taps.z - 0.4;
+const STAND_REACH = GARAGE_PLINTH.radius + 1.3;
 
 const headingOf = (dx: number, dz: number): number => {
   if (dz > 0) {
@@ -243,6 +245,9 @@ export const holdPose = (rider: LobbyRider, pose: LobbyPose): void => {
 export const atTheTaps = ({ x, z }: Spot): boolean =>
   z < TAPS_BEHIND &&
   hypot2(x - FURNITURE.taps.x, z - FURNITURE.taps.z) < TAPS_REACH;
+
+export const atTheGarageStand = ({ x, z }: Spot): boolean =>
+  hypot2(x - GARAGE_PLINTH.x, z - GARAGE_PLINTH.z) < STAND_REACH;
 
 export const pullTheTaps = (rider: LobbyRider): boolean => {
   if (rider.bikeFound || !atTheTaps(rider)) {

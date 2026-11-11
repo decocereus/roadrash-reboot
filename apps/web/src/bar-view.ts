@@ -1,5 +1,8 @@
 import { riderBlocks } from "@racer/sim/palette";
 
+const barSpots = ["garage"] as const;
+export type BarSpot = (typeof barSpots)[number];
+
 export const barCameras = ["angled", "follow", "room"] as const;
 export type BarCamera = (typeof barCameras)[number];
 

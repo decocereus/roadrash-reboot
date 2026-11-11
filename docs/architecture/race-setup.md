@@ -14,7 +14,7 @@ A profile's `paint` and `jacket` are indices into the eighteen entries of `palet
 
 ### Bike and rider tables
 
-`packages/content` holds one row per bike and per rider, and depends on nothing. A bike row has its `id`, its `spec` (the riding numbers), its `shop` (the tier it arrives at and the mechanic's pitch) and its `looks` (the model that draws it and its showroom paint). A rider row has its `id`, its `game` numbers, its short name and pronouns, and either `lines` and `art` for an ordinary rival or a `bio` and the model it `wears` for a celebrity. `visuals.ts` lists the bike and rider models and the GLB file for each.
+`packages/content` holds one row per bike and per rider, and depends on nothing. A bike row has its `id`, its `spec` (the riding numbers), its `shop` (the tier it arrives at) and its `looks` (the model that draws it and its showroom paint). A rider row has its `id`, its `game` numbers, its short name and pronouns, and either `lines` and `art` for an ordinary rival or a `bio` and the model it `wears` for a celebrity. `visuals.ts` lists the bike and rider models and the GLB file for each.
 
 Each package reads only its part of a row, and the types of that package check it: `packages/sim` reads `spec` and `game`, `packages/career` reads `shop`, `lines` and `bio`, and the browser reads `looks`, `art` and the names. `packages/sim` builds a `BikeSpec` from `spec` alone, so a change to `looks` cannot change how a bike rides.
 
