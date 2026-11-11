@@ -65,7 +65,7 @@ export const FinishBanner = ({
         )}
       </div>
       {offered && (
-        <div className="absolute right-[4%] bottom-[5%] w-64">
+        <div className="font-display absolute right-[4%] bottom-[5%] w-64 tracking-wide">
           <SkewButton
             autoFocus
             onClick={onContinue}

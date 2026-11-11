@@ -20,7 +20,7 @@ export const ElsewhereScreen = () => (
       <p className="font-display text-neon-red normal-case" role="alert">
         {CAREER_ELSEWHERE}
       </p>
-      <div className="w-64">
+      <div className="font-display w-64 tracking-wide">
         <SkewButton
           autoFocus
           onClick={() => {
