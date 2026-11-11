@@ -33,6 +33,11 @@ export const noTopLevelAwaitRule = defineRule({
           context.report({ messageId: "waits", node });
         }
       },
+      VariableDeclaration(node) {
+        if (node.kind === "await using" && !insideFunction(node)) {
+          context.report({ messageId: "waits", node });
+        }
+      },
     };
   },
   meta: {

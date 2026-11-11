@@ -13,6 +13,7 @@ runRule("rushline/no-top-level-await", noTopLevelAwaitRule, {
       code: "export const sizes = [await first(), 2];",
       errors: [waits],
     },
+    { code: "{ await using held = acquire(); }", errors: [waits] },
   ],
   valid: [
     "const rider = async (bytes) => { await MeshoptSimplifier.ready; };",
@@ -20,5 +21,7 @@ runRule("rushline/no-top-level-await", noTopLevelAwaitRule, {
     "const figure = { load: async function () { await ready; } };",
     "const read = async (parts) => { for await (const part of parts) { use(part); } };",
     "const ready = MeshoptSimplifier.ready;",
+    "const read = async () => { await using held = acquire(); };",
+    "{ using held = acquire(); }",
   ],
 });
