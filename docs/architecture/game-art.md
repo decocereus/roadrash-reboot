@@ -1,6 +1,6 @@
 # Game art
 
-Models and menu art are not committed. Each file lives in the R2 bucket `rushline-art` under a content-addressed key, the first 32 hex digits of its SHA-256 and its extension, such as `d86d4b875dd46f911b288f42bc7a68cb.glb`. `apps/web/src/assets/art.json` is the manifest. It maps each logical name, such as `models/bike.glb` or `clubhouse/bar/dusk.webp`, to its key, and `artUrl` in `apps/web/src/assets/art.ts` turns a name into `/art/<key>`. A name that is not in the manifest does not type-check. A changed file gets a new key, so its URL changes and nothing needs purging.
+Models are not committed, and since November 11, 2026 the menus use no art of their own. Each file lives in the R2 bucket `rushline-art` under a content-addressed key, the first 32 hex digits of its SHA-256 and its extension, such as `d86d4b875dd46f911b288f42bc7a68cb.glb`. `apps/web/src/assets/art.json` is the manifest. It maps each logical name, such as `models/bike.glb` or `models/van.glb`, to its key, and `artUrl` in `apps/web/src/assets/art.ts` turns a name into `/art/<key>`. A name that is not in the manifest does not type-check. A changed file gets a new key, so its URL changes and nothing needs purging.
 
 The Worker serves `/art/<key>` from the bucket with `cache-control: public, max-age=31536000, immutable` (`apps/web/src/routes/art/$key.ts` and `apps/web/src/server/art.ts`). The art stays on the game's own origin: the account's only zone belongs to another product, and the same origin needs no CORS for WebGL textures. `r2.dev` is rate-limited and not used.
 

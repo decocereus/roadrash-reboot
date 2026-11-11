@@ -52,7 +52,7 @@ Keep implementation detail out of the map: name player paths, stable handles, re
 - [Junctions and crossings](./junctions.md): where a road's junctions and pedestrian crossings stand, how the arms, zebras, stop lines and signals draw, and the light cycle.
 - [Walkable bar](./walkable-bar.md): the bar the player walks around, which is every race room's lobby in production (only the `/bar` route is development-only), its cameras, the hidden bike, the cast, the door cutscene and the clock.
 - [Career](./career.md): a new career, Ride solo's career line, a career race settled into money and qualification, the garage, and the save across reloads.
-- [Player events](./player-events.md): the race data notice, the Race data switch and player ID in Settings, and the events sent to `/api/events`.
+- [Player events](./player-events.md): the data notice on the first-visit card, the Race data switch and player ID in Settings, and the events sent to `/api/events`.
 - [Race room](./race-room.md): the Durable Object that runs a race at 60 Hz for WebSocket seats, raced by scripted clients.
 - [Netcode compare](./netcode-compare.md): `pnpm rooms:fights` on a change's base and head builds, alternating, and `pnpm rooms:compare` holding the head to one rule table for drawn places, snaps, strikes and dropped presses.
 - [Race rules](./race-rules.md): the served field size, a ten-racer grid, a three-tier career and what each tier changes, and the save above the top tier refused.

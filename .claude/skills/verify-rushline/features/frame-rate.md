@@ -18,7 +18,7 @@ The game holds 60 frames per second on one fixed quality preset, which `apps/web
 ## How to get to it (user POV)
 
 - A player sees frame rate only as smoothness, or turns on Settings → Frame meter. Add `?fps` to any URL for the same overlay.
-- Settings, from the bar's Settings tab or the pause menu, has Frame rate: 60 (the default) or 30. Frame meter is a tester row under `?tester`.
+- Settings, from the bar's Settings tab or the race menu, has Frame rate: 60 (the default) or 30. Frame meter is a tester row under `?tester`.
 - `?stress` and `?stress=reference` work in every build; `&ratio=2` pins the pixel ratio, past the preset's pixel cap, and turns the pacer off.
 
 ## Driving it with rv
@@ -29,7 +29,7 @@ Preconditions:
 - Note the machine load (`uptime`); other agents' work moves these numbers.
 
 - **Overlay.** Run `rv open --run <run> "/?stress&ratio=2&fps" --until race` and `rv shot --run <run> fps-overlay`. The readout shows fps, ms, worst, `×2.00`, the preset, pace, the display's Hz, calls, and tris.
-- **Frame-rate setting.** In a race past its countdown, run `rv press --run <run> Escape`, `rv click --run <run> Settings --within Pause` and `rv click --run <run> "Frame rate" --within Settings`; each click steps between 60 and 30. Then `rv click --run <run> Back --within Settings`, `rv click --run <run> Resume --within Pause`, ride for two seconds, and read `rv js --run <run> 'globalThis.__rushlineDiagnostics.snapshot().quality'`: `frameRate` and `pace` read `"60"` and 60, or `"30"` and 30. `rv sample` then reports 60.0 or 30.0 fps while the race clock still runs 60 ticks a second.
+- **Frame-rate setting.** In a race past its countdown, run `rv press --run <run> Escape`, `rv click --run <run> Settings --within "Race menu"` and `rv click --run <run> "Frame rate" --within Settings`; each click steps between 60 and 30. Then `rv click --run <run> Back --within Settings`, `rv click --run <run> Resume --within "Race menu"`, ride for two seconds, and read `rv js --run <run> 'globalThis.__rushlineDiagnostics.snapshot().quality'`: `frameRate` and `pace` read `"60"` and 60, or `"30"` and 30. `rv sample` then reports 60.0 or 30.0 fps while the race clock still runs 60 ticks a second.
 - **Sample.** Run `rv wait --run <run> 'globalThis.__rushlineProfile.info().tick > 600' --timeout 120` and `rv sample --run <run> stress --seconds 6`. The line reports frames, fps, p50/p95/p99/worst frame interval, frames over 20 and 33 ms, JS ms per frame, calls, and ratio, and `stress.sample.json` holds the same. On the M4 Pro the stress race runs near 60 fps with a few frames over 20 ms; a build reads lower on `--dev`.
 - **Throttled.** Run `rv throttle --run <run> --cpu 4`, `rv sample --run <run> stress-cpu4 --seconds 6`, then `rv throttle --run <run> --cpu 1`. Expect roughly twice the JS per frame and the same pixel ratio throughout; the sample records `cpu x4`.
 - **Trace.** Run `rv trace --run <run> stress --seconds 5`. The summary lists long tasks, GC pauses, and the busiest threads (`Renderer/CrRendererMain`, `GPU Process/CrGpuMain`, `GPU Process/VizCompositorThread`); open `stress.trace.json` in the DevTools Performance panel for detail.
@@ -39,7 +39,7 @@ Preconditions:
 
 ## Gotchas
 
-- A frame-rate change applies on the next rendered frame. While the pause menu is up the snapshot still shows the old rate; resume before you read it.
+- A frame-rate change applies on the next rendered frame. While the race menu is up the snapshot still shows the old rate; resume before you read it.
 - `rv sample` measures whatever ticks pass while it waits; it is not the bench window. For a number to quote, use `pnpm perf:gpu` or `measure.ts`, which wait for ticks 2028-2628 of the stress race.
 - Compare runs only at the same preset and pixel ratio.
 - `rv sample` appends to `<name>.sample.json`, so a name used twice holds two JSON objects and no longer parses. Use a new name per sample.

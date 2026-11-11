@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-23T13:15:53+00:00",
+  "generatedAt": "2026-11-11T08:30:00+00:00",
   "title": "Design System: Rushline",
   "extensions": {
     "colorMeta": {
@@ -198,6 +198,36 @@
           "#b0c9fd",
           "#e7effe"
         ]
+      },
+      "night": {
+        "role": "neutral",
+        "displayName": "Night",
+        "canonical": "#150c26",
+        "tonalRamp": [
+          "#010003",
+          "#050309",
+          "#090511",
+          "#0d0718",
+          "#110a20",
+          "#433c51",
+          "#7e7987",
+          "#c4c2c8"
+        ]
+      },
+      "night-raised": {
+        "role": "neutral",
+        "displayName": "Night Raised",
+        "canonical": "#1a0f2e",
+        "tonalRamp": [
+          "#020103",
+          "#06030b",
+          "#0b0614",
+          "#10091d",
+          "#160c27",
+          "#473f57",
+          "#817b8c",
+          "#c5c3ca"
+        ]
       }
     },
     "typographyMeta": {
@@ -205,25 +235,9 @@
         "displayName": "Outcome",
         "purpose": "WINNER, FINISHED, and the boot wordmark."
       },
-      "wordmark": {
-        "displayName": "Wordmark",
-        "purpose": "THE LOWSIDE at the top left of every room; 84 stage px."
-      },
       "hud": {
         "displayName": "HUD",
         "purpose": "Place, countdown, and notices over the road, with the HUD ink outline."
-      },
-      "sheet-title": {
-        "displayName": "Sheet title",
-        "purpose": "The word on a sheet's tape, 38 to 50 stage px, rotated -6 degrees."
-      },
-      "sheet-row": {
-        "displayName": "Sheet row",
-        "purpose": "A line on a pinned list, 26 stage px; detail at 0.62 em."
-      },
-      "strip": {
-        "displayName": "Strip",
-        "purpose": "Bottom strip actions, 33 stage px."
       },
       "name": {
         "displayName": "Name",
@@ -231,11 +245,23 @@
       },
       "body": {
         "displayName": "Body",
-        "purpose": "Plain menus and the kit page."
+        "purpose": "The dev pages."
       },
       "label": {
         "displayName": "Label",
-        "purpose": "Menu details off the stage."
+        "purpose": "Small labels on the dev pages."
+      },
+      "panel-title": {
+        "displayName": "Panel title",
+        "purpose": "The title of a panel or card, neon yellow italic over the magenta rule."
+      },
+      "button": {
+        "displayName": "Button",
+        "purpose": "A skewed button's title, 1.75 rem or 1.3 rem slim."
+      },
+      "line": {
+        "displayName": "Line",
+        "purpose": "A panel's sentences in normal case: lit, quiet or warning."
       }
     },
     "shadows": [
@@ -243,33 +269,13 @@
         "name": "hud-ink",
         "value": "-2px 0 #0e0f12, 2px 0 #0e0f12, 0 -2px #0e0f12, 0 2px #0e0f12, 0 4px 10px rgb(0 0 0 / 45%)",
         "purpose": "Text shadow under every HUD word over the road."
-      },
-      {
-        "name": "wordmark-drop",
-        "value": "drop-shadow(0 0.06em 0 rgb(0 0 0 / 60%))",
-        "purpose": "The Lowside wordmark over a room."
       }
     ],
     "motion": [
       {
-        "name": "screen-in",
-        "value": "180ms ease-out",
-        "purpose": "Rooms cross-fade."
-      },
-      {
         "name": "notice-in",
         "value": "180ms cubic-bezier(0.22, 1, 0.36, 1)",
-        "purpose": "Notices and the Confirm slip enter from 8px lower at 96% scale."
-      },
-      {
-        "name": "seat-in",
-        "value": "700ms cubic-bezier(0.22, 1, 0.36, 1)",
-        "purpose": "Figures and flyers slide in 4%."
-      },
-      {
-        "name": "bar-time-lapse",
-        "value": "150s linear",
-        "purpose": "Dusk to night in the bar."
+        "purpose": "Notices and the Confirm card enter from 8px lower at 96% scale."
       },
       {
         "name": "cop-blink",
@@ -281,44 +287,36 @@
   },
   "components": [
     {
-      "name": "Pinned List Item",
+      "name": "Panel",
       "kind": "custom",
-      "refersTo": "sheet-item",
-      "description": "A line on a ruled sheet; the room's menu. Selected gets the highlighter stroke and a pointer.",
-      "html": "<div class=\"ds-sheet\"><button class=\"ds-sheet-item\" data-selected><span class=\"ds-pointer\">▸</span>Race<small>Ridge Road at level 1</small></button><button class=\"ds-sheet-item\"><span class=\"ds-pointer\">▸</span>Back<small>&nbsp;</small></button><button class=\"ds-sheet-item\" disabled><span class=\"ds-pointer\">▸</span>Sold out<small>Locked</small></button></div>",
-      "css": ".ds-sheet { background: repeating-linear-gradient(to bottom, transparent 0 33px, rgb(14 15 18 / 55%) 33px 34px), var(--paper, #ede4d0); padding: 12px 16px 12px 40px; width: 280px; transform: rotate(-0.4deg); } .ds-sheet-item { display: grid; grid-template-columns: 1em 1fr; width: 100%; height: 68px; align-content: start; text-align: left; background: none; border: 0; color: #0e0f12; font: 700 26px/0.9 'Saira Extra Condensed', 'Arial Narrow', sans-serif; text-transform: uppercase; cursor: pointer; } .ds-sheet-item small { grid-column: 2; font-size: 0.62em; color: rgb(14 15 18 / 60%); margin-top: 0.45em; text-transform: none; font-family: Inter, sans-serif; font-weight: 600; } .ds-pointer { visibility: hidden; } .ds-sheet-item[data-selected], .ds-sheet-item:hover:not(:disabled), .ds-sheet-item:focus-visible { background: rgb(255 240 74 / 85%); outline: none; } .ds-sheet-item[data-selected] .ds-pointer, .ds-sheet-item:hover:not(:disabled) .ds-pointer { visibility: visible; } .ds-sheet-item:disabled { color: rgb(14 15 18 / 35%); cursor: default; }"
+      "refersTo": "panel",
+      "description": "The bar's right-hand panel: a yellow italic title over a magenta rule, lines, and buttons. The lower right corner is cut.",
+      "html": "<section class=\"ds-panel\"><h2 class=\"ds-title\">Race</h2><div class=\"ds-rule\"></div><p class=\"ds-line\">Public lobby. Eight riders, one road.</p></section>",
+      "css": ".ds-panel { width: 25rem; background: #1a0f2e; border: 2px solid #fff04a; border-top: 0; padding: 1.25rem 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; color: #ede4d0; font-family: 'Saira Extra Condensed', 'Arial Narrow', sans-serif; text-transform: uppercase; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 1.4rem), calc(100% - 1.4rem) 100%, 0 100%); } .ds-title { margin: 0; color: #fff04a; font: italic 800 2.9rem/1 'Saira Extra Condensed', 'Arial Narrow', sans-serif; } .ds-rule { height: 2px; background: #ff2fb5; } .ds-line { margin: 0; font-weight: 700; font-size: 1.125rem; text-transform: none; }"
     },
     {
-      "name": "Strip Action",
-      "kind": "nav",
-      "refersTo": "strip-action",
-      "description": "Actions in the bottom strip of every room.",
-      "html": "<nav class=\"ds-strip\"><button class=\"ds-strip-action\" data-selected>▸ Ride</button><button class=\"ds-strip-action\">Garage</button><button class=\"ds-strip-action\" disabled>Back room</button><span class=\"ds-strip-caption\">Arrows to steer</span></nav>",
-      "css": ".ds-strip { display: flex; align-items: center; gap: 32px; padding: 12px 48px; background: rgb(14 15 18 / 90%); border-block: 1px solid rgb(255 255 255 / 10%); font: 700 33px/1 'Saira Extra Condensed', 'Arial Narrow', sans-serif; text-transform: uppercase; } .ds-strip-action { background: none; border: 0; color: #f2eee6; font: inherit; text-transform: inherit; padding: 0 0.4em; border-radius: 2.4px; cursor: pointer; transition: color 100ms; } .ds-strip-action[data-selected], .ds-strip-action:hover:not(:disabled), .ds-strip-action:focus-visible { color: #fff04a; outline: 2px solid #fff04a; } .ds-strip-action:disabled { color: rgb(237 228 208 / 35%); cursor: default; } .ds-strip-caption { margin-left: auto; font-size: 20px; letter-spacing: 0.04em; color: rgb(237 228 208 / 60%); }"
+      "name": "Skew Button",
+      "kind": "button",
+      "refersTo": "skew-button-primary",
+      "description": "A skewed button with a title and an optional detail. Primary is filled neon yellow; plain has a paper edge on night.",
+      "html": "<button class=\"ds-skew ds-primary\"><b>Back to the race</b><small>Esc</small></button><button class=\"ds-skew\"><b>Settings</b></button>",
+      "css": ".ds-skew { display: block; width: 100%; transform: skewX(-10deg); border: 2px solid rgb(237 228 208 / 50%); background: #150c26; color: #ede4d0; padding: 0.5rem 1rem; text-align: left; font-family: 'Saira Extra Condensed', 'Arial Narrow', sans-serif; text-transform: uppercase; cursor: pointer; } .ds-skew b { display: block; font: italic 800 1.75rem/1.25 'Saira Extra Condensed', 'Arial Narrow', sans-serif; } .ds-skew small { display: block; font-weight: 700; font-size: 1rem; text-transform: none; color: rgb(237 228 208 / 70%); } .ds-primary { background: #fff04a; border-color: #fff04a; color: #0e0f12; } .ds-primary small { color: rgb(14 15 18 / 75%); }"
     },
     {
-      "name": "Name Tape",
-      "kind": "chip",
-      "refersTo": "name-tape",
-      "description": "The speaker's name under a speech sticker.",
-      "html": "<figure class=\"ds-speech\"><blockquote>You ride like the bill is already paid.</blockquote><figcaption class=\"ds-tape\">Vex<small>Road boss</small></figcaption></figure>",
-      "css": ".ds-speech { position: relative; width: 266px; margin: 0 0 24px; } .ds-speech blockquote { margin: 0; padding: 24px 28px 40px; background: #ede4d0; color: #0e0f12; font: 700 25px/1.05 'Saira Extra Condensed', 'Arial Narrow', sans-serif; text-align: center; transform: rotate(-2deg); clip-path: polygon(0 4%, 100% 0, 98% 82%, 30% 84%, 12% 100%, 16% 84%, 2% 82%); } .ds-tape { position: absolute; left: 111px; bottom: -16px; display: flex; flex-direction: column; padding: 0.2em 0.4em; background: #fff04a; color: #0e0f12; font: 700 16px/1 'Saira Extra Condensed', 'Arial Narrow', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; transform: rotate(-3deg); } .ds-tape small { font-size: 0.75em; margin-top: 0.15em; }"
-    },
-    {
-      "name": "Stamp",
+      "name": "Card",
       "kind": "custom",
-      "refersTo": "stamp",
-      "description": "A stencilled verdict: yellow for good, red for bad.",
-      "html": "<p class=\"ds-stamp\">Season over</p><p class=\"ds-stamp ds-stamp-bad\">Busted</p>",
-      "css": ".ds-stamp { display: inline-block; margin: 16px; padding: 0 0.3em; border: 0.12em solid #fff04a; background: rgb(14 15 18 / 80%); color: #fff04a; font: 800 64px/1 'Big Shoulders Stencil Display', 'Saira Extra Condensed', sans-serif; text-transform: uppercase; white-space: nowrap; transform: rotate(-6deg); } .ds-stamp-bad { border-color: #ff2e3d; color: #ff2e3d; }"
+      "refersTo": "card",
+      "description": "The centred card for a question, a name or a menu over the bar or the race, over a night dim. Two corners are cut.",
+      "html": "<section class=\"ds-card\"><h2 class=\"ds-title\">Race menu</h2><div class=\"ds-rule\"></div><p class=\"ds-line\">The race keeps going.</p></section>",
+      "css": ".ds-card { width: 30rem; background: rgb(26 15 46 / 98%); border: 2px solid #fff04a; padding: 1.5rem 1.75rem 1.75rem; display: flex; flex-direction: column; gap: 0.875rem; color: #ede4d0; font-family: 'Saira Extra Condensed', 'Arial Narrow', sans-serif; text-transform: uppercase; clip-path: polygon(0 0, calc(100% - 1.4rem) 0, 100% 1.4rem, 100% 100%, 1.4rem 100%, 0 calc(100% - 1.4rem)); } .ds-title { margin: 0; color: #fff04a; font: italic 800 2.9rem/1 'Saira Extra Condensed', 'Arial Narrow', sans-serif; } .ds-rule { height: 2px; background: #ff2fb5; } .ds-line { margin: 0; font-weight: 700; font-size: 1.125rem; text-transform: none; }"
     },
     {
-      "name": "Confirm Slip",
-      "kind": "card",
-      "refersTo": "sheet-item",
-      "description": "A ruled slip pinned over the dimmed room; safe choice first.",
-      "html": "<div class=\"ds-dim\"><div class=\"ds-slip\" role=\"alertdialog\" aria-label=\"Start over\"><h2>Start over</h2><p>Burn the career and start again with the first bike?</p><p class=\"ds-warn\">This wipes the save</p><div class=\"ds-choices\"><button data-selected>▸ Keep riding</button><button>Start over</button></div></div></div>",
-      "css": ".ds-dim { background: rgb(14 15 18 / 70%); padding: 40px; } .ds-slip { width: 420px; margin: auto; padding: 0 24px 40px 48px; background: repeating-linear-gradient(to bottom, transparent 0 33px, rgb(14 15 18 / 55%) 33px 34px) 0 76px / 100% calc(100% - 76px) no-repeat, #ede4d0; color: #0e0f12; font: 700 25px/34px 'Saira Extra Condensed', 'Arial Narrow', sans-serif; } .ds-slip h2 { margin: 0 -24px 8px -48px; padding: 18px; background: #fff04a; font: 800 38px/1 'Saira Extra Condensed', 'Arial Narrow', sans-serif; text-transform: uppercase; text-align: center; transform: rotate(-3deg); } .ds-slip p { margin: 0; } .ds-warn { color: #ff2e3d; text-transform: uppercase; } .ds-choices { display: flex; gap: 1.4em; margin-top: 34px; } .ds-choices button { background: none; border: 0; padding: 0 0.3em; color: #0e0f12; font: 700 1.15em/34px 'Saira Extra Condensed', 'Arial Narrow', sans-serif; text-transform: uppercase; cursor: pointer; } .ds-choices button[data-selected], .ds-choices button:hover, .ds-choices button:focus-visible { background: rgb(255 240 74 / 85%); outline: none; }"
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "text-field",
+      "description": "A cyan-edged field on ink with a cyan caret, for the rider name.",
+      "html": "<input class=\"ds-field\" value=\"Alpha\" aria-label=\"Name\">",
+      "css": ".ds-field { width: 100%; border: 2px solid #19e6ff; background: #0e0f12; color: #ede4d0; caret-color: #19e6ff; padding: 0.5rem 0.75rem; font: 800 1.7rem/1.2 'Saira Extra Condensed', 'Arial Narrow', sans-serif; text-transform: uppercase; }"
     },
     {
       "name": "Cop Warning",
@@ -338,24 +336,19 @@
     }
   ],
   "narrative": {
-    "northStar": "The Lowside Wall",
-    "overview": "Between races the player is in the Lowside, the bar where the career lives, and every screen is a room in it or something pinned to its wall. Ruled sheets with yellow tape across the top, cyan and magenta stickers, flyers, bills, and stencilled stamps sit on painted anime rooms: the bar, the garage, the back room, the car park. The art is painted and the words are live text set over it, so a name, a number, or a line can change without new art. The race view stays clean. The road is the brightest thing on screen, and the only interface that stays on it is one speedometer.\n\nEvery room is one fixed 1672 × 941 stage scaled to fit the window. Pieces sit at boxes measured from the approved comps and their type is sized against the stage width, so a room keeps its composition at any window size. Menus are lists written on paper, not buttons. The selected line gets a highlighter stroke of neon yellow, and the actions along the bottom strip get a neon-yellow outline.\n\nDensity is low. A room has one sheet of choices, one or two notes, one figure, and the strip. Keyboard first: arrows move, Enter takes the highlighted line, Escape goes back.",
+    "northStar": "The Lowside at Night",
+    "overview": "Between races the player is in the Lowside, a walkable 3D bar, and the interface is a small set of night-violet panels and cards with neon edges set over it. The bar is the room; the kit only holds the words, the numbers and the choices. Over a race, the same cards dim the road behind them. The race view stays clean. The road is the brightest thing on screen, and the only interface that stays on it is one speedometer.\n\nEvery piece comes from one kit in `packages/ui`: a tab strip across the top, one panel on the right, a hint strip along the bottom, and a card in the middle when something needs an answer before play goes on. Choices are skewed buttons; the primary one is filled neon yellow.\n\nDensity is low. A panel has one title, one rule, a few lines and its buttons. Keyboard first: Tab and the arrows move, Enter presses, Escape closes the topmost layer.",
     "keyCharacteristics": [
-      "Painted rooms on a fixed stage; text is code, set over the plates.",
-      "Ruled paper with yellow tape for every list, form, and written card.",
-      "Neon yellow marks where you are: the highlighted line, the outlined strip action, the name tape.",
-      "Saira Extra Condensed capitals for anything set; the stencil for the wordmark, verdicts, and stamps only.",
+      "The 3D bar is the backdrop; panels and cards are live text over it.",
+      "Night-violet panels with a neon-yellow edge, a yellow italic title over a magenta rule.",
+      "Neon yellow marks the primary choice and where you are.",
+      "Saira Extra Condensed capitals for anything set; the stencil for the wordmark and verdicts only.",
       "No health bars. In the race, one speedometer and nothing else that persists."
     ],
     "rules": [
       {
         "name": "The Highlighter Rule",
-        "body": "Neon yellow means \"you are here\". On paper it is a highlighter stroke behind ink text; on ink it is the text and outline itself. Never use it to decorate.",
-        "section": "colors"
-      },
-      {
-        "name": "The Ink on Paper Rule",
-        "body": "Text on paper and tape is ink. The only other colour allowed on paper is a neon-red warning.",
+        "body": "Neon yellow means \"press this\" or \"you are here\". Never use it to decorate.",
         "section": "colors"
       },
       {
@@ -365,7 +358,7 @@
       },
       {
         "name": "The Stencil Is Paint Rule",
-        "body": "The stencil face is for the wordmark, outcomes, and stamps. A list line, a title, or a button never uses it.",
+        "body": "The stencil face is for the wordmark and outcomes. A list line, a title, or a button never uses it, apart from the `stencil` face of a panel title.",
         "section": "typography"
       },
       {
@@ -374,28 +367,25 @@
         "section": "typography"
       },
       {
-        "name": "The Painted Depth Rule",
-        "body": "If a piece needs to lift off the wall, paint it into the plate. A CSS shadow on a stage piece is a floating card; leave it out.",
+        "name": "The Flat Kit Rule",
+        "body": "A panel, card or button has no box shadow. Dim what is behind it instead.",
         "section": "elevation"
       }
     ],
     "dos": [
-      "**Do** build every room on the 1672 × 941 stage with `place` and `stagePx`, and keep the header, the pinned sheet, and the bottom strip where they are.",
-      "**Do** put every list, form, and written card on a ruled sheet, with text on the lines.",
-      "**Do** mark the current choice with the neon-yellow highlighter on paper, or neon-yellow text and outline on ink, and make everything reachable from the keyboard.",
-      "**Do** keep painted material in plates and text in code: names, numbers, lines, and notes are live text set over the art.",
-      "**Do** show new character or plate art to the user before wiring it in.",
+      "**Do** build every menu piece from the kit in `packages/ui`, and add a missing piece there rather than in a screen.",
+      "**Do** keep one primary button per panel or card, filled neon yellow, and make everything reachable from the keyboard.",
+      "**Do** show new character art to the user before wiring it in.",
       "**Do** colour every amount by the Ledger Colour Rule and set it in tabular numerals.",
       "**Do** honour reduced motion.",
-      "**Do** check new pieces on `/kit` (development only), which lays out the pieces the game ships on the same stage."
+      "**Do** check new pieces on `/kit` (development only), which lays out the kit."
     ],
     "donts": [
       "**Don't** add health, stamina, or bike condition bars to the race HUD. The speedometer carries speed, gear, place, and progress; the rider and the bike show damage themselves.",
       "**Don't** make a second element blink. The cop warning is the only one.",
-      "**Don't** put a dark panel, a card, or a filled button on a room. Choices are lines on paper or actions in the strip.",
-      "**Don't** add CSS shadows to stage pieces; paint the depth into the plate.",
-      "**Don't** use the stencil face for anything but the wordmark, outcomes, and stamps.",
-      "**Don't** paint text into the art, and don't make a static painting for a menu: rooms change with the road, the rider, and the time of night.",
+      "**Don't** add box shadows or rounded corners to the kit; cut a corner or dim the background.",
+      "**Don't** use the stencil face for anything but the wordmark and outcomes.",
+      "**Don't** paint menus into static art: the bar is live 3D and changes with the road, the rider, and the time of night.",
       "**Don't** reach for retro low resolution, dithering, or blocky, toy-like stand-ins, and don't add coloured afterimages to turning riders. The user rejected all of them."
     ]
   }

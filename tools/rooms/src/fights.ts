@@ -38,8 +38,10 @@ const usage =
   "Usage: pnpm rooms:fights --out <dir> (--rooms-port <port> [--links direct,home,mobile,far,bursts,upload] | --server <game url>) [--slots 1,2]";
 
 const RV = "tools/verify/rushline.ts";
-const SEATED_OR_NAMING =
-  "!!document.querySelector('input') || [...document.querySelectorAll('button')].some((b) => /^Ready/.test(b.textContent.trim()))";
+const FIRST_VISIT =
+  "document.querySelector('[role=dialog][aria-label=\"First visit\"]') !== null";
+const JOIN_SHOWN =
+  "[...document.querySelectorAll('button')].some((b) => /Join/.test(b.textContent))";
 const SEATED =
   "[...document.querySelectorAll('button')].some((b) => /^Ready/.test(b.textContent.trim()))";
 const BENCH_REFUSAL = "while a bench is measuring";
@@ -151,50 +153,33 @@ const startLink = (port: number, target: number, link: Link) =>
     );
   });
 
+const walkIn = (windowRun: string, name: string) =>
+  Effect.gen(function* walkInFirst() {
+    yield* rv([
+      "js",
+      "--run",
+      windowRun,
+      `(() => { const i = document.querySelector("#guest-name"); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(i, "${name}"); i.dispatchEvent(new Event("input", { bubbles: true })); return 1; })()`,
+    ]);
+    yield* rv(["click", "--run", windowRun, "Walk in"]);
+  });
+
 const seat = (windowRun: string, name: string) =>
   Effect.gen(function* seatRider() {
     yield* rv([
       "wait",
       "--run",
       windowRun,
-      "[...document.querySelectorAll('button')].some((b) => /Join/.test(b.textContent))",
+      `${FIRST_VISIT} || ${JOIN_SHOWN}`,
       "--timeout",
       "90",
     ]);
+    const welcome = yield* rv(["js", "--run", windowRun, FIRST_VISIT]);
+    if (lastLine(welcome) === "true") {
+      yield* walkIn(windowRun, name);
+    }
+    yield* rv(["wait", "--run", windowRun, JOIN_SHOWN, "--timeout", "90"]);
     yield* rv(["click", "--run", windowRun, "Join"]);
-    yield* rv([
-      "wait",
-      "--run",
-      windowRun,
-      SEATED_OR_NAMING,
-      "--timeout",
-      "20",
-    ]);
-    const naming = yield* rv([
-      "js",
-      "--run",
-      windowRun,
-      "!!document.querySelector('input')",
-    ]);
-    if (lastLine(naming) !== "true") {
-      return;
-    }
-    yield* rv([
-      "js",
-      "--run",
-      windowRun,
-      `(() => { const i = document.querySelector("input"); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(i, "${name}"); i.dispatchEvent(new Event("input", { bubbles: true })); return 1; })()`,
-    ]);
-    const notice = yield* rv([
-      "js",
-      "--run",
-      windowRun,
-      "document.body.innerText.includes('GOT IT')",
-    ]);
-    if (lastLine(notice) === "true") {
-      yield* rv(["click", "--run", windowRun, "Got it"]);
-    }
-    yield* rv(["click", "--run", windowRun, "Ride"]);
     yield* rv(["wait", "--run", windowRun, SEATED, "--timeout", "90"]);
   });
 

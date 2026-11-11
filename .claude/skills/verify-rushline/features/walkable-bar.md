@@ -45,7 +45,7 @@ Preconditions: a slot from `rv up` on a development build.
 ## Gotchas
 
 - `?time` holds the clock until the page reloads.
-- First-time browsers show the data notice over the left of the room until `Got it`. It hides during the door moment and comes back afterwards, still not dismissed.
+- First-time browsers open on the first-visit card over the dimmed room, with the tabs and the Race panel held until `Walk in`. Walk in once per slot before driving the bar.
 - The bike unlock lasts until the page reloads.
 - The first `rv up --dev` after new imports can hit Vite's `504 Outdated Optimize Dep`, and the page never reaches the bar. Open the page again.
 - A development build opens a throwaway room socket when React mounts twice. About 1 join in 11 against the live rooms server ended on "You opened this lobby in another tab", probably because the throwaway socket reached the server second. Reload the page. Production builds mount once.

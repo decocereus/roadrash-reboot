@@ -6,25 +6,26 @@ React renders every screen here. The race view is the Three.js canvas with the H
 
 ## Conventions
 
-- Every screen outside the race is a place or an object in the world: a bar, a corkboard, a garage, a ticket. There is no generic settings page; options live in the Lowside's back room.
-- Dark background, one orange heading per screen, yellow for the current selection, warm white for body text, money in green when it comes in and red when it goes out.
+- Every screen outside the race is the walkable bar with one panel or card from the kit in `packages/ui` over it, and every card over a race uses the same kit. Settings is the bar's third tab.
+- Night-violet panels with a neon-yellow edge, a yellow italic title over a magenta rule, yellow for the primary button, warm white for body text, money in green when it comes in and red when it goes out.
 - One primary action per screen, bottom right, bound to Enter. Back is bottom left, bound to Escape.
 - Keyboard first: arrows or WASD move the selection, Enter confirms, Escape goes back. Everything is also clickable. A gamepad maps the same way.
 - Transitions are short: 180 ms cross-fade between menu screens, 300 ms fade to and from the race. The consequence screens (Wrecked, Busted) cut in hard with no fade.
 - Text strings below are final copy unless marked as a template. `{braces}` mark values filled from state.
 - Only one interface element blinks: the police warning on the HUD. Every other element that changes state changes colour and holds it. Lights in the world, such as a police light bar, are scenery and not covered by this rule.
 - "Settlement" is the moment a race's result becomes final, defined in `game-design.md` section 4. No screen after a race shows a number that settlement did not produce.
-- The "Single Race menu" is the Route Board opened from the Back Room.
+- The "Single Race menu" is the Ride solo panel on the bar's Race tab.
 
 ## Flow
 
 Restructured on October 23, 2026. The Lowside bar is the first screen and the hub; the title, the intro cards, the pre-race screen, and the tier-up screen were cut, and the route board serves Single Race only.
 
-Revised on November 11, 2026. Solo races leave through the same door as room races, and results, the career over card and the endings sit on the bar's Race panel.
+Revised on November 11, 2026. Solo races leave through the same door as room races, and results, the career over card and the endings sit on the bar's Race panel. A first visit opens on the first-visit card over the bar, and every card drawn over a race uses the bar's kit.
 
 ```
 Load (wordmark while the bar's art decodes)
- └─► The Lowside (walkable bar), Race panel ◄─────────────────────┐
+ ├─► First-visit card (once) ─ Walk in ─► home, or the invite ─┐
+ └─► The Lowside (walkable bar), Race panel ◄─────────────────────┤
       ├─ Ride solo ─► Ride (career) or Race (single) ─► Door ─► Race
       ├─ Find a race / Race friends ─► Lobby ─► Door ─► Race       │
       └─ Garage, Settings                               │          │
@@ -38,83 +39,28 @@ Load (wordmark while the bar's art decodes)
 
 A promotion returns to the bar, where Vic says the tier's line. A wreck or a bust has no screen of its own; Results names it in its title. `stepNavigation` in `apps/web/src/navigation.ts` is this diagram as code.
 
-## 1. Boot and the Back Room
+## 1. Boot and the first visit
 
-**Boot.** On page load the screen shows the wordmark `RUSHLINE` and `Race. Fight. Pay for it.` while the save is read and the bar's art for the first road decodes, so the bar appears whole. With no save a new career begins and the bar opens. With a save it opens the bar. When the career is over, Ride solo offers only a new career. A damaged save opens the Back Room. A `?ride=` or `?bench=` URL starts that race instead.
+**Boot.** On page load the screen shows the wordmark `RUSHLINE` and `Race. Fight. Pay for it.` while the rules and the save are read. With no save a new career begins and the bar opens. With a save it opens the bar. A `?ride=` or `?bench=` URL starts that race instead. When the career is held in another tab, the screen says so with `TRY AGAIN`, which reloads the page.
 
-**Back Room.** Reached from the bar's menu or Escape, and from the career over card. A painted room on the bar's stage: the office behind the bar where the races are run, with a desk under a green lamp, a rotary phone, the cash box, three CRTs showing night races, a locker, and the door to the bar spilling neon. The bar header runs along the top. The menu is a ruled paper list pinned to the left wall, titled `BACK ROOM` on its tape, two ruled lines per item. Items: `BACK TO THE BAR` with `Tier {tier} · ${cash} · {bike}` (or `CAREER OVER` / `See the record`, `SEASON OVER` / `See the ending`), `NEW CAREER`, `SINGLE RACE` with `Any road, no money at stake`, `SETTINGS`. Escape returns to the bar.
+**First visit.** A player with no saved name, or who has not yet seen the data notice, gets this card once, over the dimmed bar, before anything else in the bar can be used: the tabs, the walk-up spots and the Race panel behind it wait. `stepNavigation` decides it as the bar's `welcome` panel, which holds the panel the player lands on after it.
 
-- New career confirm, when a save exists: `Start over? Your Tier {tier} career will be erased.` Buttons `ERASE AND START` / `KEEP IT`.
-- Damaged save, on the pink note on the wall (template): `{what is wrong} ({field}).` / `Save error: {kind}. Start over keeps the old save in the browser under a backup key and begins a new career.` The first menu item becomes `START OVER`. What is wrong, by kind: `notJson` reads `The save is not a save file`, `wrongVersion` reads `The save is from another version of the game`, `invalid` reads `The save holds a value the game does not have`, `inconsistent` reads `The save contradicts itself`.
-- Race rules that fail to load, on the pink note: `Could not start the game: {message}`, with the messages in `docs/errors.md`. The menu holds only `TRY AGAIN`, which reloads the page.
-- When the browser will not store the save, every screen carries a red line at the top: `The browser refused the save. Progress will be lost when you leave.`
-- Bottom strip: `Arrows to steer · Space to punch · Shift to kick`
-- Settings is a second ruled sheet pinned beside the list, one line per setting, with the highlighted setting's explanation in an opaque bottom strip and `B while riding marks the moment · Session {id}` at its right. It opens the same way over Pause.
+- Heading: `WHAT DO THEY CALL YOU?`, over a name field that takes up to 12 characters, cleaned by the same rule as the room's names.
+- Notice: `We record your races and how the game runs, under a random ID kept on this device. Never your name. You can switch it off in Settings.`
+- Buttons: `WALK IN` (primary, also Enter), and the `PRIVACY` link.
+- `WALK IN` saves the name and marks the notice seen, then shows the home panel, or the invite panel when the player came by a friend's link. A refresh before `WALK IN` shows the card again, with the friend's room still in the address. A returning player with a name who has seen the notice never sees it. Settings keeps the Race data switch and the name card for changing the name later.
 
 **Interrupted careers.** When the save holds an active-race record, the page was left during a race. Loading the career settles that race as a wreck, once, before any screen is drawn, and then opens the bar.
 
+- When the browser will not store the save, every screen carries a red line at the top: `The browser refused the save. Progress will be lost when you leave.`
+
 ## 2. Clubhouse
 
-**Purpose.** The hub. Shows where the player stands (cash, tier, roads qualified), what the rivals think, and the way to everything else.
-
-**Layout.** A fixed 1672×941 stage, scaled to the window. Left: the bar at dusk turning to night, one rider on the stool with the speech sticker, the wordmark and badge above. Centre: the season standings sheet, two note stickers, a rider's bill, and a sticker. Right: the flyer of the chosen road. Top strip: the player's status. Bottom strip: the navigation and the road picker. `DESIGN.md` describes the plates and slots.
-
-**Text.**
-
-- Heading: `THE LOWSIDE`
-- Status: `TIER {n} · {tier name}` · `ROADS {q} / 3 QUALIFIED` · `CASH ${cash}` (red and prefixed `OWED` when negative) · `{bike name}`
-- Tier names: `NEW MEAT`, `DEE'S TIP`, `THE LONG RIDGE`
-- Board heading: `THE BOARD`
-- Board Polaroids: the top three of the season standings, then `YOU` wherever the player ranks, each with its points (`JUNO · 61`). Caption under the player's at tier 1: `NEW MEAT`; after tier 1: `KID CAN RIDE`.
-- Season standings: every settled career race gives 8 points for 1st down to 1 for 8th, and 0 to a rider who was busted, wrecked, or not in that race. Ties go to more wins, then to the best single finish of the season, then to the fixed order of the cast list, with the player first.
-- Board notes (templates, newest first, at most three shown):
-  - `{RIVAL} WANTS {THEIR} {WEAPON} BACK.`
-  - `{RIVAL} WENT DOWN AT {km} KM ON {ROAD}. ASK {THEM} ABOUT IT.`
-  - `{RIVAL} PUT YOU DOWN AT {km} KM ON {ROAD}. EVERYBODY SAW.` (when a rival knocked the player off)
-  - `PHOTO FINISH: {WINNER} BY A WHEEL OVER {LOSER}.`
-  - `{RIVAL}: BUSTED ON {ROAD}. FINE ${fine}.`
-  - `NEW AT THE GARAGE: {bike}.`
-  - `ROADBLOCKS START THIS WEEK. RIDE ACCORDINGLY. V.` (when roadblocks ship)
-  - `YOU LEFT A RACE. THE BIKE DIDN'T MAKE IT HOME. V.` (after a race settled on reload)
-  - `THE GARAGE TOOK THE {bike}. YOU RIDE THE GUTTER PUP NOW. STAY ON IT.` (after a repossession)
-- The rider on the stool: the boss of the chosen road, the home rider with the most season wins. Their name and `BOSS OF {road}` (or `HOLDS A GRUDGE` / `ON YOUR SIDE`) sit on yellow tape under the speech sticker, with their taunt, or their grudge taunt when they hold one against the player.
-- Vic, before the first race of a career: `You've got $1,500, a Halden Wren, and nobody knows your name.` / `Top three on every road and you move up.` / `Don't go broke.`, one line per click on the speech sticker, tagged `{n} / 3`, with the stool empty. Each line plays once per page load.
-- Text message line (template): `✉ {Rival}: {message}`. Shown when the story has one for this point.
-- Navigation: `RIDE` · `GARAGE` · `BACK ROOM` and, right aligned, the road picker `◄ {road} ►`. It opens on the first unqualified road and steps through the open roads with Up and Down, its arrows, or a click on the flyer. A qualified road's flyer carries the stamp `QUALIFIED {place}`.
-- When in debt: a red strip under the status, `YOU OWE ${debt}. PRIZE MONEY PAYS IT FIRST. LIMIT ${limit}.`
-
-**Buttons.** `RIDE` (primary), `GARAGE`, `BACK ROOM`. Escape opens the Back Room.
-
-**In.** From boot, Results, Garage, Back Room. Cross-fade.
-
-**Out.** `RIDE` goes through the door for the chosen road. Also to Garage and Back Room.
-
-**Data.** Career state: cash, tier, qualified roads, bike, season points for the ten rivals and the player, rival memory (which rival to seat at the bar and which line), story flags, board notes generated from the last settled race's incidents.
+Removed on November 11, 2026. The painted Clubhouse, the Back Room and their art, the ruled paper sheets, the notes, the stickers and the bar header and bottom strip, are gone. The walkable bar is the home, with its Race, Garage and Settings tabs; [browser-client.md](../architecture/browser-client.md#the-bar-lobby) describes it.
 
 ## 3. Route Board
 
-**Purpose.** Single Race only: pick a road, a tier, and a bike. Career races pick their road on the bar's flyer.
-
-**Layout.** The Back Room's painted room. The ruled paper list on the left wall, titled `SINGLE RACE` on its tape, holds three steppers and two buttons. The chosen road's flyer is pinned on the right; a click on it shows the next road. The road's facts are on the cyan note over the desk and its description on the pink note under the flyer. The bar header runs along the top.
-
-**Text.**
-
-- Steppers: `ROAD ◄ {road} ►`, `TIER ◄ {n} ►`, `BIKE ◄ {bike} ►`. Tiers run up to the career's tier (1 with no career); bikes are the ones in the career's garage.
-- Buttons: `RACE` with `Loading the road` under it while the road loads, `BACK`.
-- Facts note: `LENGTH {km} KM` · `TRAFFIC {LIGHT|STEADY|HEAVY}` · `POLICE {n}` · `HOME OF {rivals}`.
-- Descriptions:
-  - Breakwater Run: `Harbour to pier along the seawall. One long bend by the water, one tunnel, and a kink at the tunnel mouth that nobody sees coming twice.`
-  - Slag Row: `Two lanes and a lot of nothing, then a right angle. Rail tracks, an underpass, a drawbridge, and more traffic than anywhere else.`
-  - Ridge Road: `The home road. Ten bends and two crests on the way up to the lookout.`
-- Bottom strip: `No money · Nothing to qualify` and `Left and right change the road, tier, and bike`.
-
-**Buttons.** `RACE` (primary), `BACK`. Left and right on a stepper change its value.
-
-**In.** From the Back Room.
-
-**Out.** `RACE` goes through the door. `BACK` goes to the Back Room.
-
-**Data.** Tier; for each road its plan at this tier (length, `trafficPerKilometre`), police count from the tier table, and home rivals. Traffic label: under 6 per km is LIGHT, 6 to 9 STEADY, 10 or more HEAVY.
+Removed in the menus redesign of November 2026. A single race is picked on the Ride solo panel of the Race tab.
 
 ## 4. Garage
 
@@ -249,11 +195,11 @@ Rebuilt on November 11, 2026. The Garage is the bar's second tab, not a painted 
 - For first place the banner reads `WINNER`.
 - `BY A WHEEL OVER {RIVAL}` when that rival was riding and 25 m or less behind as the player crossed the line. `{RIVAL} BY A WHEEL` when that rival finished 30 ticks (0.5 s) or less before the player.
 
-**Buttons.** `CONTINUE` appears after 1.5 s. The screen moves on by itself after 5 s.
+**Buttons.** `CONTINUE`, the kit's yellow button at the lower right, appears after 1.5 s and takes focus. The screen moves on by itself after 5 s.
 
 **In.** Cuts in when the player's `finish` event fires. The race settles at that tick: the place on the banner is final, rivals still on the road are classified where they are, and the result is written to the save before the banner is drawn. Riders who cross the line during the animation are scenery; their places do not change.
 
-**Out.** Fade to Results. Results opens only from here, after the animation, and never before the settlement write. A reload during the animation finds no active-race record and opens the Clubhouse with the result already counted.
+**Out.** Fade to Results. Results opens only from here, after the animation, and never before the settlement write. A reload during the animation finds no active-race record and opens the bar with the result already counted.
 
 **Data.** The settled result: the player's `finishTick` and place, the finish tick of each rider ahead, and the distance behind of each rider still racing at that tick.
 
@@ -315,7 +261,7 @@ There is one card per tier, so the last promotion always names the finale. The l
 
 The first wall note reads `Tier {n}. {cops} cops. 1st pays ${prize}.`, with `New at the garage: {bikes}.` when the tier unlocks bikes, signed `V.`. The status strip shows the new tier name.
 
-**Endings.** After a last-tier Ridge Road race that the player finishes in the top three, this screen is replaced by the ending. A quit, wreck, bust, or lower place in the finale is an ordinary result that returns to the Clubhouse with the finale still open. The ending is the career over card (section 12) with the ending's name as its title and its note from `game-design.md` section 11.
+**Endings.** After a last-tier Ridge Road race that the player finishes in the top three, this screen is replaced by the ending. A quit, wreck, bust, or lower place in the finale is an ordinary result that returns to the bar with the finale still open. The ending is the career over card (section 12) with the ending's name as its title and its note from `game-design.md` section 11.
 
 ## 12. Career over
 
@@ -366,26 +312,30 @@ The first wall note reads `Tier {n}. {cops} cops. 1st pays ${prize}.`, with `New
 
 **Data.** Room state from the Durable Object: players, their bike and paint, ready flags, host, road, tier, seed, and which rivals fill the remaining bays.
 
-## 14. Pause
+## 14. Race menu
 
-**Purpose.** Stop a single-player race, change volume, or give up.
+Rebuilt on November 11, 2026 as one card in the bar's kit for solo and room races, in place of the paper list.
 
-**Layout.** The race view freezes and dims. The menu is the ruled paper list pinned on the left, titled `PAUSED` on its tape, the same list as the Back Room. The road is still visible on the right. The bottom strip holds the controls and, in Career, the line about leaving the page; Settings pins its sheet beside the list, as in the Back Room.
+**Purpose.** Stop a solo race, change the sound or settings, or give up. In a room race, the same card over the live race.
+
+**Layout.** The race view dims. A card in the centre holds the title `RACE MENU`, one line, the yellow back button with `Esc` under it, `SOUND ON` or `SOUND OFF` and `SETTINGS` side by side, and the way out with what it costs. A quiet line at the foot holds the controls.
 
 **Text.**
 
-- Heading: `PAUSED`
-- Items: `RESUME` · `RESTART RACE` (Single Race only) · `SOUND` with `ON` / `OFF` · `SETTINGS` · `QUIT RACE`
-- Quit confirm in Career: `Quit this race? It counts as a wreck: no prize, and a ${repair} repair bill.` Buttons `QUIT AND PAY` / `KEEP RACING`. When the bill would pass the credit limit, a red line is added: `THIS BILL TAKES THE {bike}.` or `THIS BILL ENDS THE CAREER.`
-- Bottom strip: `Arrows to steer · Space to punch · Shift to kick · M to mute`, and at the right in Career `Leaving or reloading the page counts as a wreck too`, in Single Race `R restarts a single race`.
-- Quit confirm in Single Race: `Quit this race?` Buttons `QUIT` / `KEEP RACING`.
-- In multiplayer the race does not pause. Escape opens the same panel over the live race with the heading `MENU`, without `RESTART RACE`, and with `LEAVE RACE` in place of `QUIT RACE`: `Leave? Your bike rides on autopilot and you're scored as LEFT.`
+- Line: `The race is paused.` in a solo race, `The race keeps going.` in a room race.
+- Back: `RESUME` in a solo race, `BACK TO THE RACE` in a room race, both with `Esc`.
+- `RESTART RACE` with `R restarts a single race.` (single race only).
+- `QUIT RACE` in a solo race. In Career its line is `Counts as a wreck, and a ${repair} repair bill. Leaving or reloading the page counts as a wreck too.`, in a single race `Back to the bar.`
+- `LEAVE RACE` in a room race, with `Back to the bar. Your bike rides on without you.`
+- Quit confirm in Career: `Quit this race? It counts as a wreck: no prize, and a ${repair} repair bill.` Buttons `KEEP RACING` (yellow, focused) / `QUIT AND PAY`. When the bill would pass the credit limit, a red line is added: `THIS BILL TAKES THE {bike}.` or `THIS BILL ENDS THE CAREER.`
+- Quit confirm in a single race: `Quit this race?` Buttons `KEEP RACING` / `QUIT`.
+- Foot: `Arrows to steer, Space to punch, Shift to kick, E to get back on, M to mute.`
 
-**Buttons.** `RESUME` (primary, also Escape).
+**Buttons.** The back button (primary, also Escape). `SETTINGS` opens the Settings panel over the card; Esc closes Settings first and leaves the card up.
 
-**In.** Escape during a race. Also when the tab loses focus in single player.
+**In.** Escape during a race. Also when the tab loses focus in a solo race.
 
-**Out.** `RESUME` returns after a `3 2 1` count so the player can get their hands back. Quitting a career race settles it as a wreck at the tick of the quit and goes straight to Results at the full bill, stamped `QUIT`. Quitting a Single Race goes back to the Single Race menu and records nothing.
+**Out.** `RESUME` returns after a `3 2 1` count so the player can get their hands back. Quitting a career race settles it as a wreck at the tick of the quit and goes to Results on the Race panel at the full bill. Quitting a single race goes back to the bar and records nothing. `LEAVE RACE` goes home and the room rides the bike on.
 
 **Data.** Settings, mode, the repair bill a quit would cost, and whether that bill would pass the credit limit.
 

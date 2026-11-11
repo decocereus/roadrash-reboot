@@ -392,13 +392,13 @@ export const platformFeatures: readonly FeatureEntry[] = [
     kind: "platform",
     owns: [
       "packages/ui/**",
-      "apps/web/src/components/kit/**",
       "apps/web/src/routes/kit.tsx",
+      "apps/web/test/menu-keys.test.tsx",
     ],
     perf: ["bytes.route.kit.gzip", "bytes.route.kit.raw"],
     start: [
       "packages/ui/src/styles/globals.css",
-      "packages/ui/src/components/menu-list.tsx",
+      "packages/ui/src/components/kit-panel.tsx",
       "apps/web/src/routes/kit.tsx",
     ],
     summary:

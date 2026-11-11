@@ -1,6 +1,4 @@
 import type { BillConsequence } from "@racer/career/settle";
-import { chapterOf } from "@racer/career/story";
-import type { Tier } from "@racer/career/tables";
 import { celebrityRiders } from "@racer/content/celebrities";
 import { ordinaryRiders } from "@racer/content/riders";
 import { byId } from "@racer/content/rows";
@@ -10,8 +8,6 @@ export const WORDMARK = "Rushline";
 export const TAGLINE = "Race. Fight. Pay for it.";
 export const CONTROLS =
   "Arrows to steer, Space to punch, Shift to kick, E to get back on";
-
-export const tierName = (tier: Tier): string => chapterOf(tier).name;
 
 export const IN_DEBT_AT_THE_GARAGE =
   "The garage doesn't sell to people who owe Vic money. You can still sell.";

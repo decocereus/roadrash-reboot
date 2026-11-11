@@ -1,5 +1,13 @@
 import type { RoomRun } from "@racer/rooms/room-run";
+import {
+  Card,
+  PanelLine,
+  PanelRule,
+  PanelTitle,
+} from "@racer/ui/components/kit-panel";
+import { SkewButton } from "@racer/ui/components/skew-button";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import type { ReactNode } from "react";
 
 import { ordinal } from "../../career/format.ts";
 import { idleHud } from "../../hud-feed.ts";
@@ -50,31 +58,27 @@ const HoldTimer = ({
   </div>
 );
 
-const Card = ({
+const RoomCard = ({
   children,
   label,
   late = false,
   title,
 }: {
-  readonly children: React.ReactNode;
+  readonly children: ReactNode;
   readonly label: string;
   readonly late?: boolean;
   readonly title: string;
 }) => (
-  <div
-    className={`bg-ink/95 text-paper flex w-[min(90vw,30rem)] flex-col gap-4 border-t-4 p-7 shadow-2xl ${late ? "border-neon-red" : "border-neon-yellow"}`}
-    role="alert"
-  >
+  <Card className={late ? "border-neon-red" : undefined} role="alert">
     <p
-      className={`font-display tracking-display text-sm font-bold uppercase ${late ? "text-neon-red" : "text-neon-yellow"}`}
+      className={`text-lg font-bold ${late ? "text-neon-red" : "text-neon-yellow"}`}
     >
       {label}
     </p>
-    <h2 className="font-display tracking-display text-5xl leading-none font-extrabold uppercase">
-      {title}
-    </h2>
+    <PanelTitle className="text-paper whitespace-normal">{title}</PanelTitle>
+    <PanelRule />
     {children}
-  </div>
+  </Card>
 );
 
 const BarButton = ({
@@ -84,19 +88,17 @@ const BarButton = ({
   readonly onClick: () => void;
   readonly strong?: boolean;
 }) => (
-  <button
-    className={`font-display tracking-display self-start border px-4 py-1.5 text-lg font-extrabold uppercase focus-visible:outline-2 ${strong ? "bg-neon-yellow text-ink border-neon-yellow" : "border-paper/40 text-paper"}`}
-    // oxlint-disable-next-line jsx-a11y/no-autofocus -- the only control on a screen that just took over
+  <SkewButton
     autoFocus
     onClick={onClick}
-    type="button"
-  >
-    Back to the bar
-  </button>
+    size="slim"
+    title="Back to the bar"
+    tone={strong ? "primary" : "plain"}
+  />
 );
 
-const Backdrop = ({ children }: { readonly children: React.ReactNode }) => (
-  <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/65 backdrop-grayscale">
+const Backdrop = ({ children }: { readonly children: ReactNode }) => (
+  <div className="bg-night/65 fixed inset-0 z-40 flex items-center justify-center backdrop-grayscale">
     {children}
   </div>
 );
@@ -109,26 +111,26 @@ const LateCard = ({
   readonly onBack: () => void;
 }) => (
   <Backdrop>
-    <Card label="Too late" late title="We kept your bike">
-      <p className="text-paper/70">
+    <RoomCard label="Too late" late title="We kept your bike">
+      <PanelLine tone="quiet">
         You were gone more than{" "}
         <span className="text-paper">{holdSeconds} seconds</span>. We&apos;ll
         ride it home. Catch the next one at the bar.
-      </p>
+      </PanelLine>
       <BarButton onClick={onBack} strong />
-    </Card>
+    </RoomCard>
   </Backdrop>
 );
 
 const LostCard = ({ onBack }: { readonly onBack: () => void }) => (
   <Backdrop>
-    <Card label="Room restarted" late title="That race is gone">
-      <p className="text-paper/70">
+    <RoomCard label="Room restarted" late title="That race is gone">
+      <PanelLine tone="quiet">
         The room restarted and lost the race. No result counts. Ready up and the
         next one starts from the line.
-      </p>
+      </PanelLine>
       <BarButton onClick={onBack} strong />
-    </Card>
+    </RoomCard>
   </Backdrop>
 );
 
@@ -170,13 +172,13 @@ const SignalLost = ({
   }
   return (
     <Backdrop>
-      <Card label="Signal lost" title="Your bike is still rolling">
+      <RoomCard label="Signal lost" title="Your bike is still rolling">
         <HoldTimer holdMs={holdMs} leftMs={leftMs} />
-        <p className="text-paper/70">
+        <PanelLine tone="quiet">
           We&apos;re riding it for you. Getting you back on.
-        </p>
+        </PanelLine>
         <BarButton onClick={backToBar} />
-      </Card>
+      </RoomCard>
     </Backdrop>
   );
 };
@@ -193,12 +195,12 @@ export const GettingBackOn = ({
   const holdMs = holdSeconds * 1000;
   return (
     <Backdrop>
-      <Card label="Your race is still on" title="Getting you back on">
+      <RoomCard label="Your race is still on" title="Getting you back on">
         <HoldTimer holdMs={holdMs} leftMs={holdMs - awayMs - (now - heardAt)} />
-        <p className="text-paper/70">
+        <PanelLine tone="quiet">
           Loading the road. Then the bike is yours.
-        </p>
-      </Card>
+        </PanelLine>
+      </RoomCard>
     </Backdrop>
   );
 };

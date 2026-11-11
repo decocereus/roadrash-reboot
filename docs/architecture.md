@@ -38,7 +38,7 @@ Each area has its own file under `docs/architecture/`. Read the one for the code
 | `packages/track`: plans, pieces, districts, junctions and crossings | [tracks.md](architecture/tracks.md) |
 | `packages/career`: money, tiers, the shop, the field draw and the save | [career.md](architecture/career.md) |
 | `apps/web`: the renderer, the frame loop, menus, the HUD and the bar lobby | [browser-client.md](architecture/browser-client.md) |
-| Models and menu art in R2, and how Blender builds them | [game-art.md](architecture/game-art.md) |
+| Models in R2, and how Blender builds them | [game-art.md](architecture/game-art.md) |
 | The deploy workflow, the production environment and its token | [deploy.md](architecture/deploy.md) |
 | What is built, the launch lanes and the milestones | [build-order.md](architecture/build-order.md) |
 
