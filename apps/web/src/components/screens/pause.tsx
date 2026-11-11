@@ -47,20 +47,19 @@ const RaceMenuCard = ({
 }) => {
   const hud = useSyncExternalStore(feed.subscribe, feed.read, () => idleHud);
   const backRef = useRef<HTMLButtonElement>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
+  const lastRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
-    if (
-      !covered &&
-      cardRef.current?.contains(document.activeElement) !== true
-    ) {
-      backRef.current?.focus({ preventScroll: true });
+    if (!covered) {
+      (lastRef.current ?? backRef.current)?.focus({ preventScroll: true });
     }
   }, [covered]);
   return (
     <div
-      ref={cardRef}
       className="bg-night/50 fixed inset-0 z-30 flex items-center justify-center"
       inert={covered}
+      onFocus={(event) => {
+        lastRef.current = event.target;
+      }}
     >
       <Card aria-label="Race menu" role="dialog">
         <PanelTitle>Race menu</PanelTitle>
