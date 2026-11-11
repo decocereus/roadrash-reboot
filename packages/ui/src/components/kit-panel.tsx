@@ -43,7 +43,11 @@ const PanelTitle = ({
 }: ComponentProps<"h2"> & { readonly face?: keyof typeof titleFaces }) => (
   <h2
     data-slot="panel-title"
-    className={cn("m-0 truncate leading-none", titleFaces[face], className)}
+    className={cn(
+      "m-0 shrink-0 truncate leading-none",
+      titleFaces[face],
+      className
+    )}
     {...props}
   />
 );

@@ -40,7 +40,7 @@ Preconditions: a slot from `rv up` on this checkout and a passing `rv doctor`.
 
 ## Gotchas
 
-- The stretch borrows Slag Row's road id for the field draw, the police officer and the result, as the hook does, so the ride-out card and the results screen say Slag Row. The track, length and lap time are the stretch's.
+- The stretch borrows Slag Row's road id for the field draw, the police officer and the result, as the hook does, so Results says Slag Row. The track, length and lap time are the stretch's.
 - Police posts start 1,500 m from the grid, which is 1,410 m of street, so a cop can ride the last 940 m when police are in the race. `with=alone` drops them.
 - The grid sits 90 m east of the Puerta de Alcalá roundabout, on a straight level run-up that exists so the gate reads from the start line. The first bend is a 25 m radius between 90 and 210 m. A rider who holds full throttle off the grid runs wide there; the pilot does not.
 - Buildings are the corridor's machine-estimated heights, most of them 13 to 23 m, so Gran Vía's walls are the right height but not the right buildings. Landmark massing is authored prisms, not the real shapes.

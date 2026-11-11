@@ -2,8 +2,9 @@ import { pickWithin, practiceCareer, roadsFor } from "@racer/career/field";
 import type { PracticePick } from "@racer/career/field";
 import type { RaceRules } from "@racer/career/rules";
 import type { CareerState } from "@racer/career/state";
-import { roads } from "@racer/career/tables";
+import { ALLY, QUALIFYING_PLACE, roads } from "@racer/career/tables";
 import type { RoadId } from "@racer/career/tables";
+import type { RivalId } from "@racer/sim/cast";
 import {
   PanelLine,
   PanelRule,
@@ -16,8 +17,9 @@ import {
   TextLinks,
 } from "@racer/ui/components/skew-button";
 
-import { SAVE_UNREAD, saveErrors } from "../../career/copy.ts";
-import { nextRoad } from "../../career/flow.ts";
+import { SAVE_UNREAD, saveErrors, shortNames } from "../../career/copy.ts";
+import { careerEntry, nextRoad, planFor } from "../../career/flow.ts";
+import { kilometres } from "../../career/format.ts";
 import type { SaveState } from "../../career/save.ts";
 
 const soloLine = (save: SaveState, rules: RaceRules | null): string | null => {
@@ -76,6 +78,35 @@ export const HomePanel = ({
   </>
 );
 
+const plural = (count: number, one: string, many: string): string =>
+  `${count} ${count === 1 ? one : many}`;
+
+const standingOf = (career: CareerState, field: readonly RivalId[]): string => {
+  const ally =
+    career.story.deeAlly && field.includes(ALLY)
+      ? ` ${shortNames[ALLY]} rides with you.`
+      : "";
+  const grudges = field
+    .filter((rival) => career.memory[rival].grudge)
+    .map((rival) => shortNames[rival]);
+  const [first] = grudges;
+  if (first === undefined) {
+    return ally;
+  }
+  return grudges.length === 1
+    ? `${ally} ${first} holds a grudge.`
+    : `${ally} ${grudges.length} riders hold a grudge.`;
+};
+
+const stakesOf = (
+  rules: RaceRules,
+  career: CareerState,
+  roadId: RoadId
+): string => {
+  const { setup } = planFor(rules, career, careerEntry(career, roadId));
+  return `Top ${QUALIFYING_PLACE} qualify. ${plural(setup.field.length, "rival", "rivals")} and ${plural(setup.police.count, "cop", "cops")} on ${kilometres(setup.track.length)} km.${standingOf(career, setup.field)}`;
+};
+
 const careerOver = (career: CareerState): string | null => {
   if (career.gameOver) {
     return "Your career is over. You went broke.";
@@ -130,6 +161,7 @@ const CareerPart = ({
             title="Ride"
             tone="primary"
           />
+          <PanelLine tone="quiet">{stakesOf(rules, career, roadId)}</PanelLine>
         </>
       );
     }

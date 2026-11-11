@@ -221,7 +221,7 @@ The shapes come from paper: torn edges, tape strips, a speech sticker with a tai
 The signature of the system. `RuledSheet` draws the paper; `SheetTitle` writes on the tape; `ruledLines` gives the box that puts text on the lines.
 
 - **Pinned list** (`PinnedList`): the menu of a room. Each line is a sheet row in ink. Selected: a neon-yellow highlighter stroke at 85% behind the line and a ▸ pointer. Disabled: ink at 35%. A detail line sits under the label in ink at 60%. Steppers read `LABEL ◄ value ►`; left and right step them. Hovering a line selects it.
-- **Written sheet** (`WrittenSheet`): prose on the ruled lines at 0.72 of a line, used for the game-over card and the ending.
+- **Written sheet** (`WrittenSheet`): prose on the ruled lines at 0.72 of a line, used for the kit board.
 
 ### Bottom strip
 
@@ -254,10 +254,10 @@ The whole race HUD in one dial. A 240° ring of 48 ticks that light neon yellow 
 
 ### Rooms
 
-- **Clubhouse** (`clubhouse.tsx`): the bar on the left with a 150 s dusk-to-night time-lapse, the road boss on the stool with a speech sticker, and the wall on the right: standings, the two notes, a bill, a sticker, and the road's flyer. Results is the same stage after a race, with the race sheet, a verdict stamp, the ledger on the cyan note, and the post-race speaker on the stool.
+- **Clubhouse** (`clubhouse.tsx`): the bar on the left with a 150 s dusk-to-night time-lapse, the road boss on the stool with a speech sticker, and the wall on the right: standings, the two notes, a bill, a sticker, and the road's flyer.
 - **Garage** (`garage.tsx`): the price list on the pinned sheet, the bike turning live on the stand, the mechanic with a flipped speech sticker.
 - **Back room** (`back-room.tsx`): the pinned list, Settings pinned beside it, Single Race (`route-board.tsx`) with the road's flyer and its facts on the notes.
-- **Game over and the ending** (`game-over.tsx`): the car park or the bar, a written sheet, the record on the cyan note, and for the ending a `SEASON OVER` stamp.
+- **Results and the career over card** (`results-panel.tsx`): the bar's Race panel in the panel kit, with the placings, the money and the buttons, or the ending's name, its note and the record.
 - **Boot** (`boot.tsx`): the stencil wordmark and the tagline in paper at 60%, centred on ink, until the bar's plates have decoded.
 
 ### Motion

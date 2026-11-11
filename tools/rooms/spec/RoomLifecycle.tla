@@ -944,7 +944,7 @@ CloseTab(r) ==
                                                  !.door = -1, !.reopen = -1]]
     /\ UNCHANGED room
 
-\* results: Back to the lobby (navigation.ts ridePicked on room results, a
+\* results: Back to the lobby (navigation.ts nextRace on room results, a
 \* move in the same page)
 Rematch(r) ==
     /\ Acting(r)

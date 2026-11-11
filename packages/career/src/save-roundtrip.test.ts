@@ -5,10 +5,18 @@ import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 
 import { recordedCast } from "./bench.ts";
-import { decent, enter, play, seasonAt, weak } from "./career-fixtures.ts";
+import {
+  decent,
+  enter,
+  play,
+  playAll,
+  seasonAt,
+  weak,
+} from "./career-fixtures.ts";
 import { parseCareer, serialiseCareer } from "./save.ts";
 import { newCareer, racerIds } from "./state.ts";
 import type { CareerState } from "./state.ts";
+import { roadList } from "./tables.ts";
 
 type Json = Schema.MutableJson;
 
@@ -83,6 +91,28 @@ const versionSixOf = (career: CareerState): string =>
     version: 6,
   });
 
+const versionSevenOf = (
+  career: CareerState,
+  envelope: "unseen" | "offered" | "taken" | "refused",
+  ending: string | null
+): string => {
+  const { lastResult, story } = career;
+  return JSON.stringify({
+    ...career,
+    lastResult: lastResult && {
+      ...lastResult,
+      ledger: { ...lastResult.ledger, ending, envelope: -2000 },
+    },
+    story: {
+      ...story,
+      ending,
+      envelope,
+      envelopeClawedBack: envelope === "taken",
+    },
+    version: 7,
+  });
+};
+
 const verdictOn = (save: string): string => {
   const result = parseCareer(save);
   return result.ok ? "loaded" : `${result.error.kind}:${result.error.field}`;
@@ -141,13 +171,13 @@ const careers = [
   play(newCareer(2), { ends: "wrecked", roadId: "slag-row" }).career,
 ];
 
-const versionSevenBytes = [
-  ["7450:1eb57f1baccf76a9", "7450:1eb57f1baccf76a9"],
-  ["15288:13d091a7e7ad767c", "15288:1f86363f0dc7af63"],
-  ["15257:16e0223aba3d0f6c", "15257:f3ec067533c68e"],
-  ["7770:1ec8072fd4f9ba2", "7770:ba648b8323f06fa"],
-  ["15033:d9641a7316f9687", "15033:d00f83914d5d423"],
-  ["14899:b4f4f31ea5a002", "14899:32e127b17ee8bf4"],
+const versionEightBytes = [
+  ["7403:494811eabc181cc", "7403:494811eabc181cc"],
+  ["15227:1afb42f92411118d", "15227:5a863fcb4043f40"],
+  ["15196:cab662641c8325e", "15196:1d853c25b58bcd4b"],
+  ["7722:1e1525c99157bc6c", "7722:629d14a95da93ad"],
+  ["14973:f23c96bc54df13c", "14973:35395cf388d5c14"],
+  ["14839:2e4ed75a580706d", "14839:14285b2c34cd5841"],
 ];
 
 describe("the save", () => {
@@ -157,7 +187,7 @@ describe("the save", () => {
     ).toStrictEqual(careers.map((career) => ({ career, ok: true })));
   });
 
-  it("a career writes, and reads back into, the same bytes as the version 7 reader", () => {
+  it("a career writes, and reads back into, the same bytes as the version 8 reader", () => {
     expect(
       careers.map((career) => {
         const text = serialiseCareer(career);
@@ -166,7 +196,48 @@ describe("the save", () => {
           fingerprint(recordedBytes(rereadOf(text))),
         ];
       })
-    ).toStrictEqual(versionSevenBytes);
+    ).toStrictEqual(versionEightBytes);
+  });
+
+  it("a version 7 save that took Vic's envelope loads with its cash, bikes and roads, and a bought crown becomes the clean crown", () => {
+    const crowned = play(
+      playAll(
+        seasonAt(decent, 3).start,
+        roadList.slice(0, 2).map((entry) => ({ place: 3, roadId: entry.id }))
+      ),
+      { place: 1, roadId: "ridge-road" }
+    ).career;
+    const loaded = parseCareer(
+      versionSevenOf(crowned, "taken", "bought-crown")
+    );
+    expect(loaded).toStrictEqual({ career: crowned, ok: true });
+  });
+
+  it("a version 7 save from every point of a career loads as the same career, whatever its envelope said", () => {
+    expect(
+      careers.flatMap((career) =>
+        (["unseen", "offered", "taken", "refused"] as const).map((envelope) =>
+          parseCareer(versionSevenOf(career, envelope, career.story.ending))
+        )
+      )
+    ).toStrictEqual(
+      careers.flatMap((career) =>
+        Array.from({ length: 4 }, () => ({ career, ok: true }))
+      )
+    );
+  });
+
+  it("a version 7 save keeps its checks: a bad ending or a bad cash is refused at the field", () => {
+    const good = seasonAt(decent, 2).end;
+    expect([
+      verdictOn(versionSevenOf(good, "taken", "a crown")),
+      verdictOn(
+        versionSevenOf(good, "taken", null).replace(
+          /"cash":-?\d+/u,
+          '"cash":"lots"'
+        )
+      ),
+    ]).toStrictEqual(["invalid:lastResult.ledger.ending", "invalid:cash"]);
   });
 
   it("text that is not a save, or a save from another version, is rejected with the reason", () => {
@@ -188,7 +259,7 @@ describe("the save", () => {
     const good = seasonAt(decent, 2).end;
     expect([
       verdictOn(missing(good, "version")),
-      verdictOn(corrupted(good, "version", 8)),
+      verdictOn(corrupted(good, "version", 9)),
       verdictOn('{"version":1e400}'),
       verdictOn(serialiseCareer(good).replace(/"cash":-?\d+/u, '"cash":1e400')),
     ]).toStrictEqual([
@@ -209,7 +280,7 @@ describe("the save", () => {
       ["gameOver", 0],
       ["garage.0", "rocket"],
       ["record.starts", -1],
-      ["story.envelope", "burned"],
+      ["story.ending", "bought-crown"],
       ["memory.juno-kade.aggressionBonus", 2],
       ["season.player.bestPlace", 0],
       ["board.0.kind", "graffiti"],
@@ -229,7 +300,7 @@ describe("the save", () => {
       "invalid:gameOver",
       "invalid:garage.0",
       "invalid:record.starts",
-      "invalid:story.envelope",
+      "invalid:story.ending",
       "invalid:memory.juno-kade.aggressionBonus",
       "invalid:season.player.bestPlace",
       "invalid:board.0",

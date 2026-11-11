@@ -114,6 +114,3 @@ export const WrittenSheet = ({
     </section>
   );
 };
-
-export const stampStyle =
-  "font-stencil border-[0.12em] px-[0.3em] leading-none whitespace-nowrap uppercase";

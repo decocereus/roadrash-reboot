@@ -100,6 +100,7 @@ const pinsFrom = (search: string): Pins => {
 export interface BarScene {
   readonly setCamera: (mode: BarCamera) => void;
   readonly setSeat: (seat: RoomSeat | null) => void;
+  readonly setDoor: (open: boolean) => void;
   readonly dispose: () => void;
 }
 
@@ -648,6 +649,13 @@ const openRoom = (
     },
     setCamera(mode) {
       eye.setMode(mode, rider.heading);
+    },
+    setDoor(open) {
+      if (open) {
+        openDoor();
+      } else if (seat === null) {
+        closeDoor();
+      }
     },
     setSeat,
   };

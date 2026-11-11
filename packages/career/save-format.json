@@ -461,6 +461,77 @@
       "fingerprint": "12cd1ccebe143d7545687119790bb9725c7a706c781d00c758fe96eacdd53172",
       "version": 7,
       "wireFingerprint": "e09102f245f893322b610b764255d1aa5f7a7ba0d6dbf014b2e0581b955a6f7b"
+    },
+    {
+      "catalogues": {
+        "Bike": [
+          "brack-anvil-1100",
+          "brack-stoker-800",
+          "gutter-pup-250",
+          "halden-kite-500",
+          "halden-meridian-900",
+          "halden-wren-400",
+          "ostra-nera-1000",
+          "ostra-sesta-600",
+          "ostra-sette-750"
+        ],
+        "Tier": [1, 2, 3],
+        "Officer": ["dolores-pike", "wendell-haverty"],
+        "Racer": [
+          "agnes-mulcahy",
+          "benny-okafor",
+          "captain-penaldo",
+          "coach-dale-hutto",
+          "dee-santangelo",
+          "elongated-muskrat",
+          "felix-aurand",
+          "gus-abernathy",
+          "hollis-thorne",
+          "ines-marchetti",
+          "juno-kade",
+          "kylip-jetner",
+          "lyle-gorski",
+          "mags-dunleavy",
+          "moose-kowalczyk",
+          "orrin-blackwell",
+          "player",
+          "ranwear-bling",
+          "ruth-ann-bixby",
+          "slam-altruman",
+          "supreme-leader-mbosse",
+          "tristan-lux",
+          "wanda-pruitt"
+        ],
+        "Rival": [
+          "agnes-mulcahy",
+          "benny-okafor",
+          "captain-penaldo",
+          "coach-dale-hutto",
+          "dee-santangelo",
+          "elongated-muskrat",
+          "felix-aurand",
+          "gus-abernathy",
+          "hollis-thorne",
+          "ines-marchetti",
+          "juno-kade",
+          "kylip-jetner",
+          "lyle-gorski",
+          "mags-dunleavy",
+          "moose-kowalczyk",
+          "orrin-blackwell",
+          "ranwear-bling",
+          "ruth-ann-bixby",
+          "slam-altruman",
+          "supreme-leader-mbosse",
+          "tristan-lux",
+          "wanda-pruitt"
+        ],
+        "Road": ["breakwater-run", "ridge-road", "slag-row"],
+        "Weapon": ["baton", "chain", "club", "crowbar", "cue", "none", "sign"]
+      },
+      "fingerprint": "93eaf1e4a30725080e3c6e515364800713e32c74999850fa0b4b4cda4a6b868f",
+      "version": 8,
+      "wireFingerprint": "4e5656c8fde78748a137db654a6d78365aa94ba696fa6f6aae8f2548fbf2c097"
     }
   ]
 }

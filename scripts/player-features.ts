@@ -322,7 +322,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "packages/career/src/season.ts",
     ],
     summary:
-      "The career state itself, tiers, qualification and promotion, the season board, the story beats, the envelope and the endings.",
+      "The career state itself, tiers, qualification and promotion, the season board, the story beats and the endings.",
     title: "Career tiers, season and story",
     verify: ["career.md"],
   },
@@ -340,6 +340,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/test/escape-layers.test.ts",
       "apps/web/test/career-screens.test.tsx",
       "apps/web/src/components/game-shell.tsx",
+      "apps/web/src/components/solo-door.tsx",
       "apps/web/src/components/use-flow.ts",
       "apps/web/src/navigation.ts",
       "apps/web/test/navigation.test.ts",
@@ -351,7 +352,6 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/career/copy.ts",
       "apps/web/src/career/flow.ts",
       "apps/web/src/career/format.ts",
-      "apps/web/src/career/notes.ts",
     ],
     perf: ["bytes.route.root.gzip", "bytes.route.root.raw"],
     start: [
@@ -360,7 +360,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/components/game-shell.tsx",
     ],
     summary:
-      "Every screen React draws around a race: the bar's Race, Garage and Settings tabs and their panels, the ride-out card, pause and results, with the screen flow, the menu art and the copy.",
+      "Every screen React draws around a race: the bar's Race, Garage and Settings tabs and their panels, the solo door moment, pause, results and the career over card, with the screen flow, the menu art and the copy.",
     title: "Menus and screens",
     verify: ["single-race.md", "career.md"],
   },

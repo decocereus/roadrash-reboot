@@ -5,6 +5,7 @@ import {
   firstView,
   graphicsPlaceOf,
   raceAgainOffered,
+  roomAddressOf,
   stageOf,
   stepNavigation,
 } from "../src/navigation.ts";
@@ -29,6 +30,7 @@ import {
   leftWith,
   linkVisit,
   LOADING,
+  lobbyOf,
   nameOf,
   panels,
   promoted,
@@ -36,8 +38,10 @@ import {
   raced,
   racing,
   readySave,
+  resultsOf,
   ROOM_ID,
   roomLobby,
+  roomPlan,
   roomResult,
   rulesFailed,
   rulesReady,
@@ -51,6 +55,8 @@ import {
   UNREAD,
   walk,
 } from "./navigation-walk.ts";
+
+const overCard = barAt({ kind: "over" });
 
 describe("the way into the game", () => {
   it("holds the boot screen until the rules and the save are both in", () => {
@@ -267,6 +273,9 @@ describe("leaving each screen", () => {
       ])
     );
     expect(outs).toStrictEqual({
+      "bar/door": "bar/solo",
+      "bar/door/garage": "bar/door",
+      "bar/door/settings": "bar/door",
       "bar/finding": "bar/home",
       "bar/finding/garage": "bar/finding",
       "bar/finding/settings": "bar/finding",
@@ -279,30 +288,32 @@ describe("leaving each screen", () => {
       "bar/lobby": "bar/home",
       "bar/lobby/garage": "bar/lobby",
       "bar/lobby/settings": "bar/lobby",
+      "bar/over": "bar/home",
+      "bar/over/garage": "bar/over",
+      "bar/over/settings": "bar/over",
+      "bar/results": "bar/home",
+      "bar/results/garage": "bar/results",
+      "bar/results/settings": "bar/results",
       "bar/solo": "bar/home",
       "bar/solo/garage": "bar/solo",
       "bar/solo/settings": "bar/solo",
       boot: "boot",
       elsewhere: "elsewhere",
-      ending: "bar/home",
-      gameOver: "bar/home",
       "race/riding": "race/riding",
-      results: "bar/home",
-      rideOut: "bar/solo",
     });
   });
 
-  it("backs out of a ride-out card to Ride solo", () => {
+  it("backs out of the door to Ride solo when the riders did not load", () => {
     expect(
-      walk({ entry: toSingleRace, screen: "rideOut" }, LEFT).at
+      walk(barAt({ entry: toSingleRace, kind: "door" }), LEFT).at
     ).toStrictEqual(solo);
   });
 
   it("moves on from results to where the race left the career", () => {
     expect(afterResultsOf(careerResult)).toStrictEqual(home);
     expect(afterResultsOf(promoted)).toStrictEqual(home);
-    expect(afterResultsOf(broke)).toStrictEqual({ screen: "gameOver" });
-    expect(afterResultsOf(crowned)).toStrictEqual({ screen: "ending" });
+    expect(afterResultsOf(broke)).toStrictEqual(overCard);
+    expect(afterResultsOf(crowned)).toStrictEqual(overCard);
     expect(afterResultsOf(singleResult)).toStrictEqual(home);
   });
 
@@ -367,19 +378,19 @@ describe("a race", () => {
       { kind: "resumed" },
       settled("finished", careerResult),
       { kind: "raceOver" },
-      LEFT,
+      { kind: "movedOn" },
       LEFT
     );
     expect(trail).toStrictEqual([
       "bar/home",
       "bar/solo",
-      "rideOut",
+      "bar/door",
       "race/riding",
       "race/paused",
       "race/riding",
       "race/finishing",
       "race/finishing",
-      "results",
+      "bar/results",
       "bar/home",
     ]);
     expect(effects).toStrictEqual([]);
@@ -396,9 +407,9 @@ describe("a race", () => {
     expect(trail).toStrictEqual([
       "race/consequence",
       "race/consequence",
-      "results",
+      "bar/results",
     ]);
-    expect(at).toStrictEqual({ report: careerResult, screen: "results" });
+    expect(at).toStrictEqual(resultsOf(careerResult));
   });
 
   it("goes home from a finish the career refused to pay", () => {
@@ -432,7 +443,7 @@ describe("a race", () => {
   });
 
   it("settles a quit with the bill's report, or goes home without one", () => {
-    expect(quitTo(careerPlan, careerResult)).toBe("results");
+    expect(quitTo(careerPlan, careerResult)).toBe("bar/results");
     expect(quitTo(careerPlan, null)).toBe("bar/home");
     expect(quitTo(singlePlan, null)).toBe("bar/home");
   });
@@ -444,6 +455,7 @@ describe("a race", () => {
       settled("finished", careerResult),
       settled("wrecked", careerResult),
       { kind: "raceOver" },
+      { kind: "movedOn" },
     ];
     for (const view of screens.filter(({ screen }) => screen !== "race")) {
       for (const event of news) {
@@ -461,7 +473,6 @@ describe("a race", () => {
       bar: "menu",
       boot: "boot",
       race: "race",
-      results: "menu",
     });
     expect(graphicsPlaceOf.bar).toBe("bar");
   });
@@ -472,6 +483,8 @@ describe("a race", () => {
       { kind: "picked", panel: "solo" },
       { kind: "joined" },
       { kind: "doorOpened" },
+      { kind: "nextRace" },
+      { entry: toCareerRace, kind: "ridePicked" },
     ];
     const away: readonly View[] = screens.filter(
       ({ screen }) => screen !== "bar"
@@ -503,12 +516,143 @@ describe("race again", () => {
     expect(raceAgainOffered(finale, { ...raced, tier: 3 })).toBeFalsy();
   });
 
-  it("opens the ride-out card outside a room", () => {
+  it("goes back through the door from solo results", () => {
+    for (const report of [careerResult, singleResult]) {
+      expect(
+        walk(resultsOf(report), { entry: toCareerRace, kind: "ridePicked" }).at
+      ).toStrictEqual(barAt({ entry: toCareerRace, kind: "door" }));
+    }
+  });
+});
+
+describe("a solo race through the door", () => {
+  it("takes a career race and a single race from Ride solo to the door, then the race", () => {
+    for (const [entry, plan] of [
+      [toCareerRace, careerPlan],
+      [toSingleRace, singlePlan],
+    ] as const) {
+      expect(
+        walk(solo, { entry, kind: "ridePicked" }, { kind: "raceBegun", plan })
+          .trail
+      ).toStrictEqual(["bar/door", "race/riding"]);
+    }
+  });
+
+  it("opens the door on the Race tab and names no room", () => {
+    const door = walk(solo, { entry: toCareerRace, kind: "ridePicked" }).at;
+    expect([door, roomAddressOf(door)]).toStrictEqual([
+      barAt({ entry: toCareerRace, kind: "door" }),
+      null,
+    ]);
+  });
+
+  it("rides from Ride solo and solo results only", () => {
+    const ride: NavigationEvent = { entry: toCareerRace, kind: "ridePicked" };
+    for (const view of [
+      home,
+      finding,
+      invite,
+      roomLobby,
+      overCard,
+      resultsOf(roomResult),
+      barAt({ entry: toSingleRace, kind: "door" }),
+    ]) {
+      expect(stepNavigation(view, ride).state).toBe(view);
+    }
+  });
+
+  it("goes home when the career refuses the race the door started", () => {
     expect(
       walk(
-        { report: careerResult, screen: "results" },
-        { entry: toCareerRace, kind: "ridePicked" }
+        solo,
+        { entry: toCareerRace, kind: "ridePicked" },
+        { kind: "raceBegun", plan: careerPlan },
+        { kind: "raceRefused" }
       ).at
-    ).toStrictEqual({ entry: toCareerRace, screen: "rideOut" });
+    ).toStrictEqual(home);
+  });
+});
+
+describe("the finish banner", () => {
+  const finishing = walk(
+    racing(careerPlan),
+    settled("finished", careerResult)
+  ).at;
+
+  it("moves on to results once, when its timer and a click both send", () => {
+    expect(
+      walk(finishing, { kind: "movedOn" }, { kind: "movedOn" }).trail
+    ).toStrictEqual(["bar/results", "bar/results"]);
+  });
+
+  it("is not moved on by a way out meant for another screen", () => {
+    expect(walk(finishing, LEFT).at).toBe(finishing);
+  });
+
+  it("does nothing to results or the bar when a late banner sends", () => {
+    for (const view of [resultsOf(careerResult), home, overCard]) {
+      expect(stepNavigation(view, { kind: "movedOn" }).state).toBe(view);
+    }
+  });
+});
+
+describe("results in the bar", () => {
+  it("continues home from a single race, which also offers Race again", () => {
+    expect([
+      afterResultsOf(singleResult),
+      raceAgainOffered(singleResult, raced),
+    ]).toStrictEqual([home, true]);
+  });
+
+  it("continues to the career over card when the player is broke or the season is over", () => {
+    expect(
+      [broke, crowned].map((report) => walk(resultsOf(report), LEFT).trail)
+    ).toStrictEqual([["bar/over"], ["bar/over"]]);
+  });
+
+  it("keeps a room's results over its lobby, with Next race back in the lobby and Leave home", () => {
+    const results = walk(racing(roomPlan), settled("finished", roomResult), {
+      kind: "movedOn",
+    }).at;
+    expect({
+      address: roomAddressOf(results),
+      leave: walk(results, LEFT).at,
+      next: walk(results, { kind: "nextRace" }).at,
+      results,
+    }).toStrictEqual({
+      address: { arrival: null, roomId: ROOM_ID },
+      leave: home,
+      next: lobbyOf({ arrival: "rematch", rejoin: null, roomId: ROOM_ID }),
+      results: resultsOf(roomResult),
+    });
+  });
+
+  it("offers Next race only after a room race", () => {
+    for (const view of [resultsOf(careerResult), resultsOf(singleResult)]) {
+      expect(stepNavigation(view, { kind: "nextRace" }).state).toBe(view);
+    }
+  });
+});
+
+describe("the career over card", () => {
+  it("drops the old career's results when a new career starts from Settings", () => {
+    const settings = { ...resultsOf(broke), tab: "settings" as const };
+    const begun = walk(settings, { kind: "careerBegun" }).at;
+    expect({
+      begun,
+      left: walk(begun, { kind: "tabbed", tab: "race" }, LEFT).trail,
+      single: walk(resultsOf(singleResult), { kind: "careerBegun" }).at,
+    }).toStrictEqual({
+      begun: { ...home, tab: "settings" },
+      left: ["bar/home", "bar/home"],
+      single: resultsOf(singleResult),
+    });
+  });
+
+  it("starts a new career and goes home, or closes home", () => {
+    expect({
+      close: walk(overCard, LEFT).at,
+      newCareer: walk(overCard, { kind: "careerBegun" }).at,
+    }).toStrictEqual({ close: home, newCareer: home });
   });
 });

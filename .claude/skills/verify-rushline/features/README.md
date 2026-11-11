@@ -43,7 +43,7 @@ Keep implementation detail out of the map: name player paths, stable handles, re
 - [Casa de Campo hook](./madrid-hook.md): the development-only Madrid park greybox, ridden alone, with the field or with traffic, and its two forced places.
 - [Puerta de Alcalá into Gran Vía](./madrid-gran-via.md): the development-only Madrid city greybox, 2,348 m from the gate to Plaza de España, its two slow places and its six landmarks.
 
-- [Ride solo and single race](./single-race.md): the Ride solo panel, the ride-out card, starting, pausing, restarting, and quitting a single race, and the Settings tab.
+- [Ride solo and single race](./single-race.md): the Ride solo panel, the door, results, starting, pausing, restarting, and quitting a single race, and the Settings tab.
 - [Riding and fighting](./riding-and-fighting.md): throttle, brake, steering, punches and kicks, crashing, getting back on, the cop warning, and the finish.
 - [Jumps](./jumps.md): car carrier trucks, time in the air, landings, and landing dust.
 - [Roadside clearance](./roadside-clearance.md): signs, trees and posts that give way to the chase camera on the shoulder, and signs that never show what stands behind them.

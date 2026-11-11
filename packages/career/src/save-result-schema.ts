@@ -89,7 +89,6 @@ const Ledger = Schema.Struct({
   cashAfter: Balance,
   cashBefore: Balance,
   ending: Schema.NullOr(Ending),
-  envelope: Balance,
   fine: Money,
   gameOver: Schema.Boolean,
   line: Schema.NullOr(Line),

@@ -21,16 +21,22 @@ import {
 import type { BarCamera } from "../bar-view.ts";
 import { diagnostics } from "../diagnostics/hub.ts";
 import { idleHud } from "../hud-feed.ts";
-import { onControl } from "../key-target.ts";
-import { barTabs } from "../navigation.ts";
+import { keptByControl } from "../key-target.ts";
+import { barTabs, raceAgainOffered } from "../navigation.ts";
 import type { BarTab, BarView, RoomVisit } from "../navigation.ts";
 import { BarStage } from "./bar-stage.tsx";
 import { storedGuestName, watchGuestName } from "./guest-name.ts";
 import { newRoomId } from "./room-url.ts";
 import { GarageScreen } from "./screens/garage.tsx";
 import { HomePanel, SoloPanel } from "./screens/race-panel.tsx";
+import {
+  CareerOver,
+  RoomResults,
+  SoloResults,
+} from "./screens/results-panel.tsx";
 import { SettingsPanel } from "./screens/settings.tsx";
 import { RiderChip, useEscape } from "./screens/shared.tsx";
+import { SoloDoor } from "./solo-door.tsx";
 import type { Flow } from "./use-flow.ts";
 
 const drawsNothing = () => null;
@@ -88,7 +94,7 @@ const useCamera = (): readonly [BarCamera, (camera: BarCamera) => void] => {
         event.code === NEXT_CAMERA_KEY &&
         !event.repeat &&
         !event.metaKey &&
-        !onControl(event.target)
+        !keptByControl(event.target, event.code)
       ) {
         setCamera((current) => {
           const next = nextCamera(current);
@@ -193,14 +199,14 @@ const RaceTab = ({
                 choice: "single",
                 event: "race_picked",
               });
-              flow.rideOut("quick", roadId);
+              flow.ride("quick", roadId);
             }}
             onRide={(roadId) => {
               diagnostics().events.track({
                 choice: "career",
                 event: "race_picked",
               });
-              flow.rideOut("career", roadId);
+              flow.ride("career", roadId);
             }}
             onStartOver={flow.eraseSave}
             pick={flow.pick}
@@ -259,6 +265,63 @@ const RaceTab = ({
         </Suspense>
       );
     }
+    case "door": {
+      return flow.rules ? (
+        <SoloDoor
+          career={flow.career}
+          entry={panel.entry}
+          failure={flow.failure}
+          onBack={flow.leave}
+          onPrepare={flow.prepare}
+          onStart={flow.start}
+          ready={flow.ready}
+          rules={flow.rules}
+        />
+      ) : null;
+    }
+    case "results": {
+      const { report } = panel;
+      const riding = flow.career?.bikeId ?? flow.pick.bikeId;
+      return (
+        <Panel aria-label="Results" hidden={!shown}>
+          {report.room ? (
+            <RoomResults
+              onLeave={flow.leave}
+              onNextRace={flow.nextRace}
+              report={report}
+              riding={riding}
+            />
+          ) : (
+            <SoloResults
+              canRaceAgain={raceAgainOffered(report, flow.career)}
+              onContinue={flow.leave}
+              onRaceAgain={() => {
+                diagnostics().events.track({ event: "race_again" });
+                flow.ride(report.mode, report.roadId);
+              }}
+              repeatRun={
+                report.ledger !== null &&
+                flow.career?.qualified[flow.career.tier][report.roadId] !==
+                  undefined
+              }
+              report={report}
+              riding={riding}
+            />
+          )}
+        </Panel>
+      );
+    }
+    case "over": {
+      return (
+        <Panel aria-label="Career over" hidden={!shown}>
+          <CareerOver
+            career={flow.career}
+            onClose={flow.leave}
+            onNewCareer={flow.newCareer}
+          />
+        </Panel>
+      );
+    }
     default: {
       return panel satisfies never;
     }
@@ -288,11 +351,18 @@ export const BarHome = ({
   useEscape(
     flow.leave,
     view.tab === "settings" ||
-      (view.tab === "race" && view.panel.kind === "solo")
+      (view.tab === "race" &&
+        (view.panel.kind === "door" ||
+          view.panel.kind === "solo" ||
+          view.panel.kind === "over"))
   );
   return (
     <main aria-label="The Lowside" className="bg-ink fixed inset-0">
-      <BarStage camera={camera} seat={seat} />
+      <BarStage
+        camera={camera}
+        doorOpen={view.panel.kind === "door"}
+        seat={seat}
+      />
       {!atDoor && (
         <>
           <TabStrip

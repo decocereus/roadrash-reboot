@@ -98,23 +98,37 @@ describe("bar input", () => {
   });
 
   it("leaves the arrows on a focused option chip or button to it, so the rider stands still", () => {
-    const { action, input, page } = rig();
+    const { input, page } = rig();
     const chip = new FocusedElement("button", '[role="radio"]');
     page.dispatchEvent(key("keydown", "ArrowRight", false, chip));
     page.dispatchEvent(key("keydown", "ArrowUp", false, chip));
-    page.dispatchEvent(
-      key("keydown", "KeyE", false, new FocusedElement("button"))
-    );
     expect(input.control()).toStrictEqual({
       forward: 0,
       right: 0,
       sprint: false,
     });
-    expect(action).not.toHaveBeenCalled();
     page.dispatchEvent(
       key("keydown", "ArrowUp", false, new FocusedElement("body"))
     );
     expect(input.control().forward).toBe(1);
+    input.dispose();
+  });
+
+  it("walks and acts on letters pressed while a clicked tab or button keeps focus", () => {
+    const { action, input, page } = rig();
+    const tab = new FocusedElement("button", '[role="tab"]');
+    page.dispatchEvent(key("keydown", "KeyW", false, tab));
+    page.dispatchEvent(key("keydown", "KeyD", false, tab));
+    page.dispatchEvent(
+      key("keydown", "KeyE", false, new FocusedElement("button"))
+    );
+    expect({
+      acted: action.mock.calls.length,
+      control: input.control(),
+    }).toStrictEqual({
+      acted: 1,
+      control: { forward: 1, right: 1, sprint: false },
+    });
     input.dispose();
   });
 });

@@ -18,6 +18,7 @@ import {
   lobbyOf,
   racing,
   readySave,
+  resultsOf,
   ROOM_ID,
   roomLobby,
   roomPlan,
@@ -32,7 +33,7 @@ import {
 } from "./navigation-walk.ts";
 
 describe("a room's race", () => {
-  const roomResults: View = { report: roomResult, screen: "results" };
+  const roomResults: View = resultsOf(roomResult);
   const inRoomRace: View = racing(roomPlan);
   const raceMenu: View = { ...racing(roomPlan), stage: { kind: "paused" } };
 
@@ -44,9 +45,7 @@ describe("a room's race", () => {
   });
 
   it("goes back to the same lobby for a rematch in place", () => {
-    expect(
-      stepNavigation(roomResults, { entry: toSingleRace, kind: "ridePicked" })
-    ).toStrictEqual({
+    expect(stepNavigation(roomResults, { kind: "nextRace" })).toStrictEqual({
       effect: null,
       state: lobbyOf({ arrival: "rematch", rejoin: null, roomId: ROOM_ID }),
     });
@@ -120,11 +119,11 @@ describe("a room's race", () => {
 
   it("closes the menu when the race ends or the signal drops under it", () => {
     expect(
-      walk(raceMenu, settled("finished", roomResult), LEFT).trail
-    ).toStrictEqual(["race/finishing", "results"]);
+      walk(raceMenu, settled("finished", roomResult), { kind: "movedOn" }).trail
+    ).toStrictEqual(["race/finishing", "bar/results"]);
     expect(
       walk(raceMenu, settled("wrecked", roomResult), { kind: "raceOver" }).trail
-    ).toStrictEqual(["race/consequence", "results"]);
+    ).toStrictEqual(["race/consequence", "bar/results"]);
     expect(
       walk(raceMenu, { kind: "signalLost", lostAt: 0 }).trail
     ).toStrictEqual(["race/signalLost"]);
@@ -136,13 +135,13 @@ describe("a room's race", () => {
       entered(rulesReady, EMPTY, linkVisit),
       { kind: "raceBegun", plan: roomPlan },
       settled("finished", roomResult),
-      LEFT
+      { kind: "movedOn" }
     );
     expect(trail).toStrictEqual([
       "bar/lobby",
       "race/riding",
       "race/finishing",
-      "results",
+      "bar/results",
     ]);
     expect(at).toStrictEqual(roomResults);
   });
@@ -181,7 +180,7 @@ describe("one page load", () => {
     racing(roomPlan),
     { ...racing(roomPlan), stage: { kind: "paused" } },
     { ...racing(roomPlan), stage: { kind: "signalLost", lostAt: 0 } },
-    { report: roomResult, screen: "results" },
+    resultsOf(roomResult),
   ];
   const events: readonly NavigationEvent[] = [
     LEFT,
@@ -196,6 +195,8 @@ describe("one page load", () => {
     settled("finished", roomResult),
     settled("quit", null),
     { kind: "raceOver" },
+    { kind: "movedOn" },
+    { kind: "nextRace" },
     { kind: "careerBegun" },
     { kind: "tabbed", tab: "garage" },
     { kind: "picked", panel: "finding" },

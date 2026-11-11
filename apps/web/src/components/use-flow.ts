@@ -280,7 +280,9 @@ export interface Flow {
   readonly commit: (career: CareerState) => void;
   readonly eraseSave: () => void;
   readonly newCareer: () => void;
-  readonly rideOut: (mode: RaceMode, roadId: RoadId) => void;
+  readonly ride: (mode: RaceMode, roadId: RoadId) => void;
+  readonly moveOn: () => void;
+  readonly nextRace: () => void;
   readonly prepare: (plan: RacePlan) => Promise<PrepareOutcome>;
   readonly start: (plan: RacePlan) => void;
   readonly resume: () => void;
@@ -508,10 +510,16 @@ export const useFlow = (): Flow => {
       gameRef.current?.quit();
       leave();
     },
+    moveOn() {
+      send({ kind: "movedOn" });
+    },
     mute: () => gameRef.current?.toggleMute(),
     newCareer() {
       commit(freshCareer(randomUnit()));
       send({ kind: "careerBegun" });
+    },
+    nextRace() {
+      send({ kind: "nextRace" });
     },
     pick,
     prepare,
@@ -533,7 +541,7 @@ export const useFlow = (): Flow => {
       gameRef.current?.resume();
       send({ kind: "resumed" });
     },
-    rideOut(mode, roadId) {
+    ride(mode, roadId) {
       send({
         entry: rideEntry(
           mode,

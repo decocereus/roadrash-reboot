@@ -15,8 +15,6 @@ export const ordinal = (place: number): string =>
 export const kilometres = (metres: number): string =>
   String(Math.round(metres / 10) / 100);
 
-export const kmMark = (km: number): string => km.toFixed(1);
-
 export const raceTime = (ticks: number): string => {
   const tenths = Math.floor((ticks / TICK_RATE) * TENTHS);
   const minutes = Math.floor(tenths / (SECONDS_PER_MINUTE * TENTHS));
@@ -27,11 +25,5 @@ export const raceTime = (ticks: number): string => {
 
 export const bikeName = (bikeId: BikeId): string => bikes[bikeId].name;
 
-export const shortBike = (name: string): string =>
-  name.split(" ").slice(1).join(" ");
-
 export const weaponLabel = (weapon: WeaponKind): string =>
   weapon === "none" ? "" : weapons[weapon].name;
-
-export const copCount = (cops: number): string =>
-  cops === 1 ? "1 COP" : `${cops} COPS`;
