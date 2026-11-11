@@ -80,6 +80,19 @@ describe("the garage stand", () => {
   });
 });
 
+describe("a walk the rider is on when the Garage opens", () => {
+  it("stops where the rider is, so they are still there on the way back", () => {
+    const rider = createLobbyRider();
+    const player = playerOf(rider, () => slotWith(2));
+    sendRiderTo(rider, GARAGE_PLINTH.x, GARAGE_PLINTH.z + 6);
+    walkFor(player, 0.5);
+    player.halt();
+    const { x, z } = rider;
+    walkFor(player, 4);
+    expect({ x: rider.x, z: rider.z }).toStrictEqual({ x, z });
+  });
+});
+
 describe("a parked bike when the member list shifts", () => {
   it("stays where the rider left it when they take another slot", () => {
     const first = slotWith(3);

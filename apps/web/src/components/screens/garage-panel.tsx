@@ -30,6 +30,7 @@ import {
 import { bikeName } from "../../career/format.ts";
 import {
   actionFor,
+  offerAsked,
   shelfPick,
   shelves,
   standOf,
@@ -37,6 +38,7 @@ import {
 } from "../../career/garage-stand.ts";
 import type {
   GarageAction,
+  GarageOffer,
   GaragePick,
   Shelf,
 } from "../../career/garage-stand.ts";
@@ -52,8 +54,6 @@ const shelfLabels = {
 const statTones = ["yellow", "cyan", "magenta"] as const;
 
 const STEP_KEYS = { ArrowLeft: -1, ArrowRight: 1 } as const;
-
-type Offer = Extract<GarageAction, { kind: "buy" | "sell" }>;
 
 const summaryOf = (row: ShopRow): string => {
   const speed = `Top speed ${topSpeedKmh(bikes[row.bikeId])} km/h.`;
@@ -101,16 +101,14 @@ const ActionCard = ({
 }: {
   readonly career: CareerState;
   readonly action: GarageAction;
-  readonly onAsk: (offer: Offer) => void;
+  readonly onAsk: () => void;
 }) => {
   switch (action.kind) {
     case "sell": {
       return (
         <SkewButton
           detail={`The mechanic pays ${formatMoney(action.pays)}.`}
-          onClick={() => {
-            onAsk(action);
-          }}
+          onClick={onAsk}
           title="Sell"
         />
       );
@@ -122,9 +120,7 @@ const ActionCard = ({
       return (
         <SkewButton
           detail={buyNumbers(action.cash, action.price, action.withTradeIn)}
-          onClick={() => {
-            onAsk(action);
-          }}
+          onClick={onAsk}
           title="Buy"
           tone="primary"
         />
@@ -148,7 +144,7 @@ const ActionCard = ({
 const questionOf = (
   career: CareerState,
   row: ShopRow,
-  offer: Offer
+  offer: GarageOffer
 ): string => {
   switch (offer.kind) {
     case "buy": {
@@ -171,7 +167,7 @@ const Asked = ({
 }: {
   readonly career: CareerState;
   readonly row: ShopRow;
-  readonly offer: Offer;
+  readonly offer: GarageOffer;
   readonly onAnswer: (yes: boolean) => void;
 }) => {
   useEscape(() => {
@@ -214,12 +210,13 @@ export const GaragePanel = ({
   readonly onPick: (pick: GaragePick) => void;
   readonly onTrade: (career: CareerState) => void;
 }) => {
-  const [asking, setAsking] = useState<Offer | null>(null);
+  const [askedOf, setAskedOf] = useState<BikeId | null>(null);
   const [said, setSaid] = useState("");
   const { row } = standOf(career, pick);
   const action = actionFor(career, row);
-  const answer = (offer: Offer, yes: boolean): void => {
-    setAsking(null);
+  const asked = offerAsked(askedOf, row, action);
+  const answer = (offer: GarageOffer, yes: boolean): void => {
+    setAskedOf(null);
     if (!yes) {
       return;
     }
@@ -253,7 +250,7 @@ export const GaragePanel = ({
             key={shelf}
             onClick={() => {
               setSaid("");
-              setAsking(null);
+              setAskedOf(null);
               onPick(shelfPick(career, shelf));
             }}
             size="slim"
@@ -262,14 +259,21 @@ export const GaragePanel = ({
           />
         ))}
       </div>
-      {asking === null ? (
-        <ActionCard action={action} career={career} onAsk={setAsking} />
+      {asked === null ? (
+        <ActionCard
+          action={action}
+          career={career}
+          onAsk={() => {
+            setSaid("");
+            setAskedOf(row.bikeId);
+          }}
+        />
       ) : (
         <Asked
           career={career}
-          offer={asking}
+          offer={asked}
           onAnswer={(yes) => {
-            answer(asking, yes);
+            answer(asked, yes);
           }}
           row={row}
         />

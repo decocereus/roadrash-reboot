@@ -5,7 +5,13 @@ import { arrivalOf, REPOSSESSION_BIKE, tradeInOf } from "@racer/career/tables";
 import { bikeIds, bikes } from "@racer/sim/bikes";
 import { describe, expect, it } from "vitest";
 
-import { actionFor, shelfPick, standOf, steppedPick } from "./garage-stand.ts";
+import {
+  actionFor,
+  offerAsked,
+  shelfPick,
+  standOf,
+  steppedPick,
+} from "./garage-stand.ts";
 import type { GaragePick } from "./garage-stand.ts";
 
 const rich: CareerState = { ...newCareer(7), cash: 20_000 };
@@ -114,5 +120,30 @@ describe("the action on the Garage stand", () => {
     const debt = actionOn(owing, { bikeId: dear, shelf: "forSale" });
     expect(debt.kind === "refused" && debt.refusal).toBe("inDebt");
     expect(actionOn(owing, shelfPick(owing, "yours")).kind).toBe("sell");
+  });
+});
+
+describe("a buy the rider was asked to confirm", () => {
+  const asked = shelfPick(rich, "forSale");
+  const stepped = steppedPick(rich, asked, 1);
+  const offerOn = (askedOf: GaragePick, pick: GaragePick) => {
+    const { row } = standOf(rich, pick);
+    return offerAsked(askedOf.bikeId, row, actionFor(rich, row));
+  };
+
+  it("stands for the bike on the stand, at that bike's numbers", () => {
+    expect(offerOn(asked, asked)).toStrictEqual(actionOn(rich, asked));
+  });
+
+  it("is gone once the rider steps to another bike", () => {
+    expect(stepped.bikeId).not.toBe(asked.bikeId);
+    expect(offerOn(asked, stepped)).toBeNull();
+  });
+
+  it("is never open on a bike the shop refuses", () => {
+    const locked = { ...newCareer(7), cash: 0 };
+    const pick = shelfPick(locked, "catalogue");
+    const { row } = standOf(locked, steppedPick(locked, pick, -1));
+    expect(offerAsked(row.bikeId, row, actionFor(locked, row))).toBeNull();
   });
 });

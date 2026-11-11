@@ -122,3 +122,28 @@ export const actionFor = (career: CareerState, row: ShopRow): GarageAction => {
     }
   }
 };
+
+export type GarageOffer = Extract<GarageAction, { kind: "buy" | "sell" }>;
+
+export const offerAsked = (
+  askedOf: BikeId | null,
+  row: ShopRow,
+  action: GarageAction
+): GarageOffer | null => {
+  if (askedOf !== row.bikeId) {
+    return null;
+  }
+  switch (action.kind) {
+    case "buy":
+    case "sell": {
+      return action;
+    }
+    case "cantSell":
+    case "refused": {
+      return null;
+    }
+    default: {
+      return action satisfies never;
+    }
+  }
+};

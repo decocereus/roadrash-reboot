@@ -676,7 +676,12 @@ const openRoom = (
         closeDoor();
       }
     },
-    setGarage: garage.set,
+    setGarage(next) {
+      if (next.open && !garage.isOpen()) {
+        player.halt();
+      }
+      garage.set(next);
+    },
     setSeat,
     setWalkUp: garage.listen,
   };

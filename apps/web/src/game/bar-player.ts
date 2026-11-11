@@ -11,6 +11,7 @@ import {
   startShove,
   stepLobbyRider,
   stoolNear,
+  stopMoving,
   toggleBike,
 } from "@racer/sim/lobby";
 import type { LobbyControl, LobbyRider } from "@racer/sim/lobby";
@@ -62,6 +63,7 @@ export interface BarPlayer {
   readonly act: (action: BarAction, time: number) => void;
   readonly pose: (pose: LobbyPose) => void;
   readonly walkTo: (x: number, z: number) => void;
+  readonly halt: () => void;
   readonly advance: (
     seconds: number,
     control: LobbyControl,
@@ -246,6 +248,9 @@ export const createBarPlayer = ({
   return {
     act,
     advance,
+    halt() {
+      stopMoving(rider);
+    },
     pose(pose) {
       holdPose(rider, pose);
     },

@@ -140,7 +140,7 @@ const dropRoute = (rider: LobbyRider): void => {
   rider.route.length = 0;
 };
 
-const stopMoving = (rider: LobbyRider): void => {
+export const stopMoving = (rider: LobbyRider): void => {
   rider.speed = 0;
   rider.pace = 0;
   rider.lean = 0;
