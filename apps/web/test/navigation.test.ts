@@ -635,6 +635,20 @@ describe("results in the bar", () => {
 });
 
 describe("the career over card", () => {
+  it("drops the old career's results when a new career starts from Settings", () => {
+    const settings = { ...resultsOf(broke), tab: "settings" as const };
+    const begun = walk(settings, { kind: "careerBegun" }).at;
+    expect({
+      begun,
+      left: walk(begun, { kind: "tabbed", tab: "race" }, LEFT).trail,
+      single: walk(resultsOf(singleResult), { kind: "careerBegun" }).at,
+    }).toStrictEqual({
+      begun: { ...home, tab: "settings" },
+      left: ["bar/home", "bar/home"],
+      single: resultsOf(singleResult),
+    });
+  });
+
   it("starts a new career and goes home, or closes home", () => {
     expect({
       close: walk(overCard, LEFT).at,

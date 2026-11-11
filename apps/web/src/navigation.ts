@@ -445,11 +445,16 @@ const nextRace = (bar: BarView): View =>
       })
     : bar;
 
+const showsCareerResults = (panel: BarPanel): boolean =>
+  panel.kind === "results" &&
+  panel.report.mode === "career" &&
+  panel.report.room === undefined;
+
 const careerBegun = (view: View): View => {
-  if (view.screen !== "bar") {
+  if (view.screen !== "bar" || view.panel.kind === "over") {
     return home;
   }
-  return view.panel.kind === "over" ? home : view;
+  return showsCareerResults(view.panel) ? { ...view, panel: home.panel } : view;
 };
 
 const inRace = (view: View, event: RaceNews): View =>
