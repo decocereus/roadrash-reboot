@@ -32,7 +32,6 @@ import {
   LOADING,
   lobbyOf,
   nameOf,
-  panels,
   promoted,
   quitTo,
   raced,
@@ -198,24 +197,6 @@ describe("the bar", () => {
       state: roomLobby,
     });
     expect(walk(invite, LEFT).effects).toStrictEqual([]);
-  });
-
-  it("opens Garage and Settings from every panel and keeps the panel under them", () => {
-    for (const view of panels) {
-      for (const tab of barTabs) {
-        expect(
-          stepNavigation(view, { kind: "tabbed", tab }).state
-        ).toStrictEqual({ ...view, tab });
-      }
-    }
-  });
-
-  it("leaves Garage or Settings for the Race tab with the panel as it was", () => {
-    for (const view of panels) {
-      for (const tab of ["garage", "settings"] as const) {
-        expect(walk({ ...view, tab }, LEFT).at).toStrictEqual(view);
-      }
-    }
   });
 
   it("keeps the tab when the queue places the player", () => {
@@ -480,6 +461,7 @@ describe("a race", () => {
   it("ignores bar events away from the bar", () => {
     const barNews: readonly NavigationEvent[] = [
       { kind: "tabbed", tab: "settings" },
+      { kind: "walkedUp", spot: "garage" },
       { kind: "picked", panel: "solo" },
       { kind: "joined" },
       { kind: "doorOpened" },

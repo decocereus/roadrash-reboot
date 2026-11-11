@@ -1,5 +1,6 @@
 import {
   angleOff,
+  atTheGarageStand,
   holdPose,
   LOBBY_TICK,
   pullTheTaps,
@@ -10,6 +11,7 @@ import {
   startShove,
   stepLobbyRider,
   stoolNear,
+  stopMoving,
   toggleBike,
 } from "@racer/sim/lobby";
 import type { LobbyControl, LobbyRider } from "@racer/sim/lobby";
@@ -17,6 +19,7 @@ import type { Spot } from "@racer/sim/lobby-floor";
 import type { LobbyPose } from "@racer/sim/lobby-walk";
 import type * as THREE from "three";
 
+import type { BarSpot } from "../bar-view.ts";
 import type { Bikes } from "./actors.ts";
 import type { BarAction } from "./bar-input.ts";
 import type { BarSpeech } from "./bar-speech.ts";
@@ -51,6 +54,7 @@ interface PlayerParts {
   readonly rider: LobbyRider;
   readonly slot: () => PlayerSlot;
   readonly speech: Pick<BarSpeech, "say">;
+  readonly walkUp: (spot: BarSpot) => void;
 }
 
 export interface BarPlayer {
@@ -59,6 +63,7 @@ export interface BarPlayer {
   readonly act: (action: BarAction, time: number) => void;
   readonly pose: (pose: LobbyPose) => void;
   readonly walkTo: (x: number, z: number) => void;
+  readonly halt: () => void;
   readonly advance: (
     seconds: number,
     control: LobbyControl,
@@ -77,6 +82,7 @@ export const createBarPlayer = ({
   rider,
   slot,
   speech,
+  walkUp,
 }: PlayerParts): BarPlayer => {
   const blockers: Spot[] = [];
   const view: WalkerView = {
@@ -124,6 +130,10 @@ export const createBarPlayer = ({
     }
     if (pullTheTaps(rider)) {
       speech.say("NICE! PRESS B FOR YOUR BIKE", slot().walker.head, time);
+      return;
+    }
+    if (atTheGarageStand(rider)) {
+      walkUp("garage");
       return;
     }
     if (rider.place.kind === "foot") {
@@ -238,6 +248,9 @@ export const createBarPlayer = ({
   return {
     act,
     advance,
+    halt() {
+      stopMoving(rider);
+    },
     pose(pose) {
       holdPose(rider, pose);
     },

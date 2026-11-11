@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { FURNITURE, heightOfSolidsAt, PLINTH, STOOLS } from "./lobby-floor.ts";
 import {
+  FURNITURE,
+  GARAGE_PLINTH,
+  heightOfSolidsAt,
+  PLINTH,
+  ROOM,
+  STOOLS,
+} from "./lobby-floor.ts";
+import {
+  atTheGarageStand,
   atTheTaps,
   createLobbyRider,
   holdPose,
@@ -88,6 +96,27 @@ describe("walking the bar", () => {
 
   it("repeats a run exactly from the same inputs", () => {
     expect(sampleRun()).toStrictEqual(sampleRun());
+  });
+});
+
+describe("the garage stand", () => {
+  it("is in reach of a rider who walks up to it from the floor", () => {
+    const rider = createLobbyRider();
+    expect(atTheGarageStand(rider)).toBeFalsy();
+    arrive(
+      rider,
+      GARAGE_PLINTH.x - GARAGE_PLINTH.radius - 0.6,
+      GARAGE_PLINTH.z + 1
+    );
+    expect(atTheGarageStand(rider)).toBeTruthy();
+  });
+
+  it("is out of reach from the taps and the door", () => {
+    const rider = createLobbyRider();
+    arrive(rider, behindTheTaps.x, behindTheTaps.z);
+    expect(atTheGarageStand(rider)).toBeFalsy();
+    arrive(rider, ROOM.doorCentre, ROOM.backZ + 1);
+    expect(atTheGarageStand(rider)).toBeFalsy();
   });
 });
 

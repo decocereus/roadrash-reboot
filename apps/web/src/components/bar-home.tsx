@@ -27,7 +27,11 @@ import type { BarTab, BarView, RoomVisit } from "../navigation.ts";
 import { BarStage } from "./bar-stage.tsx";
 import { storedGuestName, watchGuestName } from "./guest-name.ts";
 import { newRoomId } from "./room-url.ts";
-import { GarageScreen } from "./screens/garage.tsx";
+import {
+  GaragePanel,
+  GarageStepper,
+  useGarage,
+} from "./screens/garage-panel.tsx";
 import { HomePanel, SoloPanel } from "./screens/race-panel.tsx";
 import {
   CareerOver,
@@ -328,6 +332,40 @@ const RaceTab = ({
   }
 };
 
+const BarHints = ({
+  camera,
+  garageOpen,
+}: {
+  readonly camera: BarCamera;
+  readonly garageOpen: boolean;
+}) =>
+  garageOpen ? (
+    <HintStrip
+      className="absolute inset-x-0 bottom-0"
+      end={
+        <>
+          Back to the bar <Key>Esc</Key>
+        </>
+      }
+      start="Drag to turn the bike"
+    />
+  ) : (
+    <HintStrip
+      className="absolute inset-x-0 bottom-0"
+      end={
+        <>
+          Camera <Key>C</Key> {barCameraLabels[camera]}
+        </>
+      }
+      start={
+        <>
+          <Key>WASD</Key> or click to move <Key>E</Key> greets or sits{" "}
+          <Key>F</Key> shoves
+        </>
+      }
+    />
+  );
+
 export const BarHome = ({
   flow,
   view,
@@ -348,29 +386,43 @@ export const BarHome = ({
     () => idleHud
   );
   const { career } = flow;
+  const garage = useGarage(career, view.tab === "garage" && !atDoor);
+  const openTab = (tab: BarTab): void => {
+    if (tab === "garage") {
+      garage.reset();
+    }
+    flow.send({ kind: "tabbed", tab });
+  };
   useEscape(
     flow.leave,
-    view.tab === "settings" ||
-      (view.tab === "race" &&
-        (view.panel.kind === "door" ||
-          view.panel.kind === "solo" ||
-          view.panel.kind === "over"))
+    view.tab !== "race" ||
+      view.panel.kind === "door" ||
+      view.panel.kind === "solo" ||
+      view.panel.kind === "over"
   );
   return (
     <main aria-label="The Lowside" className="bg-ink fixed inset-0">
       <BarStage
         camera={camera}
         doorOpen={view.panel.kind === "door"}
+        garageOpen={garage.open !== null}
+        onWalkUp={
+          career === null
+            ? null
+            : (spot) => {
+                garage.reset();
+                flow.send({ kind: "walkedUp", spot });
+              }
+        }
         seat={seat}
+        standBike={garage.standBike}
       />
       {!atDoor && (
         <>
           <TabStrip
             className="absolute inset-x-0 top-0"
             label="The bar"
-            onChange={(tab) => {
-              flow.send({ kind: "tabbed", tab });
-            }}
+            onChange={openTab}
             panelId={PANEL_ID}
             tabs={barTabs.map((tab) => ({
               disabled: tab === "garage" && career === null,
@@ -386,20 +438,7 @@ export const BarHome = ({
               </>
             )}
           </TabStrip>
-          <HintStrip
-            className="absolute inset-x-0 bottom-0"
-            end={
-              <>
-                Camera <Key>C</Key> {barCameraLabels[camera]}
-              </>
-            }
-            start={
-              <>
-                <Key>WASD</Key> or click to move <Key>E</Key> greets or sits{" "}
-                <Key>F</Key> shoves
-              </>
-            }
-          />
+          <BarHints camera={camera} garageOpen={garage.open !== null} />
         </>
       )}
       <div
@@ -415,6 +454,14 @@ export const BarHome = ({
           shown={view.tab === "race" && !atDoor}
           view={view}
         />
+        {garage.open !== null && (
+          <GaragePanel
+            career={garage.open.career}
+            onPick={garage.pick}
+            onTrade={flow.commit}
+            pick={garage.open.pick}
+          />
+        )}
         {view.tab === "settings" && !atDoor && (
           <SettingsPanel
             camera={camera}
@@ -426,14 +473,12 @@ export const BarHome = ({
           />
         )}
       </div>
-      {view.tab === "garage" && career && !atDoor && (
-        <div className="[container-type:size] absolute inset-x-0 top-16 bottom-0">
-          <GarageScreen
-            career={career}
-            onBack={flow.leave}
-            onTrade={flow.commit}
-          />
-        </div>
+      {garage.open !== null && (
+        <GarageStepper
+          career={garage.open.career}
+          onPick={garage.pick}
+          pick={garage.open.pick}
+        />
       )}
     </main>
   );

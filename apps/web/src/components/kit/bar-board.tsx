@@ -12,11 +12,13 @@ import {
   RowList,
   SettingRow,
 } from "@racer/ui/components/kit-rows";
+import { Pager } from "@racer/ui/components/pager";
 import {
   SkewButton,
   TextButton,
   TextLinks,
 } from "@racer/ui/components/skew-button";
+import { StatBar } from "@racer/ui/components/stat-bar";
 import { TabStrip } from "@racer/ui/components/tab-strip";
 import { useState } from "react";
 
@@ -35,9 +37,11 @@ const frameRates = [
 ] as const;
 
 const PANEL_ID = "kit-bar-panel";
+const PAGES = 3;
 
 export const BarBoard = () => {
   const [tab, setTab] = useState<(typeof tabs)[number]["value"]>("race");
+  const [page, setPage] = useState(0);
   const [rate, setRate] =
     useState<(typeof frameRates)[number]["value"]>("auto");
   const [muted, setMuted] = useState(false);
@@ -121,8 +125,25 @@ export const BarBoard = () => {
               <TextButton>Copy the link</TextButton>
               <TextButton>Leave</TextButton>
             </TextLinks>
+            <ul aria-label="Kit stats" className="flex flex-col gap-1.5">
+              <StatBar label="Speed" share={0.6} tone="yellow" />
+              <StatBar label="Launch" share={0.45} tone="cyan" />
+              <StatBar label="Brakes" share={0.75} tone="magenta" />
+            </ul>
           </Panel>
         </div>
+        <Pager
+          className="absolute bottom-16 left-6"
+          label="Kit pager"
+          onBack={() => {
+            setPage((now) => (now + PAGES - 1) % PAGES);
+          }}
+          onNext={() => {
+            setPage((now) => (now + 1) % PAGES);
+          }}
+        >
+          Bike {page + 1}/{PAGES}
+        </Pager>
         <HintStrip
           className="absolute inset-x-0 bottom-0"
           end={

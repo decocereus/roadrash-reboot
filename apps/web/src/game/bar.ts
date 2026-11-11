@@ -1,11 +1,11 @@
 import type { RoomSeat } from "@racer/rooms/seat-client";
 import { createLobbyRider } from "@racer/sim/lobby";
-import { doorSpot, GARAGE_PLINTH, PLINTH, ROOM } from "@racer/sim/lobby-floor";
+import { doorSpot, PLINTH, ROOM } from "@racer/sim/lobby-floor";
 import { riderBlocks } from "@racer/sim/palette";
 import * as THREE from "three";
 
 import { SOLO_SLOT } from "../bar-view.ts";
-import type { BarCamera } from "../bar-view.ts";
+import type { BarCamera, BarSpot } from "../bar-view.ts";
 import { diagnostics } from "../diagnostics/hub.ts";
 import { graphicsCard } from "../diagnostics/player-events.ts";
 import { createBikes } from "./actors.ts";
@@ -32,6 +32,12 @@ import {
 } from "./bar-room.ts";
 import { countdownPlate, createSignAtlas, signGeometry } from "./bar-signs.ts";
 import { createSpeech } from "./bar-speech.ts";
+import {
+  createGarageCorner,
+  FIRST_WALKER_BIKE,
+  standRiders,
+} from "./bar-stand.ts";
+import type { StandView } from "./bar-stand.ts";
 import { createTagLayer } from "./bar-tags.ts";
 import { createWalkers } from "./bar-walker.ts";
 import { createShading } from "./cel.ts";
@@ -52,9 +58,6 @@ const DOOR_REACH = Math.hypot(
 );
 const SIGN_GLOW = 1.55;
 const REV_PUFF_SPEED = 9;
-const GARAGE_LIVERY = { bike: 0xc8_21_4a, trim: 0x2a_1a_38 } as const;
-const GARAGE_BIKE_YAW = 2.61;
-const GARAGE_BIKE_SWAY = 0.22;
 const SHADOW_SPAN = 18;
 const SHADOW_DISTANCE = 26;
 const LONGEST_STEP = 0.1;
@@ -62,7 +65,6 @@ const CYCLE_SECONDS = 150;
 const DOOR_SECONDS = 2.6;
 const DOOR_RISE = 4.5;
 const TURN_SECONDS = 14;
-const FIRST_WALKER_BIKE = 2;
 const MS_PER_SECOND = 1000;
 const NO_RACE_YET = "--";
 const MIN_BLOOM_SCALE = 1;
@@ -99,6 +101,8 @@ const pinsFrom = (search: string): Pins => {
 
 export interface BarScene {
   readonly setCamera: (mode: BarCamera) => void;
+  readonly setGarage: (stand: StandView) => void;
+  readonly setWalkUp: (listener: ((spot: BarSpot) => void) | null) => void;
   readonly setSeat: (seat: RoomSeat | null) => void;
   readonly setDoor: (open: boolean) => void;
   readonly dispose: () => void;
@@ -267,7 +271,7 @@ const openRoom = (
       paint: 0,
       police: false,
     },
-    { livery: GARAGE_LIVERY, model: "ghost", paint: 4, police: false },
+    ...standRiders,
     ...riderBlocks.map(({ livery }) => ({
       livery,
       model: "classic" as const,
@@ -279,15 +283,10 @@ const openRoom = (
   owners.push(() => {
     bikes.dispose();
   });
-  const [heroBike, garageBike] = bikes.roots;
-  if (!(heroBike && garageBike)) {
+  const [heroBike] = bikes.roots;
+  if (!heroBike) {
     throw new Error("The bar lost a bike.");
   }
-  garageBike.position.set(
-    GARAGE_PLINTH.x,
-    GARAGE_PLINTH.height,
-    GARAGE_PLINTH.z
-  );
   heroBike.position.set(PLINTH.x, PLINTH.height, PLINTH.z);
 
   let revving = 0;
@@ -306,13 +305,14 @@ const openRoom = (
     tags.dispose();
   });
   const speech = createSpeech(tags);
+  const garage = createGarageCorner(bikes, tags);
   const cast = createCast(
     assets,
     shading,
     tags,
     speech,
     heroBike,
-    garageBike,
+    garage.mount,
     pins.riders,
     true
   );
@@ -325,6 +325,7 @@ const openRoom = (
     walkers.dispose();
   });
   const rider = createLobbyRider();
+  let doorOpenedAt: number | null = null;
   let seat: RoomSeat | null = null;
   let members: BarMembers | null = null;
   const company: BarCompany = {
@@ -355,6 +356,11 @@ const openRoom = (
     rider,
     slot: yourSlot,
     speech,
+    walkUp(spot) {
+      if (doorOpenedAt === null) {
+        garage.walkedUp(spot);
+      }
+    },
   });
   pipeline.prepare(scene);
 
@@ -369,7 +375,6 @@ const openRoom = (
   const viewSize = { height: 1, width: 1 };
   let clock = 0;
   let neonNow = 1;
-  let doorOpenedAt: number | null = null;
   let spinAt = 0;
 
   const resize = (): void => {
@@ -396,9 +401,14 @@ const openRoom = (
 
   const input = createBarInput(canvas, {
     action(action) {
-      player.act(action, clock);
+      if (!garage.isOpen()) {
+        player.act(action, clock);
+      }
     },
     click(x, y) {
+      if (garage.isOpen()) {
+        return;
+      }
       clicked.set(x, y);
       ray.setFromCamera(clicked, camera);
       if (ray.ray.intersectPlane(floorPlane, hit)) {
@@ -406,10 +416,16 @@ const openRoom = (
       }
     },
     drag(pixels) {
-      eye.orbit(pixels);
+      if (garage.isOpen()) {
+        garage.turn(pixels);
+      } else {
+        eye.orbit(pixels);
+      }
     },
     pose(pose) {
-      player.pose(pose);
+      if (!garage.isOpen()) {
+        player.pose(pose);
+      }
     },
   });
   owners.push(() => {
@@ -562,13 +578,11 @@ const openRoom = (
     }
     bikes.show(0);
     bikes.sag(0, Math.sin(clock * 90) * 0.006 * revving);
-    garageBike.rotation.y =
-      GARAGE_BIKE_YAW + Math.sin(clock * 0.25) * GARAGE_BIKE_SWAY;
-    bikes.show(1);
+    garage.place(seconds, clock, frameId);
     members?.step(seconds, clock);
     const ticks = player.advance(
       seconds,
-      lift > 0 ? noControl : input.control(),
+      lift > 0 || garage.isOpen() ? noControl : input.control(),
       eye.viewYaw(),
       clock
     );
@@ -583,7 +597,7 @@ const openRoom = (
       sweepPhase < 0.5 ? cycle * 0.8 : 0
     );
 
-    eye.aim(seconds, player.view, lift, input.dragging());
+    eye.aim(seconds, player.view, lift, input.dragging(), garage.isOpen());
 
     viewSize.width = canvas.clientWidth;
     viewSize.height = canvas.clientHeight;
@@ -601,6 +615,7 @@ const openRoom = (
       camera,
       viewSize
     );
+    garage.offer(rider, lift, you.walker.head, camera, viewSize);
     speech.update(clock, camera, viewSize);
     shading.aim(camera);
     pipeline.render(scene, camera);
@@ -622,6 +637,7 @@ const openRoom = (
   Reflect.set(globalThis, "__rushlineBar", {
     calls: () => renderer.info.render.calls,
     frames: () => frameId,
+    garage: garage.read,
     openDoor,
     player: () => ({
       bikeFound: rider.bikeFound,
@@ -636,6 +652,9 @@ const openRoom = (
     }),
     presence: () => members?.presence() ?? [],
     rev,
+    tour: () => {
+      garage.tour(frameId);
+    },
     triangles: () => renderer.info.render.triangles,
     walkTo: player.walkTo,
   });
@@ -657,7 +676,14 @@ const openRoom = (
         closeDoor();
       }
     },
+    setGarage(next) {
+      if (next.open && !garage.isOpen()) {
+        player.halt();
+      }
+      garage.set(next);
+    },
     setSeat,
+    setWalkUp: garage.listen,
   };
 };
 

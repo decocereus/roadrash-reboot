@@ -134,13 +134,6 @@ const bikeModels = (cache: ByteCache, { bikes }: ModelUrls) =>
     { concurrency: "unbounded" }
   );
 
-export const loadBikes = Effect.fn("assets.loadBikes")(function* loadBikes(
-  cache: ByteCache,
-  urls: ModelUrls
-) {
-  return yield* bikeModels(cache, urls);
-});
-
 export const loadCelebrity = Effect.fn("assets.loadCelebrity")(
   function* loadCelebrity(cache: ByteCache, url: string) {
     return yield* model(cache, url, riderModel);

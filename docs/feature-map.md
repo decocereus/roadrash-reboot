@@ -405,7 +405,7 @@ Every screen React draws around a race: the bar's Race, Garage and Settings tabs
 - Docs: [docs/design/screens.md#flow](design/screens.md#flow), [docs/design/game-design.md#3-modes](design/game-design.md#3-modes), [DESIGN.md#components](../DESIGN.md#components)
 - Verify: [single-race.md](../.claude/skills/verify-rushline/features/single-race.md), [career.md](../.claude/skills/verify-rushline/features/career.md)
 - Perf: `bytes.route.root.gzip`, `bytes.route.root.raw`
-- Owns: `apps/web/src/components/screens/**`, `apps/web/test/bar-nav.test.tsx`, `apps/web/test/escape-layers.test.ts`, `apps/web/test/career-screens.test.tsx`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/solo-door.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/navigation.ts`, `apps/web/test/navigation.test.ts`, `apps/web/test/navigation-walk.ts`, `apps/web/src/assets/*-art.ts`, `apps/web/src/game/showroom.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`
+- Owns: `apps/web/src/components/screens/**`, `apps/web/test/bar-nav.test.tsx`, `apps/web/test/escape-layers.test.ts`, `apps/web/test/career-screens.test.tsx`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/solo-door.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/navigation.ts`, `apps/web/test/navigation.test.ts`, `apps/web/test/navigation-tabs.test.ts`, `apps/web/test/navigation-walk.ts`, `apps/web/src/assets/*-art.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/garage-stand.ts`, `apps/web/src/career/garage-stand.test.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`
 
 Source files:
 
@@ -414,18 +414,17 @@ Source files:
 - `apps/web/src/career/copy.ts`
 - `apps/web/src/career/flow.ts`
 - `apps/web/src/career/format.ts`
+- `apps/web/src/career/garage-stand.ts`
 - `apps/web/src/components/game-shell.tsx`
 - `apps/web/src/components/screens/bar-chrome.tsx`
-- `apps/web/src/components/screens/bike-stand.tsx`
 - `apps/web/src/components/screens/boot.tsx`
-- `apps/web/src/components/screens/clubhouse-bar.tsx`
 - `apps/web/src/components/screens/clubhouse-stage.tsx`
 - `apps/web/src/components/screens/clubhouse-wall.tsx`
 - `apps/web/src/components/screens/confirm.tsx`
 - `apps/web/src/components/screens/data-notice.tsx`
 - `apps/web/src/components/screens/escape-layers.ts`
 - `apps/web/src/components/screens/finish.tsx`
-- `apps/web/src/components/screens/garage.tsx`
+- `apps/web/src/components/screens/garage-panel.tsx`
 - `apps/web/src/components/screens/name-card.tsx`
 - `apps/web/src/components/screens/pause.tsx`
 - `apps/web/src/components/screens/pinned-list.tsx`
@@ -438,15 +437,16 @@ Source files:
 - `apps/web/src/components/screens/shared.tsx`
 - `apps/web/src/components/solo-door.tsx`
 - `apps/web/src/components/use-flow.ts`
-- `apps/web/src/game/showroom.ts`
 - `apps/web/src/navigation.ts`
 - `apps/web/src/styles.css`
 
 Test files:
 
+- `apps/web/src/career/garage-stand.test.ts`
 - `apps/web/test/bar-nav.test.tsx`
 - `apps/web/test/career-screens.test.tsx`
 - `apps/web/test/escape-layers.test.ts`
+- `apps/web/test/navigation-tabs.test.ts`
 - `apps/web/test/navigation-walk.ts`
 - `apps/web/test/navigation.test.ts`
 
@@ -706,6 +706,7 @@ Source files:
 - `apps/web/src/game/bar-room.ts`
 - `apps/web/src/game/bar-signs.ts`
 - `apps/web/src/game/bar-speech.ts`
+- `apps/web/src/game/bar-stand.ts`
 - `apps/web/src/game/bar-tags.ts`
 - `apps/web/src/game/bar-walker.ts`
 - `apps/web/src/game/bar.ts`
@@ -1164,8 +1165,10 @@ Source files:
 - `packages/ui/src/components/menu-list.tsx`
 - `packages/ui/src/components/money.tsx`
 - `packages/ui/src/components/notice.tsx`
+- `packages/ui/src/components/pager.tsx`
 - `packages/ui/src/components/screen.tsx`
 - `packages/ui/src/components/skew-button.tsx`
+- `packages/ui/src/components/stat-bar.tsx`
 - `packages/ui/src/components/stencil.tsx`
 - `packages/ui/src/components/tab-strip.tsx`
 - `packages/ui/src/styles/globals.css`

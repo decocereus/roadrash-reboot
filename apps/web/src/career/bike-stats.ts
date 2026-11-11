@@ -4,8 +4,6 @@ import type { BikeSpec } from "@racer/sim/state";
 export interface BikeStat {
   readonly label: string;
   readonly value: number;
-  readonly baseline?: number | undefined;
-  readonly reading?: string | undefined;
 }
 
 const KMH = 3.6;
@@ -36,34 +34,16 @@ const measure = (bike: BikeSpec): Measures => ({
   topSpeed: topSpeedOf(bike) / FASTEST,
 });
 
-export const bikeStats = (
-  bike: BikeSpec,
-  owned: BikeSpec
-): readonly BikeStat[] => {
+export const topSpeedKmh = (bike: BikeSpec): number =>
+  Math.round(topSpeedOf(bike) * KMH);
+
+export const bikeStats = (bike: BikeSpec): readonly BikeStat[] => {
   const shown = measure(bike);
-  const mine = measure(owned);
-  const same = bike.id === owned.id;
-  const baseline = (value: number): number | undefined =>
-    same ? undefined : value;
   return [
-    {
-      baseline: baseline(mine.topSpeed),
-      label: "Top speed",
-      reading: `${Math.round(topSpeedOf(bike) * KMH)} km/h`,
-      value: shown.topSpeed,
-    },
-    {
-      baseline: baseline(mine.launch),
-      label: "Launch",
-      reading: `${launchSecondsOf(bike).toFixed(1)} s`,
-      value: shown.launch,
-    },
-    {
-      baseline: baseline(mine.steering),
-      label: "Steering",
-      value: shown.steering,
-    },
-    { baseline: baseline(mine.grip), label: "Bend grip", value: shown.grip },
-    { baseline: baseline(mine.brakes), label: "Brakes", value: shown.brakes },
+    { label: "Top speed", value: shown.topSpeed },
+    { label: "Launch", value: shown.launch },
+    { label: "Steering", value: shown.steering },
+    { label: "Bend grip", value: shown.grip },
+    { label: "Brakes", value: shown.brakes },
   ];
 };
