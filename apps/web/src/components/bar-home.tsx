@@ -422,6 +422,7 @@ export const BarHome = ({
         camera={camera}
         doorOpen={view.panel.kind === "door"}
         garageOpen={garage.open !== null}
+        held={welcoming}
         onWalkUp={
           career === null || welcoming
             ? null

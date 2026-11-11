@@ -8,6 +8,7 @@ import {
   PanelRule,
   PanelTitle,
 } from "@racer/ui/components/kit-panel";
+import { moveFocus } from "@racer/ui/components/menu-keys";
 import { formatMoney } from "@racer/ui/components/money";
 import { SkewButton } from "@racer/ui/components/skew-button";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
@@ -61,7 +62,7 @@ const RaceMenuCard = ({
         lastRef.current = event.target;
       }}
     >
-      <Card aria-label="Race menu" role="dialog">
+      <Card aria-label="Race menu" onKeyDown={moveFocus} role="dialog">
         <PanelTitle>Race menu</PanelTitle>
         <PanelRule />
         <PanelLine>{line}</PanelLine>

@@ -11,6 +11,7 @@ interface BarStageProps {
   readonly seat: RoomSeat | null;
   readonly doorOpen: boolean;
   readonly garageOpen: boolean;
+  readonly held: boolean;
   readonly standBike: BikeId;
   readonly onWalkUp: ((spot: BarSpot) => void) | null;
 }
@@ -20,6 +21,7 @@ export const BarStage = ({
   seat,
   doorOpen,
   garageOpen,
+  held,
   standBike,
   onWalkUp,
 }: BarStageProps) => {
@@ -63,6 +65,9 @@ export const BarStage = ({
   useEffect(() => {
     scene?.setGarage({ bikeId: standBike, open: garageOpen });
   }, [garageOpen, scene, standBike]);
+  useEffect(() => {
+    scene?.setHeld(held);
+  }, [held, scene]);
   useEffect(() => {
     scene?.setWalkUp(onWalkUp);
   }, [onWalkUp, scene]);

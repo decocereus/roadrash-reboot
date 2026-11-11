@@ -10,6 +10,7 @@ const BareBar = () => (
       camera={savedBarCamera()}
       doorOpen={false}
       garageOpen={false}
+      held={false}
       onWalkUp={null}
       seat={null}
       standBike={STARTING_BIKE}

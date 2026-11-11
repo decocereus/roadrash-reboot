@@ -102,6 +102,7 @@ const pinsFrom = (search: string): Pins => {
 export interface BarScene {
   readonly setCamera: (mode: BarCamera) => void;
   readonly setGarage: (stand: StandView) => void;
+  readonly setHeld: (held: boolean) => void;
   readonly setWalkUp: (listener: ((spot: BarSpot) => void) | null) => void;
   readonly setSeat: (seat: RoomSeat | null) => void;
   readonly setDoor: (open: boolean) => void;
@@ -372,6 +373,7 @@ const openRoom = (
   const clicked = new THREE.Vector2();
   const hit = new THREE.Vector3();
   const noControl = { forward: 0, right: 0, sprint: false };
+  let held = false;
   const viewSize = { height: 1, width: 1 };
   let clock = 0;
   let neonNow = 1;
@@ -401,12 +403,12 @@ const openRoom = (
 
   const input = createBarInput(canvas, {
     action(action) {
-      if (!garage.isOpen()) {
+      if (!held && !garage.isOpen()) {
         player.act(action, clock);
       }
     },
     click(x, y) {
-      if (garage.isOpen()) {
+      if (held || garage.isOpen()) {
         return;
       }
       clicked.set(x, y);
@@ -423,7 +425,7 @@ const openRoom = (
       }
     },
     pose(pose) {
-      if (!garage.isOpen()) {
+      if (!held && !garage.isOpen()) {
         player.pose(pose);
       }
     },
@@ -582,7 +584,7 @@ const openRoom = (
     members?.step(seconds, clock);
     const ticks = player.advance(
       seconds,
-      lift > 0 || garage.isOpen() ? noControl : input.control(),
+      held || lift > 0 || garage.isOpen() ? noControl : input.control(),
       eye.viewYaw(),
       clock
     );
@@ -681,6 +683,9 @@ const openRoom = (
         player.halt();
       }
       garage.set(next);
+    },
+    setHeld(next) {
+      held = next;
     },
     setSeat,
     setWalkUp: garage.listen,

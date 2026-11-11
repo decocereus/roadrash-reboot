@@ -390,7 +390,11 @@ export const platformFeatures: readonly FeatureEntry[] = [
     ],
     id: "ui-kit",
     kind: "platform",
-    owns: ["packages/ui/**", "apps/web/src/routes/kit.tsx"],
+    owns: [
+      "packages/ui/**",
+      "apps/web/src/routes/kit.tsx",
+      "apps/web/test/menu-keys.test.tsx",
+    ],
     perf: ["bytes.route.kit.gzip", "bytes.route.kit.raw"],
     start: [
       "packages/ui/src/styles/globals.css",

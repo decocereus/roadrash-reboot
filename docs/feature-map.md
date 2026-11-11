@@ -1143,7 +1143,7 @@ The shared components and global styles in `packages/ui`, and the `/kit` page th
 - Docs: [DESIGN.md#components](../DESIGN.md#components), [docs/coding-standards.md#keep-each-module-to-its-job](coding-standards.md#keep-each-module-to-its-job)
 - Verify: none yet
 - Perf: `bytes.route.kit.gzip`, `bytes.route.kit.raw`
-- Owns: `packages/ui/**`, `apps/web/src/routes/kit.tsx`
+- Owns: `packages/ui/**`, `apps/web/src/routes/kit.tsx`, `apps/web/test/menu-keys.test.tsx`
 
 Source files:
 
@@ -1152,6 +1152,7 @@ Source files:
 - `packages/ui/src/components/hint-strip.tsx`
 - `packages/ui/src/components/kit-panel.tsx`
 - `packages/ui/src/components/kit-rows.tsx`
+- `packages/ui/src/components/menu-keys.tsx`
 - `packages/ui/src/components/money.tsx`
 - `packages/ui/src/components/notice.tsx`
 - `packages/ui/src/components/pager.tsx`
@@ -1163,7 +1164,9 @@ Source files:
 - `packages/ui/src/styles/globals.css`
 - `packages/ui/src/utils.ts`
 
-Test files: none
+Test files:
+
+- `apps/web/test/menu-keys.test.tsx`
 
 ### Dev URL flags, the stress race and the profiler
 
