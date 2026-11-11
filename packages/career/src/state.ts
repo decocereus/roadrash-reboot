@@ -188,9 +188,6 @@ export const newCareer = (seed: number): CareerState => ({
   weaponHits: 0,
 });
 
-export const debtOf = (career: CareerState): number =>
-  Math.max(0, -career.cash);
-
 export const qualifiedCount = (roads: QualifiedRoads): number =>
   roadList.filter((road) => roads[road.id] !== undefined).length;
 

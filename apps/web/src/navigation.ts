@@ -29,16 +29,20 @@ const spotTabs = {
   garage: "garage",
 } as const satisfies Record<BarSpot, BarTab>;
 
-export type BarPanel =
+type Landing =
   | { readonly kind: "home" }
-  | { readonly kind: "solo" }
-  | { readonly kind: "finding" }
   | { readonly kind: "invite"; readonly roomId: string }
   | {
       readonly kind: "lobby";
       readonly visit: RoomVisit;
       readonly turn: number;
-    }
+    };
+
+export type BarPanel =
+  | Landing
+  | { readonly kind: "welcome"; readonly next: Landing }
+  | { readonly kind: "solo" }
+  | { readonly kind: "finding" }
   | { readonly kind: "door"; readonly entry: RaceEntry }
   | { readonly kind: "results"; readonly report: RaceReport }
   | { readonly kind: "over" };
@@ -81,6 +85,7 @@ type RaceNews =
 export type NavigationEvent =
   | RaceNews
   | { readonly kind: "careerBegun" }
+  | { readonly kind: "welcomed" }
   | { readonly kind: "raceRefused" }
   | { readonly kind: "tabbed"; readonly tab: BarTab }
   | { readonly kind: "walkedUp"; readonly spot: BarSpot }
@@ -94,6 +99,7 @@ export type NavigationEvent =
       readonly rules: RulesLoad | null;
       readonly save: SaveState;
       readonly urlRide: boolean;
+      readonly welcomed: boolean;
     }
   | { readonly kind: "left"; readonly save: SaveState }
   | { readonly kind: "roomMoved"; readonly visit: RoomVisit }
@@ -115,7 +121,8 @@ const barAt = (panel: BarPanel): BarView => ({
   tab: "race",
 });
 
-const home = barAt({ kind: "home" });
+const homePanel: Landing = { kind: "home" };
+const home = barAt(homePanel);
 const over = barAt({ kind: "over" });
 
 export const firstView = (): View => ({ screen: "boot" });
@@ -146,6 +153,9 @@ const panelAddressOf = (panel: BarPanel): RoomAddress | null => {
       return panel.report.room
         ? { arrival: null, roomId: panel.report.room.roomId }
         : null;
+    }
+    case "welcome": {
+      return panelAddressOf(panel.next);
     }
     case "door":
     case "finding":
@@ -261,6 +271,9 @@ const raceAfter = (
   }
 };
 
+const landingAt = (next: Landing, welcomed: boolean): BarView =>
+  barAt(welcomed ? next : { kind: "welcome", next });
+
 const enteringFrom = (
   view: View,
   {
@@ -269,32 +282,39 @@ const enteringFrom = (
     rules,
     save,
     urlRide,
+    welcomed,
   }: Extract<NavigationEvent, { kind: "entered" }>
 ): NavigationStep => {
   if (rules?.status === "failed") {
-    return to(home);
+    return to(landingAt(homePanel, welcomed));
   }
   if (rules === null || urlRide || save.status === "loading") {
     return to(view);
   }
   if (room !== null) {
     return to(
-      invited
-        ? barAt({ kind: "invite", roomId: room.roomId })
-        : lobbyAt(view, room)
+      landingAt(
+        invited
+          ? { kind: "invite", roomId: room.roomId }
+          : { kind: "lobby", turn: 0, visit: room },
+        welcomed
+      )
     );
   }
   switch (save.status) {
     case "corrupt":
     case "ready":
     case "unread": {
-      return to(home);
+      return to(landingAt(homePanel, welcomed));
     }
     case "elsewhere": {
       return to(elsewhere);
     }
     case "empty": {
-      return { effect: beginCareer, state: view };
+      return {
+        effect: beginCareer,
+        state: welcomed ? view : landingAt(homePanel, welcomed),
+      };
     }
     default: {
       return save satisfies never;
@@ -360,6 +380,9 @@ const barLeft = (view: BarView, save: SaveState): NavigationStep => {
     }
     case "door": {
       return to(barAt({ kind: "solo" }));
+    }
+    case "welcome": {
+      return to(view);
     }
     case "results": {
       return view.panel.report.room
@@ -430,7 +453,8 @@ const ridesFrom = (panel: BarPanel): boolean => {
     case "home":
     case "invite":
     case "lobby":
-    case "over": {
+    case "over":
+    case "welcome": {
       return false;
     }
     default: {
@@ -478,7 +502,8 @@ type BarNews = Extract<
       | "picked"
       | "ridePicked"
       | "tabbed"
-      | "walkedUp";
+      | "walkedUp"
+      | "welcomed";
   }
 >;
 
@@ -497,10 +522,15 @@ const barAfter = (bar: BarView, event: BarNews): View => {
       return riding(bar, event.entry);
     }
     case "tabbed": {
-      return { ...bar, tab: event.tab };
+      return bar.panel.kind === "welcome" ? bar : { ...bar, tab: event.tab };
     }
     case "walkedUp": {
-      return { ...bar, tab: spotTabs[event.spot] };
+      return bar.panel.kind === "welcome"
+        ? bar
+        : { ...bar, tab: spotTabs[event.spot] };
+    }
+    case "welcomed": {
+      return bar.panel.kind === "welcome" ? barAt(bar.panel.next) : bar;
     }
     default: {
       return event satisfies never;
@@ -508,9 +538,21 @@ const barAfter = (bar: BarView, event: BarNews): View => {
   }
 };
 
-export const stepNavigation = (
+const raceNewsKinds = {
+  movedOn: true,
+  paused: true,
+  raceOver: true,
+  raceSettled: true,
+  resumed: true,
+  signalLost: true,
+} as const satisfies Record<RaceNews["kind"], true>;
+
+const isRaceNews = (event: NavigationEvent): event is RaceNews =>
+  Object.hasOwn(raceNewsKinds, event.kind);
+
+const stepOutsideRace = (
   view: View,
-  event: NavigationEvent
+  event: Exclude<NavigationEvent, RaceNews>
 ): NavigationStep => {
   switch (event.kind) {
     case "careerBegun": {
@@ -524,7 +566,8 @@ export const stepNavigation = (
     case "picked":
     case "ridePicked":
     case "tabbed":
-    case "walkedUp": {
+    case "walkedUp":
+    case "welcomed": {
       return to(inBar(view, (bar) => barAfter(bar, event)));
     }
     case "entered": {
@@ -535,14 +578,6 @@ export const stepNavigation = (
     }
     case "left": {
       return leaving(view, event.save);
-    }
-    case "movedOn":
-    case "paused":
-    case "raceOver":
-    case "raceSettled":
-    case "resumed":
-    case "signalLost": {
-      return to(inRace(view, event));
     }
     case "raceBegun": {
       return to({
@@ -559,3 +594,9 @@ export const stepNavigation = (
     }
   }
 };
+
+export const stepNavigation = (
+  view: View,
+  event: NavigationEvent
+): NavigationStep =>
+  isRaceNews(event) ? to(inRace(view, event)) : stepOutsideRace(view, event);

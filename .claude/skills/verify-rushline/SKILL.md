@@ -102,7 +102,7 @@ The game exposes no general state object, so read what a player sees, plus the d
 - **Speed:** `document.querySelector("[role=meter][aria-label=Speed]").getAttribute("aria-valuenow")`, in km/h. The meter exists only during a race.
 - **Race clock:** with `&prof`, `globalThis.__rushlineProfile.info()` returns `{ frames, tick, renderer, gpuTimer, parts }`, and `window(fromTick, toTick)` returns per-frame samples (interval, CPU ms per part, draw calls, triangles, pixel ratio, three's program, texture, and geometry counts, and `created`, the programs and textures the WebGL context has created so far). The tick is the simulation tick at 60 per second of race time.
 - **Freeze frames:** with `?hold=`, `globalThis.__rushlineHeld` turns `true` when the race freezes, and `globalThis.__rushlineRelease()` resumes it.
-- **The save:** `JSON.parse(localStorage.getItem("rushline.career"))`. Each slot is its own origin with a fresh profile, so every run starts with no save.
+- **The save:** `JSON.parse(localStorage.getItem("rushline.career"))`. Each slot is its own origin with a fresh profile, so every run starts with no save, no name and the data notice unseen, and the page opens on the first-visit card over the bar. `--until bar` passes under the card, but the bar takes no clicks until you walk in: `rv press --run <run> KeyR` types a name into the focused field and `rv click --run <run> "Walk in"` saves it. A `?ride=` or `?stress` race skips the card.
 - **Screens:** `rv aria` shows the menu that is up and which item has focus.
 
 ### Development URL flags

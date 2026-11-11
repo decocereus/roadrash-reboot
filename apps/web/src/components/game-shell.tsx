@@ -1,9 +1,7 @@
 import { lazy, Suspense, useCallback, useState } from "react";
 
-import { stageOf } from "../navigation.ts";
 import { BarHome } from "./bar-home.tsx";
 import { BootScreen, ElsewhereScreen } from "./screens/boot.tsx";
-import { DataNotice } from "./screens/data-notice.tsx";
 import { FinishBanner } from "./screens/finish.tsx";
 import { PauseScreen } from "./screens/pause.tsx";
 import { RaceHud } from "./screens/race-hud.tsx";
@@ -118,7 +116,6 @@ export const GameShell = () => {
       )}
       <MenuScreens flow={flow} />
       <RaceScreens flow={flow} />
-      {stageOf(flow.view) === "menu" && !atDoor && <DataNotice />}
       {flow.save.status === "ready" && flow.save.unsaved && (
         <p
           className="bg-red text-text text-label fixed top-0 left-1/2 z-50 -translate-x-1/2 px-4 py-1 font-semibold uppercase"

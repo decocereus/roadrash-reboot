@@ -37,12 +37,12 @@ describe("art manifest", () => {
 
   it("round-trips a sorted manifest and refuses a key that is not a hash", async () => {
     const manifest = {
-      "clubhouse/wall.webp": keyOf(bytes, "webp"),
+      "art/sign.webp": keyOf(bytes, "webp"),
       "models/van.glb": keyOf(bytes, "glb"),
     };
     const text = manifestText(manifest);
     expect(text.match(/"[^"]+":/gu)).toStrictEqual([
-      '"clubhouse/wall.webp":',
+      '"art/sign.webp":',
       '"models/van.glb":',
     ]);
     await expect(decoded(text)).resolves.toStrictEqual(manifest);

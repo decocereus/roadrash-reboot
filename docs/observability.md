@@ -6,7 +6,7 @@ Rushline records five things: player events for the funnel, play-test telemetry 
 
 Twelve events answer where players stop and when their graphics fail: `game_opened`, `game_ready`, `game_load_failed`, `race_picked`, `room_joined`, `invite_copied`, `room_lost`, `race_loaded`, `race_started`, `race_ended`, `race_again` and `graphics_lost`. `packages/telemetry/src/player-events.ts` is the list. `apps/web/src/diagnostics/player-events.ts` sends them with `navigator.sendBeacon` to `POST /api/events`, and `apps/web/src/server/player-events.ts` forwards them to the EU PostHog project named by the `POSTHOG_PROJECT_KEY` secret. With no key, the route answers 503 and sends nothing. `race_started` and `race_ended` carry the race ID, so they join the race's summary: the room's ID for a room race, and a browser-minted one for a solo race.
 
-Collection is on by default. The menus show a short notice until the player presses Got it, and `/privacy` has the detail. Copy says what is recorded and never calls it anonymous: a stable ID ties a player's events together.
+Collection is on by default. The first-visit card carries a short notice with a Privacy link, and Walk in marks it seen, so it shows once; `/privacy` has the detail and Settings has the Race data switch. Copy says what is recorded and never calls it anonymous: a stable ID ties a player's events together.
 
 | Rule | Check | Scope | Exemption |
 | --- | --- | --- | --- |

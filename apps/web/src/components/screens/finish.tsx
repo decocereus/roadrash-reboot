@@ -1,12 +1,12 @@
 import { QUALIFYING_PLACE } from "@racer/career/tables";
 import { Screen } from "@racer/ui/components/screen";
+import { SkewButton } from "@racer/ui/components/skew-button";
 import { Stencil } from "@racer/ui/components/stencil";
 import { useEffect, useState } from "react";
 
 import { shortNames } from "../../career/copy.ts";
 import type { RaceReport } from "../../career/flow.ts";
 import { ordinal } from "../../career/format.ts";
-import { ActionMenu } from "./shared.tsx";
 
 const CONTINUE_AFTER = 1500;
 const MOVE_ON_AFTER = 5000;
@@ -45,7 +45,7 @@ export const FinishBanner = ({
   const qualified = report.place <= QUALIFYING_PLACE;
   const wheel = wheelLine(report);
   return (
-    <Screen className="bg-transparent">
+    <Screen aria-label="Finish" className="bg-transparent">
       <div className="absolute inset-x-0 top-[12%] flex flex-col items-center gap-2 text-center">
         <Stencil className="hud-ink">
           {report.place === 1 ? "Winner" : "Finished"}
@@ -65,13 +65,12 @@ export const FinishBanner = ({
         )}
       </div>
       {offered && (
-        <div className="absolute right-[4%] bottom-[5%]">
-          <ActionMenu
-            actions={[{ id: "continue", label: "Continue", run: onContinue }]}
-            className="hud-ink"
-            label="Finish"
-            primary="continue"
-            size="md"
+        <div className="absolute right-[4%] bottom-[5%] w-64">
+          <SkewButton
+            autoFocus
+            onClick={onContinue}
+            title="Continue"
+            tone="primary"
           />
         </div>
       )}

@@ -336,7 +336,6 @@ export const playerFeatures: readonly FeatureEntry[] = [
     kind: "feature",
     owns: [
       "apps/web/src/components/screens/**",
-      "apps/web/test/bar-nav.test.tsx",
       "apps/web/test/escape-layers.test.ts",
       "apps/web/test/career-screens.test.tsx",
       "apps/web/src/components/game-shell.tsx",
@@ -344,9 +343,9 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/components/use-flow.ts",
       "apps/web/src/navigation.ts",
       "apps/web/test/navigation.test.ts",
+      "apps/web/test/welcome-navigation.test.ts",
       "apps/web/test/navigation-tabs.test.ts",
       "apps/web/test/navigation-walk.ts",
-      "apps/web/src/assets/*-art.ts",
       "apps/web/src/styles.css",
       "apps/web/src/career/bike-stats.ts",
       "apps/web/src/career/garage-stand.ts",
@@ -362,7 +361,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/components/game-shell.tsx",
     ],
     summary:
-      "Every screen React draws around a race: the bar's Race, Garage and Settings tabs and their panels, the solo door moment, pause, results and the career over card, with the screen flow, the menu art and the copy.",
+      "Every screen React draws around a race: the first-visit card, the bar's Race, Garage and Settings tabs and their panels, the solo door moment, the race menu, results and the career over card, with the screen flow and the copy.",
     title: "Menus and screens",
     verify: ["single-race.md", "career.md"],
   },

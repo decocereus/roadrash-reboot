@@ -151,7 +151,7 @@ const glbOf = (size: number, atlas: FixtureOptions["atlas"]): Uint8Array => {
   return bytes;
 };
 
-const PLATE_BYTES = 48;
+const SIGN_BYTES = 48;
 
 export const fixtureBuild = (
   dir: string,
@@ -176,7 +176,7 @@ export const fixtureBuild = (
       )
     );
   }
-  stage("clubhouse/wall.webp", new Uint8Array(PLATE_BYTES));
+  stage("art/sign.webp", new Uint8Array(SIGN_BYTES));
   write(
     path.join(root, "apps/web/src/assets/art.json"),
     JSON.stringify(manifest)

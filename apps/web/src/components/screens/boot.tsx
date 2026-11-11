@@ -1,5 +1,5 @@
-import { MenuItem, MenuList } from "@racer/ui/components/menu-list";
 import { Screen } from "@racer/ui/components/screen";
+import { SkewButton } from "@racer/ui/components/skew-button";
 import { Stencil } from "@racer/ui/components/stencil";
 
 import { CAREER_ELSEWHERE, TAGLINE, WORDMARK } from "../../career/copy.ts";
@@ -20,16 +20,16 @@ export const ElsewhereScreen = () => (
       <p className="font-display text-neon-red normal-case" role="alert">
         {CAREER_ELSEWHERE}
       </p>
-      <MenuList
-        autoFocus
-        defaultValue="retry"
-        label="Career"
-        onSelect={() => {
-          globalThis.location.reload();
-        }}
-      >
-        <MenuItem value="retry">Try again</MenuItem>
-      </MenuList>
+      <div className="w-64">
+        <SkewButton
+          autoFocus
+          onClick={() => {
+            globalThis.location.reload();
+          }}
+          title="Try again"
+          tone="primary"
+        />
+      </div>
     </div>
   </Screen>
 );

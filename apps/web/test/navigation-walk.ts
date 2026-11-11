@@ -109,6 +109,7 @@ export const home = barAt({ kind: "home" });
 export const solo = barAt({ kind: "solo" });
 export const finding = barAt({ kind: "finding" });
 export const invite = barAt({ kind: "invite", roomId: ROOM_ID });
+export const welcome = barAt({ kind: "welcome", next: { kind: "home" } });
 
 export const lobbyOf = (visit: RoomVisit, turn = 0): BarView =>
   barAt({ kind: "lobby", turn, visit });
@@ -150,7 +151,8 @@ export const entered = (
   save: SaveState,
   room: RoomVisit | null = null,
   urlRide = false,
-  invited = false
+  invited = false,
+  welcomed = true
 ): NavigationEvent => ({
   invited,
   kind: "entered",
@@ -158,6 +160,7 @@ export const entered = (
   rules,
   save,
   urlRide,
+  welcomed,
 });
 
 export const readySave = (career: CareerState): SaveState => ({
@@ -261,9 +264,14 @@ const everyPanel = {
   over: barAt({ kind: "over" }),
   results: resultsOf(careerResult),
   solo,
+  welcome,
 } as const satisfies Record<BarPanel["kind"], BarView>;
 
-export const panels: readonly BarView[] = Object.values(everyPanel);
+const panels: readonly BarView[] = Object.values(everyPanel);
+
+export const openPanels: readonly BarView[] = panels.filter(
+  ({ panel }) => panel.kind !== "welcome"
+);
 
 export const screens: readonly View[] = [
   ...Object.values(everyScreen),

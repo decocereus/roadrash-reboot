@@ -42,7 +42,12 @@ import type { NavigationEvent, RoomVisit, View } from "../navigation.ts";
 import type { PrepareOutcome } from "../prepare-outcome.ts";
 import { loadRaceRules } from "../rules/load.ts";
 import type { RulesLoad } from "../rules/load.ts";
-import { joinedRoom, rememberRoom } from "./guest-name.ts";
+import {
+  joinedRoom,
+  rememberRoom,
+  storedGuestName,
+  storeGuestName,
+} from "./guest-name.ts";
 import { roomArrivalOf, showAddress } from "./room-url.ts";
 import { useHandoff } from "./use-handoff.ts";
 
@@ -290,7 +295,11 @@ export interface Flow {
   readonly quit: (plan: RacePlan) => void;
   readonly leaveRace: () => void;
   readonly roomLost: () => void;
+  readonly walkIn: (name: string) => void;
 }
+
+const welcomedBefore = (): boolean =>
+  storedGuestName() !== null && diagnostics().settings.read().noticeSeen;
 
 export const useFlow = (): Flow => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -344,6 +353,7 @@ export const useFlow = (): Flow => {
       save,
       urlRide:
         rulesLoad?.status === "ready" && urlRide(rulesLoad.rules) !== null,
+      welcomed: welcomedBefore(),
     });
   }, [rulesLoad, save, send]);
   useLoadEvents(
@@ -563,5 +573,10 @@ export const useFlow = (): Flow => {
     setPick,
     start,
     view,
+    walkIn(name) {
+      storeGuestName(name);
+      diagnostics().settings.change({ noticeSeen: true });
+      send({ kind: "welcomed" });
+    },
   };
 };

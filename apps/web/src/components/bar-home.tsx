@@ -32,6 +32,7 @@ import {
   GarageStepper,
   useGarage,
 } from "./screens/garage-panel.tsx";
+import { WelcomeCard } from "./screens/name-card.tsx";
 import { HomePanel, SoloPanel } from "./screens/race-panel.tsx";
 import {
   CareerOver,
@@ -143,6 +144,35 @@ const useSeat = (): readonly [
   return [seat, setSeat];
 };
 
+const HomeChoices = ({ flow }: { readonly flow: Flow }) => (
+  <HomePanel
+    failure={flow.failure}
+    onFind={() => {
+      diagnostics().events.track({
+        choice: "public",
+        event: "race_picked",
+      });
+      flow.send({ kind: "picked", panel: "finding" });
+    }}
+    onFriends={() => {
+      diagnostics().events.track({
+        choice: "friends",
+        event: "race_picked",
+      });
+      moveToRoom(flow, {
+        arrival: "made",
+        rejoin: null,
+        roomId: newRoomId(),
+      });
+    }}
+    onSolo={() => {
+      flow.send({ kind: "picked", panel: "solo" });
+    }}
+    rules={flow.rules}
+    save={flow.save}
+  />
+);
+
 const RaceTab = ({
   flow,
   view,
@@ -161,33 +191,18 @@ const RaceTab = ({
     case "home": {
       return (
         <Panel aria-label="Race" hidden={!shown}>
-          <HomePanel
-            failure={flow.failure}
-            onFind={() => {
-              diagnostics().events.track({
-                choice: "public",
-                event: "race_picked",
-              });
-              flow.send({ kind: "picked", panel: "finding" });
-            }}
-            onFriends={() => {
-              diagnostics().events.track({
-                choice: "friends",
-                event: "race_picked",
-              });
-              moveToRoom(flow, {
-                arrival: "made",
-                rejoin: null,
-                roomId: newRoomId(),
-              });
-            }}
-            onSolo={() => {
-              flow.send({ kind: "picked", panel: "solo" });
-            }}
-            rules={flow.rules}
-            save={flow.save}
-          />
+          <HomeChoices flow={flow} />
         </Panel>
+      );
+    }
+    case "welcome": {
+      return (
+        <>
+          <Panel aria-hidden className="opacity-45" hidden={!shown} inert>
+            <HomeChoices flow={flow} />
+          </Panel>
+          <WelcomeCard onWalkIn={flow.walkIn} start={storedGuestName()} />
+        </>
       );
     }
     case "solo": {
@@ -386,6 +401,7 @@ export const BarHome = ({
     () => idleHud
   );
   const { career } = flow;
+  const welcoming = view.panel.kind === "welcome";
   const garage = useGarage(career, view.tab === "garage" && !atDoor);
   const openTab = (tab: BarTab): void => {
     if (tab === "garage") {
@@ -407,7 +423,7 @@ export const BarHome = ({
         doorOpen={view.panel.kind === "door"}
         garageOpen={garage.open !== null}
         onWalkUp={
-          career === null
+          career === null || welcoming
             ? null
             : (spot) => {
                 garage.reset();
@@ -425,7 +441,7 @@ export const BarHome = ({
             onChange={openTab}
             panelId={PANEL_ID}
             tabs={barTabs.map((tab) => ({
-              disabled: tab === "garage" && career === null,
+              disabled: welcoming || (tab === "garage" && career === null),
               label: tabLabels[tab],
               value: tab,
             }))}

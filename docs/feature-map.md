@@ -398,36 +398,30 @@ Test files:
 
 ### Menus and screens
 
-Every screen React draws around a race: the bar's Race, Garage and Settings tabs and their panels, the solo door moment, pause, results and the career over card, with the screen flow, the menu art and the copy.
+Every screen React draws around a race: the first-visit card, the bar's Race, Garage and Settings tabs and their panels, the solo door moment, the race menu, results and the career over card, with the screen flow and the copy.
 
 - Id: `menus`
 - Start: `apps/web/src/navigation.ts`, `apps/web/src/components/use-flow.ts`, `apps/web/src/components/game-shell.tsx`
 - Docs: [docs/design/screens.md#flow](design/screens.md#flow), [docs/design/game-design.md#3-modes](design/game-design.md#3-modes), [DESIGN.md#components](../DESIGN.md#components)
 - Verify: [single-race.md](../.claude/skills/verify-rushline/features/single-race.md), [career.md](../.claude/skills/verify-rushline/features/career.md)
 - Perf: `bytes.route.root.gzip`, `bytes.route.root.raw`
-- Owns: `apps/web/src/components/screens/**`, `apps/web/test/bar-nav.test.tsx`, `apps/web/test/escape-layers.test.ts`, `apps/web/test/career-screens.test.tsx`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/solo-door.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/navigation.ts`, `apps/web/test/navigation.test.ts`, `apps/web/test/navigation-tabs.test.ts`, `apps/web/test/navigation-walk.ts`, `apps/web/src/assets/*-art.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/garage-stand.ts`, `apps/web/src/career/garage-stand.test.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`
+- Owns: `apps/web/src/components/screens/**`, `apps/web/test/escape-layers.test.ts`, `apps/web/test/career-screens.test.tsx`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/solo-door.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/navigation.ts`, `apps/web/test/navigation.test.ts`, `apps/web/test/welcome-navigation.test.ts`, `apps/web/test/navigation-tabs.test.ts`, `apps/web/test/navigation-walk.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/garage-stand.ts`, `apps/web/src/career/garage-stand.test.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`
 
 Source files:
 
-- `apps/web/src/assets/clubhouse-art.ts`
 - `apps/web/src/career/bike-stats.ts`
 - `apps/web/src/career/copy.ts`
 - `apps/web/src/career/flow.ts`
 - `apps/web/src/career/format.ts`
 - `apps/web/src/career/garage-stand.ts`
 - `apps/web/src/components/game-shell.tsx`
-- `apps/web/src/components/screens/bar-chrome.tsx`
 - `apps/web/src/components/screens/boot.tsx`
-- `apps/web/src/components/screens/clubhouse-stage.tsx`
-- `apps/web/src/components/screens/clubhouse-wall.tsx`
 - `apps/web/src/components/screens/confirm.tsx`
-- `apps/web/src/components/screens/data-notice.tsx`
 - `apps/web/src/components/screens/escape-layers.ts`
 - `apps/web/src/components/screens/finish.tsx`
 - `apps/web/src/components/screens/garage-panel.tsx`
 - `apps/web/src/components/screens/name-card.tsx`
 - `apps/web/src/components/screens/pause.tsx`
-- `apps/web/src/components/screens/pinned-list.tsx`
 - `apps/web/src/components/screens/race-hud.tsx`
 - `apps/web/src/components/screens/race-panel.tsx`
 - `apps/web/src/components/screens/rejoin.tsx`
@@ -443,12 +437,12 @@ Source files:
 Test files:
 
 - `apps/web/src/career/garage-stand.test.ts`
-- `apps/web/test/bar-nav.test.tsx`
 - `apps/web/test/career-screens.test.tsx`
 - `apps/web/test/escape-layers.test.ts`
 - `apps/web/test/navigation-tabs.test.ts`
 - `apps/web/test/navigation-walk.ts`
 - `apps/web/test/navigation.test.ts`
+- `apps/web/test/welcome-navigation.test.ts`
 
 ### Race HUD and notices
 
@@ -1145,24 +1139,19 @@ Test files: none
 The shared components and global styles in `packages/ui`, and the `/kit` page that shows each of them.
 
 - Id: `ui-kit`
-- Start: `packages/ui/src/styles/globals.css`, `packages/ui/src/components/menu-list.tsx`, `apps/web/src/routes/kit.tsx`
+- Start: `packages/ui/src/styles/globals.css`, `packages/ui/src/components/kit-panel.tsx`, `apps/web/src/routes/kit.tsx`
 - Docs: [DESIGN.md#components](../DESIGN.md#components), [docs/coding-standards.md#keep-each-module-to-its-job](coding-standards.md#keep-each-module-to-its-job)
 - Verify: none yet
 - Perf: `bytes.route.kit.gzip`, `bytes.route.kit.raw`
-- Owns: `packages/ui/**`, `apps/web/src/components/kit/**`, `apps/web/src/routes/kit.tsx`
+- Owns: `packages/ui/**`, `apps/web/src/routes/kit.tsx`
 
 Source files:
 
-- `apps/web/src/components/kit/bar-board.tsx`
-- `apps/web/src/components/kit/kit-board.tsx`
-- `apps/web/src/components/kit/paper-boards.tsx`
-- `apps/web/src/components/kit/race-board.tsx`
 - `apps/web/src/routes/kit.tsx`
 - `packages/ui/src/components/dial.tsx`
 - `packages/ui/src/components/hint-strip.tsx`
 - `packages/ui/src/components/kit-panel.tsx`
 - `packages/ui/src/components/kit-rows.tsx`
-- `packages/ui/src/components/menu-list.tsx`
 - `packages/ui/src/components/money.tsx`
 - `packages/ui/src/components/notice.tsx`
 - `packages/ui/src/components/pager.tsx`
