@@ -11,14 +11,16 @@ import type { Passing } from "./passing.ts";
 const BUSY_TICK = 840;
 const NOBODY = -1;
 const CAR_KEY = 1000;
+const OWN_ENGINE_ON_THROTTLE = 0.16;
+const GRID_TICK = 1;
 
-const busyRace = (): RaceRun => {
+const raceAt = (tick: number): RaceRun => {
   const setup = roadLifeSetup();
   const run = createRaceRun({
     ...setup,
     player: { ...setup.player, controller: "pilot" },
   });
-  while (run.view.tick < BUSY_TICK) {
+  while (run.view.tick < tick) {
     run.step(emptyFrame);
   }
   return run;
@@ -28,7 +30,7 @@ const heard = (voices: readonly Passing[]): Passing[] =>
   voices.filter((voice) => voice.key !== NOBODY);
 
 describe(hearPassing, () => {
-  const run = busyRace();
+  const run = raceAt(BUSY_TICK);
 
   it("carries at most four riders or cars, each on one voice", () => {
     const voices = passingVoices();
@@ -49,7 +51,7 @@ describe(hearPassing, () => {
     expect(voices.some((voice) => voice.fresh)).toBeFalsy();
   });
 
-  it("pans each voice to the side of the road it is on and fades it with distance", () => {
+  it("pans each voice to its side of the road, under your own engine on the throttle", () => {
     const voices = passingVoices();
     hearPassing(run.view, PLAYER_RIDER, voices);
     const me = riderOf(run.view.riders, PLAYER_RIDER);
@@ -65,7 +67,17 @@ describe(hearPassing, () => {
       clear.map(({ side }) => Math.sign(side))
     );
     expect(
-      sided.every(({ voice }) => voice.gain >= 0 && voice.gain < 0.6)
+      sided.every(
+        ({ voice }) => voice.gain >= 0 && voice.gain < OWN_ENGINE_ON_THROTTLE
+      )
     ).toBeTruthy();
+  });
+
+  it("keeps the whole starting grid under your own engine on the throttle", () => {
+    const voices = passingVoices();
+    hearPassing(raceAt(GRID_TICK).view, PLAYER_RIDER, voices);
+    const together = heard(voices).reduce((sum, voice) => sum + voice.gain, 0);
+    expect(heard(voices)).toHaveLength(PASSING_VOICES);
+    expect(together).toBeLessThan(OWN_ENGINE_ON_THROTTLE * 2);
   });
 });
