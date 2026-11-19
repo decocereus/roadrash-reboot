@@ -7,6 +7,8 @@ import * as THREE from "three";
 
 import type { Assets } from "./assets.ts";
 import { breathTurns, poseTurns } from "./bar-poses.ts";
+import { footfalls } from "./bar-sounds.ts";
+import type { BarSounds } from "./bar-sounds.ts";
 import type { Tag, TagLayer } from "./bar-tags.ts";
 import type { Shading } from "./cel.ts";
 import { bodyFor } from "./figure-rig.ts";
@@ -80,7 +82,8 @@ const createWalker = (
   tags: TagLayer,
   blocks: RiderBlocks,
   slot: number,
-  parent: THREE.Object3D
+  parent: THREE.Object3D,
+  sounds: Pick<BarSounds, "foot">
 ): BarWalker => {
   const figure = createRiderFigure(
     bodyFor(assets, slot),
@@ -103,6 +106,7 @@ const createWalker = (
   );
   const tag: Tag = tags.name(blocks.name);
   const head = new THREE.Vector3();
+  let lastPhase = 0;
   const stance: Stance = {
     flinch: 0,
     flinchSide: 1,
@@ -149,6 +153,9 @@ const createWalker = (
     seconds: number
   ): void => {
     figure.root.rotation.set(0, view.heading, 0);
+    const phase = view.stride * RUN_HZ;
+    const steps = footfalls(lastPhase, phase);
+    lastPhase = phase;
     if (shoveLeft > 0) {
       figure.root.position.set(view.x, figure.standHeight, view.z);
       figure.holdPose(shoving, shoving, 0, seconds);
@@ -158,7 +165,8 @@ const createWalker = (
       stance.lean = 0;
       stance.speed = 0;
       stance.time = view.stride;
-      const bob = Math.abs(Math.sin(view.stride * FULL_TURN * RUN_HZ)) * BOB;
+      const bob = Math.abs(Math.sin(phase * FULL_TURN)) * BOB;
+      sounds.foot(slot, view.x, view.z, steps, view.pace);
       figure.root.position.set(view.x, figure.standHeight + bob, view.z);
       figure.animate(stance, seconds);
     } else {
@@ -218,7 +226,8 @@ export const createWalkers = (
   assets: Assets,
   shading: Shading,
   tags: TagLayer,
-  parent: THREE.Object3D
+  parent: THREE.Object3D,
+  sounds: Pick<BarSounds, "foot">
 ): BarWalkers => {
   const made = new Map<number, BarWalker>();
   return {
@@ -233,7 +242,15 @@ export const createWalkers = (
           `The bar has no colour blocks for slot ${String(slot)}.`
         );
       }
-      const walker = createWalker(assets, shading, tags, blocks, slot, parent);
+      const walker = createWalker(
+        assets,
+        shading,
+        tags,
+        blocks,
+        slot,
+        parent,
+        sounds
+      );
       made.set(slot, walker);
       return walker;
     },

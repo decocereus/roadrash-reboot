@@ -122,6 +122,9 @@ const cueClip = async (
 const loopClip = async (loop: Loop, noise: AudioBuffer): Promise<Clip> => {
   const recipe = loopRecipes[loop];
   const job = loopJob(recipe, SAMPLE_RATE, noise, 99);
+  for (const step of job.steps) {
+    step();
+  }
   const rendered = await job.context.startRendering();
   closeLoop(rendered, recipe);
   const length = Math.round(recipe.seconds * SAMPLE_RATE);

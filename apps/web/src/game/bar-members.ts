@@ -21,8 +21,10 @@ import { hypot2 } from "@racer/track/math";
 import type * as THREE from "three";
 
 import { SOLO_SLOT } from "../bar-view.ts";
+import type { Cue } from "../sound/cues.ts";
 import type { Bikes } from "./actors.ts";
 import type { BarCompany } from "./bar-player.ts";
+import type { BarSounds } from "./bar-sounds.ts";
 import type { BarSpeech } from "./bar-speech.ts";
 import type { BarWalkers, WalkerView } from "./bar-walker.ts";
 
@@ -39,6 +41,7 @@ interface Occupant {
   readonly memberId: string;
   shoving: number;
   walk: LobbyWalk;
+  heard: LobbyWalk;
 }
 
 type Occupied =
@@ -62,6 +65,7 @@ interface MemberParts {
   readonly bikes: Pick<Bikes, "roots" | "show" | "spin">;
   readonly firstBike: number;
   readonly rider: LobbyRider;
+  readonly sounds: Pick<BarSounds, "near">;
   readonly seat: Pick<
     RoomSeat,
     "act" | "listen" | "lobby" | "phase" | "walk" | "walkOf"
@@ -115,6 +119,7 @@ const followWalk = (
 };
 
 const followingFrom = (heard: RoomWalked, shoving: number): Occupied => ({
+  heard,
   memberId: heard.member,
   phase: "following",
   shoving,
@@ -135,6 +140,7 @@ const leavingFrom = (
   sendRiderTo(rider, spot.x, spot.z);
   return {
     backlog: 0,
+    heard,
     memberId: heard.member,
     phase: "leaving",
     rider,
@@ -193,6 +199,25 @@ const walkNow = (
   }
 };
 
+const changedCue = (last: LobbyWalk, heard: LobbyWalk): Cue | null => {
+  if ((last.place === "stool") !== (heard.place === "stool")) {
+    return "sit";
+  }
+  if (
+    last.place === "foot" &&
+    heard.place === "foot" &&
+    last.pose !== heard.pose
+  ) {
+    return "pose";
+  }
+  return null;
+};
+
+const lastHeard = (presence: Presence, member: string): LobbyWalk | null =>
+  presence.phase !== "vacant" && presence.memberId === member
+    ? presence.heard
+    : null;
+
 const moveBody = (
   body: Body,
   slot: number,
@@ -211,6 +236,7 @@ const moveBody = (
     begun
   );
   body.presence = presence;
+  presence.heard = heard;
   presence.walk = walkNow(presence, heard, seconds);
   if (arriving) {
     view.x = presence.walk.x;
@@ -225,6 +251,7 @@ export const createMembers = ({
   firstBike,
   rider,
   seat,
+  sounds,
   speech,
   walkers,
 }: MemberParts): BarMembers => {
@@ -247,6 +274,9 @@ export const createMembers = ({
     }
     const sender = bodies[fromSlot];
     const targetHead = walkers.at(targetSlot).head;
+    if (sender) {
+      sounds.near(act, sender.view.x, sender.view.z);
+    }
     switch (act) {
       case "greet": {
         speech.say("YO", walkers.at(fromSlot).head, now);
@@ -375,8 +405,13 @@ export const createMembers = ({
         const heard =
           member?.here === true ? seat.walkOf(member.id) : undefined;
         if (index !== slot && member && heard && body && bike) {
+          const last = lastHeard(body.presence, heard.member);
           const { walk } = moveBody(body, index, heard, begun, seconds);
           const { view } = body;
+          const cue = last ? changedCue(last, heard) : null;
+          if (cue) {
+            sounds.near(cue, view.x, view.z);
+          }
           const walker = walkers.at(index);
           walker.rename(
             member.ready ? `${member.name}${READY_SUFFIX}` : member.name

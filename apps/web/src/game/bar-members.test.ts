@@ -8,6 +8,7 @@ import * as THREE from "three";
 import { describe, expect, it, vi } from "vitest";
 
 import { createMembers } from "./bar-members.ts";
+import type { BarSounds } from "./bar-sounds.ts";
 import type { BarSpeech } from "./bar-speech.ts";
 import type { BarWalker } from "./bar-walker.ts";
 
@@ -79,6 +80,7 @@ const room = ({ lobby, phase, walkOf }: Heard) => {
   const walk = vi.fn<() => void>();
   const act = vi.fn<RoomSeat["act"]>();
   const say = vi.fn<BarSpeech["say"]>();
+  const near = vi.fn<BarSounds["near"]>();
   const hide = vi.fn<(index: number) => void>();
   const showBike = vi.fn<(index: number) => void>();
   const rider = createLobbyRider();
@@ -98,6 +100,7 @@ const room = ({ lobby, phase, walkOf }: Heard) => {
       walk,
       walkOf: (id) => walkOf?.(id) ?? undefined,
     },
+    sounds: { near },
     speech: { say },
     walkers: { at: () => walker, hide },
   });
@@ -119,6 +122,7 @@ const room = ({ lobby, phase, walkOf }: Heard) => {
     hide,
     listen,
     members,
+    near,
     rename,
     rider,
     say,
@@ -134,6 +138,60 @@ const movedFrom = (
   from: { readonly x: number; readonly z: number }
 ): number =>
   Math.hypot((spot?.x ?? from.x) - from.x, (spot?.z ?? from.z) - from.z);
+
+const changes = () => {
+  let away: readonly string[] = [];
+  let heard: RoomWalked = { ...standing, place: "stool" };
+  const { members, near } = room({
+    lobby: () => lobbyOf(["near", "far"], away),
+    walkOf: () => heard,
+  });
+  const hear = (next: Partial<RoomWalked>): void => {
+    heard = { ...heard, ...next };
+    members.step(FRAME, 0);
+  };
+  const leave = (): void => {
+    away = ["far"];
+    members.step(FRAME, 0);
+    away = [];
+  };
+  return { hear, leave, near };
+};
+
+describe("hearing others sit and pose", () => {
+  it("plays a stand, a pose, a new pose, a cleared pose and a sit as they happen", () => {
+    const { hear, near } = changes();
+    hear({});
+    hear({ place: "foot" });
+    hear({ pose: "arms" });
+    hear({ pose: "phone" });
+    hear({ pose: null });
+    hear({ place: "stool" });
+    expect(near.mock.calls.map(([cue]) => cue)).toStrictEqual([
+      "sit",
+      "pose",
+      "pose",
+      "pose",
+      "sit",
+    ]);
+  });
+
+  it("plays nothing for the state a member already had when first seen or back from away", () => {
+    const { hear, leave, near } = changes();
+    hear({ pose: null });
+    leave();
+    hear({ place: "foot", pose: "chat" });
+    hear({});
+    expect(near).not.toHaveBeenCalled();
+  });
+
+  it("plays no pose when a posing member climbs on a bike", () => {
+    const { hear, near } = changes();
+    hear({ place: "foot", pose: "arms" });
+    hear({ place: "bike", pose: null });
+    expect(near).not.toHaveBeenCalled();
+  });
+});
 
 describe("members in the bar", () => {
   it("sends the first walk once the room has listed this rider", () => {
@@ -302,6 +360,17 @@ describe("members in the bar", () => {
     expect(stance()?.shoving).toBeCloseTo(SHOVE.ticks - 1);
     members.step(1, 0);
     expect(stance()?.shoving).toBe(0);
+  });
+
+  it("plays a heard shove where the member who threw it stands", () => {
+    const { heardShove, members, near } = room({
+      lobby: () => lobbyOf(["near", "far"]),
+      walkOf: () => standing,
+    });
+    members.step(FRAME, 0);
+    heardShove("far", "near");
+    heardShove("gone", "near");
+    expect(near.mock.calls).toStrictEqual([["shove", standing.x, standing.z]]);
   });
 
   it("pushes this rider away from where the shover stands", () => {

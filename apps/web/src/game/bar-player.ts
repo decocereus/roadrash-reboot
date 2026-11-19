@@ -22,6 +22,7 @@ import type * as THREE from "three";
 import type { BarSpot } from "../bar-view.ts";
 import type { Bikes } from "./actors.ts";
 import type { BarAction } from "./bar-input.ts";
+import type { BarSounds } from "./bar-sounds.ts";
 import type { BarSpeech } from "./bar-speech.ts";
 import type { BarWalker, WalkerStance, WalkerView } from "./bar-walker.ts";
 import type { Puffs } from "./puffs.ts";
@@ -53,6 +54,7 @@ interface PlayerParts {
   readonly puffs: Pick<Puffs, "burst">;
   readonly rider: LobbyRider;
   readonly slot: () => PlayerSlot;
+  readonly sounds: Pick<BarSounds, "mine">;
   readonly speech: Pick<BarSpeech, "say">;
   readonly walkUp: (spot: BarSpot) => void;
 }
@@ -81,6 +83,7 @@ export const createBarPlayer = ({
   puffs,
   rider,
   slot,
+  sounds,
   speech,
   walkUp,
 }: PlayerParts): BarPlayer => {
@@ -107,6 +110,7 @@ export const createBarPlayer = ({
     if (!startShove(rider)) {
       return;
     }
+    sounds.mine("shove");
     const target = company.nearest(rider.x, rider.z, SHOVE.reach);
     const spot = target === null ? null : company.spotOf(target);
     if (target !== null && spot) {
@@ -118,6 +122,7 @@ export const createBarPlayer = ({
   const greet = (time: number): void => {
     const target = company.nearest(rider.x, rider.z, SHOVE.reach);
     if (target !== null) {
+      sounds.mine("greet");
       speech.say("YO", slot().walker.head, time);
       company.greet(target, rider.x, rider.z, time);
     }
@@ -126,6 +131,7 @@ export const createBarPlayer = ({
   const interact = (time: number): void => {
     if (rider.place.kind === "stool") {
       standUp(rider);
+      sounds.mine("sit");
       return;
     }
     if (pullTheTaps(rider)) {
@@ -143,6 +149,7 @@ export const createBarPlayer = ({
           : null;
       if (seat !== null) {
         sitOnStool(rider, seat);
+        sounds.mine("sit");
         return;
       }
     }
@@ -252,7 +259,10 @@ export const createBarPlayer = ({
       stopMoving(rider);
     },
     pose(pose) {
-      holdPose(rider, pose);
+      if (rider.place.kind === "foot") {
+        holdPose(rider, pose);
+        sounds.mine("pose");
+      }
     },
     stance: () => ({
       place: rider.place.kind,

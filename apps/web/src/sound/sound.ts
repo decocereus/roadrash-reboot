@@ -1,6 +1,6 @@
 import { diagnostics } from "../diagnostics/hub.ts";
 import type { EffectsVolume, SettingsStore } from "../diagnostics/settings.ts";
-import type { Cue } from "./cues.ts";
+import type { Cue, Loop } from "./cues.ts";
 import type { Desk, Level } from "./desk.ts";
 
 export const GESTURES = [
@@ -31,6 +31,7 @@ export interface Sound {
   ) => void;
   readonly hush: () => void;
   readonly shift: () => void;
+  readonly loop: (loop: Loop, gain: number) => void;
   readonly toggleMute: () => void;
   readonly muted: () => boolean;
   readonly desk: () => Desk | null;
@@ -122,6 +123,9 @@ export const createSound = <Context extends Unlockable>({
     desk: () => desk,
     hush() {
       desk?.hush();
+    },
+    loop(loop, gain) {
+      desk?.loop(loop, gain);
     },
     muted: () => muted,
     play(cue, pan = 0, gain = 1) {
