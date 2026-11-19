@@ -40,6 +40,7 @@ export interface RoomRun extends RaceRun {
   readonly pressed: () => void;
   readonly report: () => RoomReport;
   readonly reportNow: () => void;
+  readonly restores: () => number;
   readonly pace: () => number;
   readonly stallLeftMs: () => number | null;
   readonly stepsDue: () => number;
@@ -105,6 +106,7 @@ export const createRoomRun = (
       };
     },
     reportNow: seat.reportNow,
+    restores: client.restores,
     riderColours,
     roomId,
     stallLeftMs: seat.stallLeftMs,

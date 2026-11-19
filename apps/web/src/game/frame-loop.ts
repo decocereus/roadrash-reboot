@@ -6,6 +6,8 @@ import type * as THREE from "three";
 import type { Diagnostics } from "../diagnostics/hub.ts";
 import type { Recorder } from "../diagnostics/recorder.ts";
 import type { Part } from "../profile-parts.ts";
+import { rideFrom, stillRide } from "../sound/race-mix.ts";
+import type { Ride } from "../sound/race-mix.ts";
 import type { Sound } from "../sound/sound.ts";
 import { createFixedTick } from "./fixed-tick.ts";
 import { createFrameMeter, emptySample, wantsFrameMeter } from "./fps-meter.ts";
@@ -35,6 +37,7 @@ export interface FrameLoop {
   hudStalled: boolean;
   lastGear: number;
   last: number;
+  readonly ride: Ride;
 }
 
 export const frameLoopOf = (
@@ -65,6 +68,7 @@ export const frameLoopOf = (
   profileMode,
   profiler,
   rendererLabel: "",
+  ride: stillRide(),
   sample: emptySample(),
 });
 
@@ -136,6 +140,22 @@ export interface FrameRenderer {
   readonly setAnimationLoop: (callback: ((now: number) => void) | null) => void;
 }
 
+const hearRide = (
+  frame: FrameLoop,
+  sound: Pick<Sound, "ride" | "shift">,
+  me: RiderView,
+  live: boolean,
+  throttleHeard: boolean
+): void => {
+  const riding = live && me.mode === "riding";
+  if (riding && me.gear > frame.lastGear) {
+    sound.shift();
+  }
+  frame.lastGear = me.gear;
+  rideFrom(frame.ride, me, riding, throttleHeard);
+  sound.ride(frame.ride);
+};
+
 interface LoopParts {
   readonly attracting: () => boolean;
   readonly checkPresented: () => void;
@@ -154,8 +174,8 @@ interface LoopParts {
   readonly renderer: FrameRenderer;
   readonly report: () => void;
   readonly skipsVsync: (now: number) => boolean;
-  readonly sound: Pick<Sound, "ride" | "shift">;
-  readonly stage: Pick<Stage, "race">;
+  readonly sound: Pick<Sound, "hear" | "ride" | "shift">;
+  readonly stage: Pick<Stage, "me" | "race">;
   readonly stalled: () => boolean;
   readonly throttleHeard: () => boolean;
   readonly tick: () => void;
@@ -202,19 +222,10 @@ export const installFrameLoop = ({
     frame.profiler?.start(frame.frameId);
     const ticks = advance(seconds);
     frame.profiler?.lap("sim");
-    const me = player();
-    const riding = me.mode === "riding" && !attracting();
-    if (riding && me.gear > frame.lastGear) {
-      sound.shift();
+    hearRide(frame, sound, player(), !attracting(), throttleHeard());
+    if (!attracting()) {
+      sound.hear(stage.race.view, stage.me);
     }
-    frame.lastGear = me.gear;
-    sound.ride(
-      riding,
-      riding ? me.speed : 0,
-      riding && throttleHeard() ? me.input.throttle : 0,
-      riding ? me.revs : 0,
-      riding && me.offRoad
-    );
     renderer.info.reset();
     frame.profiler?.lap("other");
     draw(clamp(frame.accumulator / TICK_SECONDS, 0, 1), seconds);

@@ -7,12 +7,21 @@ function containsForbiddenSymbolName(name: string): boolean {
   return name.toLowerCase().includes(FORBIDDEN_SYMBOL_NAME);
 }
 
+function readsAMember(node: ESTree.Node): boolean {
+  const { parent } = node;
+  return (
+    parent?.type === "MemberExpression" &&
+    parent.property === node &&
+    !parent.computed
+  );
+}
+
 export const noForbiddenTermInSymbolNamesRule = defineRule({
   meta: {
     type: "problem",
     docs: {
       description:
-        'Disallow the case-insensitive substring "shape" in JavaScript, TypeScript, private, and JSX symbol names.',
+        'Disallow the case-insensitive substring "shape" in JavaScript, TypeScript, private, and JSX symbol names. A member read off an object keeps the name its owner gave it.',
     },
     messages: {
       forbiddenSymbolName:
@@ -23,7 +32,7 @@ export const noForbiddenTermInSymbolNamesRule = defineRule({
     const reportForbiddenSymbolName = (
       node: ESTree.Node & { name: string }
     ) => {
-      if (!containsForbiddenSymbolName(node.name)) return;
+      if (!containsForbiddenSymbolName(node.name) || readsAMember(node)) return;
       context.report({
         node,
         messageId: "forbiddenSymbolName",

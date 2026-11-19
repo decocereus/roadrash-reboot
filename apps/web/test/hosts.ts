@@ -96,6 +96,9 @@ const recordingProfiler = (seen: Seen): Profiler => ({
 });
 
 const quietSound = (seen: Seen) => ({
+  hear: () => {
+    seen.calls += 1;
+  },
   ride: () => {
     seen.calls += 1;
   },
@@ -105,6 +108,9 @@ const quietSound = (seen: Seen) => ({
 });
 
 const heardSound = (seen: Seen) => ({
+  hear: () => {
+    seen.calls += 1;
+  },
   ride: () => {
     seen.drives += 1;
   },
@@ -253,7 +259,7 @@ export const createHost = (options: HostOptions = {}): Host => {
     },
     skipsVsync: bound.skipsVsync,
     sound: options.sounded === true ? heardSound(seen) : quietSound(seen),
-    stage: { race: run },
+    stage: { me: PLAYER_RIDER, race: run },
     stalled: () => stallLeftMs !== null,
     throttleHeard: () => true,
     tick,

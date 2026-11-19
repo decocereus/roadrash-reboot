@@ -89,6 +89,7 @@ export interface RoomClient {
   readonly mine: RiderState;
   readonly plannedThrough: () => number;
   readonly predicted: RaceState;
+  readonly restores: () => number;
   readonly stats: RoomStats;
   readonly predict: (control: Control, delay?: number) => boolean;
   readonly confirm: (frame: TickFrame, hash: Uint32Array | null) => void;
@@ -214,6 +215,7 @@ export const createRoomClient = (
   let lagging = false;
   let askAbout: number | null = null;
   let asked = false;
+  let restores = 0;
   const stats: RoomStats = {
     crashesAfterCorrection: 0,
     desyncs: 0,
@@ -542,6 +544,7 @@ export const createRoomClient = (
   return {
     catchUpFrom: (snapshot) => {
       restoreInto(confirmed, digest, snapshot, setup.track);
+      restores += 1;
       const repaired = asked;
       stats.repairs += repaired ? 1 : 0;
       asked = false;
@@ -614,6 +617,7 @@ export const createRoomClient = (
       return true;
     },
     predicted,
+    restores: () => restores,
     settle,
     stats,
     takeCorrections: () => {

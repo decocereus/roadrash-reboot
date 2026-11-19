@@ -1,4 +1,4 @@
-import type { Layer, Layers, LoopRecipe, Recipe, Envelope } from "./recipes.ts";
+import type { Layer, LoopRecipe, Recipe, Envelope } from "./recipes.ts";
 import { recipeSeconds } from "./recipes.ts";
 
 const MODULUS = 2_147_483_647;
@@ -176,7 +176,7 @@ const murmurVoice = (
 
 const renderLayer = (
   context: BaseAudioContext,
-  layer: Layer,
+  layer: Exclude<Layer, { readonly kind: "murmur" }>,
   start: number,
   sources: Sources,
   random: Random,
@@ -219,13 +219,6 @@ const renderLayer = (
       source.start(begin);
       return;
     }
-    case "murmur": {
-      const room = filtered(context, "lowpass", layer.cutoff, 0.7, level);
-      for (let voice = 0; voice < layer.voices; voice += 1) {
-        murmurVoice(context, layer.voices, begin, end, sources, random, room);
-      }
-      return;
-    }
     default: {
       return layer satisfies never;
     }
@@ -237,21 +230,34 @@ interface Sources {
   readonly spread: number;
 }
 
-const renderLayers = (
+const layerSteps = (
   context: BaseAudioContext,
-  layers: Layers,
+  layer: Layer,
   start: number,
   sources: Sources,
   random: Random
-): void => {
-  for (const layer of layers) {
-    renderLayer(context, layer, start, sources, random, context.destination);
+): (() => void)[] => {
+  const out = context.destination;
+  if (layer.kind !== "murmur") {
+    return [
+      () => {
+        renderLayer(context, layer, start, sources, random, out);
+      },
+    ];
   }
+  const level = enveloped(context, layer, start, out);
+  const room = filtered(context, "lowpass", layer.cutoff, 0.7, level);
+  const begin = start + layer.at;
+  const end = endOf(layer, start) + 0.01;
+  return Array.from({ length: layer.voices }, () => () => {
+    murmurVoice(context, layer.voices, begin, end, sources, random, room);
+  });
 };
 
 export interface CueJob {
   readonly context: OfflineAudioContext;
   readonly seconds: number;
+  readonly steps: readonly (() => void)[];
 }
 
 export const cueJob = (
@@ -268,22 +274,20 @@ export const cueJob = (
   });
   const random = seeded(seed);
   const sources = { noise, spread: recipe.spread };
-  for (let variant = 0; variant < recipe.variants; variant += 1) {
-    renderLayers(context, recipe.layers, variant * seconds, sources, random);
-  }
-  return { context, seconds };
+  const steps = Array.from({ length: recipe.variants }, (_, variant) =>
+    recipe.layers.flatMap((layer) =>
+      layerSteps(context, layer, variant * seconds, sources, random)
+    )
+  ).flat();
+  return { context, seconds, steps };
 };
-
-export interface LoopJob extends CueJob {
-  readonly steps: readonly (() => void)[];
-}
 
 export const loopJob = (
   recipe: LoopRecipe,
   sampleRate: number,
   noise: AudioBuffer,
   seed: number
-): LoopJob => {
+): CueJob => {
   const context = new OfflineAudioContext({
     length: Math.ceil((recipe.seconds + recipe.fade) * sampleRate),
     numberOfChannels: 1,
@@ -291,22 +295,9 @@ export const loopJob = (
   });
   const random = seeded(seed);
   const sources = { noise, spread: 0 };
-  const out = context.destination;
-  const steps = recipe.layers.flatMap((layer) => {
-    if (layer.kind !== "murmur") {
-      return [
-        () => {
-          renderLayer(context, layer, 0, sources, random, out);
-        },
-      ];
-    }
-    const level = enveloped(context, layer, 0, out);
-    const room = filtered(context, "lowpass", layer.cutoff, 0.7, level);
-    const end = endOf(layer, 0) + 0.01;
-    return Array.from({ length: layer.voices }, () => () => {
-      murmurVoice(context, layer.voices, layer.at, end, sources, random, room);
-    });
-  });
+  const steps = recipe.layers.flatMap((layer) =>
+    layerSteps(context, layer, 0, sources, random)
+  );
   return { context, seconds: recipe.seconds, steps };
 };
 

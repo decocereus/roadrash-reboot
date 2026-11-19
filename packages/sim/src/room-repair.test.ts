@@ -201,11 +201,13 @@ describe("a room client whose confirmed race drifts from the room's", () => {
       drawn: moved?.s,
       felt: client.stats.jumps.behindServer.felt - felt,
       repairs: client.stats.repairs,
+      restores: client.restores(),
       tick: client.predicted.tick,
     }).toStrictEqual({
       drawn: fromS - client.mine.s,
       felt: 1,
       repairs: 1,
+      restores: 1,
       tick: room.state.tick,
     });
   });
