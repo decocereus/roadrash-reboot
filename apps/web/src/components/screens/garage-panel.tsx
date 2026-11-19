@@ -180,6 +180,7 @@ const Asked = ({
       <SkewButton
         autoFocus
         className="mt-3"
+        data-cue={buying ? "buy" : "press"}
         onClick={() => {
           onAnswer(true);
         }}
@@ -188,6 +189,7 @@ const Asked = ({
       />
       <TextLinks>
         <TextButton
+          data-cue="back"
           onClick={() => {
             onAnswer(false);
           }}

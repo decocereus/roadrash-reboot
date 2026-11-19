@@ -413,13 +413,21 @@ export const playerFeatures: readonly FeatureEntry[] = [
     ],
     id: "audio",
     kind: "feature",
-    owns: ["apps/web/src/game/audio.ts"],
+    owns: [
+      "apps/web/src/sound/**",
+      "apps/web/test/sound-bundle.ts",
+      "tools/sound/**",
+    ],
     perf: [],
-    start: ["apps/web/src/game/audio.ts"],
+    start: [
+      "apps/web/src/sound/sound.ts",
+      "apps/web/src/sound/recipes.ts",
+      "apps/web/src/sound/desk.ts",
+    ],
     summary:
-      "The synthesized engine note that follows the simulation's revs and dips at each upshift, and the race's one-shot sounds, such as swings, hits, crashes and the siren.",
-    title: "Engine and race sound",
-    verify: [],
+      "Every sound in the game from one module: the cue table written as data, rendered offline into buffers after the first input, the menus' interface sounds, the engine per bike class, wind and the race's one-shots, with effects volume and mute in the player's settings. `pnpm sound:audition` renders every cue to WAV and an audition page and fails on clipping or a cue out of range.",
+    title: "Sound",
+    verify: [".claude/skills/verify-rushline/features/sound.md"],
   },
   {
     docs: [

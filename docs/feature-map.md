@@ -24,7 +24,7 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 - [Menus and screens](#menus-and-screens): `menus`
 - [Race HUD and notices](#race-hud-and-notices): `hud`
 - [Chase camera](#chase-camera): `camera`
-- [Engine and race sound](#engine-and-race-sound): `audio`
+- [Sound](#sound): `audio`
 - [Roads, cities and scenery on screen](#roads-cities-and-scenery-on-screen): `world`
 - [Riders, bikes and cars on screen](#riders-bikes-and-cars-on-screen): `riders-on-screen`
 - [Frame rate and quality](#frame-rate-and-quality): `frame-pacing`
@@ -483,22 +483,37 @@ Source files:
 
 Test files: none
 
-### Engine and race sound
+### Sound
 
-The synthesized engine note that follows the simulation's revs and dips at each upshift, and the race's one-shot sounds, such as swings, hits, crashes and the siren.
+Every sound in the game from one module: the cue table written as data, rendered offline into buffers after the first input, the menus' interface sounds, the engine per bike class, wind and the race's one-shots, with effects volume and mute in the player's settings. `pnpm sound:audition` renders every cue to WAV and an audition page and fails on clipping or a cue out of range.
 
 - Id: `audio`
-- Start: `apps/web/src/game/audio.ts`
+- Start: `apps/web/src/sound/sound.ts`, `apps/web/src/sound/recipes.ts`, `apps/web/src/sound/desk.ts`
 - Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/design/art-direction.md#audio-direction](design/art-direction.md#audio-direction)
-- Verify: none yet
+- Verify: [.claude/skills/verify-rushline/features/sound.md](../.claude/skills/verify-rushline/features/.claude/skills/verify-rushline/features/sound.md)
 - Perf: none yet
-- Owns: `apps/web/src/game/audio.ts`
+- Owns: `apps/web/src/sound/**`, `apps/web/test/sound-bundle.ts`, `tools/sound/**`
 
 Source files:
 
-- `apps/web/src/game/audio.ts`
+- `apps/web/src/sound/cues.ts`
+- `apps/web/src/sound/desk.ts`
+- `apps/web/src/sound/engine.ts`
+- `apps/web/src/sound/glide.ts`
+- `apps/web/src/sound/interface.ts`
+- `apps/web/src/sound/recipes.ts`
+- `apps/web/src/sound/render.ts`
+- `apps/web/src/sound/sound.ts`
+- `apps/web/src/sound/tap.ts`
+- `tools/sound/audition.ts`
+- `tools/sound/src/analysis.ts`
+- `tools/sound/src/audition-failed.ts`
+- `tools/sound/src/audition.ts`
+- `tools/sound/src/page.ts`
 
-Test files: none
+Test files:
+
+- `apps/web/test/sound-bundle.ts`
 
 ### Roads, cities and scenery on screen
 

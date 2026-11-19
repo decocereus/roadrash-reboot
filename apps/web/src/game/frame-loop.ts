@@ -6,7 +6,7 @@ import type * as THREE from "three";
 import type { Diagnostics } from "../diagnostics/hub.ts";
 import type { Recorder } from "../diagnostics/recorder.ts";
 import type { Part } from "../profile-parts.ts";
-import type { Sound } from "./audio.ts";
+import type { Sound } from "../sound/sound.ts";
 import { createFixedTick } from "./fixed-tick.ts";
 import { createFrameMeter, emptySample, wantsFrameMeter } from "./fps-meter.ts";
 import type { FrameMeter, FrameSample } from "./fps-meter.ts";
@@ -154,7 +154,7 @@ interface LoopParts {
   readonly renderer: FrameRenderer;
   readonly report: () => void;
   readonly skipsVsync: (now: number) => boolean;
-  readonly sound: Pick<Sound, "drive" | "shift">;
+  readonly sound: Pick<Sound, "ride" | "shift">;
   readonly stage: Pick<Stage, "race">;
   readonly stalled: () => boolean;
   readonly throttleHeard: () => boolean;
@@ -208,7 +208,8 @@ export const installFrameLoop = ({
       sound.shift();
     }
     frame.lastGear = me.gear;
-    sound.drive(
+    sound.ride(
+      riding,
       riding ? me.speed : 0,
       riding && throttleHeard() ? me.input.throttle : 0,
       riding ? me.revs : 0,

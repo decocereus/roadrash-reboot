@@ -291,7 +291,9 @@ export const SoloPanel = ({
         </>
       )}
       <TextLinks>
-        <TextButton onClick={onBack}>Back</TextButton>
+        <TextButton data-cue="back" onClick={onBack}>
+          Back
+        </TextButton>
       </TextLinks>
     </>
   );

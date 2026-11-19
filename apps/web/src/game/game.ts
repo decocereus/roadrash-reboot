@@ -25,8 +25,8 @@ import * as THREE from "three";
 import { benchOf } from "../career/bench.ts";
 import { diagnostics } from "../diagnostics/hub.ts";
 import type { PrepareOutcome } from "../prepare-outcome.ts";
+import { sound as soundOf } from "../sound/sound.ts";
 import type { AcquiredAssets } from "./assets.ts";
-import { createSound } from "./audio.ts";
 import { createBenchProfile } from "./bench-profile.ts";
 import { createChaseCamera } from "./chase-camera.ts";
 import { devRideFrom } from "./dev-ride.ts";
@@ -189,10 +189,7 @@ const startGame = (
   pipeline.setLook(stage.world.shading.look);
   stage.world.scene.add(stage.fleet.group);
   const chase = createChaseCamera();
-  const sound = createSound();
-  owners.push(() => {
-    sound.dispose();
-  });
+  const sound = soundOf();
   const cast = createCast(stage.world.shading);
   const feedback = createFeedback();
 
@@ -664,7 +661,6 @@ const startGame = (
   };
 
   const startRace = (next: RacePlan) => {
-    sound.unlock();
     const built = preparationFor(session, next.setup);
     const race = raceOf(session);
     if (built?.kind === "built") {

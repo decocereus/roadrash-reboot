@@ -42,6 +42,7 @@ import type { NavigationEvent, RoomVisit, View } from "../navigation.ts";
 import type { PrepareOutcome } from "../prepare-outcome.ts";
 import { loadRaceRules } from "../rules/load.ts";
 import type { RulesLoad } from "../rules/load.ts";
+import { bindInterfaceSounds, cueNavigation } from "../sound/interface.ts";
 import {
   joinedRoom,
   rememberRoom,
@@ -320,7 +321,7 @@ export const useFlow = (): Flow => {
     gameRef,
     ready,
   } = useGame(canvasRef, eventsRef);
-  const { send, state: view } = useHandoff(
+  const { send: step, state: view } = useHandoff(
     stepNavigation,
     firstView,
     (effect) => {
@@ -339,6 +340,14 @@ export const useFlow = (): Flow => {
       }
     }
   );
+  const send = useCallback(
+    (event: NavigationEvent): void => {
+      step(event);
+      cueNavigation(event);
+    },
+    [step]
+  );
+  useEffect(() => bindInterfaceSounds(document), []);
   const failure =
     rulesLoad?.status === "failed" ? rulesLoad.failure.message : gameFailure;
   const career = save.status === "ready" ? save.career : null;
