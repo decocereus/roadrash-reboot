@@ -43,14 +43,14 @@ import {
   createRaceTiming,
   intervalAhead,
 } from "./timing.ts";
-import type { Interval, RaceTiming, TimingView } from "./timing.ts";
+import type { IntervalMs, RaceTiming, TimingView } from "./timing.ts";
 
 const braking: RiderInput = { ...neutralInput, brake: 1 };
 const RIVAL = riderIdAt(1);
 
-const intervalsOf = (view: RaceView, timing: TimingView): Interval[] => {
+const intervalsOf = (view: RaceView, timing: TimingView): IntervalMs[] => {
   const order = standings(view);
-  const read: Interval[] = [];
+  const read: IntervalMs[] = [];
   for (let place = 1; place < order.length; place += 1) {
     const follower = riderOf(view.riders, order[place] ?? null);
     const ahead = riderOf(view.riders, order[place - 1] ?? null);
@@ -127,16 +127,16 @@ const crossingOf = (trail: readonly number[], s: number): number | null => {
   return after - 1 + (s - before) / (at - before);
 };
 
-const timed = (gap: Interval): gap is number => gap !== "unknown";
+const timed = (gap: IntervalMs): gap is number => gap !== "unknown";
 
-const broken = (gap: Interval): boolean =>
-  timed(gap) && !(Number.isFinite(gap) && gap >= 0);
+const broken = (gap: IntervalMs): boolean =>
+  timed(gap) && !(Number.isInteger(gap) && gap >= 0);
 
-const asSeconds = (gap: Interval): number => {
+const asSeconds = (gap: IntervalMs): number => {
   if (gap === "unknown") {
     throw new TypeError("The interval reads unknown, not a time.");
   }
-  return gap;
+  return gap / 1000;
 };
 
 interface Ride {
@@ -206,7 +206,7 @@ describe("the interval to the rider ahead", () => {
   it("stays blank on the grid until the follower reaches a line the rider ahead rode across", () => {
     const race = timedRace(pilotedSetup(2));
     const onTheGrid = intervalsOf(race.state, race.timing);
-    const beforeTheLine = new Set<Interval>();
+    const beforeTheLine = new Set<IntervalMs>();
     let timedReads = 0;
     for (let tick = 0; tick < 20 * TICK_RATE; tick += 1) {
       race.step(pilotFrame);
@@ -235,7 +235,7 @@ describe("the interval to the rider ahead", () => {
 
   it("never reads a negative or broken time across a whole pack race", () => {
     const race = timedRace(pilotedSetup(5));
-    const wrong: Interval[] = [];
+    const wrong: IntervalMs[] = [];
     let timedReads = 0;
     for (let tick = 0; tick < 4 * 60 * TICK_RATE; tick += 1) {
       race.step(pilotFrame);
@@ -255,7 +255,7 @@ describe("the interval to the rider ahead", () => {
     let walkedBack = false;
     let rodeOn = false;
     const leaders = new Set<RiderId | undefined>();
-    const wrong: Interval[] = [];
+    const wrong: IntervalMs[] = [];
     for (let tick = 0; tick < 30 * TICK_RATE; tick += 1) {
       if (!thrown && leader.bodyS > line - 70) {
         leader.stamina = 0;
@@ -286,9 +286,8 @@ describe("the interval to the rider ahead", () => {
     expect(leaders).toStrictEqual(new Set([leader.id]));
     expect(wrong).toStrictEqual([]);
     const atTheLine = { ...rival, bodyS: line };
-    expect(intervalAhead(timing, state.tick, atTheLine, leader)).toBeCloseTo(
-      (state.tick - slidPast) * TICK_SECONDS,
-      9
+    expect(intervalAhead(timing, state.tick, atTheLine, leader)).toBe(
+      Math.round((state.tick - slidPast) * TICK_SECONDS * 1000)
     );
   });
 
@@ -296,10 +295,7 @@ describe("the interval to the rider ahead", () => {
     const { leader, rival, state, timing } = twins();
     leader.finishTick = 600;
     rival.finishTick = 690;
-    expect(intervalAhead(timing, state.tick, rival, leader)).toBeCloseTo(
-      1.5,
-      9
-    );
+    expect(intervalAhead(timing, state.tick, rival, leader)).toBe(1500);
   });
 });
 
@@ -326,7 +322,7 @@ const crossingsOf = (client: RoomClient): number[][] =>
     )
   );
 
-const shownIntervals = (client: RoomClient): Interval[] => {
+const shownIntervals = (client: RoomClient): IntervalMs[] => {
   client.settle();
   return intervalsOf(client.predicted, client.timing);
 };
@@ -376,7 +372,7 @@ describe("the interval on a room client", () => {
     const stayed = createRoomClient(setup, PLAYER_RIDER, ROOM_LIMIT_TICKS);
     const rejoined = createRoomClient(setup, PLAYER_RIDER, ROOM_LIMIT_TICKS);
     const half = ticks / 4;
-    const reads: Interval[][] = [];
+    const reads: IntervalMs[][] = [];
     for (let tick = 1; tick <= ticks; tick += 1) {
       const frame = step(tick);
       stayed.confirm(frame, null);
@@ -396,7 +392,7 @@ describe("the interval on a room client", () => {
     const settled = shownIntervals(stayed);
     const sinceRejoin = (ticks - half) * TICK_SECONDS;
     const passedBeforeRejoin = settled.map(
-      (gap) => !timed(gap) || gap > sinceRejoin
+      (gap) => !timed(gap) || asSeconds(gap) > sinceRejoin
     );
     const after = shownIntervals(rejoined);
     expect(after).toStrictEqual(

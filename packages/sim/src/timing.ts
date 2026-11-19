@@ -10,7 +10,12 @@ const NOTHING_REACHED = -0x80_00_00_00;
 
 const noLines = new Int32Array(0);
 
-export type Interval = number | "unknown";
+export type IntervalMs = number | "unknown";
+
+const MS_PER_SECOND = 1000;
+
+const msOf = (ticks: number): number =>
+  Math.round(ticks * TICK_SECONDS * MS_PER_SECOND);
 
 export interface TimingView {
   readonly crossing: (rider: RiderId, line: number) => number;
@@ -163,9 +168,9 @@ export const intervalAhead = (
   now: number,
   follower: RiderView,
   ahead: RiderView
-): Interval => {
+): IntervalMs => {
   if (follower.finishTick >= 0 && ahead.finishTick >= 0) {
-    return (follower.finishTick - ahead.finishTick) * TICK_SECONDS;
+    return msOf(follower.finishTick - ahead.finishTick);
   }
   const line = lineAt(follower.bodyS);
   const from = timing.crossing(ahead.id, line);
@@ -173,9 +178,9 @@ export const intervalAhead = (
     return "unknown";
   }
   if (line === timing.reached(ahead.id)) {
-    return (now - from) * TICK_SECONDS;
+    return msOf(now - from);
   }
   const to = timing.crossing(ahead.id, line + 1);
   const share = follower.bodyS / TIMING_LINE_METRES - line;
-  return (now - from - (to - from) * share) * TICK_SECONDS;
+  return msOf(now - from - (to - from) * share);
 };

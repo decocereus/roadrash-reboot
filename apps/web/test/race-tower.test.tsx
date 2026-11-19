@@ -1,3 +1,6 @@
+import type { HeapProfiler } from "node:inspector";
+import { Session as Inspector } from "node:inspector/promises";
+
 import { recordedRules } from "@racer/career/bench";
 import { createRaceLog } from "@racer/career/outcome";
 import { celebritySuits } from "@racer/sim/cast";
@@ -99,6 +102,52 @@ const paintedBody = {
   standHeight: 0,
 };
 
+const WARM_READS = 20_000;
+const SAMPLED_WINDOWS = 3;
+const SAMPLED_READS = 10_000;
+
+const bytesIn = (
+  node: HeapProfiler.SamplingHeapProfileNode,
+  file: string
+): number =>
+  (node.callFrame.url.includes(file) ? node.selfSize : 0) +
+  node.children.reduce((sum, child) => sum + bytesIn(child, file), 0);
+
+interface Sampled {
+  readonly bytes: number;
+  readonly same: boolean;
+}
+
+const sampledIn = async (
+  file: string,
+  work: () => boolean
+): Promise<Sampled> => {
+  const inspector = new Inspector();
+  inspector.connect();
+  await inspector.post("HeapProfiler.enable");
+  await inspector.post("HeapProfiler.startSampling", {
+    includeObjectsCollectedByMajorGC: true,
+    includeObjectsCollectedByMinorGC: true,
+    samplingInterval: 16,
+  });
+  const same = work();
+  const { profile } = await inspector.post("HeapProfiler.stopSampling");
+  inspector.disconnect();
+  return { bytes: bytesIn(profile.head, file), same };
+};
+
+const windowsIn = async (
+  count: number,
+  file: string,
+  work: () => boolean
+): Promise<readonly Sampled[]> =>
+  count === 0
+    ? []
+    : [
+        await sampledIn(file, work),
+        ...(await windowsIn(count - 1, file, work)),
+      ];
+
 const markupOf = (rows: readonly TowerRow[]): string =>
   renderToStaticMarkup(<RaceTower rows={rows} />);
 
@@ -193,6 +242,31 @@ describe("the race tower", () => {
     const seated = markupOf(rowsOf(tower, ride));
     rival.controller = "pilot";
     expect(markupOf(rowsOf(createTower(), ride))).toBe(seated);
+  });
+
+  it("publishes an unchanged tower without building a row, an array or an argument", async () => {
+    const ride = rideFor(soloPlan, 30);
+    const tower = createTower();
+    const order = standings(ride.state);
+    const first = tower.read(ride.session, ride.stage, order);
+    for (let read = 0; read < WARM_READS; read += 1) {
+      tower.read(ride.session, ride.stage, order);
+    }
+    const readUnchanged = (): boolean => {
+      let same = true;
+      for (let read = 0; read < SAMPLED_READS; read += 1) {
+        same &&= tower.read(ride.session, ride.stage, order) === first;
+      }
+      return same;
+    };
+    const windows = await windowsIn(
+      SAMPLED_WINDOWS,
+      "hud-tower.ts",
+      readUnchanged
+    );
+    const built = Math.min(...windows.map((window) => window.bytes));
+    const unchanged = windows.every((window) => window.same);
+    expect({ built, unchanged }).toStrictEqual({ built: 0, unchanged: true });
   });
 
   it("hands React the same rows while nothing it shows has changed", () => {

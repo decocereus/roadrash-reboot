@@ -1,6 +1,5 @@
 import type { RaceLog } from "@racer/career/outcome";
-import type { GuestNames } from "@racer/career/room-race";
-import type { RaceView, RiderView } from "@racer/sim/race-view";
+import type { RiderView } from "@racer/sim/race-view";
 import { riderOf } from "@racer/sim/state";
 import type { RiderId } from "@racer/sim/state";
 import { intervalAhead } from "@racer/sim/timing";
@@ -8,7 +7,6 @@ import type { TimingView } from "@racer/sim/timing";
 
 import { shortNames } from "../career/copy.ts";
 import { suitOf } from "./figure-rig.ts";
-import type { Dressing } from "./figure-wardrobe.ts";
 import type { Session } from "./game-session.ts";
 import type { TowerMark, TowerRow } from "./hud.ts";
 import { blocksOf } from "./rider-blocks.ts";
@@ -19,119 +17,83 @@ interface Entry {
   readonly chip: string;
 }
 
-interface TowerRace {
-  readonly view: RaceView;
-  readonly timing: TimingView;
-  readonly order: readonly RiderId[];
-  readonly me: RiderId;
-  readonly log: RaceLog;
-  readonly names: GuestNames | undefined;
-  readonly colours: ReadonlyMap<RiderId, number>;
-  readonly dressing: Dressing;
-}
+const MS_PER_TENTH = 100;
 
 const noRows: readonly TowerRow[] = [];
 
 const cssOf = (colour: number): string =>
   `#${colour.toString(16).padStart(6, "0")}`;
 
-const entriesOf = ({
-  colours,
-  dressing,
-  log,
-  me,
-  names,
-  view,
-}: TowerRace): ReadonlyMap<RiderId, Entry> => {
+type OnRoad = Extract<Session, { readonly log: RaceLog }>;
+
+const entriesOf = (
+  session: OnRoad,
+  stage: Pick<Stage, "colours" | "me" | "race">
+): ReadonlyMap<RiderId, Entry> => {
+  const names = session.plan.room?.names;
   const entries = new Map<RiderId, Entry>();
-  for (const rider of view.riders) {
-    const entrant = log.entrants.find((one) => one.rider === rider.id);
+  for (const rider of stage.race.view.riders) {
+    const entrant = session.log.entrants.find((one) => one.rider === rider.id);
     const named = entrant
       ? (names?.get(entrant.rival) ?? shortNames[entrant.rival])
       : rider.profile.name;
     entries.set(rider.id, {
-      chip: cssOf(suitOf(rider, blocksOf(colours, rider.id), dressing)),
-      name: rider.id === me ? "You" : named,
+      chip: cssOf(
+        suitOf(rider, blocksOf(stage.colours, rider.id), session.dressing)
+      ),
+      name: rider.id === stage.me ? "You" : named,
     });
   }
   return entries;
 };
 
-const markOf = (
+interface Mark {
+  mark: TowerMark;
+  tenths: number;
+}
+
+const markInto = (
+  into: Mark,
   timing: TimingView,
   tick: number,
   rider: RiderView,
   ahead: RiderView | undefined
-): readonly [TowerMark, number] => {
+): void => {
+  into.tenths = 0;
   if (rider.mode === "wrecked") {
-    return ["wrecked", 0];
+    into.mark = "wrecked";
+  } else if (rider.mode === "busted") {
+    into.mark = "busted";
+  } else if (ahead) {
+    const gap = intervalAhead(timing, tick, rider, ahead);
+    into.mark = gap === "unknown" ? "blank" : "gap";
+    into.tenths = gap === "unknown" ? 0 : Math.round(gap / MS_PER_TENTH);
+  } else {
+    into.mark = "lead";
   }
-  if (rider.mode === "busted") {
-    return ["busted", 0];
-  }
-  if (!ahead) {
-    return ["lead", 0];
-  }
-  const gap = intervalAhead(timing, tick, rider, ahead);
-  if (gap === "unknown") {
-    return ["blank", 0];
-  }
-  return ["gap", Math.round(gap * 10)];
 };
 
-const sameRow = (left: TowerRow, right: TowerRow | undefined): boolean =>
-  right !== undefined &&
-  left.id === right.id &&
-  left.mark === right.mark &&
-  left.tenths === right.tenths &&
-  left.finished === right.finished &&
-  left.name === right.name &&
-  left.chip === right.chip;
-
-const sameRows = (
-  next: readonly TowerRow[],
-  shown: readonly TowerRow[]
-): boolean =>
-  next.length === shown.length &&
-  next.every((row) => sameRow(row, shown[row.place - 1]));
+const shows = (
+  row: TowerRow | undefined,
+  rider: RiderView,
+  entry: Entry,
+  place: number,
+  { mark, tenths }: Mark
+): row is TowerRow =>
+  row !== undefined &&
+  row.id === rider.id &&
+  row.place === place &&
+  row.mark === mark &&
+  row.tenths === tenths &&
+  row.finished === rider.finishTick >= 0 &&
+  row.name === entry.name &&
+  row.chip === entry.chip;
 
 export const createTower = () => {
   let entriesFor: RaceLog | null = null;
   let entries: ReadonlyMap<RiderId, Entry> = new Map();
   let shown = noRows;
-
-  const rowsOf = (race: TowerRace): readonly TowerRow[] => {
-    if (entriesFor !== race.log) {
-      entries = entriesOf(race);
-      entriesFor = race.log;
-    }
-    const { order, timing, view } = race;
-    const rows: TowerRow[] = [];
-    let ahead: RiderView | undefined;
-    for (let place = 0; place < order.length; place += 1) {
-      const id = order[place] ?? null;
-      const rider = riderOf(view.riders, id);
-      const entry = id === null ? undefined : entries.get(id);
-      if (rider && entry) {
-        const [mark, tenths] = markOf(timing, view.tick, rider, ahead);
-        rows.push({
-          chip: entry.chip,
-          finished: rider.finishTick >= 0,
-          id: rider.id,
-          mark,
-          name: entry.name,
-          place: place + 1,
-          tenths,
-          you: rider.id === race.me,
-        });
-        ahead = rider;
-      }
-    }
-    if (!sameRows(rows, shown)) {
-      shown = rows;
-    }
-    return shown;
-  };
+  const marked: Mark = { mark: "lead", tenths: 0 };
 
   const read = (
     session: Session,
@@ -142,16 +104,47 @@ export const createTower = () => {
       shown = noRows;
       return shown;
     }
-    return rowsOf({
-      colours: stage.colours,
-      dressing: session.dressing,
-      log: session.log,
-      me: stage.me,
-      names: session.plan.room?.names,
-      order,
-      timing: stage.race.timing,
-      view: stage.race.view,
-    });
+    if (entriesFor !== session.log) {
+      entries = entriesOf(session, stage);
+      entriesFor = session.log;
+    }
+    const { timing, view } = stage.race;
+    let next: TowerRow[] | null = null;
+    let count = 0;
+    let ahead: RiderView | undefined;
+    for (const id of order) {
+      const rider = riderOf(view.riders, id);
+      const entry = entries.get(id);
+      if (rider && entry) {
+        markInto(marked, timing, view.tick, rider, ahead);
+        const place = count + 1;
+        const before = shown[count];
+        if (!shows(before, rider, entry, place, marked)) {
+          next ??= shown.slice(0, count);
+          next.push({
+            chip: entry.chip,
+            finished: rider.finishTick >= 0,
+            id: rider.id,
+            mark: marked.mark,
+            name: entry.name,
+            place,
+            tenths: marked.tenths,
+            you: rider.id === stage.me,
+          });
+        } else if (next) {
+          next.push(before);
+        }
+        count += 1;
+        ahead = rider;
+      }
+    }
+    if (next === null && count !== shown.length) {
+      next = shown.slice(0, count);
+    }
+    if (next) {
+      shown = next;
+    }
+    return shown;
   };
 
   return { read };
