@@ -44,7 +44,7 @@ const Row = ({ row }: { readonly row: TowerRow }) => (
     <span className="w-[1.3em] shrink-0 text-right">{row.place}</span>
     <span
       aria-hidden
-      className="outline-ink inline-block size-[0.6em] shrink-0 -skew-x-12 outline-2"
+      className="outline-text/70 inline-block size-[0.6em] shrink-0 -skew-x-12 outline-1"
       style={{ background: row.chip }}
     />
     <span className="min-w-0 flex-1 truncate">{row.name}</span>

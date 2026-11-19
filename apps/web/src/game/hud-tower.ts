@@ -1,6 +1,6 @@
 import type { RaceLog } from "@racer/career/outcome";
 import type { GuestNames } from "@racer/career/room-race";
-import { blockCssOf } from "@racer/sim/palette";
+import { blockCssOf, riderPalette } from "@racer/sim/palette";
 import type { RaceView, RiderView } from "@racer/sim/race-view";
 import { riderOf } from "@racer/sim/state";
 import type { RiderId } from "@racer/sim/state";
@@ -27,8 +27,8 @@ interface TowerRace {
 
 const noRows: readonly TowerRow[] = [];
 
-const cssOf = (colour: number): string =>
-  `#${colour.toString(16).padStart(6, "0")}`;
+const suitCssOf = (jacket: number): string =>
+  `#${(riderPalette[jacket]?.jacket ?? 0).toString(16).padStart(6, "0")}`;
 
 const entriesOf = ({
   colours,
@@ -46,7 +46,9 @@ const entriesOf = ({
       : rider.profile.name;
     entries.set(rider.id, {
       chip:
-        block === undefined ? cssOf(rider.profile.jacket) : blockCssOf(block),
+        block === undefined
+          ? suitCssOf(rider.profile.jacket)
+          : blockCssOf(block),
       name: rider.id === me ? "You" : named,
     });
   }
