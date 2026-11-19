@@ -29,7 +29,7 @@ export const sideBRecord = Schema.Struct({
 
 export type SideBLane = typeof sideBRecord.Type;
 
-interface SideBWindow {
+export interface SideBWindow {
   readonly id: string;
   readonly metric: string;
   readonly shortfall: (record: ChildRecord) => string | null;

@@ -1,7 +1,8 @@
 import type { RaceView } from "@racer/sim/race-view";
+import { riderIdAt, riderOf } from "@racer/sim/state";
 import type { RiderId } from "@racer/sim/state";
 
-import { engineCharacters } from "./engine.ts";
+import { engineCharacters } from "./characters.ts";
 
 export const PASSING_VOICES = 4;
 const RANGE = 70;
@@ -94,7 +95,7 @@ const place = (
 };
 
 const tune = (view: RaceView, voice: Passing, me: RiderId): void => {
-  const listener = view.riders[me];
+  const listener = riderOf(view.riders, me);
   if (!listener) {
     voice.gain = 0;
     return;
@@ -118,7 +119,7 @@ const tune = (view: RaceView, voice: Passing, me: RiderId): void => {
     );
     return;
   }
-  const rider = view.riders[voice.key];
+  const rider = riderOf(view.riders, riderIdAt(voice.key));
   if (!rider) {
     voice.gain = 0;
     return;
@@ -143,11 +144,11 @@ export const hearPassing = (
   voices: readonly Passing[]
 ): void => {
   chosen = 0;
-  const listener = view.riders[me];
+  const listener = riderOf(view.riders, me);
   if (listener) {
     for (let index = 0; index < view.riders.length; index += 1) {
       const rider = view.riders[index];
-      if (index !== me && rider && rider.mode === "riding") {
+      if (rider && rider !== listener && rider.mode === "riding") {
         consider(index, Math.hypot(rider.s - listener.s, rider.x - listener.x));
       }
     }

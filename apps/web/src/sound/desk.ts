@@ -1,9 +1,10 @@
 import type { RaceView } from "@racer/sim/race-view";
 import type { BikeClass, RiderId } from "@racer/sim/state";
 
+import { engineCharacters } from "./characters.ts";
 import { cues, loops } from "./cues.ts";
 import type { Cue, Loop } from "./cues.ts";
-import { engineCharacters, engineVoice } from "./engine.ts";
+import { engineVoice } from "./engine.ts";
 import type { EngineVoice } from "./engine.ts";
 import { gainGlide, pitchGlide } from "./glide.ts";
 import type { Glide } from "./glide.ts";
@@ -153,7 +154,10 @@ interface PassingVoice {
   readonly mix: GainNode;
 }
 
-const passingVoiceOf = (context: BaseAudioContext, out: AudioNode): PassingVoice => {
+const passingVoiceOf = (
+  context: BaseAudioContext,
+  out: AudioNode
+): PassingVoice => {
   const high = context.createOscillator();
   high.type = "sawtooth";
   const low = context.createOscillator();
@@ -429,12 +433,6 @@ export const openDesk = (
   });
   Reflect.set(globalThis, "__rushlineSound", {
     heard: () => Object.fromEntries(counts),
-    passing: () =>
-      passing.map(({ gain, key, pan }) => ({
-        gain: Math.round(gain * 1000) / 1000,
-        key,
-        pan: Math.round(pan * 100) / 100,
-      })),
     looping: () =>
       Object.fromEntries(
         loops.map((loop) => [
@@ -442,6 +440,12 @@ export const openDesk = (
           loopGains.has(loop) ? (loopWanted.get(loop) ?? 0) : null,
         ])
       ),
+    passing: () =>
+      passing.map(({ gain, key, pan }) => ({
+        gain: Math.round(gain * 1000) / 1000,
+        key,
+        pan: Math.round(pan * 100) / 100,
+      })),
     record: async (seconds: number): Promise<string | null> => {
       if (!new URLSearchParams(globalThis.location.search).has("prof")) {
         return null;
@@ -457,21 +461,6 @@ export const openDesk = (
   });
 
   return {
-    heard: () => counts,
-    hush() {
-      const now = context.currentTime;
-      engine?.drive(false, 0, 0, now);
-      wind?.gain(0, now);
-    },
-    level(next) {
-      const now = context.currentTime;
-      effects.gain.setTargetAtTime(next.volume, now, MUTE_SECONDS);
-      master.gain.setTargetAtTime(next.muted ? 0 : 1, now, MUTE_SECONDS);
-    },
-    loop(loop, gain) {
-      loopWanted.set(loop, gain);
-      loopGains.get(loop)?.(gain, context.currentTime);
-    },
     hear(view, me) {
       if (passingOut.length === 0) {
         return;
@@ -486,6 +475,7 @@ export const openDesk = (
         }
       }
     },
+    heard: () => counts,
     hush() {
       const now = context.currentTime;
       engine?.drive(false, 0, 0, now);
@@ -494,6 +484,15 @@ export const openDesk = (
       for (const out of passingOut) {
         out.gain(0, now);
       }
+    },
+    level(next) {
+      const now = context.currentTime;
+      effects.gain.setTargetAtTime(next.volume, now, MUTE_SECONDS);
+      master.gain.setTargetAtTime(next.muted ? 0 : 1, now, MUTE_SECONDS);
+    },
+    loop(loop, gain) {
+      loopWanted.set(loop, gain);
+      loopGains.get(loop)?.(gain, context.currentTime);
     },
     play,
     ride(ride) {

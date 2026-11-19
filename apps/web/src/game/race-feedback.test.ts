@@ -53,17 +53,18 @@ const heardFeedback = () => {
 const cuesOf = (play: ReturnType<typeof heardFeedback>["play"]) =>
   play.mock.calls.map(([cue]) => cue);
 
+const swingWith = (weapon: "chain" | "club" | "none"): RaceEvent => ({
+  attack: "swing",
+  kind: "hit",
+  rider: PLAYER_RIDER,
+  target: RIVAL,
+  weapon,
+});
+
 describe("race sounds from race events", () => {
   it("plays each weapon's own hit, and a fist for none", () => {
     const { play, react } = heardFeedback();
-    const hit = (weapon: "chain" | "club" | "none"): RaceEvent => ({
-      attack: "swing",
-      kind: "hit",
-      rider: PLAYER_RIDER,
-      target: RIVAL,
-      weapon,
-    });
-    react([hit("chain"), hit("club"), hit("none")]);
+    react([swingWith("chain"), swingWith("club"), swingWith("none")]);
     expect(cuesOf(play)).toStrictEqual(["chainHit", "clubHit", "hit"]);
   });
 

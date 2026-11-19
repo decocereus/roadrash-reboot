@@ -28,6 +28,7 @@ import {
   roadLifeWindow,
   sideBLane,
 } from "./node-lane-side-b.ts";
+import type { SideBWindow } from "./node-lane-side-b.ts";
 import { nodeLane } from "./node-lane.ts";
 import type { NodeLane } from "./node-lane.ts";
 import { sha256Of } from "./result.ts";
@@ -179,9 +180,9 @@ const measure = Effect.fn("gate.measure")(function* measure(
     comparisonId,
     lanes: [],
     lobby: null,
-    passing: null,
     mode: options.mode,
     node: [],
+    passing: null,
     roadLife: null,
     sides,
     version: 1,
@@ -198,22 +199,19 @@ const measure = Effect.fn("gate.measure")(function* measure(
       load.note();
       yield* say(`node ${scenario.id} measured`);
     }
-    const [calibrator] = scenarios;
-    const roadLife = calibrator
-      ? yield* sideBLane(roadLifeWindow, B, calibrator, path.join(dir, "node"))
-      : null;
-    load.note();
-    yield* say(`node ${roadLifeWindow.id} measured`);
-    const lobby = calibrator
-      ? yield* sideBLane(lobbyWindow, B, calibrator, path.join(dir, "node"))
-      : null;
-    load.note();
-    yield* say(`node ${lobbyWindow.id} measured`);
-    const passing = calibrator
-      ? yield* sideBLane(passingWindow, B, calibrator, path.join(dir, "node"))
-      : null;
-    load.note();
-    yield* say(`node ${passingWindow.id} measured`);
+    const sideB = (window: SideBWindow) =>
+      Effect.gen(function* windowLane() {
+        const [calibrator] = scenarios;
+        const record = calibrator
+          ? yield* sideBLane(window, B, calibrator, path.join(dir, "node"))
+          : null;
+        load.note();
+        yield* say(`node ${window.id} measured`);
+        return record;
+      });
+    const roadLife = yield* sideB(roadLifeWindow);
+    const lobby = yield* sideB(lobbyWindow);
+    const passing = yield* sideB(passingWindow);
     nodeMs = (yield* Clock.currentTimeMillis) - startedNode;
     samples = yield* save({
       ...samples,

@@ -5,13 +5,10 @@ import { roadLifeRace, roadLifeSetup } from "@racer/career/bench";
 import { UsageError } from "@racer/devtools/usage-error";
 import { createRaceRun } from "@racer/sim/race-run";
 import { PLAYER_RIDER } from "@racer/sim/state";
+import { hearPassing, passingVoices } from "@racer/web/sound/passing";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 
-import {
-  hearPassing,
-  passingVoices,
-} from "../../../apps/web/src/sound/passing.ts";
 import { runtimeOf } from "./node.ts";
 import { PASSING_BENCH } from "./passing-bench.ts";
 import { digestOf } from "./result.ts";

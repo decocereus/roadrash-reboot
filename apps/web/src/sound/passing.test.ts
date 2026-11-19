@@ -1,9 +1,8 @@
 import { roadLifeSetup } from "@racer/career/bench";
-import { neutralInput } from "@racer/sim/race";
-import { playerFrame } from "@racer/sim/race-fixtures";
+import { emptyFrame } from "@racer/sim/race";
 import { createRaceRun } from "@racer/sim/race-run";
 import type { RaceRun } from "@racer/sim/race-run";
-import { PLAYER_RIDER } from "@racer/sim/state";
+import { PLAYER_RIDER, riderIdAt, riderOf } from "@racer/sim/state";
 import { describe, expect, it } from "vitest";
 
 import { hearPassing, PASSING_VOICES, passingVoices } from "./passing.ts";
@@ -20,7 +19,7 @@ const busyRace = (): RaceRun => {
     player: { ...setup.player, controller: "pilot" },
   });
   while (run.view.tick < BUSY_TICK) {
-    run.step(playerFrame(neutralInput));
+    run.step(emptyFrame);
   }
   return run;
 };
@@ -47,24 +46,26 @@ describe(hearPassing, () => {
     const before = voices.map((voice) => voice.key);
     hearPassing(run.view, PLAYER_RIDER, voices);
     expect(voices.map((voice) => voice.key)).toStrictEqual(before);
-    expect(voices.some((voice) => voice.fresh)).toBe(false);
+    expect(voices.some((voice) => voice.fresh)).toBeFalsy();
   });
 
   it("pans each voice to the side of the road it is on and fades it with distance", () => {
     const voices = passingVoices();
     hearPassing(run.view, PLAYER_RIDER, voices);
-    const me = run.view.riders[PLAYER_RIDER];
-    for (const voice of heard(voices)) {
+    const me = riderOf(run.view.riders, PLAYER_RIDER);
+    const sided = heard(voices).map((voice) => {
       const source =
         voice.key >= CAR_KEY
           ? run.view.cars[voice.key - CAR_KEY]
-          : run.view.riders[voice.key];
-      const side = (source?.x ?? 0) - (me?.x ?? 0);
-      if (Math.abs(side) > 1) {
-        expect(Math.sign(voice.pan)).toBe(Math.sign(side));
-      }
-      expect(voice.gain).toBeGreaterThanOrEqual(0);
-      expect(voice.gain).toBeLessThan(0.6);
-    }
+          : riderOf(run.view.riders, riderIdAt(voice.key));
+      return { side: (source?.x ?? 0) - (me?.x ?? 0), voice };
+    });
+    const clear = sided.filter(({ side }) => Math.abs(side) > 1);
+    expect(clear.map(({ voice }) => Math.sign(voice.pan))).toStrictEqual(
+      clear.map(({ side }) => Math.sign(side))
+    );
+    expect(
+      sided.every(({ voice }) => voice.gain >= 0 && voice.gain < 0.6)
+    ).toBeTruthy();
   });
 });

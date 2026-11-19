@@ -1,7 +1,8 @@
+import { engineCharacters } from "../src/sound/characters.ts";
+import type { EngineCharacter } from "../src/sound/characters.ts";
 import { cues, loops } from "../src/sound/cues.ts";
 import type { Cue, Loop } from "../src/sound/cues.ts";
-import { engineCharacters, engineVoice } from "../src/sound/engine.ts";
-import type { EngineCharacter } from "../src/sound/engine.ts";
+import { engineVoice } from "../src/sound/engine.ts";
 import { loopRecipes, recipes } from "../src/sound/recipes.ts";
 import {
   closeLoop,

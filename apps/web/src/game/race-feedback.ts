@@ -268,10 +268,7 @@ export const bindFeedback = ({
       noticeDetail: feedback.noticeDetail,
       offBike: me.mode !== "riding",
       phase: state.phase,
-      position:
-        state.phase === "settled"
-          ? state.outcome.place
-          : place,
+      position: state.phase === "settled" ? state.outcome.place : place,
       progress: clamp(me.bodyS / stage.track.length, 0, 1),
       remountPrompt: needsRemountPrompt(me),
       riderCount: order.length,

@@ -486,26 +486,31 @@ Test files: none
 
 ### Sound
 
-Every sound in the game from one module: the cue table written as data, rendered offline into buffers after the first input, the menus' interface sounds, the engine per bike class, wind and the race's one-shots, with effects volume and mute in the player's settings. `pnpm sound:audition` renders every cue to WAV and an audition page and fails on clipping or a cue out of range.
+Every sound in the game from one module: the cue table written as data, rendered offline into buffers after the first input, the menus' interface sounds, the bar's footsteps, actions, door and room bed, the engine per bike class, wind, tyre scrub, four passing voices for the nearest riders and cars, and the race's one-shots, with effects volume and mute in the player's settings. `pnpm sound:audition` renders every cue to WAV and an audition page and fails on clipping or a cue out of range.
 
 - Id: `audio`
 - Start: `apps/web/src/sound/sound.ts`, `apps/web/src/sound/recipes.ts`, `apps/web/src/sound/desk.ts`
 - Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/design/art-direction.md#audio-direction](design/art-direction.md#audio-direction)
 - Verify: [sound.md](../.claude/skills/verify-rushline/features/sound.md)
 - Perf: none yet
-- Owns: `apps/web/src/sound/**`, `apps/web/test/sound-bundle.ts`, `apps/web/test/sound-scenes.ts`, `tools/sound/**`
+- Owns: `apps/web/src/sound/**`, `apps/web/test/sound-bundle.ts`, `tools/sound/**`, `tools/perf/passing.ts`, `tools/perf/src/node-passing.ts`, `tools/perf/src/passing-bench.ts`
 
 Source files:
 
+- `apps/web/src/sound/characters.ts`
 - `apps/web/src/sound/cues.ts`
 - `apps/web/src/sound/desk.ts`
 - `apps/web/src/sound/engine.ts`
 - `apps/web/src/sound/glide.ts`
 - `apps/web/src/sound/interface.ts`
+- `apps/web/src/sound/passing.ts`
 - `apps/web/src/sound/recipes.ts`
 - `apps/web/src/sound/render.ts`
 - `apps/web/src/sound/sound.ts`
 - `apps/web/src/sound/tap.ts`
+- `tools/perf/passing.ts`
+- `tools/perf/src/node-passing.ts`
+- `tools/perf/src/passing-bench.ts`
 - `tools/sound/audition.ts`
 - `tools/sound/src/analysis.ts`
 - `tools/sound/src/audition-failed.ts`
@@ -514,7 +519,7 @@ Source files:
 
 Test files:
 
-- `apps/web/src/sound/sound.test.ts`
+- `apps/web/src/sound/passing.test.ts`
 - `apps/web/test/sound-bundle.ts`
 - `apps/web/test/sound-scenes.ts`
 

@@ -250,10 +250,39 @@ export const recipes = {
     "big",
     [
       burst(180, 0.3, 0.9, 60),
-      tone("square", 523, 523, { attack: 0.02, decay: 0.6, gain: 0.06, hold: 0.5 }, 2500),
-      tone("square", 659, 659, { attack: 0.02, decay: 0.6, gain: 0.05, hold: 0.5 }, 2500),
-      tone("square", 784, 784, { attack: 0.02, decay: 0.6, gain: 0.05, hold: 0.5 }, 2500),
-      { ...enveloped({ at: 0.1, attack: 0.3, decay: 0.9, gain: 0.7, hold: 0.6 }), cutoff: 3200, kind: "murmur", voices: 10 },
+      tone(
+        "square",
+        523,
+        523,
+        { attack: 0.02, decay: 0.6, gain: 0.06, hold: 0.5 },
+        2500
+      ),
+      tone(
+        "square",
+        659,
+        659,
+        { attack: 0.02, decay: 0.6, gain: 0.05, hold: 0.5 },
+        2500
+      ),
+      tone(
+        "square",
+        784,
+        784,
+        { attack: 0.02, decay: 0.6, gain: 0.05, hold: 0.5 },
+        2500
+      ),
+      {
+        ...enveloped({
+          at: 0.1,
+          attack: 0.3,
+          decay: 0.9,
+          gain: 0.7,
+          hold: 0.6,
+        }),
+        cutoff: 3200,
+        kind: "murmur",
+        voices: 10,
+      },
     ],
     1,
     0

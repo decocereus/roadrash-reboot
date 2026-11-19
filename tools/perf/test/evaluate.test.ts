@@ -21,6 +21,7 @@ import {
   samplesOf,
   steadyLanes,
   syntheticLobby,
+  syntheticPassing,
   syntheticRoadLife,
   syntheticBudgets,
   syntheticBuild,
@@ -156,6 +157,24 @@ describe("perf gate red cases", { timeout: 30_000 }, () => {
     );
     expect(result.ok).toBeFalsy();
     expect(result.lines.some((line) => line.includes("routed=0"))).toBeTruthy();
+  });
+
+  it("fails the passing window when it hears too few riders", () => {
+    const result = evaluateGate(
+      samplesOf(
+        "passing-empty",
+        steadyLanes(steady),
+        build,
+        syntheticRoadLife(steady),
+        syntheticLobby(steady),
+        syntheticPassing(steady, 0)
+      ),
+      budgets
+    );
+    expect(result.ok).toBeFalsy();
+    expect(
+      result.lines.some((line) => line.includes("mostHeard=0"))
+    ).toBeTruthy();
   });
 
   it("passes an unchanged synthetic A/B", () => {

@@ -147,6 +147,31 @@ export interface FrameRenderer {
   readonly setAnimationLoop: (callback: ((now: number) => void) | null) => void;
 }
 
+const hearRide = (
+  frame: FrameLoop,
+  sound: Pick<Sound, "ride" | "shift">,
+  me: RiderView,
+  live: boolean,
+  throttleHeard: boolean
+): void => {
+  const riding = live && me.mode === "riding";
+  if (riding && me.gear > frame.lastGear) {
+    sound.shift();
+  }
+  frame.lastGear = me.gear;
+  const { ride } = frame;
+  const grounded = riding && !me.airborne;
+  ride.on = riding;
+  ride.speed = riding ? me.speed : 0;
+  ride.throttle = riding && throttleHeard ? me.input.throttle : 0;
+  ride.revs = riding ? me.revs : 0;
+  ride.offRoad = riding && me.offRoad;
+  ride.lean = grounded ? me.lean / me.bike.visualLean : 0;
+  ride.brake = grounded ? me.brake : 0;
+  ride.bikeClass = me.bike.bikeClass;
+  sound.ride(ride);
+};
+
 interface LoopParts {
   readonly attracting: () => boolean;
   readonly checkPresented: () => void;
@@ -213,22 +238,7 @@ export const installFrameLoop = ({
     frame.profiler?.start(frame.frameId);
     const ticks = advance(seconds);
     frame.profiler?.lap("sim");
-    const me = player();
-    const riding = me.mode === "riding" && !attracting();
-    if (riding && me.gear > frame.lastGear) {
-      sound.shift();
-    }
-    frame.lastGear = me.gear;
-    const { ride } = frame;
-    ride.on = riding;
-    ride.speed = riding ? me.speed : 0;
-    ride.throttle = riding && throttleHeard() ? me.input.throttle : 0;
-    ride.revs = riding ? me.revs : 0;
-    ride.offRoad = riding && me.offRoad;
-    ride.lean = riding && !me.airborne ? me.lean / me.bike.visualLean : 0;
-    ride.brake = riding && !me.airborne ? me.brake : 0;
-    ride.bikeClass = me.bike.bikeClass;
-    sound.ride(ride);
+    hearRide(frame, sound, player(), !attracting(), throttleHeard());
     if (!attracting()) {
       sound.hear(stage.race.view, stage.me);
     }
