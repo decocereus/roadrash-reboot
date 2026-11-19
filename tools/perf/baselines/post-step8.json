@@ -3616,6 +3616,22 @@
       "side": "B",
       "source": "baseline-2026-11-19T15-28-11-312Z-9f67ba9-db125dc",
       "value": 0.00026031
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "timing.stamp.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-19T16-03-05-306Z-9f67ba9-38eaebb",
+      "value": 0.00037299
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "timing.stamp.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-19T16-03-05-306Z-9f67ba9-38eaebb",
+      "value": 0.00042264
     }
   ],
   "revisions": {
@@ -5007,6 +5023,37 @@
       "sides": {
         "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
         "B": "db125dc2b9d469c23f49017d6ac3db89849d9299"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, scale 1.017 to 1.018 against the retained profile's c0 17.62 ms",
+        "cpu": "AMD EPYC 7763 64-Core Processor",
+        "cpus": "4",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "harnessDigest": "874cefe73028d4ba0a6a47436e204726a7a684c96075640160004a5668ef3342",
+        "memoryBytes": "16760344576",
+        "node": "v26.13.0",
+        "platform": "linux",
+        "sideASourceDigest": "96f9fddfe88e441643cce1924ddbbe131479c715e35018680f866a488ec3f665",
+        "sideBSourceDigest": "54e51c5d8e75fd8511a05c43227bb5e6a1ab83f327513d15ca162dff1a921d9a",
+        "v8": "14.6.202.34-node.40",
+        "wallMs": "{\"build\":8813,\"materialize\":9225,\"node\":372472,\"total\":390905}",
+        "machine": "GitHub-hosted runner, AMD EPYC 7763 64-Core Processor",
+        "os": "Ubuntu 24.04, runner image ubuntu-24.04",
+        "ci": "GitHub Actions run 44556257516 attempt 2 (perf), pull_request event on PR #219",
+        "checkout": "38eaebb, the pull request merge of 48bd651 into main",
+        "command": "node tools/perf/gate.ts, the perf job's ordinary run",
+        "artifact": "perf-results",
+        "attempts": "two runs of the job. The first landed on an AMD EPYC 9V45 at scale 0.808, so I re-ran it. This one landed on an AMD EPYC 7763, the model the Linux rows are set on. It takes the timing.stamp.p95 rows alone, read with gate.ts --evaluate against the retained profile."
+      },
+      "id": "gate-2026-11-19T16-03-05-306Z-9f67ba9-38eaebb",
+      "lanes": ["node", "build"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "38eaebbb79ce416ea6a86a21a6e08e90fbeac9af"
       }
     }
   ],
