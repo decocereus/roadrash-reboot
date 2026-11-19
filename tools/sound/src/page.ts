@@ -77,6 +77,7 @@ const sections = [
       "featherweight-hush",
       "middleweight-hush",
       "heavyweight-hush",
+      "pile-up-ceiling",
     ],
     title: "Through the mixer",
   },
@@ -115,6 +116,10 @@ const labels = new Map<string, string>([
   [
     "middleweight-hush",
     "Middleweight riding, then the race goes quiet at 0.5 s",
+  ],
+  [
+    "pile-up-ceiling",
+    "Eight crashes over a flat-out engine and four close riders, under full scale",
   ],
   ["move", "Hover or focus moves to another button (several takes)"],
   ["pose", "Striking a pose"],

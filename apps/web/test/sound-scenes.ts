@@ -1,8 +1,10 @@
+import { PLAYER_RIDER, riderOf } from "@racer/sim/state";
 import type { BikeClass } from "@racer/sim/state";
 
 import { openDesk } from "../src/sound/desk.ts";
 import type { Desk, Level } from "../src/sound/desk.ts";
 import type { Ride } from "../src/sound/race-mix.ts";
+import { passingField, placeAhead } from "./passing-field.ts";
 
 const SAMPLE_RATE = 48_000;
 const READY_POLL_MS = 20;
@@ -200,10 +202,65 @@ const hushedRide = async (bikeClass: BikeClass): Promise<Scene> => {
   };
 };
 
+const PILE_UP_AT = 0.3;
+const CRASHES = 8;
+const CRASH_GAIN = 0.7;
+const PASSING_GAPS = [1.5, 3, 4.5, 6] as const;
+
+const packAround = () => {
+  const race = passingField();
+  for (const [at, gap] of PASSING_GAPS.entries()) {
+    const rider = riderOf(race.riders, placeAhead(race, at + 1, gap));
+    if (rider) {
+      rider.revs = 1;
+      rider.speed = TOP_SPEED;
+    }
+  }
+  const me = riderOf(race.riders, PLAYER_RIDER);
+  if (me) {
+    me.speed = TOP_SPEED;
+  }
+  return race;
+};
+
+const pileUp = async (): Promise<Scene> => {
+  const race = packAround();
+  const [left, right] = await staged({
+    at: [
+      PILE_UP_AT,
+      (desk) => {
+        for (let crash = 0; crash < CRASHES; crash += 1) {
+          desk.play("crash", 0, CRASH_GAIN);
+        }
+      },
+    ],
+    level: FULL,
+    ready: (desk) => {
+      desk.prepare("featherweight");
+      desk.ride(flatOut);
+      desk.hear(race, PLAYER_RIDER);
+    },
+    seconds: 3,
+  });
+  const peak = Math.max(peakOf(left), peakOf(right));
+  return {
+    left,
+    name: "pile-up-ceiling",
+    problems:
+      peak < 1
+        ? []
+        : [
+            `Eight crashes over a flat-out engine and four close riders reach ${decibels(peak)}.`,
+          ],
+    right,
+  };
+};
+
 export const scenes = async (): Promise<readonly Scene[]> => [
   await mutedFirstPress(),
   await earlyThump(),
   await hushedRide("featherweight"),
   await hushedRide("middleweight"),
   await hushedRide("heavyweight"),
+  await pileUp(),
 ];

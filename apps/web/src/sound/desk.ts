@@ -35,6 +35,10 @@ const LATE_SECONDS = 0.4;
 const MUTE_SECONDS = 0.02;
 const LOOP_SECONDS = 0.3;
 const STEP_MS = 1.5;
+const CEILING = 0.98;
+const KNEE = 0.7;
+const HEADROOM = 2;
+const CURVE_POINTS = 4097;
 
 interface Channel {
   readonly gain: GainNode;
@@ -85,6 +89,29 @@ const nextTask = async (): Promise<void> => {
     resolve(null);
   }, 0);
   await promise;
+};
+
+const ceilingCurve = (): Float32Array<ArrayBuffer> => {
+  const curve = new Float32Array(CURVE_POINTS);
+  const bend = CEILING - KNEE;
+  for (let index = 0; index < CURVE_POINTS; index += 1) {
+    const heard = ((index / (CURVE_POINTS - 1)) * 2 - 1) * HEADROOM;
+    const size = Math.abs(heard);
+    const held =
+      size <= KNEE ? size : KNEE + bend * Math.tanh((size - KNEE) / bend);
+    curve[index] = Math.sign(heard) * held;
+  }
+  return curve;
+};
+
+const ceilingOf = (context: BaseAudioContext, out: AudioNode): AudioNode => {
+  const into = context.createGain();
+  into.gain.value = 1 / HEADROOM;
+  const ceiling = context.createWaveShaper();
+  ceiling.curve = ceilingCurve();
+  ceiling.oversample = "none";
+  into.connect(ceiling).connect(out);
+  return into;
 };
 
 const messageOf = (cause: unknown): string =>
@@ -194,7 +221,7 @@ export const openDesk = (
   limiter.ratio.value = 12;
   limiter.attack.value = 0.003;
   limiter.release.value = 0.25;
-  limiter.connect(master);
+  limiter.connect(ceilingOf(context, master));
   const effects = context.createGain();
   effects.gain.value = volume;
   effects.connect(limiter);

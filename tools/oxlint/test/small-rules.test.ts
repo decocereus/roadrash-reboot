@@ -31,12 +31,25 @@ runRule(
         ],
       },
       {
+        code: "const audio = { createWaveShaper: () => 1 };",
+        errors: [
+          {
+            data: { name: "createWaveShaper" },
+            messageId: "forbiddenSymbolName",
+          },
+        ],
+      },
+      {
         code: "const node = <Shape />;",
         errors: [{ messageId: "forbiddenSymbolName" }],
         filename: "view.tsx",
       },
     ],
-    valid: ["const user = 'shape';", "const contour = 1;"],
+    valid: [
+      "const user = 'shape';",
+      "const contour = 1;",
+      "const ceiling = context.createWaveShaper();",
+    ],
   }
 );
 
