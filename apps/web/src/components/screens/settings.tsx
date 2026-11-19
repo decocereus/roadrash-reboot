@@ -25,6 +25,8 @@ import {
 import type { BarCamera } from "../../bar-view.ts";
 import { diagnostics } from "../../diagnostics/hub.ts";
 import type { Diagnostics, DiagnosticsView } from "../../diagnostics/hub.ts";
+import { effectsVolumes } from "../../diagnostics/settings.ts";
+import type { EffectsVolume } from "../../diagnostics/settings.ts";
 import type { ReportStatus } from "../../diagnostics/uploader.ts";
 import { storedGuestName, watchGuestName } from "../guest-name.ts";
 import { Confirm } from "./confirm.tsx";
@@ -45,6 +47,18 @@ const onOff = [
 const isOn = (value: "on" | "off"): boolean => value === "on";
 
 const switchOf = (on: boolean): "on" | "off" => (on ? "on" : "off");
+
+const volumeNames = {
+  full: "Full",
+  high: "High",
+  low: "Low",
+  mid: "Mid",
+} as const satisfies Record<EffectsVolume, string>;
+
+const volumeOptions = effectsVolumes.map((value) => ({
+  label: volumeNames[value],
+  value,
+}));
 
 const rateOptions = frameRates.map((value) => ({ label: value, value }));
 
@@ -205,6 +219,16 @@ export const SettingsPanel = ({
               value={switchOf(!muted)}
             />
           </SettingRow>
+          <SettingRow label="Effects">
+            <OptionChips
+              label="Effects"
+              onChange={(effectsVolume) => {
+                hub.settings.change({ effectsVolume });
+              }}
+              options={volumeOptions}
+              value={settings.effectsVolume}
+            />
+          </SettingRow>
           <SettingRow label="Camera in the bar">
             <OptionChips
               label="Camera in the bar"
@@ -261,7 +285,11 @@ export const SettingsPanel = ({
           >
             Credits
           </a>
-          {onBack && <TextButton onClick={onBack}>Back</TextButton>}
+          {onBack && (
+            <TextButton data-cue="back" onClick={onBack}>
+              Back
+            </TextButton>
+          )}
         </TextLinks>
       </Panel>
       {naming && (

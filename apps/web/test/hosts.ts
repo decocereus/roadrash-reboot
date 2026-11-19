@@ -96,7 +96,7 @@ const recordingProfiler = (seen: Seen): Profiler => ({
 });
 
 const quietSound = (seen: Seen) => ({
-  drive: () => {
+  ride: () => {
     seen.calls += 1;
   },
   shift: () => {
@@ -105,7 +105,7 @@ const quietSound = (seen: Seen) => ({
 });
 
 const heardSound = (seen: Seen) => ({
-  drive: () => {
+  ride: () => {
     seen.drives += 1;
   },
   shift: () => {

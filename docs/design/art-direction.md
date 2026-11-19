@@ -231,7 +231,7 @@ All music is original and instrumental. Nothing is licensed and nothing imitates
 
 | Where | Style | Tempo | Lead |
 | --- | --- | --: | --- |
-| The Lowside (menus) | Slow bar-room groove, fuzz bass, brushed drums, a jukebox crackle underneath | 92 bpm | Baritone guitar |
+| The Lowside (the bar) | Slow bar-room groove, fuzz bass, brushed drums, a jukebox crackle underneath | 92 bpm | Baritone guitar |
 | Salt Coast | Surf garage: tremolo-picked guitar, spring reverb, driving snare | 152 bpm | Twang guitar |
 | Lowtown | Industrial breakbeat: distorted bass, metal percussion, a factory-hooter stab | 140 bpm | Synth bass |
 | Stonepeak | Grunge-weight rock: drop-tuned guitars, half-time drums that double for the last kilometre | 120 bpm | Rhythm guitar |
@@ -260,4 +260,4 @@ Rival engines pan and fade by position, so a bike coming up on the left is heard
 - **Crash by cause.** Traffic: a crunch and a car horn that holds. Prop: a wooden or metal knock by prop type. Landing: a suspension bottom-out. Off-track: gravel hiss.
 - **Remount.** A grunt, a kick, and the engine catching. This cue tells the player they have control again.
 - **World.** Wind that rises with speed; a doppler pass for each oncoming car; tunnel and underpass reverb on the player's own engine; gulls on the coast, cicadas in the desert, a rail crossing bell in Lowtown, a cowbell on the Ridge.
-- **Interface.** Menu moves are a soft cork tap, confirm is a rubber stamp, money in is a cash-drawer ring, money out is paper tearing.
+- **Interface.** One family of short taps, built in `apps/web/src/sound/recipes.ts`: a hover or focus move is a soft tap, a press is a stamp, back or close is a lower tap, a tab change is a double tick, an action the player can't take yet is a dull double knock, buying a bike is a cash-drawer ring, accepting the first-visit card is a stamp with two rising notes, and the race menu opens and closes with a short swish. The first-visit card shows before any input, when browsers allow no sound, so its cue plays when the player accepts it.

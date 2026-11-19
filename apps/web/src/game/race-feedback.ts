@@ -6,7 +6,7 @@ import type { HazardEffect, RaceEvent, RiderId } from "@racer/sim/state";
 import { weapons } from "@racer/sim/weapons";
 
 import type { Recorder } from "../diagnostics/recorder.ts";
-import type { Sound } from "./audio.ts";
+import type { Sound } from "../sound/sound.ts";
 import type { ChaseCamera } from "./chase-camera.ts";
 import { hudCountdown, roomOf } from "./game-session.ts";
 import type { Session } from "./game-session.ts";
@@ -21,6 +21,9 @@ const HAZARD_JOLT = {
   stagger: 0.6,
 } as const satisfies Record<HazardEffect, number>;
 const BUMP_PER_IMPACT = 1 / 9;
+
+const thumpGain = (strength: number): number =>
+  Math.min(1, 0.3 + strength * 0.6);
 
 const weaponName = (rider: RiderView): string =>
   rider.weapon === "none" ? "" : weapons[rider.weapon].name;
@@ -41,25 +44,24 @@ export interface Feedback {
   notice: Notice;
   noticeDetail: string;
   noticeLeft: number;
-  muted: boolean;
 }
 
 export const createFeedback = (): Feedback => ({
-  muted: false,
   notice: "",
   noticeDetail: "",
   noticeLeft: 0,
 });
 
 interface FeedbackParts {
-  readonly chase: ChaseCamera;
+  readonly chase: Pick<ChaseCamera, "bump" | "jolt">;
   readonly drawnSpeed: () => number;
-  readonly events: GameEvents;
+  readonly events: Pick<GameEvents, "onHud">;
   readonly feedback: Feedback;
+  readonly owners: (() => void)[];
   readonly player: () => RiderView;
-  readonly recorder: Recorder;
+  readonly recorder: Pick<Recorder, "race">;
   readonly session: () => Session;
-  readonly sound: Sound;
+  readonly sound: Pick<Sound, "hush" | "muted" | "play" | "toggleMute">;
   readonly stage: Pick<Stage, "me" | "race" | "track">;
 }
 
@@ -68,6 +70,7 @@ export const bindFeedback = ({
   drawnSpeed,
   events,
   feedback,
+  owners,
   player,
   recorder,
   session,
@@ -81,19 +84,19 @@ export const bindFeedback = ({
   };
 
   const quiet = () => {
-    sound.drive(0, 0, 0, false);
+    sound.hush();
   };
+  owners.push(quiet);
 
   const toggleMute = () => {
-    feedback.muted = !feedback.muted;
-    sound.setMuted(feedback.muted);
+    sound.toggleMute();
   };
 
   const strikeSound = (armed: boolean) => {
     if (armed) {
-      sound.weaponHit();
+      sound.play("weaponHit");
     } else {
-      sound.hit();
+      sound.play("hit");
     }
   };
 
@@ -114,30 +117,30 @@ export const bindFeedback = ({
     if (event.kind === "crash") {
       recorder.race("crash", stage.race.view.tick);
       chase.jolt(1);
-      sound.crash();
+      sound.play("crash");
       say("wipeout");
     } else if (event.kind === "knockedDown") {
       chase.jolt(0.7);
-      sound.thump(0.8);
+      sound.play("thump", 0, thumpGain(0.8));
     } else if (event.kind === "nearMiss") {
-      sound.whoosh();
+      sound.play("whoosh");
     } else if (event.kind === "land") {
       chase.bump(-event.impact * BUMP_PER_IMPACT);
       if (event.airSeconds > 0.35) {
         chase.jolt(Math.min(0.8, Math.abs(event.impact) * 0.07));
-        sound.thump(Math.abs(event.impact) / 10);
+        sound.play("thump", 0, thumpGain(Math.abs(event.impact) / 10));
       }
     } else if (event.kind === "glance" || event.kind === "bump") {
       chase.jolt(0.45);
-      sound.thump(0.5);
+      sound.play("thump", 0, thumpGain(0.5));
     } else if (event.kind === "hazard") {
       chase.jolt(HAZARD_JOLT[event.effect]);
-      sound.thump(HAZARD_JOLT[event.effect]);
+      sound.play("thump", 0, thumpGain(HAZARD_JOLT[event.effect]));
     } else if (event.kind === "attack") {
-      sound.swing();
+      sound.play("swing");
     } else if (event.kind === "riderContact") {
       chase.jolt(0.3);
-      sound.thump(0.35);
+      sound.play("thump", 0, thumpGain(0.35));
     } else if (event.kind === "weaponTaken") {
       say("armed", weapons[event.weapon].name);
     } else if (event.kind === "weaponBroken") {
@@ -150,11 +153,11 @@ export const bindFeedback = ({
   const reactToOthers = (event: RaceEvent) => {
     if (event.kind === "riderContact" && event.other === stage.me) {
       chase.jolt(0.3);
-      sound.thump(0.35);
+      sound.play("thump", 0, thumpGain(0.35));
     } else if (event.kind === "weaponTaken" && event.target === stage.me) {
       say("disarmed");
     } else if (event.kind === "pursuit" && event.target === stage.me) {
-      sound.siren();
+      sound.play("siren");
       say("police");
     } else if (event.kind === "crash") {
       const fallen = riderOf(stage.race.view.riders, event.rider);
@@ -163,7 +166,7 @@ export const bindFeedback = ({
         fallen &&
         Math.abs(fallen.s - player().s) < 30
       ) {
-        sound.thump(0.6);
+        sound.play("thump", 0, thumpGain(0.6));
       }
     }
   };
@@ -193,7 +196,7 @@ export const bindFeedback = ({
       distanceLeft: distanceLeft(stage.track, me),
       gear: me.gear,
       lagging: room?.lagging() ?? false,
-      muted: feedback.muted,
+      muted: sound.muted(),
       notice: feedback.noticeLeft > 0 ? feedback.notice : "",
       noticeDetail: feedback.noticeDetail,
       offBike: me.mode !== "riding",
