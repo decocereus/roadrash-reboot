@@ -135,6 +135,11 @@ export const recipes = {
     tone("sine", 330, 200, { decay: 0.09, gain: 0.3 }),
     noise("bandpass", 800, 400, { decay: 0.06, gain: 0.55 }, 0.8),
   ]),
+  batonHit: recipe("strike", [
+    burst(110, 0.32, 1.3, 40),
+    tone("sine", 140, 70, { decay: 0.15, gain: 0.4 }),
+    burst(700, 0.06, 0.3, 300),
+  ]),
   buy: recipe(
     "interface",
     [
@@ -143,6 +148,26 @@ export const recipes = {
       tone("sine", 2093, 2093, { at: 0.12, decay: 0.6, gain: 0.12 }),
       tone("sine", 2637, 2637, { at: 0.12, decay: 0.45, gain: 0.08 }),
       tone("sine", 3136, 3136, { at: 0.17, decay: 0.4, gain: 0.07 }),
+    ],
+    1,
+    0
+  ),
+  chainHit: recipe("strike", [
+    burst(120, 0.3, 1, 45),
+    crackle(900, 7000, { decay: 0.25, gain: 0.4 }),
+    tone("sine", 2400, 2380, { decay: 0.2, gain: 0.03 }),
+    tone("sine", 3150, 3120, { at: 0.03, decay: 0.15, gain: 0.025 }),
+  ]),
+  clubHit: recipe("strike", [
+    burst(160, 0.3, 1.1, 50),
+    tone("sine", 420, 380, { decay: 0.08, gain: 0.3 }),
+    burst(1800, 0.03, 0.4, 1200),
+  ]),
+  count: recipe(
+    "strike",
+    [
+      tone("sine", 880, 880, { decay: 0.08, gain: 0.22, hold: 0.12 }),
+      tone("square", 880, 880, { decay: 0.06, gain: 0.03, hold: 0.12 }, 3000),
     ],
     1,
     0
@@ -176,6 +201,18 @@ export const recipes = {
     1,
     0.05
   ),
+  crowbarHit: recipe("strike", [
+    burst(140, 0.3, 1.1, 50),
+    tone("sine", 1250, 1240, { decay: 0.5, gain: 0.05 }),
+    tone("sine", 2810, 2790, { decay: 0.4, gain: 0.035 }),
+    tone("sine", 4400, 4380, { decay: 0.25, gain: 0.02 }),
+    burst(3000, 0.03, 0.4, 2000),
+  ]),
+  cueHit: recipe("strike", [
+    burst(2500, 0.04, 0.6, 1500),
+    tone("sine", 900, 700, { decay: 0.05, gain: 0.2 }),
+    burst(200, 0.2, 0.9, 60),
+  ]),
   door: recipe(
     "big",
     [
@@ -209,6 +246,37 @@ export const recipes = {
     1,
     0
   ),
+  finish: recipe(
+    "big",
+    [
+      burst(180, 0.3, 0.9, 60),
+      tone("square", 523, 523, { attack: 0.02, decay: 0.6, gain: 0.06, hold: 0.5 }, 2500),
+      tone("square", 659, 659, { attack: 0.02, decay: 0.6, gain: 0.05, hold: 0.5 }, 2500),
+      tone("square", 784, 784, { attack: 0.02, decay: 0.6, gain: 0.05, hold: 0.5 }, 2500),
+      { ...enveloped({ at: 0.1, attack: 0.3, decay: 0.9, gain: 0.7, hold: 0.6 }), cutoff: 3200, kind: "murmur", voices: 10 },
+    ],
+    1,
+    0
+  ),
+  gained: recipe(
+    "strike",
+    [
+      tone("triangle", 660, 660, { decay: 0.1, gain: 0.16 }),
+      tone("triangle", 990, 990, { at: 0.09, decay: 0.22, gain: 0.16 }),
+    ],
+    1,
+    0
+  ),
+  go: recipe(
+    "strike",
+    [
+      tone("sine", 1320, 1320, { decay: 0.3, gain: 0.26, hold: 0.35 }),
+      tone("sine", 1760, 1760, { decay: 0.25, gain: 0.08, hold: 0.3 }),
+      tone("square", 1320, 1320, { decay: 0.2, gain: 0.03, hold: 0.35 }, 3500),
+    ],
+    1,
+    0
+  ),
   greet: recipe("strike", [
     burst(2300, 0.045, 0.7, 1300),
     noise("highpass", 4200, 4200, { decay: 0.015, gain: 0.25 }, 0.7),
@@ -221,6 +289,21 @@ export const recipes = {
     burst(1200, 0.08, 0.35, 300),
     tone("sine", 95, 50, { decay: 0.12, gain: 0.35 }),
   ]),
+  land: recipe("strike", [
+    burst(120, 0.25, 1.2, 50),
+    tone("sine", 80, 45, { decay: 0.15, gain: 0.35 }),
+    tone("sine", 260, 240, { at: 0.02, decay: 0.2, gain: 0.05 }),
+    noise("bandpass", 2200, 1800, { at: 0.01, decay: 0.05, gain: 0.25 }, 2),
+  ]),
+  lost: recipe(
+    "strike",
+    [
+      tone("triangle", 600, 600, { decay: 0.1, gain: 0.16 }),
+      tone("triangle", 400, 400, { at: 0.09, decay: 0.22, gain: 0.16 }),
+    ],
+    1,
+    0
+  ),
   menuClose: recipe("interface", [
     noise("bandpass", 600, 2000, { attack: 0.02, decay: 0.1, gain: 0.3 }, 1),
     tone("sine", 200, 300, { at: 0.04, decay: 0.06, gain: 0.22 }),
@@ -280,6 +363,12 @@ export const recipes = {
     tone("sine", 95, 55, { at: 0.06, decay: 0.1, gain: 0.3 }),
     crackle(260, 3500, { at: 0.06, decay: 0.1, gain: 0.12 }),
   ]),
+  signHit: recipe("strike", [
+    burst(150, 0.3, 1, 50),
+    tone("sine", 380, 360, { decay: 0.5, gain: 0.07 }),
+    tone("sine", 1100, 1040, { decay: 0.35, gain: 0.05 }),
+    crackle(150, 4000, { decay: 0.3, gain: 0.15 }),
+  ]),
   siren: recipe(
     "big",
     [sirenNote(0), sirenNote(1), sirenNote(2), sirenNote(3)],
@@ -322,11 +411,6 @@ export const recipes = {
     6,
     0.12
   ),
-  weaponHit: recipe("strike", [
-    burst(120, 0.34, 1.2, 40),
-    burst(520, 0.14, 0.6, 140),
-    burst(2600, 0.06, 0.3, 900),
-  ]),
   welcome: recipe(
     "interface",
     [

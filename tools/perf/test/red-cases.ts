@@ -7,6 +7,7 @@ import type { BuildRecord } from "../src/build.ts";
 import { evaluateBaseline } from "../src/evaluate.ts";
 import type { Samples } from "../src/evaluate.ts";
 import { LOBBY_BENCH } from "../src/lobby-bench.ts";
+import { PASSING_BENCH } from "../src/passing-bench.ts";
 import type { SideBLane } from "../src/node-lane-side-b.ts";
 import type { NodeLane, NodeSample } from "../src/node-lane.ts";
 import { CALIBRATION_ROUNDS } from "../src/node.ts";
@@ -303,12 +304,27 @@ export const syntheticLobby = (
     "lobby"
   );
 
+export const syntheticPassing = (
+  slowdown: Slowdown,
+  mostHeard: number = PASSING_BENCH.leastHeard
+): SideBLane =>
+  syntheticSideB(
+    PASSING_BENCH.id,
+    slowdown,
+    (durations) => ({
+      durations,
+      passing: { fewestHeard: 0, mostHeard },
+    }),
+    "passing"
+  );
+
 export const samplesOf = (
   comparisonId: string,
   node: readonly NodeLane[],
   build: { readonly A: BuildRecord; readonly B: BuildRecord },
   roadLife: SideBLane = syntheticRoadLife({ runner: 1, sim: 1 }),
-  lobby: SideBLane = syntheticLobby({ runner: 1, sim: 1 })
+  lobby: SideBLane = syntheticLobby({ runner: 1, sim: 1 }),
+  passing: SideBLane = syntheticPassing({ runner: 1, sim: 1 })
 ): Samples => ({
   build,
   comparisonId,
@@ -316,6 +332,7 @@ export const samplesOf = (
   lobby,
   mode: "gate",
   node,
+  passing,
   roadLife,
   sides: { A: identity, B: identity },
   version: 1,

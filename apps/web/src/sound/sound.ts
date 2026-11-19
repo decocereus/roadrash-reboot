@@ -1,3 +1,6 @@
+import type { RaceView } from "@racer/sim/race-view";
+import type { BikeClass, RiderId } from "@racer/sim/state";
+
 import { diagnostics } from "../diagnostics/hub.ts";
 import type { EffectsVolume, SettingsStore } from "../diagnostics/settings.ts";
 import type { Cue, Loop } from "./cues.ts";
@@ -20,15 +23,21 @@ const effectsGain = {
   mid: 0.5,
 } as const satisfies Record<EffectsVolume, number>;
 
+export interface Ride {
+  on: boolean;
+  speed: number;
+  throttle: number;
+  revs: number;
+  offRoad: boolean;
+  lean: number;
+  brake: number;
+  bikeClass: BikeClass;
+}
+
 export interface Sound {
   readonly play: (cue: Cue, pan?: number, gain?: number) => void;
-  readonly ride: (
-    on: boolean,
-    speed: number,
-    throttle: number,
-    revs: number,
-    offRoad: boolean
-  ) => void;
+  readonly ride: (ride: Ride) => void;
+  readonly hear: (view: RaceView, me: RiderId) => void;
   readonly hush: () => void;
   readonly shift: () => void;
   readonly loop: (loop: Loop, gain: number) => void;
@@ -121,6 +130,9 @@ export const createSound = <Context extends Unlockable>({
 
   return {
     desk: () => desk,
+    hear(view, me) {
+      desk?.hear(view, me);
+    },
     hush() {
       desk?.hush();
     },
@@ -137,8 +149,8 @@ export const createSound = <Context extends Unlockable>({
         earlyGain = gain;
       }
     },
-    ride(on, speed, throttle, revs, offRoad) {
-      desk?.ride(on, speed, throttle, revs, offRoad);
+    ride(ride) {
+      desk?.ride(ride);
     },
     shift() {
       desk?.shift();

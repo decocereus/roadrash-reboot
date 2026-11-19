@@ -81,6 +81,7 @@ const childScripts = {
   alloc: NODE_CHILD,
   calibrate: NODE_CHILD,
   lobby: "tools/perf/lobby.ts",
+  passing: "tools/perf/passing.ts",
   roadLife: "tools/perf/road-life.ts",
   room: "tools/perf/room.ts",
   snapshot: "tools/perf/snapshot.ts",

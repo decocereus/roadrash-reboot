@@ -183,6 +183,7 @@ const tasks = [
   "lobby",
   "roadLife",
   "room",
+  "passing",
 ] as const;
 
 export const childRecord = Schema.Struct({
@@ -203,6 +204,9 @@ export const childRecord = Schema.Struct({
   durations: Schema.optionalKey(Schema.Array(Schema.Number)),
   lobby: Schema.optionalKey(
     Schema.Struct({ fewestMoving: Schema.Number, routed: Schema.Number })
+  ),
+  passing: Schema.optionalKey(
+    Schema.Struct({ fewestHeard: Schema.Number, mostHeard: Schema.Number })
   ),
   police: Schema.optionalKey(Schema.Number),
   racers: Schema.optionalKey(Schema.Number),

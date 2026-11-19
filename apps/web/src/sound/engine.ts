@@ -60,6 +60,7 @@ export interface EngineVoice {
     now: number
   ) => void;
   readonly dip: (now: number) => void;
+  readonly stop: () => void;
 }
 
 interface Oscillator {
@@ -110,11 +111,9 @@ export const engineVoice = (
   const growl = voiceOf(context, "square", character.growl, tone);
   const fifth = voiceOf(context, "sawtooth", character.fifth * 0.6, tone);
   fifth.detune.value = -9;
-  if (character.lope > 0) {
-    const lope = oscillator(context, "sine", character.lope * 0.05);
-    lope.node.frequency.value = 7.5;
-    lope.gain.connect(level.gain);
-  }
+  const lope = oscillator(context, "sine", character.lope * 0.05);
+  lope.node.frequency.value = 7.5;
+  lope.gain.connect(level.gain);
   const glides = {
     fifth: pitchGlide(fifth.frequency, character.glide),
     growl: pitchGlide(growl.frequency, character.glide),
@@ -138,6 +137,12 @@ export const engineVoice = (
       glides.fifth((hertz * 2) / 3, now);
       glides.level(on ? 0.06 + throttle * 0.1 + revs * 0.03 : 0, now);
       glides.tone(character.tone + throttle * 1500 + revs * 1200, now);
+    },
+    stop() {
+      for (const node of [saw, square, growl, fifth, lope.node]) {
+        node.stop();
+      }
+      shift.disconnect();
     },
   };
 };

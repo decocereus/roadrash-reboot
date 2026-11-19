@@ -26,6 +26,7 @@ export const samplesRecord = Schema.Struct({
   comparisonId: Schema.String,
   lanes: Schema.Array(Schema.Literals(portableLanes)),
   lobby: Schema.NullOr(sideBRecord),
+  passing: Schema.NullOr(sideBRecord),
   mode: Schema.Literals(["gate", "baseline"]),
   node: Schema.Array(nodeLaneRecord),
   roadLife: Schema.NullOr(sideBRecord),

@@ -13,6 +13,7 @@ import {
 } from "./node-lane.ts";
 import type { NodeSample } from "./node-lane.ts";
 import type { ChildRecord } from "./node.ts";
+import { PASSING_BENCH } from "./passing-bench.ts";
 import { median } from "./result.ts";
 import { ROAD_LIFE } from "./road-life.ts";
 import { WINDOW_TICKS } from "./scenarios.ts";
@@ -32,7 +33,7 @@ interface SideBWindow {
   readonly id: string;
   readonly metric: string;
   readonly shortfall: (record: ChildRecord) => string | null;
-  readonly task: "lobby" | "roadLife";
+  readonly task: "lobby" | "passing" | "roadLife";
 }
 
 export const lobbyWindow: SideBWindow = {
@@ -66,7 +67,25 @@ export const roadLifeWindow: SideBWindow = {
   task: "roadLife",
 };
 
-export const sideBWindows = [lobbyWindow, roadLifeWindow] as const;
+export const passingWindow: SideBWindow = {
+  id: PASSING_BENCH.id,
+  metric: "sound.passing.p95",
+  shortfall: ({ passing }) => {
+    if (!passing) {
+      return "wrote no passing window";
+    }
+    return passing.mostHeard >= PASSING_BENCH.leastHeard
+      ? null
+      : `mostHeard=${passing.mostHeard} expected at least ${PASSING_BENCH.leastHeard}`;
+  },
+  task: "passing",
+};
+
+export const sideBWindows = [
+  lobbyWindow,
+  roadLifeWindow,
+  passingWindow,
+] as const;
 
 export const sideBLane = Effect.fn("node.sideB")(function* sideBLane(
   { id, task }: SideBWindow,

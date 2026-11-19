@@ -1,9 +1,14 @@
+import type { RaceView } from "@racer/sim/race-view";
+import type { BikeClass, RiderId } from "@racer/sim/state";
+
 import { cues, loops } from "./cues.ts";
 import type { Cue, Loop } from "./cues.ts";
 import { engineCharacters, engineVoice } from "./engine.ts";
 import type { EngineVoice } from "./engine.ts";
 import { gainGlide, pitchGlide } from "./glide.ts";
 import type { Glide } from "./glide.ts";
+import { hearPassing, PASSING_VOICES, passingVoices } from "./passing.ts";
+import type { Passing } from "./passing.ts";
 import { loopRecipes, priorities, recipes } from "./recipes.ts";
 import {
   closeLoop,
@@ -14,6 +19,7 @@ import {
   seeded,
 } from "./render.ts";
 import type { Random } from "./render.ts";
+import type { Ride } from "./sound.ts";
 
 const CHANNELS = 8;
 const NOISE_CHUNK = 16_384;
@@ -21,6 +27,8 @@ const LATE_SECONDS = 0.4;
 const RUSH_SPEED = 75;
 const MUTE_SECONDS = 0.02;
 const LOOP_SECONDS = 0.3;
+const SCRUB_FROM = 0.6;
+const SCRUB_SPEED = 30;
 
 interface Channel {
   readonly gain: GainNode;
@@ -54,13 +62,9 @@ export interface Level {
 
 export interface Desk {
   readonly play: (cue: Cue, pan: number, gain: number) => void;
-  readonly ride: (
-    on: boolean,
-    speed: number,
-    throttle: number,
-    revs: number,
-    offRoad: boolean
-  ) => void;
+  readonly ride: (ride: Ride) => void;
+  readonly hear: (view: RaceView, me: RiderId) => void;
+  readonly hush: () => void;
   readonly shift: () => void;
   readonly hush: () => void;
   readonly loop: (loop: Loop, gain: number) => void;
@@ -109,30 +113,97 @@ const freeChannel = (
   return chosen;
 };
 
-interface Wind {
+interface Band {
   readonly gain: Glide;
   readonly tone: Glide;
 }
 
-const windOf = (
+const bandOf = (
   context: BaseAudioContext,
   noise: AudioBuffer,
+  q: number,
+  seconds: number,
+  offset: number,
   out: AudioNode
-): Wind => {
+): Band => {
   const source = context.createBufferSource();
   source.buffer = noise;
   source.loop = true;
   const tone = context.createBiquadFilter();
   tone.type = "bandpass";
-  tone.Q.value = 0.5;
+  tone.Q.value = q;
   const gain = context.createGain();
   gain.gain.value = 0;
   source.connect(tone).connect(gain).connect(out);
-  source.start();
+  source.start(0, noise.duration * offset);
   return {
-    gain: gainGlide(gain.gain, 0.15),
-    tone: pitchGlide(tone.frequency, 0.15),
+    gain: gainGlide(gain.gain, seconds),
+    tone: pitchGlide(tone.frequency, seconds),
   };
+};
+
+interface PassingVoice {
+  readonly low: OscillatorNode;
+  readonly high: OscillatorNode;
+  readonly pitch: Glide;
+  readonly under: Glide;
+  readonly cutoff: Glide;
+  readonly gain: Glide;
+  readonly pan: Glide;
+  readonly mix: GainNode;
+}
+
+const passingVoiceOf = (context: BaseAudioContext, out: AudioNode): PassingVoice => {
+  const high = context.createOscillator();
+  high.type = "sawtooth";
+  const low = context.createOscillator();
+  low.type = "square";
+  const mix = context.createGain();
+  mix.gain.value = 0.5;
+  const tone = context.createBiquadFilter();
+  tone.type = "lowpass";
+  const gain = context.createGain();
+  gain.gain.value = 0;
+  const pan = context.createStereoPanner();
+  high.connect(tone);
+  low.connect(mix).connect(tone);
+  tone.connect(gain).connect(pan).connect(out);
+  high.start();
+  low.start();
+  return {
+    cutoff: pitchGlide(tone.frequency, 0.08),
+    gain: gainGlide(gain.gain, 0.08),
+    high,
+    low,
+    mix,
+    pan: gainGlide(pan.pan, 0.05),
+    pitch: pitchGlide(high.frequency, 0.06),
+    under: pitchGlide(low.frequency, 0.06),
+  };
+};
+
+const scrubOf = ({ brake, lean, on, speed }: Ride): number => {
+  if (!on) {
+    return 0;
+  }
+  const fast = Math.min(1, speed / SCRUB_SPEED);
+  const hard = Math.max(0, (Math.abs(lean) - SCRUB_FROM) / (1 - SCRUB_FROM));
+  return fast * Math.min(1, hard * 0.8 + brake * 0.6) * 0.2;
+};
+
+const tunePassing = (voice: Passing, out: PassingVoice, now: number): void => {
+  if (voice.fresh) {
+    out.high.frequency.cancelScheduledValues(now);
+    out.high.frequency.setValueAtTime(voice.hertz, now);
+    out.low.frequency.cancelScheduledValues(now);
+    out.low.frequency.setValueAtTime(voice.hertz / 2, now);
+    out.mix.gain.setValueAtTime(voice.bike ? 0.5 : 1, now);
+  }
+  out.pitch(voice.hertz, now);
+  out.under(voice.hertz / 2, now);
+  out.cutoff(voice.cutoff, now);
+  out.gain(voice.gain, now);
+  out.pan(voice.pan, now);
 };
 
 export const openDesk = (
@@ -165,7 +236,11 @@ export const openDesk = (
   const random: Random = seeded(41);
   const noise = noiseBuffer(context);
   let engine: EngineVoice | null = null;
-  let wind: Wind | null = null;
+  let engineClass: BikeClass | null = null;
+  let wind: Band | null = null;
+  let scrub: Band | null = null;
+  const passing = passingVoices();
+  const passingOut: PassingVoice[] = [];
   let waiting: Cue | null = null;
   let waitingPan = 0;
   let waitingGain = 1;
@@ -317,13 +392,16 @@ export const openDesk = (
         }
       });
       await nextTask();
-      timed(() => {
-        engine = engineVoice(context, engineCharacters.middleweight, effects);
-      });
-      await nextTask();
       await fillFrom(0);
       timed(() => {
-        wind = windOf(context, noise, effects);
+        wind = bandOf(context, noise, 0.5, 0.15, 0, effects);
+        scrub = bandOf(context, noise, 1.4, 0.06, 0.5, effects);
+      });
+      await nextTask();
+      timed(() => {
+        for (let index = 0; index < PASSING_VOICES; index += 1) {
+          passingOut.push(passingVoiceOf(context, effects));
+        }
       });
       await renderFrom(0);
       await renderLoopFrom(0);
@@ -351,6 +429,12 @@ export const openDesk = (
   });
   Reflect.set(globalThis, "__rushlineSound", {
     heard: () => Object.fromEntries(counts),
+    passing: () =>
+      passing.map(({ gain, key, pan }) => ({
+        gain: Math.round(gain * 1000) / 1000,
+        key,
+        pan: Math.round(pan * 100) / 100,
+      })),
     looping: () =>
       Object.fromEntries(
         loops.map((loop) => [
@@ -388,13 +472,44 @@ export const openDesk = (
       loopWanted.set(loop, gain);
       loopGains.get(loop)?.(gain, context.currentTime);
     },
-    play,
-    ride(on, speed, throttle, revs, offRoad) {
+    hear(view, me) {
+      if (passingOut.length === 0) {
+        return;
+      }
       const now = context.currentTime;
+      hearPassing(view, me, passing);
+      for (let index = 0; index < passing.length; index += 1) {
+        const voice = passing[index];
+        const out = passingOut[index];
+        if (voice && out) {
+          tunePassing(voice, out, now);
+        }
+      }
+    },
+    hush() {
+      const now = context.currentTime;
+      engine?.drive(false, 0, 0, now);
+      wind?.gain(0, now);
+      scrub?.gain(0, now);
+      for (const out of passingOut) {
+        out.gain(0, now);
+      }
+    },
+    play,
+    ride(ride) {
+      const now = context.currentTime;
+      const { bikeClass, offRoad, on, revs, speed, throttle } = ride;
+      if (on && bikeClass !== engineClass) {
+        engine?.stop();
+        engine = engineVoice(context, engineCharacters[bikeClass], effects);
+        engineClass = bikeClass;
+      }
       engine?.drive(on, revs, throttle, now);
       const rush = on ? Math.min(1, speed / RUSH_SPEED) : 0;
       wind?.gain(rush * rush * 0.26 + (on && offRoad ? 0.12 : 0), now);
       wind?.tone(offRoad ? 240 : 500 + rush * 1100, now);
+      scrub?.gain(offRoad ? 0 : scrubOf(ride), now);
+      scrub?.tone(1000 + ride.brake * 700, now);
     },
     shift() {
       engine?.dip(context.currentTime);
