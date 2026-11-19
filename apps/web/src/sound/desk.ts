@@ -271,6 +271,19 @@ export const openDesk = (
     loopGains.set(loop, glide);
   };
 
+  const stepFrom = async (
+    steps: readonly (() => void)[],
+    index: number
+  ): Promise<void> => {
+    const step = steps[index];
+    if (step === undefined) {
+      return;
+    }
+    timed(step);
+    await nextTask();
+    await stepFrom(steps, index + 1);
+  };
+
   const renderLoopFrom = async (index: number): Promise<void> => {
     const loop = loops[index];
     if (loop === undefined) {
@@ -285,6 +298,7 @@ export const openDesk = (
       100 + index
     );
     noteSlice(performance.now() - sliceStart);
+    await stepFrom(job.steps, 0);
     const buffer = await job.context.startRendering();
     await nextTask();
     timed(() => {

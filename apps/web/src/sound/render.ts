@@ -153,6 +153,27 @@ const syllables = (
   }
 };
 
+const murmurVoice = (
+  context: BaseAudioContext,
+  voices: number,
+  begin: number,
+  end: number,
+  sources: Sources,
+  random: Random,
+  room: AudioNode
+): void => {
+  const mouth = context.createGain();
+  mouth.gain.value = 0;
+  syllables(mouth.gain, begin, end, random);
+  const weight = context.createGain();
+  weight.gain.value = (0.4 + random() * 0.6) / Math.sqrt(voices);
+  mouth.connect(weight).connect(room);
+  const low = filtered(context, "bandpass", 280 + random() * 500, 4, mouth);
+  const high = filtered(context, "bandpass", 900 + random() * 1300, 6, mouth);
+  noiseSource(context, sources.noise, random, begin, end, low);
+  noiseSource(context, sources.noise, random, begin, end, high);
+};
+
 const renderLayer = (
   context: BaseAudioContext,
   layer: Layer,
@@ -201,28 +222,7 @@ const renderLayer = (
     case "murmur": {
       const room = filtered(context, "lowpass", layer.cutoff, 0.7, level);
       for (let voice = 0; voice < layer.voices; voice += 1) {
-        const mouth = context.createGain();
-        mouth.gain.value = 0;
-        syllables(mouth.gain, begin, end, random);
-        const weight = context.createGain();
-        weight.gain.value = (0.4 + random() * 0.6) / Math.sqrt(layer.voices);
-        mouth.connect(weight).connect(room);
-        const low = filtered(
-          context,
-          "bandpass",
-          280 + random() * 500,
-          4,
-          mouth
-        );
-        const high = filtered(
-          context,
-          "bandpass",
-          900 + random() * 1300,
-          6,
-          mouth
-        );
-        noiseSource(context, sources.noise, random, begin, end, low);
-        noiseSource(context, sources.noise, random, begin, end, high);
+        murmurVoice(context, layer.voices, begin, end, sources, random, room);
       }
       return;
     }
@@ -274,19 +274,40 @@ export const cueJob = (
   return { context, seconds };
 };
 
+export interface LoopJob extends CueJob {
+  readonly steps: readonly (() => void)[];
+}
+
 export const loopJob = (
   recipe: LoopRecipe,
   sampleRate: number,
   noise: AudioBuffer,
   seed: number
-): CueJob => {
+): LoopJob => {
   const context = new OfflineAudioContext({
     length: Math.ceil((recipe.seconds + recipe.fade) * sampleRate),
     numberOfChannels: 1,
     sampleRate,
   });
-  renderLayers(context, recipe.layers, 0, { noise, spread: 0 }, seeded(seed));
-  return { context, seconds: recipe.seconds };
+  const random = seeded(seed);
+  const sources = { noise, spread: 0 };
+  const out = context.destination;
+  const steps = recipe.layers.flatMap((layer) => {
+    if (layer.kind !== "murmur") {
+      return [
+        () => {
+          renderLayer(context, layer, 0, sources, random, out);
+        },
+      ];
+    }
+    const level = enveloped(context, layer, 0, out);
+    const room = filtered(context, "lowpass", layer.cutoff, 0.7, level);
+    const end = endOf(layer, 0) + 0.01;
+    return Array.from({ length: layer.voices }, () => () => {
+      murmurVoice(context, layer.voices, layer.at, end, sources, random, room);
+    });
+  });
+  return { context, seconds: recipe.seconds, steps };
 };
 
 export const closeLoop = (rendered: AudioBuffer, recipe: LoopRecipe): void => {
