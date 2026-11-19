@@ -44,6 +44,7 @@ const SNAPSHOT_RUNS = 3;
 const SNAPSHOT_WRITE_MS = 0.05;
 const SNAPSHOT_RESTORE_MS = 0.04;
 const SNAPSHOT_HASH_MS = 0.08;
+const TIMING_STAMP_MS = 0.002;
 const ROOM_TICK_MS = 0.1;
 const ROOM_CONFIRM_MS = 0.1;
 const ROOM_ROLLBACK_MS = 0.6;
@@ -137,6 +138,7 @@ export const syntheticLane = (
         bytes: Array.from({ length: WINDOW_TICKS }, () => SNAPSHOT_BYTES),
         hash: tickDurations(SNAPSHOT_HASH_MS * slowdown.runner),
         restore: tickDurations(SNAPSHOT_RESTORE_MS * slowdown.runner),
+        stamp: tickDurations(TIMING_STAMP_MS * slowdown.runner),
         write: tickDurations(SNAPSHOT_WRITE_MS * slowdown.runner),
       },
     });

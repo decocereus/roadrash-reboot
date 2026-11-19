@@ -126,9 +126,10 @@ describe("celebrity models load per race", () => {
     expect({
       riders: [...first.keys()],
       sameAssets: [...worn.keys()].every(
-        (rider) => first.get(rider) === second.get(rider)
+        (rider) => first.get(rider)?.body === second.get(rider)?.body
       ),
-      shared: asKylie === againKylie && asKylie !== asMusk,
+      shared:
+        asKylie?.body === againKylie?.body && asKylie?.body !== asMusk?.body,
       ...tally(),
     }).toStrictEqual({
       decoded: { [kylie]: 1, [musk]: 1 },

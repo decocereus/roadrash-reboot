@@ -1,12 +1,25 @@
 import { riderPalette } from "@racer/sim/palette";
+import type { RiderBlocks } from "@racer/sim/palette";
+import type { RiderView } from "@racer/sim/race-view";
 import * as THREE from "three";
 
 import type { Assets, RiderAsset } from "./assets.ts";
+import type { Dressing } from "./figure-wardrobe.ts";
 import type { Palette, Slot } from "./model-slots.ts";
 
 const DEFAULT_JACKET = 0x23_26_2c;
 const DEFAULT_HELMET = 0xf2_c2_30;
 const SUIT_PANEL = "#1c1826";
+
+export const suitOf = (
+  rider: Pick<RiderView, "id" | "profile">,
+  blocks: RiderBlocks | undefined,
+  dressing: Dressing
+): number =>
+  dressing.get(rider.id)?.suit ??
+  blocks?.suit ??
+  riderPalette[rider.profile.jacket]?.jacket ??
+  DEFAULT_JACKET;
 
 export const paletteOf = (index: number): Palette => {
   const colours = riderPalette[index];
