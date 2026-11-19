@@ -490,7 +490,7 @@ Every sound in the game from one module: the cue table written as data, rendered
 - Id: `audio`
 - Start: `apps/web/src/sound/sound.ts`, `apps/web/src/sound/recipes.ts`, `apps/web/src/sound/desk.ts`
 - Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/design/art-direction.md#audio-direction](design/art-direction.md#audio-direction)
-- Verify: [.claude/skills/verify-rushline/features/sound.md](../.claude/skills/verify-rushline/features/.claude/skills/verify-rushline/features/sound.md)
+- Verify: [sound.md](../.claude/skills/verify-rushline/features/sound.md)
 - Perf: none yet
 - Owns: `apps/web/src/sound/**`, `apps/web/test/sound-bundle.ts`, `tools/sound/**`
 

@@ -63,10 +63,7 @@ const transform = (real: Float64Array, imag: Float64Array): void => {
   }
 };
 
-const centroidOf = (
-  samples: Float32Array,
-  sampleRate: number
-): number => {
+const centroidOf = (samples: Float32Array, sampleRate: number): number => {
   const real = new Float64Array(FRAME);
   const imag = new Float64Array(FRAME);
   let weighted = 0;

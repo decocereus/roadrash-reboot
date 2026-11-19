@@ -427,7 +427,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
     summary:
       "Every sound in the game from one module: the cue table written as data, rendered offline into buffers after the first input, the menus' interface sounds, the engine per bike class, wind and the race's one-shots, with effects volume and mute in the player's settings. `pnpm sound:audition` renders every cue to WAV and an audition page and fails on clipping or a cue out of range.",
     title: "Sound",
-    verify: [".claude/skills/verify-rushline/features/sound.md"],
+    verify: ["sound.md"],
   },
   {
     docs: [
