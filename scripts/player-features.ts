@@ -425,7 +425,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "tools/perf/src/node-race-sound.ts",
       "tools/perf/src/race-sound-bench.ts",
     ],
-    perf: [],
+    perf: ["sound.race.p95"],
     start: [
       "apps/web/src/sound/sound.ts",
       "apps/web/src/sound/recipes.ts",

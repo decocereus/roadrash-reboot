@@ -492,7 +492,7 @@ Every sound in the game from one module: the cue table written as data, rendered
 - Start: `apps/web/src/sound/sound.ts`, `apps/web/src/sound/recipes.ts`, `apps/web/src/sound/desk.ts`
 - Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/design/art-direction.md#audio-direction](design/art-direction.md#audio-direction)
 - Verify: [sound.md](../.claude/skills/verify-rushline/features/sound.md)
-- Perf: none yet
+- Perf: `sound.race.p95`
 - Owns: `apps/web/src/game/race-cues.ts`, `apps/web/src/sound/**`, `apps/web/test/passing-field.ts`, `apps/web/test/sound-bundle.ts`, `apps/web/test/sound-scenes.ts`, `tools/sound/**`, `tools/perf/race-sound.ts`, `tools/perf/src/node-race-sound.ts`, `tools/perf/src/race-sound-bench.ts`
 
 Source files:
