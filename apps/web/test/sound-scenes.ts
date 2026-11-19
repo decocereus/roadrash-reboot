@@ -1,5 +1,8 @@
+import type { BikeClass } from "@racer/sim/state";
+
 import { openDesk } from "../src/sound/desk.ts";
 import type { Desk, Level } from "../src/sound/desk.ts";
+import type { Ride } from "../src/sound/race-mix.ts";
 
 const SAMPLE_RATE = 48_000;
 const READY_POLL_MS = 20;
@@ -148,8 +151,19 @@ const earlyThump = async (): Promise<Scene> => {
 
 const HUSH_AT = 0.5;
 const HUSH_SETTLED = 2.2;
+const TOP_SPEED = 61.3;
 
-const hushedRide = async (): Promise<Scene> => {
+const flatOut: Ride = {
+  brake: 1,
+  lean: 1,
+  offRoad: false,
+  on: true,
+  revs: 1,
+  speed: TOP_SPEED,
+  throttle: 1,
+};
+
+const hushedRide = async (bikeClass: BikeClass): Promise<Scene> => {
   const [left, right] = await staged({
     at: [
       HUSH_AT,
@@ -159,16 +173,8 @@ const hushedRide = async (): Promise<Scene> => {
     ],
     level: FULL,
     ready: (desk) => {
-      desk.ride({
-        bikeClass: "middleweight",
-        brake: 0,
-        lean: 0,
-        offRoad: false,
-        on: true,
-        revs: 0.8,
-        speed: 40,
-        throttle: 1,
-      });
+      desk.prepare(bikeClass);
+      desk.ride({ ...flatOut, brake: 0, lean: 0, revs: 0.8, speed: 40 });
     },
     seconds: 2.5,
   });
@@ -179,13 +185,15 @@ const hushedRide = async (): Promise<Scene> => {
   );
   return {
     left,
-    name: "ride-then-hush",
+    name: `${bikeClass}-hush`,
     problems: [
-      ...(riding > HEARD ? [] : ["The ride was silent before the hush."]),
+      ...(riding > HEARD
+        ? []
+        : [`The ${bikeClass} was silent before the hush.`]),
       ...(after === 0
         ? []
         : [
-            `The engine and wind still play at ${decibels(after)} ${(HUSH_SETTLED - HUSH_AT).toFixed(1)} s after the hush.`,
+            `The ${bikeClass} engine and wind still play at ${decibels(after)} ${(HUSH_SETTLED - HUSH_AT).toFixed(1)} s after the hush.`,
           ]),
     ],
     right,
@@ -195,5 +203,7 @@ const hushedRide = async (): Promise<Scene> => {
 export const scenes = async (): Promise<readonly Scene[]> => [
   await mutedFirstPress(),
   await earlyThump(),
-  await hushedRide(),
+  await hushedRide("featherweight"),
+  await hushedRide("middleweight"),
+  await hushedRide("heavyweight"),
 ];

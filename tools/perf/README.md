@@ -27,7 +27,7 @@ The six `room.*` rows measure side B alone as well, because no room exists at th
 | `sim.allocatedBytesPerTick` | at most 1.10 x the baseline median, never calibrated | at most 1.10 |
 | `snapshot.write.p95`, `snapshot.restore.p95`, `snapshot.hash.p95` | at most 1.15 x the calibrated baseline median | none, side B only |
 | `snapshot.bytes.max` | the baseline size exactly | none, side B only |
-| `roadLife.tick.p95`, `lobby.tick.p95`, `sound.passing.p95` | at most 1.15 x the calibrated baseline median | none, side B only |
+| `roadLife.tick.p95`, `lobby.tick.p95`, `sound.race.p95` | at most 1.15 x the calibrated baseline median | none, side B only |
 | `room.tick.p95`, `room.confirm.p95`, `room.rollback.p95` | at most 1.15 x the calibrated baseline median | none, side B only |
 | `room.allocatedBytesPerTick`, `room.client.allocatedBytesPerTick`, `room.frame.allocatedBytesPerTick` | at most 1.10 x the baseline median, never calibrated | none, side B only |
 | `bytes.route.root.gzip` | 394,000 B, the owner's cap on the first download | none |
@@ -69,7 +69,7 @@ The harness runs on side A as well, so it drives a race only in ways both sides 
 
 `lobby-v1` is the fourth window, on side B alone for the same reason, because the baseline revision predates the bar. `tools/perf/src/node-lobby.ts` steps eight riders across the bar floor with each other as blockers, the door moment's load, and each tick one rider plans a new route. A plain step takes about 3 microseconds and a route takes about 0.45 ms, so a window of plain steps would put the plans beyond its p95. Its one row, `lobby.tick.p95`, is therefore the cost of the costliest kind of tick. Each of five child runs measures a warmed second pass. The window checks that at least four riders keep moving and that the plans find routes.
 
-`passing-v1` is the fifth window, on side B alone because the baseline revision has no sound. It is the per-frame work of the race's passing engines, `hearPassing` in `apps/web/src/sound/passing.ts`: from the race view it picks the four riders and cars nearest the player inside 70 m, keeps each one on the voice it already had, and works out each voice's pitch, Doppler shift, level and pan. It runs on the road-life race from tick 840, the busiest traffic the gate has. Each tick steps the race untimed, then times twenty calls and keeps their mean, because one call takes a few microseconds. Its one row is `sound.passing.p95`. The window checks that at least two voices are heard at some point.
+`race-sound-v1` is the fifth window, on side B alone because the baseline revision has no sound. It is the race's whole per-frame sound update, `rideFrom`, `rideMix` and `hearMix` in `apps/web/src/sound/race-mix.ts`: the engine, wind and scrub for the player's ride, then the four riders and cars nearest the player inside 70 m, each kept on its voice, given its pitch, Doppler shift, level and pan, and handed over with a fade when its vehicle changes. The `AudioParam`s are recorded stand-ins that count what the update schedules, so the window times the same code the desk runs. It runs on the road-life race from tick 840, the busiest traffic the gate has, and the clock moves one tick per tick, so the glides schedule what a frame would. Each tick steps the race untimed and times one update. Its one row is `sound.race.p95`. The window checks that at least two voices are heard and that the update scheduled something.
 
 ### `pnpm perf`
 

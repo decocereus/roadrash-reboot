@@ -73,7 +73,7 @@ const nodeKinds: readonly MetricKind[] = [
   snapshotKind(SNAPSHOT_BYTES_METRIC, "B"),
   sideBKind("roadLife.tick.p95"),
   sideBKind("lobby.tick.p95"),
-  sideBKind("sound.passing.p95"),
+  sideBKind("sound.race.p95"),
   snapshotKind("room.tick.p95", "ms"),
   snapshotKind("room.confirm.p95", "ms"),
   snapshotKind("room.rollback.p95", "ms"),

@@ -626,6 +626,7 @@ const startGame = (
       return { cause: errorOf(error), kind: "failed", stage: "build" };
     }
     session = builtFrom(preparation, dressing);
+    sound.prepare(player().bike.bikeClass);
     clearNoticeAndClock();
     const warming = showStartWhenWarm();
     release();

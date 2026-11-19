@@ -492,8 +492,8 @@ Every sound in the game from one module: the cue table written as data, rendered
 - Start: `apps/web/src/sound/sound.ts`, `apps/web/src/sound/recipes.ts`, `apps/web/src/sound/desk.ts`
 - Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/design/art-direction.md#audio-direction](design/art-direction.md#audio-direction)
 - Verify: [sound.md](../.claude/skills/verify-rushline/features/sound.md)
-- Perf: `sound.passing.p95`
-- Owns: `apps/web/src/game/race-cues.ts`, `apps/web/src/sound/**`, `apps/web/test/sound-bundle.ts`, `apps/web/test/sound-scenes.ts`, `tools/sound/**`, `tools/perf/passing.ts`, `tools/perf/src/node-passing.ts`, `tools/perf/src/passing-bench.ts`
+- Perf: `sound.race.p95`
+- Owns: `apps/web/src/game/race-cues.ts`, `apps/web/src/sound/**`, `apps/web/test/sound-bundle.ts`, `apps/web/test/sound-scenes.ts`, `tools/sound/**`, `tools/perf/race-sound.ts`, `tools/perf/src/node-race-sound.ts`, `tools/perf/src/race-sound-bench.ts`
 
 Source files:
 
@@ -501,17 +501,19 @@ Source files:
 - `apps/web/src/sound/characters.ts`
 - `apps/web/src/sound/cues.ts`
 - `apps/web/src/sound/desk.ts`
+- `apps/web/src/sound/engine-control.ts`
 - `apps/web/src/sound/engine.ts`
 - `apps/web/src/sound/glide.ts`
 - `apps/web/src/sound/interface.ts`
 - `apps/web/src/sound/passing.ts`
+- `apps/web/src/sound/race-mix.ts`
 - `apps/web/src/sound/recipes.ts`
 - `apps/web/src/sound/render.ts`
 - `apps/web/src/sound/sound.ts`
 - `apps/web/src/sound/tap.ts`
-- `tools/perf/passing.ts`
-- `tools/perf/src/node-passing.ts`
-- `tools/perf/src/passing-bench.ts`
+- `tools/perf/race-sound.ts`
+- `tools/perf/src/node-race-sound.ts`
+- `tools/perf/src/race-sound-bench.ts`
 - `tools/sound/audition.ts`
 - `tools/sound/src/analysis.ts`
 - `tools/sound/src/audition-failed.ts`
@@ -521,6 +523,7 @@ Source files:
 Test files:
 
 - `apps/web/src/sound/passing.test.ts`
+- `apps/web/src/sound/race-mix.test.ts`
 - `apps/web/src/sound/sound.test.ts`
 - `apps/web/test/sound-bundle.ts`
 - `apps/web/test/sound-scenes.ts`

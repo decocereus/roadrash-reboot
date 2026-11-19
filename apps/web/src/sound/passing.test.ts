@@ -5,6 +5,7 @@ import type { RaceRun } from "@racer/sim/race-run";
 import { PLAYER_RIDER, riderIdAt, riderOf } from "@racer/sim/state";
 import { describe, expect, it } from "vitest";
 
+import { passingField, placeAhead } from "../../test/passing-field.ts";
 import { hearPassing, PASSING_VOICES, passingVoices } from "./passing.ts";
 import type { Passing } from "./passing.ts";
 
@@ -48,7 +49,30 @@ describe(hearPassing, () => {
     const before = voices.map((voice) => voice.key);
     hearPassing(run.view, PLAYER_RIDER, voices);
     expect(voices.map((voice) => voice.key)).toStrictEqual(before);
-    expect(voices.some((voice) => voice.fresh)).toBeFalsy();
+  });
+
+  it("keeps a voice until a newcomer is clearly nearer, so two riders at one distance never swap each frame", () => {
+    const race = passingField();
+    for (const [index, gap] of [
+      [1, 1],
+      [2, 2],
+      [3, 3],
+      [4, 4],
+      [5, 6],
+    ] as const) {
+      placeAhead(race, index, gap);
+    }
+    const voices = passingVoices();
+    const keys = () =>
+      voices.map((voice) => voice.key).toSorted((left, right) => left - right);
+    hearPassing(race, PLAYER_RIDER, voices);
+    expect(keys()).toStrictEqual([1, 2, 3, 4]);
+    placeAhead(race, 5, 3.9);
+    hearPassing(race, PLAYER_RIDER, voices);
+    expect(keys()).toStrictEqual([1, 2, 3, 4]);
+    placeAhead(race, 5, 2.5);
+    hearPassing(race, PLAYER_RIDER, voices);
+    expect(keys()).toStrictEqual([1, 2, 3, 5]);
   });
 
   it("pans each voice to its side of the road, under your own engine on the throttle", () => {

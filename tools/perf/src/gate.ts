@@ -24,7 +24,7 @@ import { guardedLoad } from "./load.ts";
 import type { LoadTooHigh } from "./load.ts";
 import {
   lobbyWindow,
-  passingWindow,
+  raceSoundWindow,
   roadLifeWindow,
   sideBLane,
 } from "./node-lane-side-b.ts";
@@ -182,7 +182,7 @@ const measure = Effect.fn("gate.measure")(function* measure(
     lobby: null,
     mode: options.mode,
     node: [],
-    passing: null,
+    raceSound: null,
     roadLife: null,
     sides,
     version: 1,
@@ -211,14 +211,14 @@ const measure = Effect.fn("gate.measure")(function* measure(
       });
     const roadLife = yield* sideB(roadLifeWindow);
     const lobby = yield* sideB(lobbyWindow);
-    const passing = yield* sideB(passingWindow);
+    const raceSound = yield* sideB(raceSoundWindow);
     nodeMs = (yield* Clock.currentTimeMillis) - startedNode;
     samples = yield* save({
       ...samples,
       lanes: ["node"],
       lobby,
       node,
-      passing,
+      raceSound,
       roadLife,
     });
   }

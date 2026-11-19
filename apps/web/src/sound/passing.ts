@@ -7,7 +7,7 @@ import { engineCharacters } from "./characters.ts";
 export const PASSING_VOICES = 4;
 const RANGE = 70;
 const CAR_KEY = 1000;
-const NOBODY = -1;
+export const NOBODY = -1;
 const SOUND_SPEED = 343;
 const DOPPLER = 2.5;
 const MOST_DOPPLER = 0.35;
@@ -16,10 +16,10 @@ const CAR_GAIN = 0.05;
 const WIDEST_PAN = 0.85;
 const NEAR_SIDE = 6;
 const LONG_CAR = 3;
+const HELD_SHARE = 0.8;
 
 export interface Passing {
   key: number;
-  fresh: boolean;
   bike: boolean;
   hertz: number;
   cutoff: number;
@@ -31,7 +31,6 @@ export const passingVoices = (): readonly Passing[] =>
   Array.from({ length: PASSING_VOICES }, () => ({
     bike: false,
     cutoff: 0,
-    fresh: false,
     gain: 0,
     hertz: 0,
     key: NOBODY,
@@ -41,12 +40,23 @@ export const passingVoices = (): readonly Passing[] =>
 const chosenKeys = new Int32Array(PASSING_VOICES);
 const chosenAway = new Float64Array(PASSING_VOICES);
 const chosenTaken = new Uint8Array(PASSING_VOICES);
+const heldKeys = new Int32Array(PASSING_VOICES);
 let chosen = 0;
 
-const consider = (key: number, away: number): void => {
-  if (away > RANGE) {
+const held = (key: number): boolean => {
+  for (const each of heldKeys) {
+    if (each === key) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const consider = (key: number, metres: number): void => {
+  if (metres > RANGE) {
     return;
   }
+  const away = held(key) ? metres * HELD_SHARE : metres;
   let at = chosen;
   if (chosen === PASSING_VOICES) {
     if (away >= (chosenAway[PASSING_VOICES - 1] ?? 0)) {
@@ -144,6 +154,9 @@ export const hearPassing = (
   voices: readonly Passing[]
 ): void => {
   chosen = 0;
+  for (let index = 0; index < PASSING_VOICES; index += 1) {
+    heldKeys[index] = voices[index]?.key ?? NOBODY;
+  }
   const listener = riderOf(view.riders, me);
   if (listener) {
     for (let index = 0; index < view.riders.length; index += 1) {
@@ -165,7 +178,6 @@ export const hearPassing = (
   chosenTaken.fill(0);
   for (const voice of voices) {
     const index = chosenIndexOf(voice.key);
-    voice.fresh = false;
     if (index === NOBODY) {
       voice.key = NOBODY;
     } else {
@@ -178,7 +190,6 @@ export const hearPassing = (
         if (chosenTaken[index] === 0) {
           chosenTaken[index] = 1;
           voice.key = chosenKeys[index] ?? NOBODY;
-          voice.fresh = true;
           break;
         }
       }

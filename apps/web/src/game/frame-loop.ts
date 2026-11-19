@@ -6,7 +6,9 @@ import type * as THREE from "three";
 import type { Diagnostics } from "../diagnostics/hub.ts";
 import type { Recorder } from "../diagnostics/recorder.ts";
 import type { Part } from "../profile-parts.ts";
-import type { Ride, Sound } from "../sound/sound.ts";
+import { rideFrom, stillRide } from "../sound/race-mix.ts";
+import type { Ride } from "../sound/race-mix.ts";
+import type { Sound } from "../sound/sound.ts";
 import { createFixedTick } from "./fixed-tick.ts";
 import { createFrameMeter, emptySample, wantsFrameMeter } from "./fps-meter.ts";
 import type { FrameMeter, FrameSample } from "./fps-meter.ts";
@@ -66,16 +68,7 @@ export const frameLoopOf = (
   profileMode,
   profiler,
   rendererLabel: "",
-  ride: {
-    bikeClass: "middleweight",
-    brake: 0,
-    lean: 0,
-    offRoad: false,
-    on: false,
-    revs: 0,
-    speed: 0,
-    throttle: 0,
-  },
+  ride: stillRide(),
   sample: emptySample(),
 });
 
@@ -159,17 +152,8 @@ const hearRide = (
     sound.shift();
   }
   frame.lastGear = me.gear;
-  const { ride } = frame;
-  const grounded = riding && !me.airborne;
-  ride.on = riding;
-  ride.speed = riding ? me.speed : 0;
-  ride.throttle = riding && throttleHeard ? me.input.throttle : 0;
-  ride.revs = riding ? me.revs : 0;
-  ride.offRoad = riding && me.offRoad;
-  ride.lean = grounded ? me.lean / me.bike.visualLean : 0;
-  ride.brake = grounded ? me.brake : 0;
-  ride.bikeClass = me.bike.bikeClass;
-  sound.ride(ride);
+  rideFrom(frame.ride, me, riding, throttleHeard);
+  sound.ride(frame.ride);
 };
 
 interface LoopParts {

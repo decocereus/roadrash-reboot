@@ -23,6 +23,7 @@ const recordingDesk = (): Desk => ({
   level: vi.fn<(level: Level) => void>(),
   loop: vi.fn<Desk["loop"]>(),
   play: vi.fn<Desk["play"]>(),
+  prepare: vi.fn<Desk["prepare"]>(),
   ride: vi.fn<Desk["ride"]>(),
   shift: vi.fn<() => void>(),
   stats: () => ({
@@ -104,5 +105,13 @@ describe(createSound, () => {
     expect(vi.mocked(desk.play).mock.calls).toStrictEqual([
       ["thump", 0.8, 0.2],
     ]);
+  });
+
+  it("builds the engine for a race prepared before the mixer loaded, as it loads", async () => {
+    const { desk, press, ready, sound } = soundWithDesk();
+    sound.prepare("heavyweight");
+    press("keydown");
+    await ready();
+    expect(vi.mocked(desk.prepare).mock.calls).toStrictEqual([["heavyweight"]]);
   });
 });

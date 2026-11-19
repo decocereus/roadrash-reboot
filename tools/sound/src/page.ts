@@ -71,7 +71,13 @@ const sections = [
     title: "Engines",
   },
   {
-    names: ["muted-first-press", "early-thump-quiet-right", "ride-then-hush"],
+    names: [
+      "muted-first-press",
+      "early-thump-quiet-right",
+      "featherweight-hush",
+      "middleweight-hush",
+      "heavyweight-hush",
+    ],
     title: "Through the mixer",
   },
 ] as const;
@@ -101,7 +107,15 @@ const labels = new Map<string, string>([
     "A quiet thump on the right, asked for before it was ready",
   ],
   ["muted-first-press", "A click with Sound Off saved: silence"],
-  ["ride-then-hush", "Riding, then the race goes quiet at 0.5 s"],
+  [
+    "featherweight-hush",
+    "Featherweight riding, then the race goes quiet at 0.5 s",
+  ],
+  ["heavyweight-hush", "Heavyweight riding, then the race goes quiet at 0.5 s"],
+  [
+    "middleweight-hush",
+    "Middleweight riding, then the race goes quiet at 0.5 s",
+  ],
   ["move", "Hover or focus moves to another button (several takes)"],
   ["pose", "Striking a pose"],
   ["press", "Click or confirm"],

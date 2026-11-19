@@ -5,6 +5,7 @@ import { diagnostics } from "../diagnostics/hub.ts";
 import type { EffectsVolume, SettingsStore } from "../diagnostics/settings.ts";
 import type { Cue, Loop } from "./cues.ts";
 import type { Desk, Level } from "./desk.ts";
+import type { Ride } from "./race-mix.ts";
 
 export const GESTURES = [
   "keydown",
@@ -23,19 +24,9 @@ const effectsGain = {
   mid: 0.5,
 } as const satisfies Record<EffectsVolume, number>;
 
-export interface Ride {
-  on: boolean;
-  speed: number;
-  throttle: number;
-  revs: number;
-  offRoad: boolean;
-  lean: number;
-  brake: number;
-  bikeClass: BikeClass;
-}
-
 export interface Sound {
   readonly play: (cue: Cue, pan?: number, gain?: number) => void;
+  readonly prepare: (bikeClass: BikeClass) => void;
   readonly ride: (ride: Ride) => void;
   readonly hear: (view: RaceView, me: RiderId) => void;
   readonly hush: () => void;
@@ -74,6 +65,7 @@ export const createSound = <Context extends Unlockable>({
   let early: Cue | null = null;
   let earlyPan = 0;
   let earlyGain = 1;
+  let prepared: BikeClass | null = null;
   let { muted } = settings.read();
 
   const levelOf = (): Level => {
@@ -98,6 +90,9 @@ export const createSound = <Context extends Unlockable>({
   const load = async (audio: Context): Promise<void> => {
     try {
       desk = await open(audio, levelOf());
+      if (prepared !== null) {
+        desk.prepare(prepared);
+      }
       if (early !== null) {
         desk.play(early, earlyPan, earlyGain);
         early = null;
@@ -148,6 +143,10 @@ export const createSound = <Context extends Unlockable>({
         earlyPan = pan;
         earlyGain = gain;
       }
+    },
+    prepare(bikeClass) {
+      prepared = bikeClass;
+      desk?.prepare(bikeClass);
     },
     ride(ride) {
       desk?.ride(ride);

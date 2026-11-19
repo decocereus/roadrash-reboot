@@ -1,16 +1,10 @@
 import type { EngineCharacter } from "./characters.ts";
-import { gainGlide, pitchGlide } from "./glide.ts";
+import { engineControl } from "./engine-control.ts";
+import type { EngineControl } from "./engine-control.ts";
 
-const SHIFT_SECONDS = 0.12;
+const LOPE_DEPTH = 0.6;
 
-export interface EngineVoice {
-  readonly drive: (
-    on: boolean,
-    revs: number,
-    throttle: number,
-    now: number
-  ) => void;
-  readonly dip: (now: number) => void;
+export interface EngineVoice extends EngineControl {
   readonly stop: () => void;
 }
 
@@ -54,41 +48,29 @@ export const engineVoice = (
   tone.frequency.value = character.tone;
   const level = context.createGain();
   level.gain.value = 0;
+  const pulse = context.createGain();
+  pulse.gain.value = 1;
   const shift = context.createGain();
   shift.gain.value = 1;
-  tone.connect(level).connect(shift).connect(out);
+  tone.connect(level).connect(pulse).connect(shift).connect(out);
   const saw = voiceOf(context, "sawtooth", character.saw, tone);
   const square = voiceOf(context, "square", character.square, tone);
   const growl = voiceOf(context, "square", character.growl, tone);
   const fifth = voiceOf(context, "sawtooth", character.fifth * 0.6, tone);
   fifth.detune.value = -9;
-  const lope = oscillator(context, "sine", character.lope * 0.05);
+  const lope = oscillator(context, "sine", character.lope * LOPE_DEPTH);
   lope.node.frequency.value = 7.5;
-  lope.gain.connect(level.gain);
-  const glides = {
-    fifth: pitchGlide(fifth.frequency, character.glide),
-    growl: pitchGlide(growl.frequency, character.glide),
-    level: gainGlide(level.gain, 0.06),
-    saw: pitchGlide(saw.frequency, character.glide),
-    square: pitchGlide(square.frequency, character.glide),
-    tone: pitchGlide(tone.frequency, 0.08),
-  };
+  lope.gain.connect(pulse.gain);
   return {
-    dip(now) {
-      shift.gain.cancelScheduledValues(now);
-      shift.gain.setValueAtTime(0.25, now);
-      shift.gain.linearRampToValueAtTime(1, now + SHIFT_SECONDS);
-    },
-    drive(on, revs, throttle, now) {
-      const hertz =
-        character.idle + (character.redline - character.idle) * revs ** 1.1;
-      glides.saw(hertz, now);
-      glides.square(hertz, now);
-      glides.growl(hertz / 2, now);
-      glides.fifth((hertz * 2) / 3, now);
-      glides.level(on ? 0.06 + throttle * 0.1 + revs * 0.03 : 0, now);
-      glides.tone(character.tone + throttle * 1500 + revs * 1200, now);
-    },
+    ...engineControl(character, {
+      fifth: fifth.frequency,
+      growl: growl.frequency,
+      level: level.gain,
+      saw: saw.frequency,
+      shift: shift.gain,
+      square: square.frequency,
+      tone: tone.frequency,
+    }),
     stop() {
       for (const node of [saw, square, growl, fifth, lope.node]) {
         node.stop();

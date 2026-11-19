@@ -21,7 +21,7 @@ import {
   samplesOf,
   steadyLanes,
   syntheticLobby,
-  syntheticPassing,
+  syntheticRaceSound,
   syntheticRoadLife,
   syntheticBudgets,
   syntheticBuild,
@@ -159,35 +159,35 @@ describe("perf gate red cases", { timeout: 30_000 }, () => {
     expect(result.lines.some((line) => line.includes("routed=0"))).toBeTruthy();
   });
 
-  it("fails the passing voices when picking them slows past its limit", () => {
+  it("fails the race sound when its frame update slows past its limit", () => {
     const result = evaluateGate(
       samplesOf(
-        "passing-slow",
+        "race-sound-slow",
         steadyLanes(steady),
         build,
         syntheticRoadLife(steady),
         syntheticLobby(steady),
-        syntheticPassing({ runner: 1.6, sim: 1.3 })
+        syntheticRaceSound({ runner: 1.6, sim: 1.3 })
       ),
       budgets
     );
     expect(result.ok).toBeFalsy();
     expect(
       result.lines.some(
-        (line) => line.startsWith("FAIL") && line.includes("sound.passing.p95")
+        (line) => line.startsWith("FAIL") && line.includes("sound.race.p95")
       )
     ).toBeTruthy();
   });
 
-  it("fails the passing window when it hears too few riders", () => {
+  it("fails the race sound window when it hears too few riders", () => {
     const result = evaluateGate(
       samplesOf(
-        "passing-empty",
+        "race-sound-empty",
         steadyLanes(steady),
         build,
         syntheticRoadLife(steady),
         syntheticLobby(steady),
-        syntheticPassing(steady, 0)
+        syntheticRaceSound(steady, 0)
       ),
       budgets
     );
