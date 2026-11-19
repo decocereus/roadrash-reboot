@@ -1,9 +1,17 @@
 import { diagnostics } from "../diagnostics/hub.ts";
-import type { EffectsVolume } from "../diagnostics/settings.ts";
+import type { EffectsVolume, SettingsStore } from "../diagnostics/settings.ts";
 import type { Cue } from "./cues.ts";
-import type { Desk } from "./desk.ts";
+import type { Desk, Level } from "./desk.ts";
 
-const GESTURES = ["pointerdown", "keydown", "touchend"] as const;
+export const GESTURES = [
+  "keydown",
+  "mousedown",
+  "pointerdown",
+  "pointerup",
+  "touchend",
+] as const;
+
+type Gesture = (typeof GESTURES)[number];
 
 const effectsGain = {
   full: 1,
@@ -21,33 +29,55 @@ export interface Sound {
     revs: number,
     offRoad: boolean
   ) => void;
+  readonly hush: () => void;
   readonly shift: () => void;
   readonly toggleMute: () => void;
   readonly muted: () => boolean;
   readonly desk: () => Desk | null;
 }
 
+interface Unlockable {
+  readonly state: AudioContextState;
+  readonly resume: () => Promise<void>;
+}
+
+export interface SoundParts<Context extends Unlockable> {
+  readonly settings: Pick<SettingsStore, "change" | "read" | "subscribe">;
+  readonly failed: (message: string) => void;
+  readonly listen: (gesture: Gesture, unlock: () => void) => void;
+  readonly context: () => Context;
+  readonly open: (context: Context, level: Level) => Promise<Desk>;
+}
+
 const messageOf = (cause: unknown): string =>
   cause instanceof Error ? cause.message : String(cause);
 
-const createSound = (): Sound => {
-  const { recorder, settings } = diagnostics();
-  let context: AudioContext | null = null;
+export const createSound = <Context extends Unlockable>({
+  context: contextOf,
+  failed,
+  listen,
+  open,
+  settings,
+}: SoundParts<Context>): Sound => {
+  let context: Context | null = null;
   let desk: Desk | null = null;
   let early: Cue | null = null;
+  let earlyPan = 0;
+  let earlyGain = 1;
   let { muted } = settings.read();
 
-  const apply = (): void => {
+  const levelOf = (): Level => {
     const { effectsVolume, muted: silent } = settings.read();
-    muted = silent;
-    desk?.level(effectsGain[effectsVolume], silent);
+    return { muted: silent, volume: effectsGain[effectsVolume] };
   };
 
-  const failed = (message: string): void => {
-    recorder.fault("rejection", message, "sound");
+  const apply = (): void => {
+    const level = levelOf();
+    ({ muted } = level);
+    desk?.level(level);
   };
 
-  const resumed = async (audio: AudioContext): Promise<void> => {
+  const resumed = async (audio: Context): Promise<void> => {
     try {
       await audio.resume();
     } catch (error) {
@@ -55,13 +85,11 @@ const createSound = (): Sound => {
     }
   };
 
-  const load = async (audio: AudioContext): Promise<void> => {
+  const load = async (audio: Context): Promise<void> => {
     try {
-      const { openDesk } = await import("./desk.ts");
-      desk = openDesk(audio, failed);
-      apply();
+      desk = await open(audio, levelOf());
       if (early !== null) {
-        desk.play(early, 0, 1);
+        desk.play(early, earlyPan, earlyGain);
         early = null;
       }
     } catch (error) {
@@ -77,7 +105,7 @@ const createSound = (): Sound => {
       return;
     }
     try {
-      context = new AudioContext({ latencyHint: "interactive" });
+      context = contextOf();
     } catch {
       return;
     }
@@ -86,18 +114,23 @@ const createSound = (): Sound => {
   };
 
   for (const gesture of GESTURES) {
-    globalThis.addEventListener(gesture, unlock, { capture: true });
+    listen(gesture, unlock);
   }
   settings.subscribe(apply);
 
   return {
     desk: () => desk,
+    hush() {
+      desk?.hush();
+    },
     muted: () => muted,
     play(cue, pan = 0, gain = 1) {
       if (desk) {
         desk.play(cue, pan, gain);
       } else if (context) {
         early = cue;
+        earlyPan = pan;
+        earlyGain = gain;
       }
     },
     ride(on, speed, throttle, revs, offRoad) {
@@ -115,6 +148,24 @@ const createSound = (): Sound => {
 let instance: Sound | null = null;
 
 export const sound = (): Sound => {
-  instance ??= createSound();
+  if (instance) {
+    return instance;
+  }
+  const { recorder, settings } = diagnostics();
+  const failed = (message: string): void => {
+    recorder.fault("rejection", message, "sound");
+  };
+  instance = createSound({
+    context: () => new AudioContext({ latencyHint: "interactive" }),
+    failed,
+    listen: (gesture, unlock) => {
+      globalThis.addEventListener(gesture, unlock, { capture: true });
+    },
+    open: async (context, level) => {
+      const { openDesk } = await import("./desk.ts");
+      return openDesk(context, failed, level);
+    },
+    settings,
+  });
   return instance;
 };

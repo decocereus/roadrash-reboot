@@ -10,6 +10,7 @@ import {
   seeded,
   whiteNoise,
 } from "../src/sound/render.ts";
+import { scenes } from "./sound-scenes.ts";
 
 const SAMPLE_RATE = 48_000;
 const STEADY_SECONDS = 1.2;
@@ -19,9 +20,10 @@ const BYTES_PER_CHUNK = 0x80_00;
 
 export interface Clip {
   readonly name: string;
-  readonly group: "cue" | "loop" | "engine";
+  readonly group: "cue" | "loop" | "engine" | "scene";
   readonly sampleRate: number;
   readonly samples: string;
+  readonly problems: readonly string[];
 }
 
 const encoded = (samples: Float32Array): string => {
@@ -57,6 +59,7 @@ const clipOf = (
 ): Clip => ({
   group,
   name,
+  problems: [],
   sampleRate: SAMPLE_RATE,
   samples: encoded(samples),
 });
@@ -129,11 +132,25 @@ const loopClip = async (loop: Loop, noise: AudioBuffer): Promise<Clip> => {
   return clipOf("loop", loop, twice);
 };
 
+const sceneClips = async (): Promise<Clip[]> => {
+  const staged = await scenes();
+  return staged.map(({ left, name, problems, right }) => {
+    const mixed = left.map(
+      (sample, index) => (sample + (right[index] ?? 0)) / 2
+    );
+    return { ...clipOf("scene", name, mixed), problems };
+  });
+};
+
 export const renderClips = async (): Promise<string> => {
   const noise = whiteNoise(offline(1), seeded(7));
   const clips = await Promise.all([
     ...cues.map(async (cue, index) => await cueClip(cue, index, noise)),
     ...loops.map(async (loop) => await loopClip(loop, noise)),
   ]);
-  return JSON.stringify([...clips, ...(await engineClips())]);
+  return JSON.stringify([
+    ...clips,
+    ...(await engineClips()),
+    ...(await sceneClips()),
+  ]);
 };

@@ -239,6 +239,7 @@ const startGame = (
     drawnSpeed: () => player().speed + (cast.views[stage.me]?.drift.along ?? 0),
     events,
     feedback,
+    owners,
     player,
     recorder,
     session: () => session,

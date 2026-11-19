@@ -53,14 +53,15 @@ export const createFeedback = (): Feedback => ({
 });
 
 interface FeedbackParts {
-  readonly chase: ChaseCamera;
+  readonly chase: Pick<ChaseCamera, "bump" | "jolt">;
   readonly drawnSpeed: () => number;
-  readonly events: GameEvents;
+  readonly events: Pick<GameEvents, "onHud">;
   readonly feedback: Feedback;
+  readonly owners: (() => void)[];
   readonly player: () => RiderView;
-  readonly recorder: Recorder;
+  readonly recorder: Pick<Recorder, "race">;
   readonly session: () => Session;
-  readonly sound: Sound;
+  readonly sound: Pick<Sound, "hush" | "muted" | "play" | "toggleMute">;
   readonly stage: Pick<Stage, "me" | "race" | "track">;
 }
 
@@ -69,6 +70,7 @@ export const bindFeedback = ({
   drawnSpeed,
   events,
   feedback,
+  owners,
   player,
   recorder,
   session,
@@ -82,8 +84,9 @@ export const bindFeedback = ({
   };
 
   const quiet = () => {
-    sound.ride(false, 0, 0, 0, false);
+    sound.hush();
   };
+  owners.push(quiet);
 
   const toggleMute = () => {
     sound.toggleMute();

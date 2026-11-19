@@ -376,6 +376,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
     kind: "feature",
     owns: [
       "apps/web/src/game/hud*.ts",
+      "apps/web/src/game/race-feedback.test.ts",
       "apps/web/src/game/race-feedback.ts",
       "apps/web/src/hud-feed.ts",
       "apps/web/test/hud-cadence.test.ts",
@@ -416,6 +417,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
     owns: [
       "apps/web/src/sound/**",
       "apps/web/test/sound-bundle.ts",
+      "apps/web/test/sound-scenes.ts",
       "tools/sound/**",
     ],
     perf: [],

@@ -49,8 +49,9 @@ const launcherOf = (name: EngineName): BrowserType => {
 };
 
 const ClipRecord = Schema.Struct({
-  group: Schema.Literals(["cue", "loop", "engine"]),
+  group: Schema.Literals(["cue", "loop", "engine", "scene"]),
   name: Schema.String,
+  problems: Schema.Array(Schema.String),
   sampleRate: Schema.Number,
   samples: Schema.String,
 });
@@ -201,9 +202,16 @@ const auditionAll = Effect.fnUntraced(function* auditionAll(options: Options) {
   yield* fs
     .writeFileString(page, pageOf(clips, measures, options.engine))
     .pipe(Effect.mapError(failed(`Could not write ${page}`)));
+  const sceneNames = new Set(
+    clips.filter((clip) => clip.group === "scene").map((clip) => clip.name)
+  );
   const problems = [
-    ...problemsOf(measures, seams),
+    ...problemsOf(
+      measures.filter((each) => !sceneNames.has(each.name)),
+      seams
+    ),
     ...brighterThan(measures, BRIGHTER),
+    ...clips.flatMap((clip) => clip.problems),
   ];
   const lines = [
     ...measures.map(

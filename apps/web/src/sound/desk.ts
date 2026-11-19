@@ -39,6 +39,11 @@ interface RenderStats {
   readonly slices: readonly number[];
 }
 
+export interface Level {
+  readonly volume: number;
+  readonly muted: boolean;
+}
+
 export interface Desk {
   readonly play: (cue: Cue, pan: number, gain: number) => void;
   readonly ride: (
@@ -49,7 +54,8 @@ export interface Desk {
     offRoad: boolean
   ) => void;
   readonly shift: () => void;
-  readonly level: (effects: number, muted: boolean) => void;
+  readonly hush: () => void;
+  readonly level: (level: Level) => void;
   readonly heard: () => ReadonlyMap<Cue, number>;
   readonly stats: () => RenderStats;
 }
@@ -65,7 +71,7 @@ const nextTask = async (): Promise<void> => {
 const messageOf = (cause: unknown): string =>
   cause instanceof Error ? cause.message : String(cause);
 
-const channelOf = (context: AudioContext, out: AudioNode): Channel => {
+const channelOf = (context: BaseAudioContext, out: AudioNode): Channel => {
   const gain = context.createGain();
   const pan = context.createStereoPanner();
   gain.connect(pan).connect(out);
@@ -100,7 +106,7 @@ interface Wind {
 }
 
 const windOf = (
-  context: AudioContext,
+  context: BaseAudioContext,
   noise: AudioBuffer,
   out: AudioNode
 ): Wind => {
@@ -121,8 +127,9 @@ const windOf = (
 };
 
 export const openDesk = (
-  context: AudioContext,
-  failed: (message: string) => void
+  context: BaseAudioContext,
+  failed: (message: string) => void,
+  { muted, volume }: Level
 ): Desk => {
   const started = performance.now();
   let busyMs = 0;
@@ -134,6 +141,7 @@ export const openDesk = (
     longestSliceMs = Math.max(longestSliceMs, slice);
   };
   const master = context.createGain();
+  master.gain.value = muted ? 0 : 1;
   master.connect(context.destination);
   const limiter = context.createDynamicsCompressor();
   limiter.threshold.value = -6;
@@ -142,6 +150,7 @@ export const openDesk = (
   limiter.release.value = 0.25;
   limiter.connect(master);
   const effects = context.createGain();
+  effects.gain.value = volume;
   effects.connect(limiter);
 
   const random: Random = seeded(41);
@@ -149,6 +158,8 @@ export const openDesk = (
   let engine: EngineVoice | null = null;
   let wind: Wind | null = null;
   let waiting: Cue | null = null;
+  let waitingPan = 0;
+  let waitingGain = 1;
   let waitingSince = 0;
   const channels: Channel[] = [];
   const bank: Partial<Record<Cue, Rendered>> = {};
@@ -160,6 +171,8 @@ export const openDesk = (
     const take = bank[cue];
     if (!take) {
       waiting = cue;
+      waitingPan = pan;
+      waitingGain = gain;
       waitingSince = context.currentTime;
       return;
     }
@@ -224,7 +237,7 @@ export const openDesk = (
     if (waiting === cue) {
       waiting = null;
       if (context.currentTime - waitingSince < LATE_SECONDS) {
-        play(cue, 0, 1);
+        play(cue, waitingPan, waitingGain);
       }
     }
     await renderFrom(index + 1);
@@ -254,7 +267,10 @@ export const openDesk = (
   noteSlice(performance.now() - started);
   void renderBank();
 
-  const stream = (): MediaStream => {
+  const stream = (): MediaStream | null => {
+    if (!(context instanceof AudioContext)) {
+      return null;
+    }
     const tap = context.createMediaStreamDestination();
     master.connect(tap);
     return tap.stream;
@@ -272,18 +288,27 @@ export const openDesk = (
       if (!new URLSearchParams(globalThis.location.search).has("prof")) {
         return null;
       }
+      const tapped = stream();
+      if (!tapped) {
+        return null;
+      }
       const { recordTap } = await import("./tap.ts");
-      return await recordTap(stream(), seconds);
+      return await recordTap(tapped, seconds);
     },
     stats,
   });
 
   return {
     heard: () => counts,
-    level(volume, muted) {
+    hush() {
       const now = context.currentTime;
-      effects.gain.setTargetAtTime(volume, now, MUTE_SECONDS);
-      master.gain.setTargetAtTime(muted ? 0 : 1, now, MUTE_SECONDS);
+      engine?.drive(false, 0, 0, now);
+      wind?.gain(0, now);
+    },
+    level(next) {
+      const now = context.currentTime;
+      effects.gain.setTargetAtTime(next.volume, now, MUTE_SECONDS);
+      master.gain.setTargetAtTime(next.muted ? 0 : 1, now, MUTE_SECONDS);
     },
     play,
     ride(on, speed, throttle, revs, offRoad) {

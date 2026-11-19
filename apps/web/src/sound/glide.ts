@@ -1,5 +1,6 @@
 const PITCH_STEP = 0.005;
 const GAIN_STEP = 0.002;
+const SETTLE = 10;
 
 export type Glide = (target: number, now: number) => void;
 
@@ -14,7 +15,11 @@ const glide = (
       return;
     }
     last = target;
+    param.cancelScheduledValues(now);
     param.setTargetAtTime(target, now, seconds);
+    if (target === 0) {
+      param.setValueAtTime(0, now + seconds * SETTLE);
+    }
   };
 };
 
