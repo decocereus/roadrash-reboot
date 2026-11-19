@@ -139,6 +139,60 @@ const movedFrom = (
 ): number =>
   Math.hypot((spot?.x ?? from.x) - from.x, (spot?.z ?? from.z) - from.z);
 
+const changes = () => {
+  let away: readonly string[] = [];
+  let heard: RoomWalked = { ...standing, place: "stool" };
+  const { members, near } = room({
+    lobby: () => lobbyOf(["near", "far"], away),
+    walkOf: () => heard,
+  });
+  const hear = (next: Partial<RoomWalked>): void => {
+    heard = { ...heard, ...next };
+    members.step(FRAME, 0);
+  };
+  const leave = (): void => {
+    away = ["far"];
+    members.step(FRAME, 0);
+    away = [];
+  };
+  return { hear, leave, near };
+};
+
+describe("hearing others sit and pose", () => {
+  it("plays a stand, a pose, a new pose, a cleared pose and a sit as they happen", () => {
+    const { hear, near } = changes();
+    hear({});
+    hear({ place: "foot" });
+    hear({ pose: "arms" });
+    hear({ pose: "phone" });
+    hear({ pose: null });
+    hear({ place: "stool" });
+    expect(near.mock.calls.map(([cue]) => cue)).toStrictEqual([
+      "sit",
+      "pose",
+      "pose",
+      "pose",
+      "sit",
+    ]);
+  });
+
+  it("plays nothing for the state a member already had when first seen or back from away", () => {
+    const { hear, leave, near } = changes();
+    hear({ pose: null });
+    leave();
+    hear({ place: "foot", pose: "chat" });
+    hear({});
+    expect(near).not.toHaveBeenCalled();
+  });
+
+  it("plays no pose when a posing member climbs on a bike", () => {
+    const { hear, near } = changes();
+    hear({ place: "foot", pose: "arms" });
+    hear({ place: "bike", pose: null });
+    expect(near).not.toHaveBeenCalled();
+  });
+});
+
 describe("members in the bar", () => {
   it("sends the first walk once the room has listed this rider", () => {
     let lobby: RoomLobbyMessage | null = null;
