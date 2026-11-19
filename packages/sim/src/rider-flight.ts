@@ -11,7 +11,7 @@ import {
   lateralSpeedLimit,
   TICK_SECONDS,
 } from "./state.ts";
-import type { RaceState, RiderState } from "./state.ts";
+import type { BikeSpec, RaceState, RiderState } from "./state.ts";
 
 export const HARD_LANDING = -11;
 export const LANDING_SLIP = 0.6;
@@ -22,8 +22,23 @@ const WOBBLE_PER_IMPACT = 1 / 12;
 const WOBBLE_TURNS = 20;
 const WOBBLE_LEAN = 0.35;
 
+export const forwardRateAt = (
+  speed: number,
+  curvature: number,
+  x: number
+): number => speed / Math.max(0.5, 1 - curvature * x);
+
 export const forwardRateOf = (rider: RiderState, curvature: number): number =>
-  rider.speed / Math.max(0.5, 1 - curvature * rider.x);
+  forwardRateAt(rider.speed, curvature, rider.x);
+
+export const landingSlipOf = (
+  bike: BikeSpec,
+  lateralSpeed: number,
+  curvature: number,
+  speed: number
+): number =>
+  Math.abs(lateralSpeed - curvePushOf(bike, curvature, speed)) /
+  Math.max(1, lateralSpeedLimit(bike, speed));
 
 export const swayOf = (rider: RiderState): number =>
   rider.wobble * sin(rider.wobble * WOBBLE_TURNS);
@@ -31,11 +46,10 @@ export const swayOf = (rider: RiderState): number =>
 const SLOW_LEAN = 0.2;
 const FULL_LEAN_SPEED = 120 / 3.6;
 
-export const settleVisuals = (
-  rider: RiderState,
-  authority: number,
-  push: number
-): void => {
+const headingAcross = (rider: RiderState, across: number): number =>
+  atan(across / Math.max(rider.speed, 6));
+
+const settleLean = (rider: RiderState, authority: number): void => {
   const limit = Math.max(1, lateralSpeedLimit(rider.bike, rider.speed));
   rider.lean =
     (clamp(rider.lateralSpeed / limit, -1, 1) *
@@ -44,12 +58,22 @@ export const settleVisuals = (
         (1 - SLOW_LEAN) * clamp(rider.speed / FULL_LEAN_SPEED, 0, 1)) +
       swayOf(rider) * WOBBLE_LEAN) *
     rider.bike.visualLean;
-  const steered = clamp(
-    rider.lateralSpeed - push,
-    Math.min(0, rider.lateralSpeed),
-    Math.max(0, rider.lateralSpeed)
+};
+
+export const settleVisuals = (
+  rider: RiderState,
+  authority: number,
+  push: number
+): void => {
+  settleLean(rider, authority);
+  rider.heading = headingAcross(
+    rider,
+    clamp(
+      rider.lateralSpeed - push,
+      Math.min(0, rider.lateralSpeed),
+      Math.max(0, rider.lateralSpeed)
+    )
   );
-  rider.heading = atan(steered / Math.max(rider.speed, 6));
 };
 
 interface Contact {
@@ -69,9 +93,12 @@ const land = (
   const impact = contact.verticalSpeed - contact.slope * forwardRate;
   const judged = rider.airTicks >= JUDGED_FLIGHT_TICKS;
   const airSeconds = rider.airTicks * TICK_SECONDS;
-  const slip =
-    Math.abs(rider.lateralSpeed) /
-    Math.max(1, lateralSpeedLimit(rider.bike, rider.speed));
+  const slip = landingSlipOf(
+    rider.bike,
+    rider.lateralSpeed,
+    curvatureAt(track, contact.s),
+    rider.speed
+  );
   rider.air = 0;
   rider.airborne = false;
   rider.airTicks = 0;
@@ -130,7 +157,8 @@ export const fly = (
   rider.air +=
     rise * TICK_SECONDS - (GRAVITY * TICK_SECONDS * TICK_SECONDS) / 2 - drop;
   rider.verticalSpeed -= GRAVITY * TICK_SECONDS;
-  settleVisuals(rider, 0.6, push);
+  settleLean(rider, 0.6);
+  rider.heading = headingAcross(rider, rider.lateralSpeed - push);
   rider.load = 0;
   rider.airTicks += 1;
   if (rider.air > 0) {
