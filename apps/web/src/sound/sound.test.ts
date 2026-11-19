@@ -17,6 +17,7 @@ const saved: Settings = {
 };
 
 const recordingDesk = (): Desk => ({
+  hear: vi.fn<Desk["hear"]>(),
   heard: () => new Map(),
   hush: vi.fn<() => void>(),
   level: vi.fn<(level: Level) => void>(),

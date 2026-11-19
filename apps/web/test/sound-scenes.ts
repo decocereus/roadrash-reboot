@@ -159,7 +159,16 @@ const hushedRide = async (): Promise<Scene> => {
     ],
     level: FULL,
     ready: (desk) => {
-      desk.ride(true, 40, 1, 0.8, false);
+      desk.ride({
+        bikeClass: "middleweight",
+        brake: 0,
+        lean: 0,
+        offRoad: false,
+        on: true,
+        revs: 0.8,
+        speed: 40,
+        throttle: 1,
+      });
     },
     seconds: 2.5,
   });

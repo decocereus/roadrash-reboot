@@ -68,7 +68,6 @@ export interface Desk {
   readonly hear: (view: RaceView, me: RiderId) => void;
   readonly hush: () => void;
   readonly shift: () => void;
-  readonly hush: () => void;
   readonly loop: (loop: Loop, gain: number) => void;
   readonly level: (level: Level) => void;
   readonly heard: () => ReadonlyMap<Cue, number>;
