@@ -1,14 +1,10 @@
-import { slopeAt } from "@racer/track/track";
+import { curvatureAt, slopeAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
 import { glancesOff } from "./rider-collisions.ts";
 import { throwRider } from "./rider-crash.ts";
-import {
-  BIKE_HALF_LENGTH,
-  BIKE_HALF_WIDTH,
-  GRAVITY,
-  TICK_SECONDS,
-} from "./state.ts";
+import { forwardRateOf } from "./rider-flight.ts";
+import { BIKE_HALF_LENGTH, BIKE_HALF_WIDTH, TICK_SECONDS } from "./state.ts";
 import type { CarBox, RaceState, RiderState, TrafficCar } from "./state.ts";
 
 const RIG_HALF_LENGTH = 14.35;
@@ -22,7 +18,7 @@ const MOST_CLIMB = 6;
 const DECK_STEP = 0.1;
 const CARRIER_SPEED = 20;
 const CARRIER_HALF_WIDTH = 1.25;
-const CARRIER_HEIGHT = 4.22;
+export const CARRIER_HEIGHT = 4.22;
 const CLEAR_OF_TRAFFIC = 30;
 const PASS_MARGIN = 0.15;
 const SAME_LINE = 0.05;
@@ -80,17 +76,10 @@ export const solidBoxOf = (car: TrafficCar): CarBox => {
 export const climbOffLip = (riderSpeed: number, carSpeed: number): number =>
   Math.min(MOST_CLIMB, Math.max(0, riderSpeed - carSpeed) * RAMP_SLOPE);
 
-export const clearsDecks = (riderSpeed: number, carSpeed: number): boolean => {
-  const climb = climbOffLip(riderSpeed, carSpeed);
-  const secondsAbove =
-    (climb +
-      Math.sqrt(climb * climb + 2 * GRAVITY * (RAMP_RISE - CARRIER_HEIGHT))) /
-    GRAVITY;
-  return (
-    (riderSpeed - carSpeed) * secondsAbove >
-    LIP_GAP + BODY_LENGTH + BIKE_HALF_LENGTH
-  );
-};
+export const secondsOverDecks = (rate: number, carSpeed: number): number =>
+  rate > carSpeed
+    ? (LIP_GAP + BODY_LENGTH + BIKE_HALF_LENGTH) / (rate - carSpeed)
+    : Number.POSITIVE_INFINITY;
 
 export const passingLineOf = (car: TrafficCar, x: number): number => {
   const clear = CARRIER_HALF_WIDTH + BIKE_HALF_WIDTH + PASS_MARGIN;
@@ -109,7 +98,8 @@ const launch = (track: Track, rider: RiderState, car: TrafficCar): void => {
   rider.airTicks = 0;
   rider.air = RAMP_RISE;
   rider.verticalSpeed =
-    climbOffLip(rider.speed, car.speed) + slopeAt(track, rider.s) * rider.speed;
+    climbOffLip(rider.speed, car.speed) +
+    slopeAt(track, rider.s) * forwardRateOf(rider, curvatureAt(track, rider.s));
 };
 
 const carry = (track: Track, rider: RiderState, car: TrafficCar): void => {

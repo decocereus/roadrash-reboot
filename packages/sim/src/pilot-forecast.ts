@@ -27,7 +27,7 @@ import {
 } from "./pilot-crossers.ts";
 import { FORECAST_SECONDS, FORECAST_TICKS } from "./pilot-history.ts";
 import { SLIP_PUSH, SLIP_RECOVERY } from "./rider-drive.ts";
-import { LANDING_SLIP } from "./rider-flight.ts";
+import { LANDING_SLIP, landingSlipOf } from "./rider-flight.ts";
 import {
   BIKE_HALF_LENGTH,
   BIKE_HALF_WIDTH,
@@ -458,8 +458,12 @@ const throwsOnRock = (
   speed: number,
   upset: number
 ): boolean =>
-  Math.abs(lateralSpeed + curvePushOf(bike, curvature, speed)) /
-    Math.max(1, lateralSpeedLimit(bike, speed)) +
+  landingSlipOf(
+    bike,
+    lateralSpeed + curvePushOf(bike, curvature, speed),
+    curvature,
+    speed
+  ) +
     upset * rockUpsetShare(speed) >
   LANDING_SLIP * ROCK_LANDING_SHARE;
 

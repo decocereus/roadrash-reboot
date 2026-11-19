@@ -11,7 +11,7 @@ import type { Track } from "@racer/track/track";
 import { dragOf } from "./engine.ts";
 import { CORNER_SCAN_POINTS } from "./pilot-history.ts";
 import { TAKEOFF_SPEED } from "./rider-drive.ts";
-import { LANDING_SLIP } from "./rider-flight.ts";
+import { LANDING_SLIP, landingSlipOf } from "./rider-flight.ts";
 import {
   BIKE_HALF_WIDTH,
   brakeGrip,
@@ -263,11 +263,17 @@ export const landsOnRoad = (
     bendAcross += takeoff - curvatureAt(track, s);
   }
   const landing = x + (bendAcross * speed * CORNER_SCAN_STEP) / bike.curvePush;
+  const lock = lateralSpeedLimit(bike, speed);
   return (
     Math.abs(landing) <=
       roadHalfWidthAt(track, from + flight) - JUMP_LANDING_ROOM &&
-    Math.abs(curvePushOf(bike, takeoff, speed)) <=
-      LANDING_SLIP * margin * lateralSpeedLimit(bike, speed)
+    landingSlipOf(
+      bike,
+      clamp(curvePushOf(bike, takeoff, speed), -lock, lock),
+      curvatureAt(track, from + flight),
+      speed
+    ) <=
+      LANDING_SLIP * margin
   );
 };
 
