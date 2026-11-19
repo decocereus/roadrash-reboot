@@ -104,11 +104,15 @@
       {
         "file": "tools/perf/baselines/uhd630.vimaan.gpu-chromium-intel.json.gz",
         "sha256": "fbd6ed619b13e9b5b48d776e6d974ae2aaeed0473c7c659b50613b4129874939"
+      },
+      {
+        "file": "tools/perf/baselines/timing.node-darwin-arm64.json.gz",
+        "sha256": "cc7cb8068b977761a0928c7f3c763f49a4e2c8d391aa4ad71660f051c32dcbbb"
       }
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "536e90af4d03439d3807e23b2a6835500124c95f9a7dbc03d13f6ca25d458a47"
+    "summarySha256": "14b25e729b04afbbe8ba88934abb03b1891473e9bc16003bef9424d99d3bf41c"
   },
   "limits": [
     {
@@ -2282,6 +2286,54 @@
       "scenario": "pack-riding-v1",
       "source": "baseline-2026-11-09T22-28-40-968Z-e4d8504-e4d8504",
       "unit": "ms"
+    },
+    {
+      "baseline": 0.0002155,
+      "derivation": "1.15 x calibrated baseline median",
+      "direction": "max",
+      "environment": "node-darwin-arm64",
+      "metric": "timing.stamp.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "baseline-2026-11-19T15-28-11-312Z-9f67ba9-db125dc",
+      "unit": "ms",
+      "value": 0.00024782499999999997
+    },
+    {
+      "baseline": 0.00026031,
+      "derivation": "1.15 x calibrated baseline median",
+      "direction": "max",
+      "environment": "node-darwin-arm64",
+      "metric": "timing.stamp.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "baseline-2026-11-19T15-28-11-312Z-9f67ba9-db125dc",
+      "unit": "ms",
+      "value": 0.0002993565
+    },
+    {
+      "baseline": 0,
+      "derivation": "provisional until the CI perf job measures it",
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "timing.stamp.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "provisional",
+      "unit": "ms",
+      "value": 1000000000
+    },
+    {
+      "baseline": 0,
+      "derivation": "provisional until the CI perf job measures it",
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "timing.stamp.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "provisional",
+      "unit": "ms",
+      "value": 1000000000
     }
   ],
   "nodeProfiles": {
