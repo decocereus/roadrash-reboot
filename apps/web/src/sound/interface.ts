@@ -90,13 +90,26 @@ const pressing = (event: PointerEvent): void => {
   }
 };
 
+const submits = (element: Element): boolean =>
+  element instanceof HTMLButtonElement &&
+  element.type === "submit" &&
+  element.form !== null;
+
 const clicking = (event: MouseEvent): void => {
   const element = interactiveOf(event.target);
-  if (element === null || disabled(element)) {
+  if (element === null || disabled(element) || submits(element)) {
     return;
   }
   const named = element.closest<HTMLElement>("[data-cue]")?.dataset.cue;
   cue(uiCueOf(named) ?? "press");
+};
+
+const submitting = (): void => {
+  cue("press");
+};
+
+const refusing = (): void => {
+  cue("refused");
 };
 
 export const bindInterfaceSounds = (root: Document): (() => void) => {
@@ -104,7 +117,11 @@ export const bindInterfaceSounds = (root: Document): (() => void) => {
   root.addEventListener("focusin", focusing);
   root.addEventListener("pointerdown", pressing);
   root.addEventListener("click", clicking);
+  root.addEventListener("submit", submitting);
+  root.addEventListener("invalid", refusing, { capture: true });
   return () => {
+    root.removeEventListener("invalid", refusing, { capture: true });
+    root.removeEventListener("submit", submitting);
     root.removeEventListener("pointerover", hovering);
     root.removeEventListener("focusin", focusing);
     root.removeEventListener("pointerdown", pressing);

@@ -173,7 +173,7 @@ export const recipes = {
         hold: 0.5,
       }),
     ],
-    2,
+    1,
     0.05
   ),
   hit: recipe("strike", [

@@ -17,19 +17,32 @@ export const seeded = (seed: number): Random => {
   };
 };
 
-export const whiteNoise = (
-  context: BaseAudioContext,
-  random: Random
-): AudioBuffer => {
-  const buffer = context.createBuffer(
+export const noiseBuffer = (context: BaseAudioContext): AudioBuffer =>
+  context.createBuffer(
     1,
     context.sampleRate * NOISE_SECONDS,
     context.sampleRate
   );
+
+export const fillNoise = (
+  buffer: AudioBuffer,
+  random: Random,
+  from: number,
+  to: number
+): void => {
   const samples = buffer.getChannelData(0);
-  for (let index = 0; index < samples.length; index += 1) {
+  const end = Math.min(to, samples.length);
+  for (let index = from; index < end; index += 1) {
     samples[index] = random() * 2 - 1;
   }
+};
+
+export const whiteNoise = (
+  context: BaseAudioContext,
+  random: Random
+): AudioBuffer => {
+  const buffer = noiseBuffer(context);
+  fillNoise(buffer, random, 0, buffer.length);
   return buffer;
 };
 

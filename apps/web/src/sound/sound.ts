@@ -34,6 +34,7 @@ const createSound = (): Sound => {
   const { recorder, settings } = diagnostics();
   let context: AudioContext | null = null;
   let desk: Desk | null = null;
+  let early: Cue | null = null;
   let { muted } = settings.read();
 
   const apply = (): void => {
@@ -59,6 +60,10 @@ const createSound = (): Sound => {
       const { openDesk } = await import("./desk.ts");
       desk = openDesk(audio, failed);
       apply();
+      if (early !== null) {
+        desk.play(early, 0, 1);
+        early = null;
+      }
     } catch (error) {
       failed(messageOf(error));
     }
@@ -89,7 +94,11 @@ const createSound = (): Sound => {
     desk: () => desk,
     muted: () => muted,
     play(cue, pan = 0, gain = 1) {
-      desk?.play(cue, pan, gain);
+      if (desk) {
+        desk.play(cue, pan, gain);
+      } else if (context) {
+        early = cue;
+      }
     },
     ride(on, speed, throttle, revs, offRoad) {
       desk?.ride(on, speed, throttle, revs, offRoad);

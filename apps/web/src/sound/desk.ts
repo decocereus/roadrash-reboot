@@ -5,10 +5,12 @@ import type { EngineVoice } from "./engine.ts";
 import { gainGlide, pitchGlide } from "./glide.ts";
 import type { Glide } from "./glide.ts";
 import { priorities, recipes } from "./recipes.ts";
-import { cueJob, seeded, whiteNoise } from "./render.ts";
+import { cueJob, fillNoise, noiseBuffer, seeded } from "./render.ts";
 import type { Random } from "./render.ts";
 
 const CHANNELS = 8;
+const NOISE_CHUNK = 16_384;
+const LATE_SECONDS = 0.4;
 const RUSH_SPEED = 75;
 const MUTE_SECONDS = 0.02;
 
@@ -34,6 +36,7 @@ interface RenderStats {
   readonly waitedMs: number;
   readonly busyMs: number;
   readonly longestSliceMs: number;
+  readonly slices: readonly number[];
 }
 
 export interface Desk {
@@ -50,6 +53,14 @@ export interface Desk {
   readonly heard: () => ReadonlyMap<Cue, number>;
   readonly stats: () => RenderStats;
 }
+
+const nextTask = async (): Promise<void> => {
+  const { promise, resolve } = Promise.withResolvers<null>();
+  setTimeout(() => {
+    resolve(null);
+  }, 0);
+  await promise;
+};
 
 const messageOf = (cause: unknown): string =>
   cause instanceof Error ? cause.message : String(cause);
@@ -116,7 +127,9 @@ export const openDesk = (
   const started = performance.now();
   let busyMs = 0;
   let longestSliceMs = 0;
+  const slices: number[] = [];
   const noteSlice = (slice: number): void => {
+    slices.push(Math.round(slice * 10) / 10);
     busyMs += slice;
     longestSliceMs = Math.max(longestSliceMs, slice);
   };
@@ -132,56 +145,22 @@ export const openDesk = (
   effects.connect(limiter);
 
   const random: Random = seeded(41);
-  const noise = whiteNoise(context, random);
-  const engine: EngineVoice = engineVoice(
-    context,
-    engineCharacters.middleweight,
-    effects
-  );
-  const wind = windOf(context, noise, effects);
-  const channels = Array.from({ length: CHANNELS }, () =>
-    channelOf(context, effects)
-  );
+  const noise = noiseBuffer(context);
+  let engine: EngineVoice | null = null;
+  let wind: Wind | null = null;
+  let waiting: Cue | null = null;
+  let waitingSince = 0;
+  const channels: Channel[] = [];
   const bank: Partial<Record<Cue, Rendered>> = {};
   const counts = new Map<Cue, number>(cues.map((cue) => [cue, 0] as const));
   let rendered = 0;
   let waitedMs = 0;
 
-  const renderFrom = async (index: number): Promise<void> => {
-    const cue = cues[index];
-    if (cue === undefined) {
-      waitedMs = performance.now() - started;
-      return;
-    }
-    const recipe = recipes[cue];
-    const sliceStart = performance.now();
-    const job = cueJob(recipe, context.sampleRate, noise, index + 1);
-    noteSlice(performance.now() - sliceStart);
-    const buffer = await job.context.startRendering();
-    bank[cue] = {
-      buffer,
-      next: 0,
-      rank: priorities.indexOf(recipe.priority),
-      seconds: job.seconds,
-      spread: recipe.spread,
-      variants: recipe.variants,
-    };
-    rendered += 1;
-    await renderFrom(index + 1);
-  };
-  const renderBank = async (): Promise<void> => {
-    try {
-      await renderFrom(0);
-    } catch (error) {
-      failed(messageOf(error));
-    }
-  };
-  noteSlice(performance.now() - started);
-  void renderBank();
-
   const play = (cue: Cue, pan: number, gain: number): void => {
     const take = bank[cue];
     if (!take) {
+      waiting = cue;
+      waitingSince = context.currentTime;
       return;
     }
     const now = context.currentTime;
@@ -205,6 +184,76 @@ export const openDesk = (
     counts.set(cue, (counts.get(cue) ?? 0) + 1);
   };
 
+  const timed = (work: () => void): void => {
+    const sliceStart = performance.now();
+    work();
+    noteSlice(performance.now() - sliceStart);
+  };
+
+  const fillFrom = async (from: number): Promise<void> => {
+    timed(() => {
+      fillNoise(noise, random, from, from + NOISE_CHUNK);
+    });
+    await nextTask();
+    if (from + NOISE_CHUNK < noise.length) {
+      await fillFrom(from + NOISE_CHUNK);
+    }
+  };
+
+  const renderFrom = async (index: number): Promise<void> => {
+    const cue = cues[index];
+    if (cue === undefined) {
+      waitedMs = performance.now() - started;
+      return;
+    }
+    const recipe = recipes[cue];
+    const sliceStart = performance.now();
+    const job = cueJob(recipe, context.sampleRate, noise, index + 1);
+    noteSlice(performance.now() - sliceStart);
+    const buffer = await job.context.startRendering();
+    await nextTask();
+    bank[cue] = {
+      buffer,
+      next: 0,
+      rank: priorities.indexOf(recipe.priority),
+      seconds: job.seconds,
+      spread: recipe.spread,
+      variants: recipe.variants,
+    };
+    rendered += 1;
+    if (waiting === cue) {
+      waiting = null;
+      if (context.currentTime - waitingSince < LATE_SECONDS) {
+        play(cue, 0, 1);
+      }
+    }
+    await renderFrom(index + 1);
+  };
+  const renderBank = async (): Promise<void> => {
+    try {
+      await nextTask();
+      timed(() => {
+        for (let index = 0; index < CHANNELS; index += 1) {
+          channels.push(channelOf(context, effects));
+        }
+      });
+      await nextTask();
+      timed(() => {
+        engine = engineVoice(context, engineCharacters.middleweight, effects);
+      });
+      await nextTask();
+      await fillFrom(0);
+      timed(() => {
+        wind = windOf(context, noise, effects);
+      });
+      await renderFrom(0);
+    } catch (error) {
+      failed(messageOf(error));
+    }
+  };
+  noteSlice(performance.now() - started);
+  void renderBank();
+
   const stream = (): MediaStream => {
     const tap = context.createMediaStreamDestination();
     master.connect(tap);
@@ -214,6 +263,7 @@ export const openDesk = (
     busyMs,
     longestSliceMs,
     rendered,
+    slices,
     waitedMs,
   });
   Reflect.set(globalThis, "__rushlineSound", {
@@ -238,13 +288,13 @@ export const openDesk = (
     play,
     ride(on, speed, throttle, revs, offRoad) {
       const now = context.currentTime;
-      engine.drive(on, revs, throttle, now);
+      engine?.drive(on, revs, throttle, now);
       const rush = on ? Math.min(1, speed / RUSH_SPEED) : 0;
-      wind.gain(rush * rush * 0.26 + (on && offRoad ? 0.12 : 0), now);
-      wind.tone(offRoad ? 240 : 500 + rush * 1100, now);
+      wind?.gain(rush * rush * 0.26 + (on && offRoad ? 0.12 : 0), now);
+      wind?.tone(offRoad ? 240 : 500 + rush * 1100, now);
     },
     shift() {
-      engine.dip(context.currentTime);
+      engine?.dip(context.currentTime);
       play("shift", 0, 1);
     },
     stats,
