@@ -28,6 +28,8 @@ import {
 } from "./scenarios.ts";
 import type { Scenario } from "./scenarios.ts";
 
+const TABLES_PER_STAMP_SAMPLE = 16;
+
 const prepareSnapshots = (scenario: Scenario) => {
   const setup = benchStart(scenario.bench);
   const run = benchRun(scenario.bench);
@@ -49,15 +51,19 @@ const prepareSnapshots = (scenario: Scenario) => {
   const restore = new Float64Array(WINDOW_TICKS);
   const write = new Float64Array(WINDOW_TICKS);
   const stamp = new Float64Array(WINDOW_TICKS);
-  const timing = createRaceTiming(run.view, setup.track.length);
+  const timings = Array.from({ length: TABLES_PER_STAMP_SAMPLE }, () =>
+    createRaceTiming(run.view, setup.track.length)
+  );
   let out = new DataView(new ArrayBuffer(snapshotCapacity(run.view)));
   return {
     measure: () => {
       for (let index = 0; index < WINDOW_TICKS; index += 1) {
         run.step();
         const atStamp = performance.now();
-        timing.record(run.view);
-        stamp[index] = performance.now() - atStamp;
+        for (const timing of timings) {
+          timing.record(run.view);
+        }
+        stamp[index] = (performance.now() - atStamp) / TABLES_PER_STAMP_SAMPLE;
         stepRace(spare, setup.track, eitherSideFrame);
         const needed = snapshotCapacity(run.view);
         if (out.byteLength < needed) {
