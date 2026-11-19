@@ -7,6 +7,8 @@ import { ordinal } from "../../career/format.ts";
 import type { HudState } from "../../game/hud.ts";
 import { idleHud } from "../../hud-feed.ts";
 import type { HudFeed } from "../../hud-feed.ts";
+import { hudEdge, noticeTop, towerRowsAt, warningPad } from "./hud-layout.ts";
+import type { TowerRows } from "./hud-layout.ts";
 import { RaceTower } from "./race-tower.tsx";
 
 const COP_ON_YOU = 15;
@@ -42,8 +44,9 @@ const copWarningText = (gap: number): string => {
 
 const CopWarning = ({ gap }: { readonly gap: number }) => (
   <p
-    className="font-display tracking-display cop-blink numeric text-name bg-ink/85 absolute top-[3%] left-1/2 -translate-x-1/2 px-4 py-1 font-extrabold whitespace-nowrap uppercase"
+    className="font-display tracking-display cop-blink numeric text-name bg-ink/85 absolute left-1/2 -translate-x-1/2 font-extrabold whitespace-nowrap uppercase"
     role="alert"
+    style={{ padding: warningPad, top: hudEdge }}
   >
     {copWarningText(gap)}
   </p>
@@ -69,6 +72,21 @@ const Speedometer = ({ hud }: { readonly hud: HudState }) => (
   </>
 );
 
+const onResize = (changed: () => void): (() => void) => {
+  globalThis.addEventListener("resize", changed);
+  return () => {
+    globalThis.removeEventListener("resize", changed);
+  };
+};
+
+const towerRows = (): TowerRows =>
+  towerRowsAt({
+    height: globalThis.innerHeight,
+    width: globalThis.innerWidth,
+  });
+
+const wholeField = (): TowerRows => "all";
+
 export const RaceHud = ({
   feed,
   settled,
@@ -78,6 +96,7 @@ export const RaceHud = ({
 }) => {
   const hud = useSyncExternalStore(feed.subscribe, feed.read, () => idleHud);
   const racing = hud.phase === "racing" || hud.phase === "countdown";
+  const shown = useSyncExternalStore(onResize, towerRows, wholeField);
   return (
     <Screen className="pointer-events-none bg-transparent select-none">
       {settled ? (
@@ -88,18 +107,25 @@ export const RaceHud = ({
       ) : (
         <>
           {racing && hud.copGap !== null && <CopWarning gap={hud.copGap} />}
-          {racing && hud.tower.length > 0 && <RaceTower rows={hud.tower} />}
+          {racing && hud.tower.length > 0 && (
+            <RaceTower rows={hud.tower} shown={shown} />
+          )}
           <Speedometer hud={hud} />
           {hud.countdown > 0 && (
             <p
-              className={`${numeral} notice-in absolute top-[30%] left-1/2 -translate-x-1/2`}
+              className={`${numeral} notice-in absolute left-1/2 -translate-x-1/2`}
               key={hud.countdown}
+              style={{ top: noticeTop }}
             >
               {hud.countdown}
             </p>
           )}
           {hud.countdown === 0 && hud.notice !== "" && (
-            <Notice className="hud-ink top-[30%]" key={hud.notice}>
+            <Notice
+              className="hud-ink"
+              key={hud.notice}
+              style={{ top: noticeTop }}
+            >
               {noticeText(hud)}
             </Notice>
           )}

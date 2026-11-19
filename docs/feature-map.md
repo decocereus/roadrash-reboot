@@ -405,7 +405,7 @@ Every screen React draws around a race: the first-visit card, the bar's Race, Ga
 - Docs: [docs/design/screens.md#flow](design/screens.md#flow), [docs/design/game-design.md#3-modes](design/game-design.md#3-modes), [DESIGN.md#components](../DESIGN.md#components)
 - Verify: [single-race.md](../.claude/skills/verify-rushline/features/single-race.md), [career.md](../.claude/skills/verify-rushline/features/career.md)
 - Perf: `bytes.route.root.gzip`, `bytes.route.root.raw`
-- Owns: `apps/web/src/components/screens/**`, `apps/web/test/escape-layers.test.ts`, `apps/web/test/career-screens.test.tsx`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/solo-door.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/navigation.ts`, `apps/web/test/navigation.test.ts`, `apps/web/test/welcome-navigation.test.ts`, `apps/web/test/navigation-tabs.test.ts`, `apps/web/test/navigation-walk.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/garage-stand.ts`, `apps/web/src/career/garage-stand.test.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`
+- Owns: `apps/web/src/components/screens/**`, `apps/web/test/escape-layers.test.ts`, `apps/web/test/hud-layout.test.tsx`, `apps/web/test/career-screens.test.tsx`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/solo-door.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/navigation.ts`, `apps/web/test/navigation.test.ts`, `apps/web/test/welcome-navigation.test.ts`, `apps/web/test/navigation-tabs.test.ts`, `apps/web/test/navigation-walk.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/garage-stand.ts`, `apps/web/src/career/garage-stand.test.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`
 
 Source files:
 
@@ -420,6 +420,7 @@ Source files:
 - `apps/web/src/components/screens/escape-layers.ts`
 - `apps/web/src/components/screens/finish.tsx`
 - `apps/web/src/components/screens/garage-panel.tsx`
+- `apps/web/src/components/screens/hud-layout.ts`
 - `apps/web/src/components/screens/name-card.tsx`
 - `apps/web/src/components/screens/pause.tsx`
 - `apps/web/src/components/screens/race-hud.tsx`
@@ -440,6 +441,7 @@ Test files:
 - `apps/web/src/career/garage-stand.test.ts`
 - `apps/web/test/career-screens.test.tsx`
 - `apps/web/test/escape-layers.test.ts`
+- `apps/web/test/hud-layout.test.tsx`
 - `apps/web/test/navigation-tabs.test.ts`
 - `apps/web/test/navigation-walk.ts`
 - `apps/web/test/navigation.test.ts`

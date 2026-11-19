@@ -149,7 +149,7 @@ const windowsIn = async (
       ];
 
 const markupOf = (rows: readonly TowerRow[]): string =>
-  renderToStaticMarkup(<RaceTower rows={rows} />);
+  renderToStaticMarkup(<RaceTower rows={rows} shown="all" />);
 
 describe("the race tower", () => {
   it("lists every racer in the order the place tag reads, and no cop", () => {
