@@ -26,7 +26,7 @@ export const riderVisuals = [
   {
     id: "ronaldo",
     model: "models/rider_ronaldo.glb",
-    suit: 0xaf_1f_36,
+    suit: 0x35_5c_c9,
   },
   {
     id: "mbappe",
