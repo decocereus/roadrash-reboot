@@ -377,11 +377,7 @@ export const hotBodies = {
     ["restoreInto"],
     ["hashRace"],
   ],
-  "packages/sim/src/timing.ts": [
-    ["passLines"],
-    ["crossingTick"],
-    ["intervalAhead"],
-  ],
+  "packages/sim/src/timing.ts": [["pass"], ["stampIn"], ["intervalAhead"]],
   "packages/sim/src/traffic.ts": [
     ["stepTraffic"],
     ["gatherLane"],

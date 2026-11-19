@@ -1,15 +1,20 @@
 import { recordedRules } from "@racer/career/bench";
 import { createRaceLog } from "@racer/career/outcome";
+import { celebritySuits } from "@racer/sim/cast";
+import { riderBlocks, riderPalette } from "@racer/sim/palette";
 import { createRace, standings, stepRace } from "@racer/sim/race";
 import type { RaceRun } from "@racer/sim/race-run";
 import { PLAYER_RIDER, TICK_RATE, riderOf } from "@racer/sim/state";
 import type { InputFrame, RaceState, RiderState } from "@racer/sim/state";
+import { createRaceTiming } from "@racer/sim/timing";
 import { renderToStaticMarkup } from "react-dom/server";
+import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
 import { firstQuickPick, planFor, quickEntry } from "../src/career/flow.ts";
 import { RaceTower } from "../src/components/screens/race-tower.tsx";
 import { undressed } from "../src/game/figure-wardrobe.ts";
+import type { Dressing } from "../src/game/figure-wardrobe.ts";
 import { countdownFor, racingFrom } from "../src/game/game-session.ts";
 import type { Session } from "../src/game/game-session.ts";
 import { createTower } from "../src/game/hud-tower.ts";
@@ -46,13 +51,16 @@ const rideFor = (plan: RacePlan, seconds: number): Ride => {
     ...setup,
     player: { ...setup.player, controller: "pilot" },
   });
+  const timing = createRaceTiming(state, setup.track.length);
   const race: RaceRun = {
     events: () => state.events,
     step: (frame) => {
       stepRace(state, setup.track, frame);
+      timing.record(state);
     },
     takeCorrections: () => [],
     takeFights: () => [],
+    timing,
     view: state,
   };
   for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
@@ -76,6 +84,19 @@ const riderAtPlace = (state: RaceState, place: number): RiderState => {
     throw new Error(`No rider holds place ${place}.`);
   }
   return rider;
+};
+
+const hex = (colour: number): string =>
+  `#${colour.toString(16).padStart(6, "0")}`;
+
+const paintedBody = {
+  atlas: null,
+  bones: [],
+  poses: new Map(),
+  primitives: [],
+  scene: new THREE.Object3D(),
+  seat: new THREE.Vector3(),
+  standHeight: 0,
 };
 
 const markupOf = (rows: readonly TowerRow[]): string =>
@@ -135,6 +156,33 @@ describe("the race tower", () => {
     ).toStrictEqual([]);
     expect(markup).toMatch(/>\+\d+\.\d</u);
     expect(markup).not.toMatch(/[—·]/u);
+  });
+
+  it("gives each chip the colour the rider wears on the road", () => {
+    const ride = rideFor(soloPlan, 30);
+    const [painted, blocked, plain] = [2, 3, 4].map((place) =>
+      riderAtPlace(ride.state, place)
+    );
+    if (!painted || !blocked || !plain) {
+      throw new Error("The race has fewer than four racers.");
+    }
+    const dressing: Dressing = new Map([
+      [painted.id, { body: paintedBody, suit: celebritySuits.ronaldo }],
+    ]);
+    const rows = rowsOf(createTower(), {
+      ...ride,
+      session: racingFrom(
+        countdownFor(soloPlan, createRaceLog(soloPlan.setup), dressing)
+      ),
+      stage: { ...ride.stage, colours: new Map([[blocked.id, 0]]) },
+    });
+    const chipOf = (rider: RiderState) =>
+      rows.find((row) => row.id === rider.id)?.chip;
+    expect([painted, blocked, plain].map(chipOf)).toStrictEqual([
+      hex(celebritySuits.ronaldo),
+      hex(riderBlocks[0]?.suit ?? -1),
+      hex(riderPalette[plain.profile.jacket]?.jacket ?? -1),
+    ]);
   });
 
   it("draws a dropped room rider like any other rider", () => {

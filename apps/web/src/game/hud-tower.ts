@@ -1,14 +1,17 @@
 import type { RaceLog } from "@racer/career/outcome";
 import type { GuestNames } from "@racer/career/room-race";
-import { blockCssOf, riderPalette } from "@racer/sim/palette";
 import type { RaceView, RiderView } from "@racer/sim/race-view";
 import { riderOf } from "@racer/sim/state";
 import type { RiderId } from "@racer/sim/state";
 import { intervalAhead } from "@racer/sim/timing";
+import type { TimingView } from "@racer/sim/timing";
 
 import { shortNames } from "../career/copy.ts";
+import { suitOf } from "./figure-rig.ts";
+import type { Dressing } from "./figure-wardrobe.ts";
 import type { Session } from "./game-session.ts";
 import type { TowerMark, TowerRow } from "./hud.ts";
+import { blocksOf } from "./rider-blocks.ts";
 import type { Stage } from "./scene-lifecycle.ts";
 
 interface Entry {
@@ -18,20 +21,23 @@ interface Entry {
 
 interface TowerRace {
   readonly view: RaceView;
+  readonly timing: TimingView;
   readonly order: readonly RiderId[];
   readonly me: RiderId;
   readonly log: RaceLog;
   readonly names: GuestNames | undefined;
   readonly colours: ReadonlyMap<RiderId, number>;
+  readonly dressing: Dressing;
 }
 
 const noRows: readonly TowerRow[] = [];
 
-const suitCssOf = (jacket: number): string =>
-  `#${(riderPalette[jacket]?.jacket ?? 0).toString(16).padStart(6, "0")}`;
+const cssOf = (colour: number): string =>
+  `#${colour.toString(16).padStart(6, "0")}`;
 
 const entriesOf = ({
   colours,
+  dressing,
   log,
   me,
   names,
@@ -40,15 +46,11 @@ const entriesOf = ({
   const entries = new Map<RiderId, Entry>();
   for (const rider of view.riders) {
     const entrant = log.entrants.find((one) => one.rider === rider.id);
-    const block = colours.get(rider.id);
     const named = entrant
       ? (names?.get(entrant.rival) ?? shortNames[entrant.rival])
       : rider.profile.name;
     entries.set(rider.id, {
-      chip:
-        block === undefined
-          ? suitCssOf(rider.profile.jacket)
-          : blockCssOf(block),
+      chip: cssOf(suitOf(rider, blocksOf(colours, rider.id), dressing)),
       name: rider.id === me ? "You" : named,
     });
   }
@@ -56,6 +58,7 @@ const entriesOf = ({
 };
 
 const markOf = (
+  timing: TimingView,
   tick: number,
   rider: RiderView,
   ahead: RiderView | undefined
@@ -69,12 +72,9 @@ const markOf = (
   if (!ahead) {
     return ["lead", 0];
   }
-  const gap = intervalAhead(tick, rider, ahead);
+  const gap = intervalAhead(timing, tick, rider, ahead);
   if (gap === "unknown") {
     return ["blank", 0];
-  }
-  if (gap === "beyond") {
-    return ["far", 0];
   }
   return ["gap", Math.round(gap * 10)];
 };
@@ -105,7 +105,7 @@ export const createTower = () => {
       entries = entriesOf(race);
       entriesFor = race.log;
     }
-    const { order, view } = race;
+    const { order, timing, view } = race;
     const rows: TowerRow[] = [];
     let ahead: RiderView | undefined;
     for (let place = 0; place < order.length; place += 1) {
@@ -113,7 +113,7 @@ export const createTower = () => {
       const rider = riderOf(view.riders, id);
       const entry = id === null ? undefined : entries.get(id);
       if (rider && entry) {
-        const [mark, tenths] = markOf(view.tick, rider, ahead);
+        const [mark, tenths] = markOf(timing, view.tick, rider, ahead);
         rows.push({
           chip: entry.chip,
           finished: rider.finishTick >= 0,
@@ -144,10 +144,12 @@ export const createTower = () => {
     }
     return rowsOf({
       colours: stage.colours,
+      dressing: session.dressing,
       log: session.log,
       me: stage.me,
       names: session.plan.room?.names,
       order,
+      timing: stage.race.timing,
       view: stage.race.view,
     });
   };

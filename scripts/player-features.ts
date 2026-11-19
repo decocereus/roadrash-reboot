@@ -382,14 +382,14 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/test/race-tower.test.tsx",
       "packages/sim/src/timing*.ts",
     ],
-    perf: ["sim.tick.p95", "sim.tick.p99", "snapshot.bytes.max"],
+    perf: ["timing.stamp.p95", "sim.tick.p95", "room.rollback.p95"],
     start: [
       "apps/web/src/game/race-feedback.ts",
       "apps/web/src/game/hud-tower.ts",
       "packages/sim/src/timing.ts",
     ],
     summary:
-      "The race state the HUD shows and how often it is published: speed, gear, place, progress, the countdown, notices, the cop warning and the timing tower with each racer's interval to the rider ahead, read from the timing lines the simulation records; the React HUD screen and the tower sit with the menus.",
+      "The race state the HUD shows and how often it is published: speed, gear, place, progress, the countdown, notices, the cop warning and the timing tower with each racer's interval to the rider ahead, read from the timing lines the race run and the room client keep beside the race; the React HUD screen and the tower sit with the menus.",
     title: "Race HUD and notices",
     verify: ["riding-and-fighting.md", "single-race.md"],
   },

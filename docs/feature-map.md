@@ -447,13 +447,13 @@ Test files:
 
 ### Race HUD and notices
 
-The race state the HUD shows and how often it is published: speed, gear, place, progress, the countdown, notices, the cop warning and the timing tower with each racer's interval to the rider ahead, read from the timing lines the simulation records; the React HUD screen and the tower sit with the menus.
+The race state the HUD shows and how often it is published: speed, gear, place, progress, the countdown, notices, the cop warning and the timing tower with each racer's interval to the rider ahead, read from the timing lines the race run and the room client keep beside the race; the React HUD screen and the tower sit with the menus.
 
 - Id: `hud`
 - Start: `apps/web/src/game/race-feedback.ts`, `apps/web/src/game/hud-tower.ts`, `packages/sim/src/timing.ts`
 - Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/design/screens.md#6-race-hud](design/screens.md#6-race-hud), [docs/design/art-direction.md#hud-style](design/art-direction.md#hud-style), [DESIGN.md#speedometer](../DESIGN.md#speedometer)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md), [single-race.md](../.claude/skills/verify-rushline/features/single-race.md)
-- Perf: `sim.tick.p95`, `sim.tick.p99`, `snapshot.bytes.max`
+- Perf: `timing.stamp.p95`, `sim.tick.p95`, `room.rollback.p95`
 - Owns: `apps/web/src/game/hud*.ts`, `apps/web/src/game/race-feedback.ts`, `apps/web/src/hud-feed.ts`, `apps/web/test/hud-cadence.test.ts`, `apps/web/test/race-tower.test.tsx`, `packages/sim/src/timing*.ts`
 
 Source files:

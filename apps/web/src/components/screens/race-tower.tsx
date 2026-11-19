@@ -15,9 +15,6 @@ const markText = (row: TowerRow): string => {
     case "blank": {
       return "";
     }
-    case "far": {
-      return "Way back";
-    }
     case "wrecked": {
       return "Wrecked";
     }
@@ -63,14 +60,16 @@ const Row = ({ row }: { readonly row: TowerRow }) => (
 
 export const RaceTower = memo(
   ({ rows }: { readonly rows: readonly TowerRow[] }) => (
-    <ol
-      aria-label="Race order"
-      className="font-display tracking-display numeric hud-ink absolute top-[3%] right-[2%] w-[clamp(10.5rem,30vmin,18rem)] text-[clamp(0.875rem,2.5vmin,1.5rem)] leading-none font-bold uppercase"
-      style={{ height: `${rows.length * ROW_EM}em` }}
-    >
-      {rows.map((row) => (
-        <Row key={row.id} row={row} />
-      ))}
-    </ol>
+    <div className="font-display tracking-display numeric hud-ink bg-ink/55 absolute top-[3%] right-[2%] w-[clamp(10.5rem,30vmin,18rem)] p-[0.3em] text-[clamp(0.875rem,2.5vmin,1.5rem)] leading-none font-bold uppercase">
+      <ol
+        aria-label="Race order"
+        className="relative"
+        style={{ height: `${rows.length * ROW_EM}em` }}
+      >
+        {rows.map((row) => (
+          <Row key={row.id} row={row} />
+        ))}
+      </ol>
+    </div>
   )
 );

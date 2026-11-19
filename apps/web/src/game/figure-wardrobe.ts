@@ -1,9 +1,15 @@
+import { celebritySuits } from "@racer/sim/cast";
 import type { CelebrityId } from "@racer/sim/cast";
 import type { RiderId } from "@racer/sim/state";
 
 import type { Decoded, LoadCelebrity, RiderAsset } from "./assets.ts";
 
-export type Dressing = ReadonlyMap<RiderId, RiderAsset>;
+interface Dressed {
+  readonly body: RiderAsset;
+  readonly suit: number;
+}
+
+export type Dressing = ReadonlyMap<RiderId, Dressed>;
 
 export const undressed: Dressing = new Map();
 
@@ -59,23 +65,24 @@ export const createWardrobe = (load: LoadCelebrity): Wardrobe => {
       [...worn].map(async ([rider, id]) => ({
         decoded: await loaded(id),
         rider,
+        suit: celebritySuits[id],
       }))
     );
     if (mount.signal.aborted) {
       return null;
     }
-    const dressing = new Map<RiderId, RiderAsset>();
-    for (const { decoded, rider } of fitted) {
+    const dressing = new Map<RiderId, Dressed>();
+    for (const { decoded, rider, suit } of fitted) {
       if (decoded === null) {
         return null;
       }
-      dressing.set(rider, decoded.value);
+      dressing.set(rider, { body: decoded.value, suit });
     }
     return dressing;
   };
 
   const keep = (dressing: Dressing): void => {
-    const worn = new Set(dressing.values());
+    const worn = new Set([...dressing.values()].map(({ body }) => body));
     for (const [id, decoded] of held) {
       if (!worn.has(decoded.value)) {
         held.delete(id);

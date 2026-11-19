@@ -125,6 +125,7 @@ export const createRoomRun = (
     stoppedDrawing: seat.stoppedDrawing,
     takeCorrections: client.takeCorrections,
     takeFights: client.takeFights,
+    timing: client.timing,
     view: client.predicted,
   };
 };

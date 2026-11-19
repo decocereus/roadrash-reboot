@@ -220,8 +220,6 @@ export interface RiderState {
   onCarrier: number;
   finishTick: number;
   crashes: number;
-  readonly lines: Int32Array;
-  lineReached: number;
 }
 
 export interface CarBox {

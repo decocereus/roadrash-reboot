@@ -36,17 +36,6 @@ export const putFloat = (out: DataView, value: number): void => {
   cursor.byte += FLOAT_BYTES;
 };
 
-export const putWhole = (out: DataView, value: number): void => {
-  out.setInt32(cursor.byte, value, true);
-  cursor.byte += WORD_BYTES;
-};
-
-export const takeWhole = (from: DataView): number => {
-  const value = from.getInt32(cursor.byte, true);
-  cursor.byte += WORD_BYTES;
-  return value;
-};
-
 export const takeFloat = (from: DataView): number => {
   const value = from.getFloat64(cursor.byte, true);
   cursor.byte += FLOAT_BYTES;

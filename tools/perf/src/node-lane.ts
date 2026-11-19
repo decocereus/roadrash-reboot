@@ -356,6 +356,7 @@ const snapshotMetrics = [
   { metric: "snapshot.write.p95", of: (run: SnapshotRun) => run.write },
   { metric: "snapshot.restore.p95", of: (run: SnapshotRun) => run.restore },
   { metric: "snapshot.hash.p95", of: (run: SnapshotRun) => run.hash },
+  { metric: "timing.stamp.p95", of: (run: SnapshotRun) => run.stamp },
 ] as const;
 
 export const p95Of = (durations: readonly number[]): number =>

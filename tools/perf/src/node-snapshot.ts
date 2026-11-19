@@ -12,6 +12,7 @@ import {
 } from "@racer/sim/snapshot";
 import { HASH_WORDS } from "@racer/sim/snapshot-bytes";
 import { setupDigest } from "@racer/sim/snapshot-setup";
+import { createRaceTiming } from "@racer/sim/timing";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 
@@ -47,11 +48,16 @@ const prepareSnapshots = (scenario: Scenario) => {
   const hash = new Float64Array(WINDOW_TICKS);
   const restore = new Float64Array(WINDOW_TICKS);
   const write = new Float64Array(WINDOW_TICKS);
+  const stamp = new Float64Array(WINDOW_TICKS);
+  const timing = createRaceTiming(run.view, setup.track.length);
   let out = new DataView(new ArrayBuffer(snapshotCapacity(run.view)));
   return {
     measure: () => {
       for (let index = 0; index < WINDOW_TICKS; index += 1) {
         run.step();
+        const atStamp = performance.now();
+        timing.record(run.view);
+        stamp[index] = performance.now() - atStamp;
         stepRace(spare, setup.track, eitherSideFrame);
         const needed = snapshotCapacity(run.view);
         if (out.byteLength < needed) {
@@ -78,6 +84,7 @@ const prepareSnapshots = (scenario: Scenario) => {
       bytes: [...bytes],
       hash: [...hash],
       restore: [...restore],
+      stamp: [...stamp],
       write: [...write],
     }),
   };

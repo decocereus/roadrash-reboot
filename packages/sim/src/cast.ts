@@ -24,6 +24,11 @@ export const celebrityIds = idsOf<RiderVisual>(riderVisuals);
 
 export type CelebrityId = (typeof celebrityIds)[number];
 
+export const celebritySuits: Readonly<Record<CelebrityId, number>> = byId(
+  riderVisuals,
+  ({ suit }) => suit
+);
+
 export const celebrityRivalIds = idsOf<CelebrityRider>(celebrityRiders);
 
 export type CelebrityRivalId = (typeof celebrityRivalIds)[number];

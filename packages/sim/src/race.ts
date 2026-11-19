@@ -47,7 +47,6 @@ import type {
   RiderProfile,
   RiderState,
 } from "./state.ts";
-import { createLines, lineAt, passLines } from "./timing.ts";
 import { createTraffic, stepTraffic } from "./traffic.ts";
 import { weapons } from "./weapons.ts";
 
@@ -193,8 +192,6 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   lastHitTick: 0,
   lateralSpeed: 0,
   lean: 0,
-  lineReached: lineAt(spot.s),
-  lines: createLines(entry.profile.role === "racer"),
   load: 1,
   mode: "riding",
   modeTicks: 0,
@@ -661,7 +658,4 @@ export const stepRace = (
     stepAttack(state, rider, rider.input);
   }
   stepPolice(state, track);
-  for (const rider of state.riders) {
-    passLines(state.tick, rider);
-  }
 };

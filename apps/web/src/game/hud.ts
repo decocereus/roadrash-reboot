@@ -29,14 +29,7 @@ export type Notice =
   | "lastKm"
   | "marked";
 
-const towerMarks = [
-  "lead",
-  "gap",
-  "blank",
-  "far",
-  "wrecked",
-  "busted",
-] as const;
+const towerMarks = ["lead", "gap", "blank", "wrecked", "busted"] as const;
 
 export type TowerMark = (typeof towerMarks)[number];
 

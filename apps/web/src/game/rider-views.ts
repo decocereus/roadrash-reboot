@@ -1,5 +1,3 @@
-import { riderBlocks } from "@racer/sim/palette";
-import type { RiderBlocks } from "@racer/sim/palette";
 import type { RaceRun } from "@racer/sim/race-run";
 import type { RiderView } from "@racer/sim/race-view";
 import { RUN_SPEED } from "@racer/sim/rider-recovery";
@@ -19,13 +17,13 @@ import type { CrossCarPose } from "./cross-car-pose.ts";
 import { releaseAll } from "./dispose.ts";
 import { kneeScrapes } from "./figure-pose.ts";
 import type { RiderPose } from "./figure-pose.ts";
-import { bodyFor, paletteOf } from "./figure-rig.ts";
+import { bodyFor, paletteOf, suitOf } from "./figure-rig.ts";
 import type { Dressing } from "./figure-wardrobe.ts";
 import type { Fleet } from "./fleet.ts";
 import type { Palette } from "./model-slots.ts";
 import { createPuffs } from "./puffs.ts";
 import type { Puffs } from "./puffs.ts";
-import { blockPaletteOf } from "./rider-blocks.ts";
+import { blockPaletteOf, blocksOf } from "./rider-blocks.ts";
 import {
   captureCast,
   placeDrawn,
@@ -241,11 +239,12 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
   const castFor = (onto: CastTarget, dressing: Dressing): Actors => {
     const { riders } = onto.race.view;
     const { shading } = onto.world;
-    const blocksOf = (rider: RiderId): RiderBlocks | undefined =>
-      riderBlocks[onto.colours.get(rider) ?? riderBlocks.length];
-    const worn = ({ id, profile }: RiderView): Palette => {
-      const blocks = blocksOf(id);
-      return blocks ? blockPaletteOf(blocks) : paletteOf(profile.jacket);
+    const worn = (rider: RiderView): Palette => {
+      const blocks = blocksOf(onto.colours, rider.id);
+      return new Map([
+        ...(blocks ? blockPaletteOf(blocks) : paletteOf(rider.profile.jacket)),
+        ["suit", suitOf(rider, blocks, dressing)],
+      ]);
     };
     const owners: (() => void)[] = [];
     try {
@@ -253,7 +252,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
         assets,
         shading,
         riders.map((rider) => ({
-          livery: blocksOf(rider.id)?.livery,
+          livery: blocksOf(onto.colours, rider.id)?.livery,
           model: bikeModelFor(rider.bike.id),
           paint: rider.profile.paint,
           police: rider.profile.role === "police",
@@ -268,7 +267,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
       });
       const views = riders.map((rider) => {
         const figure = createRiderFigure(
-          dressing.get(rider.id) ?? bodyFor(assets, rider.id),
+          dressing.get(rider.id)?.body ?? bodyFor(assets, rider.id),
           shading,
           worn(rider)
         );

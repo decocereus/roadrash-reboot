@@ -23,7 +23,6 @@ import {
   schemaOf,
   textAt,
   textOrNoneAt,
-  wholesAt,
 } from "./snapshot-members.ts";
 import {
   attackStates,
@@ -43,7 +42,7 @@ import type {
   TrafficCar,
 } from "./state.ts";
 
-export const SNAPSHOT_FORMAT = 8;
+export const SNAPSHOT_FORMAT = 7;
 
 const TICK_BYTES = 8;
 
@@ -220,8 +219,6 @@ const riderSchema = schemaOf<
   lastHitTick: floatAt("lastHitTick"),
   lateralSpeed: floatAt("lateralSpeed"),
   lean: floatAt("lean"),
-  lineReached: floatAt("lineReached"),
-  lines: wholesAt("lines"),
   load: floatAt("load"),
   mode: choiceAt("mode", riderModes),
   modeTicks: floatAt("modeTicks"),
