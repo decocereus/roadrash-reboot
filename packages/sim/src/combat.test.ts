@@ -20,7 +20,13 @@ import {
   straight,
   track,
 } from "./race-fixtures.ts";
-import { createRace, defaultSetup, standings, stepRace } from "./race.ts";
+import {
+  createRace,
+  defaultSetup,
+  placeOf,
+  standings,
+  stepRace,
+} from "./race.ts";
 import { FULL_CONDITION, MAX_STAMINA, TICK_RATE } from "./state.ts";
 import type { RaceEvent, RaceState, RiderState } from "./state.ts";
 import { disarm } from "./weapons.ts";
@@ -129,6 +135,9 @@ describe("the pack", () => {
       expect(finishTicks).toStrictEqual([
         ...finished.toSorted((left, right) => left - right),
         ...finishTicks.filter((tick) => tick < 0),
+      ]);
+      expect(standings(state).map((id) => placeOf(state, id))).toStrictEqual([
+        1, 2, 3, 4, 5, 6,
       ]);
     }
   );

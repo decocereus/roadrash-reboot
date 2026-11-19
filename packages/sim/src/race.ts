@@ -449,20 +449,40 @@ const standingGroup = (rider: RiderView): number => {
   return rider.mode === "busted" || rider.mode === "wrecked" ? 2 : 1;
 };
 
+const standingOrder = (left: RiderView, right: RiderView): number => {
+  const group = standingGroup(left) - standingGroup(right);
+  if (group !== 0) {
+    return group;
+  }
+  if (left.finishTick >= 0) {
+    return left.finishTick - right.finishTick;
+  }
+  return right.bodyS - left.bodyS;
+};
+
 export const standings = (state: RaceView): RiderId[] =>
   state.riders
     .filter((rider) => rider.profile.role === "racer")
-    .toSorted((left, right) => {
-      const group = standingGroup(left) - standingGroup(right);
-      if (group !== 0) {
-        return group;
-      }
-      if (left.finishTick >= 0) {
-        return left.finishTick - right.finishTick;
-      }
-      return right.bodyS - left.bodyS;
-    })
+    .toSorted(standingOrder)
     .map((rider) => rider.id);
+
+export const placeOf = (state: RaceView, id: RiderId): number => {
+  const me = riderOf(state.riders, id);
+  if (!me) {
+    return 0;
+  }
+  let place = 1;
+  let passedMe = false;
+  for (const rider of state.riders) {
+    if (rider === me) {
+      passedMe = true;
+    } else if (rider.profile.role === "racer") {
+      const order = standingOrder(rider, me);
+      place += order < 0 || (order === 0 && !passedMe) ? 1 : 0;
+    }
+  }
+  return place;
+};
 
 const throwForHazard: ThrowForHazard = (
   state,

@@ -415,6 +415,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
     id: "audio",
     kind: "feature",
     owns: [
+      "apps/web/src/game/race-cues.ts",
       "apps/web/src/sound/**",
       "apps/web/test/sound-bundle.ts",
       "apps/web/test/sound-scenes.ts",

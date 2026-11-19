@@ -1,5 +1,5 @@
 import { chaserGap } from "@racer/sim/police";
-import { distanceLeft, standings } from "@racer/sim/race";
+import { distanceLeft, placeOf, standings } from "@racer/sim/race";
 import type { RiderView } from "@racer/sim/race-view";
 import { clamp, FULL_CONDITION, MAX_STAMINA, riderOf } from "@racer/sim/state";
 import type {
@@ -17,6 +17,8 @@ import type { ChaseCamera } from "./chase-camera.ts";
 import { hudCountdown, roomOf } from "./game-session.ts";
 import type { Session } from "./game-session.ts";
 import type { GameEvents, Notice } from "./hud.ts";
+import { createRaceCues } from "./race-cues.ts";
+import type { PlaceHeard } from "./race-cues.ts";
 import type { Stage } from "./scene-lifecycle.ts";
 
 const NOTICE_SECONDS = 0.8;
@@ -31,7 +33,6 @@ const HEARD_FROM = 60;
 const OTHERS_GAIN = 0.7;
 const NEAR_SIDE = 6;
 const WIDEST_PAN = 0.85;
-const PLACE_HOLD_MS = 500;
 
 const strikeCues = {
   baton: "batonHit",
@@ -108,36 +109,13 @@ export const bindFeedback = ({
     sound.hush();
   };
 
-  let countHeard = 0;
-  let placeHeard = 0;
-  let placeSeen = 0;
-  let placeSince = 0;
-
-  const cueCountdown = (count: number, racing: boolean) => {
-    if (count > 0 && count !== countHeard) {
-      sound.play("count");
-    } else if (count === 0 && countHeard > 0 && racing) {
-      sound.play("go");
-    }
-    countHeard = count;
-  };
-
-  const cuePlace = (place: number, racing: boolean) => {
-    const now = performance.now();
-    if (!racing) {
-      placeHeard = place;
-      placeSeen = place;
-      return;
-    }
-    if (place !== placeSeen) {
-      placeSeen = place;
-      placeSince = now;
-      return;
-    }
-    if (place !== placeHeard && now - placeSince >= PLACE_HOLD_MS) {
-      sound.play(place < placeHeard ? "gained" : "lost");
-      placeHeard = place;
-    }
+  const cues = createRaceCues(sound);
+  const placeHeard: PlaceHeard = {
+    atMs: 0,
+    place: 0,
+    racing: false,
+    restores: 0,
+    source: stage.race.view,
   };
   owners.push(quiet);
 
@@ -214,8 +192,6 @@ export const bindFeedback = ({
       say("broken", weapons[event.weapon].name);
     } else if (event.kind === "busted") {
       chase.jolt(0.4);
-    } else if (event.kind === "finish") {
-      sound.play("finish");
     }
   };
 
@@ -252,9 +228,14 @@ export const bindFeedback = ({
     const room = roomOf(state);
     const countdown = hudCountdown(state);
     const place = order.indexOf(stage.me) + 1;
-    const racing = state.phase === "racing";
-    cueCountdown(countdown, racing);
-    cuePlace(place, racing && countdown === 0);
+    const heardFrom = room?.confirmed ?? stage.race.view;
+    cues.countdown(countdown, state.phase);
+    placeHeard.atMs = performance.now();
+    placeHeard.place = placeOf(heardFrom, stage.me);
+    placeHeard.racing = state.phase === "racing" && countdown === 0;
+    placeHeard.restores = room?.restores() ?? 0;
+    placeHeard.source = heardFrom;
+    cues.place(placeHeard);
     events.onHud({
       bikeName: me.bike.name,
       condition: me.condition / FULL_CONDITION,
@@ -283,5 +264,5 @@ export const bindFeedback = ({
     });
   };
 
-  return { quiet, react, report, say, toggleMute };
+  return { quiet, react, report, say, settled: cues.settled, toggleMute };
 };

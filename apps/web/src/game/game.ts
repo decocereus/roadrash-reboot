@@ -234,7 +234,7 @@ const startGame = (
     stage,
   });
   owners.push(cancelPreparation);
-  const { quiet, react, report, say, toggleMute } = bindFeedback({
+  const { quiet, react, report, say, settled, toggleMute } = bindFeedback({
     chase,
     drawnSpeed: () => player().speed + (cast.views[stage.me]?.drift.along ?? 0),
     events,
@@ -283,6 +283,7 @@ const startGame = (
     const over = settledFrom(session, outcome);
     session = over;
     recorder.race("end", stage.race.view.tick);
+    settled(outcome);
     events.onSettle(over.plan, outcome);
     if (over.overLeft <= 0) {
       events.onOver(over.plan, outcome);
