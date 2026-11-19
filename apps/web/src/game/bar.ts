@@ -66,7 +66,6 @@ const LONGEST_STEP = 0.1;
 const CYCLE_SECONDS = 150;
 const DOOR_SECONDS = 2.6;
 const DOOR_RISE = 4.5;
-const BED_GAIN = 0.5;
 const TURN_SECONDS = 14;
 const MS_PER_SECOND = 1000;
 const NO_RACE_YET = "--";
@@ -308,11 +307,8 @@ const openRoom = (
   owners.push(() => {
     tags.dispose();
   });
-  const room = sound();
-  const sounds = createBarSounds(room);
-  owners.push(() => {
-    room.loop("roomBed", 0);
-  });
+  const sounds = createBarSounds(sound());
+  owners.push(sounds.close);
   const speech = createSpeech(tags);
   const garage = createGarageCorner(bikes, tags);
   const cast = createCast(
@@ -478,7 +474,7 @@ const openRoom = (
   const openDoor = (): void => {
     if (doorOpenedAt === null) {
       doorOpenedAt = clock;
-      room.play("door");
+      sounds.mine("door");
       const spot = doorSpot(members?.mine() ?? 0);
       player.walkTo(spot.x, spot.z);
     }
@@ -555,7 +551,7 @@ const openRoom = (
     const opened = doorOpenedAt === null ? 0 : clock - doorOpenedAt;
     const lift = THREE.MathUtils.smoothstep(opened / DOOR_SECONDS, 0, 1);
     door.position.y = lift * DOOR_RISE;
-    room.loop("roomBed", BED_GAIN * (1 - lift));
+    sounds.bed(1 - lift);
     countdown.show(
       left === null
         ? NO_RACE_YET
