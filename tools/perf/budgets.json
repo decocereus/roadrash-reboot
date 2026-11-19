@@ -46,6 +46,14 @@
         "sha256": "bdaadfbc1d65eb7526256f44d0891fa13f7b2ddad85d95b2f609726303795184"
       },
       {
+        "file": "tools/perf/baselines/passing.node-darwin-arm64.json.gz",
+        "sha256": "6118b5108ed8689118a332bd487b2f8b1b7fbb606d2d166b4017f619210fd99b"
+      },
+      {
+        "file": "tools/perf/baselines/passing.node-linux-x64.json.gz",
+        "sha256": "cb7f38be57c329b525a4489bd7d58e5849c821b75393419c49056da2cd42923e"
+      },
+      {
         "file": "tools/perf/baselines/post-step8.bikes.json.gz",
         "sha256": "7540b4bef4ab8087f0da2942803e9bebb1db27cd96bafbffecc0cef3a61faede"
       },
@@ -108,7 +116,7 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "536e90af4d03439d3807e23b2a6835500124c95f9a7dbc03d13f6ca25d458a47"
+    "summarySha256": "b5cea64073f002eff597141dd726049120036ad1bd12bd881dca9a6f86236a0e"
   },
   "limits": [
     {
@@ -2282,6 +2290,30 @@
       "scenario": "pack-riding-v1",
       "source": "baseline-2026-11-09T22-28-40-968Z-e4d8504-e4d8504",
       "unit": "ms"
+    },
+    {
+      "baseline": 0.0021910140025156264,
+      "derivation": "1.15 x calibrated baseline median",
+      "direction": "max",
+      "environment": "node-darwin-arm64",
+      "metric": "sound.passing.p95",
+      "paired": null,
+      "scenario": null,
+      "source": "gate-2026-11-19T14-56-08-072Z-9f67ba9-3b00755",
+      "unit": "ms",
+      "value": 0.00251966610289297
+    },
+    {
+      "baseline": 0.0045898813992447775,
+      "derivation": "1.15 x calibrated baseline median, with 1.3 x for the spread between GitHub runners",
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "sound.passing.p95",
+      "paired": null,
+      "scenario": null,
+      "source": "gate-2026-11-19T14-39-57-986Z-9f67ba9-ad2772b",
+      "unit": "ms",
+      "value": 0.006861872691870942
     }
   ],
   "nodeProfiles": {

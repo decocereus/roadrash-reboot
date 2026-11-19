@@ -423,7 +423,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "tools/perf/src/node-passing.ts",
       "tools/perf/src/passing-bench.ts",
     ],
-    perf: [],
+    perf: ["sound.passing.p95"],
     start: [
       "apps/web/src/sound/sound.ts",
       "apps/web/src/sound/recipes.ts",
