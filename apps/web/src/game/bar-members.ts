@@ -23,6 +23,7 @@ import type * as THREE from "three";
 import { SOLO_SLOT } from "../bar-view.ts";
 import type { Bikes } from "./actors.ts";
 import type { BarCompany } from "./bar-player.ts";
+import type { BarSounds } from "./bar-sounds.ts";
 import type { BarSpeech } from "./bar-speech.ts";
 import type { BarWalkers, WalkerView } from "./bar-walker.ts";
 
@@ -62,6 +63,7 @@ interface MemberParts {
   readonly bikes: Pick<Bikes, "roots" | "show" | "spin">;
   readonly firstBike: number;
   readonly rider: LobbyRider;
+  readonly sounds: Pick<BarSounds, "near">;
   readonly seat: Pick<
     RoomSeat,
     "act" | "listen" | "lobby" | "phase" | "walk" | "walkOf"
@@ -225,6 +227,7 @@ export const createMembers = ({
   firstBike,
   rider,
   seat,
+  sounds,
   speech,
   walkers,
 }: MemberParts): BarMembers => {
@@ -247,6 +250,9 @@ export const createMembers = ({
     }
     const sender = bodies[fromSlot];
     const targetHead = walkers.at(targetSlot).head;
+    if (sender) {
+      sounds.near(act, sender.view.x, sender.view.z);
+    }
     switch (act) {
       case "greet": {
         speech.say("YO", walkers.at(fromSlot).head, now);

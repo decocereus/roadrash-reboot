@@ -8,6 +8,7 @@ import * as THREE from "three";
 import { describe, expect, it, vi } from "vitest";
 
 import { createMembers } from "./bar-members.ts";
+import type { BarSounds } from "./bar-sounds.ts";
 import type { BarSpeech } from "./bar-speech.ts";
 import type { BarWalker } from "./bar-walker.ts";
 
@@ -79,6 +80,7 @@ const room = ({ lobby, phase, walkOf }: Heard) => {
   const walk = vi.fn<() => void>();
   const act = vi.fn<RoomSeat["act"]>();
   const say = vi.fn<BarSpeech["say"]>();
+  const near = vi.fn<BarSounds["near"]>();
   const hide = vi.fn<(index: number) => void>();
   const showBike = vi.fn<(index: number) => void>();
   const rider = createLobbyRider();
@@ -98,6 +100,7 @@ const room = ({ lobby, phase, walkOf }: Heard) => {
       walk,
       walkOf: (id) => walkOf?.(id) ?? undefined,
     },
+    sounds: { near },
     speech: { say },
     walkers: { at: () => walker, hide },
   });
@@ -119,6 +122,7 @@ const room = ({ lobby, phase, walkOf }: Heard) => {
     hide,
     listen,
     members,
+    near,
     rename,
     rider,
     say,
@@ -302,6 +306,19 @@ describe("members in the bar", () => {
     expect(stance()?.shoving).toBeCloseTo(SHOVE.ticks - 1);
     members.step(1, 0);
     expect(stance()?.shoving).toBe(0);
+  });
+
+  it("plays a heard shove where the member who threw it stands", () => {
+    const { heardShove, members, near } = room({
+      lobby: () => lobbyOf(["near", "far"]),
+      walkOf: () => standing,
+    });
+    members.step(FRAME, 0);
+    heardShove("far", "near");
+    heardShove("gone", "near");
+    expect(near.mock.calls).toStrictEqual([
+      ["shove", standing.x, standing.z],
+    ]);
   });
 
   it("pushes this rider away from where the shover stands", () => {

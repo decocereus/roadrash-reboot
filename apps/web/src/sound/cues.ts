@@ -24,6 +24,11 @@ export const cues = [
   "siren",
   "walkStep",
   "runStep",
+  "greet",
+  "shove",
+  "sit",
+  "pose",
+  "door",
 ] as const;
 
 export type Cue = (typeof cues)[number];

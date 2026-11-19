@@ -7,6 +7,8 @@ import * as THREE from "three";
 import type { Assets } from "./assets.ts";
 import type { BarCompany } from "./bar-player.ts";
 import { poseTurns, breathTurns } from "./bar-poses.ts";
+import { footfalls } from "./bar-sounds.ts";
+import type { BarSounds } from "./bar-sounds.ts";
 import type { BarSpeech } from "./bar-speech.ts";
 import type { Tag, TagLayer } from "./bar-tags.ts";
 import type { Shading } from "./cel.ts";
@@ -123,7 +125,8 @@ export const createCast = (
   heroBike: THREE.Object3D,
   garageBike: THREE.Object3D,
   shown: number,
-  firstStandIns: boolean
+  firstStandIns: boolean,
+  sounds: Pick<BarSounds, "foot">
 ): BarCast => {
   let standIns = firstStandIns;
   const group = new THREE.Group();
@@ -145,6 +148,7 @@ export const createCast = (
   let walked = 0;
   const pushes = riderBlocks.map(() => ({ pushX: 0, pushZ: 0, x: 0, z: 0 }));
   const faces = riderBlocks.map(() => ({ until: 0, yaw: 0 }));
+  const phases = riderBlocks.map(() => 0);
   for (let index = 0; index < riderBlocks.length; index += 1) {
     const blocks = riderBlocks[index];
     const spot = spots[index];
@@ -263,7 +267,7 @@ export const createCast = (
     door: number,
     time: number,
     seconds: number
-  ): void => {
+  ): number | null => {
     stride.set(
       gather[0] - figure.root.position.x,
       0,
@@ -282,10 +286,11 @@ export const createCast = (
         0.5 - 0.5 * Math.cos(phase * FULL_TURN),
         seconds
       );
-    } else {
-      figure.root.rotation.y = FORWARD_YAW + FORWARD_YAW;
-      figure.holdPose(motion.still, motion.breath, 0.5, seconds);
+      return phase;
     }
+    figure.root.rotation.y = FORWARD_YAW + FORWARD_YAW;
+    figure.holdPose(motion.still, motion.breath, 0.5, seconds);
+    return null;
   };
 
   const walkTheRoute = (
@@ -294,12 +299,12 @@ export const createCast = (
     index: number,
     time: number,
     seconds: number
-  ): void => {
+  ): number | null => {
     const target = route[leg] ?? route[0];
     if (pause > 0 || !target) {
       pause -= seconds;
       breathe(figure, motion, index, time, seconds);
-      return;
+      return null;
     }
     stride.set(
       target.x - figure.root.position.x,
@@ -325,6 +330,26 @@ export const createCast = (
       0.5 - 0.5 * Math.cos(walked * WALK_HZ * FULL_TURN),
       seconds
     );
+    return walked * WALK_HZ;
+  };
+
+  const heardStep = (
+    figure: RiderFigure,
+    index: number,
+    phase: number | null
+  ): void => {
+    if (phase === null || !figure.root.visible) {
+      return;
+    }
+    const steps = footfalls(phases[index] ?? phase, phase);
+    phases[index] = phase;
+    sounds.foot(
+      null,
+      figure.root.position.x,
+      figure.root.position.z,
+      steps,
+      WALK_SPEED
+    );
   };
 
   const moveOnFoot = (
@@ -336,9 +361,17 @@ export const createCast = (
     seconds: number
   ): void => {
     if (door > 0 && spot.gather) {
-      walkToDoor(figure, motion, spot.gather, index, door, time, seconds);
+      heardStep(
+        figure,
+        index,
+        walkToDoor(figure, motion, spot.gather, index, door, time, seconds)
+      );
     } else if (spot.act === "walk" && door === 0) {
-      walkTheRoute(figure, motion, index, time, seconds);
+      heardStep(
+        figure,
+        index,
+        walkTheRoute(figure, motion, index, time, seconds)
+      );
     } else {
       breathe(figure, motion, index, time, seconds);
     }

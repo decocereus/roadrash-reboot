@@ -21,6 +21,7 @@ import type { BarMembers } from "./bar-members.ts";
 import { createOutside } from "./bar-outside.ts";
 import { createBarPlayer } from "./bar-player.ts";
 import type { BarCompany, PlayerSlot } from "./bar-player.ts";
+import { createBarSounds } from "./bar-sounds.ts";
 import { createPools } from "./bar-pools.ts";
 import { buildProps } from "./bar-props.ts";
 import {
@@ -64,6 +65,7 @@ const LONGEST_STEP = 0.1;
 const CYCLE_SECONDS = 150;
 const DOOR_SECONDS = 2.6;
 const DOOR_RISE = 4.5;
+const BED_GAIN = 0.5;
 const TURN_SECONDS = 14;
 const MS_PER_SECOND = 1000;
 const NO_RACE_YET = "--";
@@ -305,6 +307,11 @@ const openRoom = (
   owners.push(() => {
     tags.dispose();
   });
+  const room = sound();
+  const sounds = createBarSounds(room);
+  owners.push(() => {
+    room.loop("roomBed", 0);
+  });
   const speech = createSpeech(tags);
   const garage = createGarageCorner(bikes, tags);
   const cast = createCast(
@@ -315,13 +322,14 @@ const openRoom = (
     heroBike,
     garage.mount,
     pins.riders,
-    true
+    true,
+    sounds
   );
   scene.add(cast.group);
   owners.push(() => {
     cast.dispose();
   });
-  const walkers = createWalkers(assets, shading, tags, scene);
+  const walkers = createWalkers(assets, shading, tags, scene, sounds);
   owners.push(() => {
     walkers.dispose();
   });
@@ -356,6 +364,7 @@ const openRoom = (
     puffs,
     rider,
     slot: yourSlot,
+    sounds,
     speech,
     walkUp(spot) {
       if (doorOpenedAt === null) {
@@ -468,6 +477,7 @@ const openRoom = (
   const openDoor = (): void => {
     if (doorOpenedAt === null) {
       doorOpenedAt = clock;
+      room.play("door");
       const spot = doorSpot(members?.mine() ?? 0);
       player.walkTo(spot.x, spot.z);
     }
@@ -505,6 +515,7 @@ const openRoom = (
         firstBike: FIRST_WALKER_BIKE,
         rider,
         seat: next,
+        sounds,
         speech,
         walkers,
       });
@@ -543,6 +554,7 @@ const openRoom = (
     const opened = doorOpenedAt === null ? 0 : clock - doorOpenedAt;
     const lift = THREE.MathUtils.smoothstep(opened / DOOR_SECONDS, 0, 1);
     door.position.y = lift * DOOR_RISE;
+    room.loop("roomBed", BED_GAIN * (1 - lift));
     countdown.show(
       left === null
         ? NO_RACE_YET
@@ -600,6 +612,12 @@ const openRoom = (
     );
 
     eye.aim(seconds, player.view, lift, input.dragging(), garage.isOpen());
+    sounds.listen(
+      player.view.x,
+      player.view.z,
+      camera,
+      members?.mine() ?? SOLO_SLOT
+    );
 
     viewSize.width = canvas.clientWidth;
     viewSize.height = canvas.clientHeight;
@@ -617,6 +635,7 @@ const openRoom = (
       camera,
       viewSize
     );
+    sounds.flush();
     garage.offer(rider, lift, you.walker.head, camera, viewSize);
     speech.update(clock, camera, viewSize);
     shading.aim(camera);
