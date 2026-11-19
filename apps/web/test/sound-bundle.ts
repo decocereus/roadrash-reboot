@@ -116,6 +116,9 @@ const cueClip = async (
   noise: AudioBuffer
 ): Promise<Clip> => {
   const job = cueJob(recipes[cue], SAMPLE_RATE, noise, index + 1);
+  for (const step of job.steps) {
+    step();
+  }
   const rendered = await job.context.startRendering();
   return clipOf("cue", cue, rendered.getChannelData(0));
 };

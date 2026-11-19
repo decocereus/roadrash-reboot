@@ -30,6 +30,7 @@ const MUTE_SECONDS = 0.02;
 const LOOP_SECONDS = 0.3;
 const SCRUB_FROM = 0.6;
 const SCRUB_SPEED = 30;
+const STEP_MS = 1.5;
 
 interface Channel {
   readonly gain: GainNode;
@@ -305,6 +306,24 @@ export const openDesk = (
     }
   };
 
+  const stepFrom = async (
+    steps: readonly (() => void)[],
+    index: number
+  ): Promise<void> => {
+    if (index >= steps.length) {
+      return;
+    }
+    const sliceStart = performance.now();
+    let at = index;
+    while (at < steps.length && performance.now() - sliceStart < STEP_MS) {
+      steps[at]?.();
+      at += 1;
+    }
+    noteSlice(performance.now() - sliceStart);
+    await nextTask();
+    await stepFrom(steps, at);
+  };
+
   const renderFrom = async (index: number): Promise<void> => {
     const cue = cues[index];
     if (cue === undefined) {
@@ -314,6 +333,7 @@ export const openDesk = (
     const sliceStart = performance.now();
     const job = cueJob(recipe, context.sampleRate, noise, index + 1);
     noteSlice(performance.now() - sliceStart);
+    await stepFrom(job.steps, 0);
     const buffer = await job.context.startRendering();
     await nextTask();
     bank[cue] = {
@@ -348,19 +368,6 @@ export const openDesk = (
     const glide = gainGlide(gain.gain, LOOP_SECONDS);
     glide(loopWanted.get(loop) ?? 0, context.currentTime);
     loopGains.set(loop, glide);
-  };
-
-  const stepFrom = async (
-    steps: readonly (() => void)[],
-    index: number
-  ): Promise<void> => {
-    const step = steps[index];
-    if (step === undefined) {
-      return;
-    }
-    timed(step);
-    await nextTask();
-    await stepFrom(steps, index + 1);
   };
 
   const renderLoopFrom = async (index: number): Promise<void> => {
