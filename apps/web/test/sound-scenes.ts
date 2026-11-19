@@ -35,7 +35,7 @@ const readyFrom = async (desk: Desk, waited: number): Promise<void> => {
 
 const peakOf = (samples: Float32Array, from = 0, to = samples.length) => {
   let peak = 0;
-  for (let index = from; index < to; index += 1) {
+  for (let index = Math.floor(from); index < Math.floor(to); index += 1) {
     peak = Math.max(peak, Math.abs(samples[index] ?? 0));
   }
   return peak;
@@ -176,7 +176,7 @@ const hushedRide = async (): Promise<Scene> => {
       ...(after === 0
         ? []
         : [
-            `The engine and wind still play at ${decibels(after)} ${HUSH_SETTLED - HUSH_AT} s after the hush.`,
+            `The engine and wind still play at ${decibels(after)} ${(HUSH_SETTLED - HUSH_AT).toFixed(1)} s after the hush.`,
           ]),
     ],
     right,
