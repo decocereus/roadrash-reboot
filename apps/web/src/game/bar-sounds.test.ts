@@ -14,7 +14,7 @@ const heardBy = () => {
   return { play, sounds };
 };
 
-describe("footfalls", () => {
+describe(footfalls, () => {
   it("lands a foot at every half cycle of the stride", () => {
     expect(footfalls(0.1, 0.4)).toBe(0);
     expect(footfalls(0.4, 0.6)).toBe(1);
@@ -44,7 +44,7 @@ describe("footsteps in the bar", () => {
     sounds.foot(1, 2, 0, 1, 3);
     sounds.foot(null, 4, 0, 1, 1.3);
     sounds.flush();
-    const levels = play.mock.calls.map(([, , gain]) => gain ?? 1);
+    const levels = play.mock.calls.map((call) => call[2] ?? 1);
     expect(play).toHaveBeenCalledTimes(2);
     expect(levels[0]).toBeLessThan(0.5);
     expect(levels[1]).toBeLessThan(levels[0] ?? 0);

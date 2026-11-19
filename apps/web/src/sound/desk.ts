@@ -278,7 +278,12 @@ export const openDesk = (
       return;
     }
     const sliceStart = performance.now();
-    const job = loopJob(loopRecipes[loop], context.sampleRate, noise, 100 + index);
+    const job = loopJob(
+      loopRecipes[loop],
+      context.sampleRate,
+      noise,
+      100 + index
+    );
     noteSlice(performance.now() - sliceStart);
     const buffer = await job.context.startRendering();
     await nextTask();

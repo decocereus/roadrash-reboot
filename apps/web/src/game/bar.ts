@@ -8,6 +8,7 @@ import { SOLO_SLOT } from "../bar-view.ts";
 import type { BarCamera, BarSpot } from "../bar-view.ts";
 import { diagnostics } from "../diagnostics/hub.ts";
 import { graphicsCard } from "../diagnostics/player-events.ts";
+import { sound } from "../sound/sound.ts";
 import { createBikes } from "./actors.ts";
 import type { Assets, Decoded } from "./assets.ts";
 import { createBarEye } from "./bar-camera.ts";
@@ -21,7 +22,6 @@ import type { BarMembers } from "./bar-members.ts";
 import { createOutside } from "./bar-outside.ts";
 import { createBarPlayer } from "./bar-player.ts";
 import type { BarCompany, PlayerSlot } from "./bar-player.ts";
-import { createBarSounds } from "./bar-sounds.ts";
 import { createPools } from "./bar-pools.ts";
 import { buildProps } from "./bar-props.ts";
 import {
@@ -32,6 +32,7 @@ import {
   buildShell,
 } from "./bar-room.ts";
 import { countdownPlate, createSignAtlas, signGeometry } from "./bar-signs.ts";
+import { createBarSounds } from "./bar-sounds.ts";
 import { createSpeech } from "./bar-speech.ts";
 import {
   createGarageCorner,

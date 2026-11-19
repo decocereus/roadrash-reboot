@@ -210,7 +210,7 @@ export const recipes = {
     0
   ),
   greet: recipe("strike", [
-    burst(2300, 0.045, 0.9, 1300),
+    burst(2300, 0.045, 0.7, 1300),
     noise("highpass", 4200, 4200, { decay: 0.015, gain: 0.25 }, 0.7),
     tone("sine", 190, 120, { decay: 0.05, gain: 0.2 }),
     burst(1600, 0.05, 0.5, 900, 0.1),
@@ -239,7 +239,13 @@ export const recipes = {
     0.08
   ),
   pose: recipe("step", [
-    noise("bandpass", 2600, 1400, { attack: 0.02, decay: 0.12, gain: 0.4 }, 0.7),
+    noise(
+      "bandpass",
+      2600,
+      1400,
+      { attack: 0.02, decay: 0.12, gain: 0.4 },
+      0.7
+    ),
     crackle(220, 4500, { attack: 0.02, decay: 0.12, gain: 0.12 }),
     noise("lowpass", 300, 100, { at: 0.1, decay: 0.06, gain: 0.7 }, 0.7),
   ]),
@@ -285,7 +291,7 @@ export const recipes = {
       "sawtooth",
       190,
       150,
-      { attack: 0.02, decay: 0.16, gain: 0.07, hold: 0.04 },
+      { attack: 0.02, decay: 0.16, gain: 0.12, hold: 0.04 },
       900
     ),
     tone("sine", 880, 1040, { at: 0.03, decay: 0.08, gain: 0.03 }),

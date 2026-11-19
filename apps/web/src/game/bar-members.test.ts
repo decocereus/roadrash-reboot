@@ -316,9 +316,7 @@ describe("members in the bar", () => {
     members.step(FRAME, 0);
     heardShove("far", "near");
     heardShove("gone", "near");
-    expect(near.mock.calls).toStrictEqual([
-      ["shove", standing.x, standing.z],
-    ]);
+    expect(near.mock.calls).toStrictEqual([["shove", standing.x, standing.z]]);
   });
 
   it("pushes this rider away from where the shover stands", () => {

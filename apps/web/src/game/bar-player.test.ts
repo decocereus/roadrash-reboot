@@ -1,7 +1,7 @@
 import { createLobbyRider, sendRiderTo } from "@racer/sim/lobby";
 import type { LobbyRider } from "@racer/sim/lobby";
-import { lobbyPoses } from "@racer/sim/lobby-walk";
 import { GARAGE_PLINTH } from "@racer/sim/lobby-floor";
+import { lobbyPoses } from "@racer/sim/lobby-walk";
 import * as THREE from "three";
 import { describe, expect, it, vi } from "vitest";
 

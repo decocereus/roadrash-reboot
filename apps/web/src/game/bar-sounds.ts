@@ -13,6 +13,20 @@ const WIDEST_PAN = 0.8;
 export const footfalls = (from: number, to: number): number =>
   Math.floor(to * FEET_PER_CYCLE) - Math.floor(from * FEET_PER_CYCLE);
 
+const stepCue = (steps: number, pace: number): Cue | null => {
+  if (steps <= 0) {
+    return null;
+  }
+  return pace > RUN_PACE ? "runStep" : "walkStep";
+};
+
+const copyInto = (into: Heard, from: Heard): void => {
+  into.away = from.away;
+  into.cue = from.cue;
+  into.x = from.x;
+  into.z = from.z;
+};
+
 interface Heard {
   away: number;
   x: number;
@@ -21,7 +35,12 @@ interface Heard {
 }
 
 export interface BarSounds {
-  readonly listen: (x: number, z: number, camera: THREE.Camera, own: number) => void;
+  readonly listen: (
+    x: number,
+    z: number,
+    camera: THREE.Camera,
+    own: number
+  ) => void;
   readonly foot: (
     slot: number | null,
     x: number,
@@ -45,13 +64,6 @@ export const createBarSounds = (sound: Pick<Sound, "play">): BarSounds => {
   let ownSlot = 0;
   let ownStep: Cue | null = null;
 
-  const stepCue = (steps: number, pace: number): Cue | null => {
-    if (steps <= 0) {
-      return null;
-    }
-    return pace > RUN_PACE ? "runStep" : "walkStep";
-  };
-
   const playAt = (cue: Cue, x: number, z: number, gain: number): void => {
     const dx = x - listenerX;
     const dz = z - listenerZ;
@@ -61,7 +73,11 @@ export const createBarSounds = (sound: Pick<Sound, "play">): BarSounds => {
       return;
     }
     const side = (dx * right.x + dz * right.z) / Math.max(1, away);
-    sound.play(cue, THREE.MathUtils.clamp(side, -1, 1) * WIDEST_PAN, gain * fade * fade);
+    sound.play(
+      cue,
+      THREE.MathUtils.clamp(side, -1, 1) * WIDEST_PAN,
+      gain * fade * fade
+    );
   };
 
   return {
@@ -83,15 +99,13 @@ export const createBarSounds = (sound: Pick<Sound, "play">): BarSounds => {
       }
       const away = Math.hypot(x - listenerX, z - listenerZ);
       const [first, second] = nearest;
-      const into = away < first.away ? first : away < second.away ? second : null;
-      if (into === null) {
+      if (away >= second.away) {
         return;
       }
-      if (into === first) {
-        second.away = first.away;
-        second.cue = first.cue;
-        second.x = first.x;
-        second.z = first.z;
+      let into = second;
+      if (away < first.away) {
+        copyInto(second, first);
+        into = first;
       }
       into.away = away;
       into.cue = stepCue(steps, pace);
