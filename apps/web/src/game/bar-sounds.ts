@@ -104,6 +104,9 @@ export const createBarSounds = (
       }
     },
     foot(slot, x, z, steps, pace) {
+      if (steps <= 0) {
+        return;
+      }
       if (slot === ownSlot) {
         ownStep = stepCue(steps, pace);
         return;

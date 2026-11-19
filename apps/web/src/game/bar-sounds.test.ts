@@ -51,13 +51,25 @@ describe("footsteps in the bar", () => {
     expect(levels[1]).toBeLessThan(levels[0] ?? 0);
   });
 
-  it("hears only the two nearest walkers, even when a farther one steps", () => {
+  it("measures no one on a frame where no foot lands, however full the bar", () => {
+    const { play, sounds } = heardBy();
+    const hypot = vi.spyOn(Math, "hypot");
+    for (let slot = 0; slot < 8; slot += 1) {
+      sounds.foot(slot, slot + 1, 0, 0, 3);
+    }
+    sounds.flush();
+    expect(hypot).not.toHaveBeenCalled();
+    expect(play).not.toHaveBeenCalled();
+    hypot.mockRestore();
+  });
+
+  it("hears a farther walker's step past nearer ones caught mid-stride", () => {
     const { play, sounds } = heardBy();
     sounds.foot(1, 1, 0, 0, 3);
     sounds.foot(2, 2, 0, 0, 3);
     sounds.foot(null, 5, 0, 1, 1.3);
     sounds.flush();
-    expect(play).not.toHaveBeenCalled();
+    expect(play).toHaveBeenCalledOnce();
   });
 
   it("pans another rider's step to their side of the screen", () => {
