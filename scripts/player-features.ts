@@ -417,6 +417,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
     owns: [
       "apps/web/src/game/race-cues.ts",
       "apps/web/src/sound/**",
+      "apps/web/test/passing-field.ts",
       "apps/web/test/sound-bundle.ts",
       "apps/web/test/sound-scenes.ts",
       "tools/sound/**",
@@ -424,7 +425,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "tools/perf/src/node-race-sound.ts",
       "tools/perf/src/race-sound-bench.ts",
     ],
-    perf: ["sound.race.p95"],
+    perf: [],
     start: [
       "apps/web/src/sound/sound.ts",
       "apps/web/src/sound/recipes.ts",

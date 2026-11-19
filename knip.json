@@ -65,7 +65,7 @@
         "lobby.ts",
         "measure.ts",
         "node.ts",
-        "passing.ts",
+        "race-sound.ts",
         "road-life.ts",
         "room.ts",
         "session.ts",

@@ -114,10 +114,12 @@ describe("the pack", () => {
       const finished = finishTicks.filter((tick) => tick >= 0);
       expect({
         placed: finishTicks.length,
+        places: standings(state).map((id) => placeOf(state, id)),
         riders: state.riders.length,
         roster: state.riders.map((rider) => rider.profile.name),
       }).toStrictEqual({
         placed: 6,
+        places: [1, 2, 3, 4, 5, 6],
         riders: 7,
         roster: [
           "You",
@@ -135,9 +137,6 @@ describe("the pack", () => {
       expect(finishTicks).toStrictEqual([
         ...finished.toSorted((left, right) => left - right),
         ...finishTicks.filter((tick) => tick < 0),
-      ]);
-      expect(standings(state).map((id) => placeOf(state, id))).toStrictEqual([
-        1, 2, 3, 4, 5, 6,
       ]);
     }
   );
