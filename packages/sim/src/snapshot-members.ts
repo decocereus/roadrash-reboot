@@ -10,6 +10,7 @@ import {
   putRiderRef,
   putText,
   putTextOrNone,
+  putWhole,
   refuse,
   takeChoice,
   takeCount,
@@ -18,8 +19,10 @@ import {
   takeRiderRef,
   takeText,
   takeTextOrNone,
+  takeWhole,
   textBytes,
   textOrNoneBytes,
+  WORD_BYTES,
 } from "./snapshot-bytes.ts";
 import type { RiderId } from "./state.ts";
 
@@ -264,6 +267,33 @@ export const blockAt = <Key extends string>(
     const block = value[key];
     for (let index = 0; index < length; index += 1) {
       block[index] = takeFloat(from);
+    }
+  },
+});
+
+export const wholesAt = <Key extends string>(
+  key: Key
+): Member<
+  Readonly<Record<Key, FloatRun>>,
+  Readonly<Record<Key, Int32Array>>,
+  Key
+> => ({
+  at: key,
+  bytes: (value) => COUNT_BYTES + WORD_BYTES * value[key].length,
+  put: (out, value) => {
+    const block = value[key];
+    const count = block.length;
+    putCount(out, count);
+    for (let index = 0; index < count; index += 1) {
+      putWhole(out, block[index] ?? 0);
+    }
+  },
+  take: (from, value) => {
+    const block = value[key];
+    const count = block.length;
+    sameCount(from, count, key);
+    for (let index = 0; index < count; index += 1) {
+      block[index] = takeWhole(from);
     }
   },
 });

@@ -73,6 +73,7 @@ export const deterministicFiles = [
   "packages/sim/src/snapshot.ts",
   "packages/sim/src/stalls.ts",
   "packages/sim/src/state.ts",
+  "packages/sim/src/timing.ts",
   "packages/sim/src/traffic.ts",
   "packages/sim/src/weapons.ts",
   "packages/track/src/alignment.ts",
@@ -375,6 +376,11 @@ export const hotBodies = {
     ["checkHeader"],
     ["restoreInto"],
     ["hashRace"],
+  ],
+  "packages/sim/src/timing.ts": [
+    ["passLines"],
+    ["crossingTick"],
+    ["intervalAhead"],
   ],
   "packages/sim/src/traffic.ts": [
     ["stepTraffic"],

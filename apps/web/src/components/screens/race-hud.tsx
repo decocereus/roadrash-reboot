@@ -7,6 +7,7 @@ import { ordinal } from "../../career/format.ts";
 import type { HudState } from "../../game/hud.ts";
 import { idleHud } from "../../hud-feed.ts";
 import type { HudFeed } from "../../hud-feed.ts";
+import { RaceTower } from "./race-tower.tsx";
 
 const COP_ON_YOU = 15;
 const DIAL_TOP_KMH = 300;
@@ -87,6 +88,7 @@ export const RaceHud = ({
       ) : (
         <>
           {racing && hud.copGap !== null && <CopWarning gap={hud.copGap} />}
+          {racing && hud.tower.length > 0 && <RaceTower rows={hud.tower} />}
           <Speedometer hud={hud} />
           {hud.countdown > 0 && (
             <p

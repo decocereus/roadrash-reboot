@@ -105,6 +105,7 @@ Handwriting on the board (Vic's notes, the marker on Polaroids) is drawn as part
 - Weapon hits are pips: small solid rectangles in `#F2EEE6`, hollow when spent.
 - The cop warning alternates `#2F6BFF` and `#E5312B` at 2 Hz. Nothing else on the HUD blinks. The position numeral turns yellow `#FFC531` for half a second when it changes and then returns to warm white, as one steady change of colour.
 - Notices are one or two words in Saira 800, yellow, centred at 30% of the screen height, on screen for 0.8 seconds, scaling from 110% to 100% as they appear.
+- The timing tower at the top right is HUD text too: warm white rows with the outline and no panel, the player's row in yellow `#FFC531`, and a wrecked or busted row at half opacity. Rows slide to a new place and never blink.
 - Layout, strings, and data sources are in `screens.md`.
 
 ## Riders and bikes

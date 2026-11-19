@@ -24,6 +24,7 @@ export const roomRunStub = (
     leave: never("leaves a room"),
     listen: never("listens"),
     me: PLAYER_RIDER,
+    names: new Map(),
     pace: () => 1,
     pressed: never("hears a key"),
     report: never("reports"),
