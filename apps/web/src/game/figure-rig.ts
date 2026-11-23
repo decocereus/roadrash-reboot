@@ -7,9 +7,9 @@ import type { Assets, RiderAsset } from "./assets.ts";
 import type { Dressing } from "./figure-wardrobe.ts";
 import type { Palette, Slot } from "./model-slots.ts";
 
-const DEFAULT_JACKET = 0x23_26_2c;
+const DEFAULT_JACKET = 0x34_3d_50;
 const DEFAULT_HELMET = 0xf2_c2_30;
-const SUIT_PANEL = "#1c1826";
+const SUIT_PANEL = "#3f394d";
 
 export const suitOf = (
   rider: Pick<RiderView, "id" | "profile">,
