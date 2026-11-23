@@ -383,7 +383,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/test/race-tower.test.tsx",
       "packages/sim/src/timing*.ts",
     ],
-    perf: ["timing.stamp.p95", "sim.tick.p95", "room.rollback.p95"],
+    perf: ["timing.stamp.trimmedMean", "sim.tick.p95", "room.rollback.p95"],
     start: [
       "apps/web/src/game/race-feedback.ts",
       "apps/web/src/game/hud-tower.ts",
