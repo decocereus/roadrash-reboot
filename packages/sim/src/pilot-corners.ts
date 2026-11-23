@@ -1,23 +1,19 @@
 import { roadHalfWidthAt } from "@racer/track/districts";
 import { hypot2 } from "@racer/track/math";
-import {
-  curvatureAt,
-  heightAt,
-  slopeAt,
-  slopeRateAt,
-} from "@racer/track/track";
+import { curvatureAt, slopeAt, slopeRateAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
-import { dragOf } from "./engine.ts";
+import { dragOf, strongestPull } from "./engine.ts";
 import { CORNER_SCAN_POINTS } from "./pilot-history.ts";
+import { landed, landsOverCrest } from "./pilot-landing.ts";
 import { TAKEOFF_SPEED } from "./rider-drive.ts";
-import { LANDING_SLIP, landingSlipOf } from "./rider-flight.ts";
 import {
   BIKE_HALF_WIDTH,
   brakeGrip,
   clamp,
   curvePushOf,
   GRAVITY,
+  holdingSpeed,
   lateralSpeedLimit,
   sidewaysRate,
 } from "./state.ts";
@@ -36,27 +32,15 @@ const LEAD_STEPS = 12;
 const LIFT_DROP = 0.05;
 const RESERVE_SHARE = 0.3;
 const FASTEST_LAUNCH = 85;
-const CREST_FLIGHT_STEP = 4;
-const LONGEST_CREST_FLIGHT = 200;
 const CREST_MARGIN = 1.15;
 export const PLANNED_BRAKING = 6.5;
 const PLANNED_LIFT = 3.5;
 const SCAN_STEP = 10;
 export const LANE_CHANGE_RATE = 1.2;
 export const MAX_LATERAL_SPEED = 5;
-const JUMP_LANDING_ROOM = 0.5;
 export const OIL_RECOVERY_SECONDS = 0.6;
 
 export const riding = { brakeShare: BRAKE_SHARE, margin: 1 };
-
-const holdingSpeed = (bike: BikeSpec, bend: number, grip: number): number => {
-  const push = bend / bike.curvePush;
-  const held = bike.lateralSpeedPerSpeed * grip;
-  return (
-    (held + Math.sqrt(held * held + 4 * push * bike.lateralSpeed * grip)) /
-    (2 * push)
-  );
-};
 
 const lockOf = (bike: BikeSpec, lateralSpeed: number, speed: number): number =>
   clamp(
@@ -209,7 +193,14 @@ const bends = new Float64Array(CORNER_SCAN_POINTS);
 const slopes = new Float64Array(CORNER_SCAN_POINTS);
 const drops = new Float64Array(CORNER_SCAN_POINTS);
 export const paced = new Float64Array(CORNER_SCAN_POINTS);
-export const plan = { count: 0, lowest: Number.POSITIVE_INFINITY, paced: 0 };
+export const plan = {
+  count: 0,
+  lowest: Number.POSITIVE_INFINITY,
+  paced: 0,
+  pull: 0,
+};
+
+const crestFlight = { ahead: 0, from: -1, lands: false, speed: 0 };
 
 export const sampleOf = (
   values: Float64Array,
@@ -247,36 +238,6 @@ const slowedFrom = (
   return Math.sqrt(Math.max(0, next * next + 2 * slowing * CORNER_SCAN_STEP));
 };
 
-export const landsOnRoad = (
-  track: Track,
-  rider: RiderState,
-  from: number,
-  flight: number,
-  x: number,
-  speed: number,
-  margin: number
-): boolean => {
-  const { bike } = rider;
-  const takeoff = curvatureAt(track, from);
-  let bendAcross = 0;
-  for (let s = from; s < from + flight; s += CORNER_SCAN_STEP) {
-    bendAcross += takeoff - curvatureAt(track, s);
-  }
-  const landing = x + (bendAcross * speed * CORNER_SCAN_STEP) / bike.curvePush;
-  const lock = lateralSpeedLimit(bike, speed);
-  return (
-    Math.abs(landing) <=
-      roadHalfWidthAt(track, from + flight) - JUMP_LANDING_ROOM &&
-    landingSlipOf(
-      bike,
-      clamp(curvePushOf(bike, takeoff, speed), -lock, lock),
-      curvatureAt(track, from + flight),
-      speed
-    ) <=
-      LANDING_SLIP * margin
-  );
-};
-
 export const canBrakeAfterLanding = (
   track: Track,
   rider: RiderState,
@@ -303,21 +264,36 @@ const crestTakeoffSpeed = (drop: number): number =>
     ? Math.max(TAKEOFF_SPEED, Math.sqrt(-GRAVITY / drop))
     : Number.POSITIVE_INFINITY;
 
-const crestFlightLength = (track: Track, from: number, speed: number) => {
-  const start = heightAt(track, from);
-  const rise = slopeAt(track, from);
+const lowestAlong = (
+  values: Float64Array,
+  count: number,
+  near: number,
+  far: number
+): number => {
+  let lowest = Math.min(
+    sampleOf(values, count, near),
+    sampleOf(values, count, far)
+  );
   for (
-    let along = CREST_FLIGHT_STEP;
-    along < LONGEST_CREST_FLIGHT;
-    along += CREST_FLIGHT_STEP
+    let ahead = Math.ceil(near / CORNER_SCAN_STEP) * CORNER_SCAN_STEP;
+    ahead < far;
+    ahead += CORNER_SCAN_STEP
   ) {
-    const height =
-      start + rise * along - (GRAVITY * along * along) / (2 * speed * speed);
-    if (height <= heightAt(track, from + along)) {
-      return along;
-    }
+    lowest = Math.min(lowest, sampleOf(values, count, ahead));
   }
-  return LONGEST_CREST_FLIGHT;
+  return lowest;
+};
+
+const reachableSquared = (rider: RiderState, index: number): number =>
+  rider.speed * rider.speed + 2 * plan.pull * index * CORNER_SCAN_STEP;
+
+const takesOffAt = (
+  rider: RiderState,
+  index: number,
+  speed: number
+): boolean => {
+  const takeoff = crestTakeoffSpeed(drops[index] ?? 0);
+  return speed > takeoff && reachableSquared(rider, index) > takeoff * takeoff;
 };
 
 const crestCeiling = (
@@ -329,17 +305,42 @@ const crestCeiling = (
   speed: number,
   margin: number
 ): number => {
-  const takeoff = crestTakeoffSpeed(drops[index] ?? 0);
-  if (speed <= takeoff) {
+  const fastest = Math.min(speed, FASTEST_LAUNCH);
+  if ((drops[index] ?? 0) >= 0 || !takesOffAt(rider, index, fastest)) {
     return speed;
   }
-  const s = rider.s + index * CORNER_SCAN_STEP;
-  const flying = Math.min(speed, FASTEST_LAUNCH);
-  const flight = crestFlightLength(track, s, flying);
+  let from = index;
+  while (from > 0 && takesOffAt(rider, from - 1, fastest)) {
+    from -= 1;
+  }
+  const flying = Math.min(fastest, Math.sqrt(reachableSquared(rider, from)));
+  const settled = (index + 1) * CORNER_SCAN_STEP;
+  if (flying > sampleOf(history.braked, plan.count, settled)) {
+    return crestTakeoffSpeed(drops[index] ?? 0);
+  }
+  if (crestFlight.from !== from || crestFlight.speed !== flying) {
+    crestFlight.from = from;
+    crestFlight.speed = flying;
+    crestFlight.lands = landsOverCrest(
+      track,
+      rider,
+      rider.s + from * CORNER_SCAN_STEP,
+      line,
+      flying,
+      margin
+    );
+    crestFlight.ahead = landed.s - rider.s;
+  }
   const lands =
-    flying <= sampleOf(history.braked, plan.count, s + flight - rider.s) &&
-    landsOnRoad(track, rider, s, flight, line, flying, margin);
-  return lands ? speed : takeoff;
+    crestFlight.lands &&
+    flying <=
+      lowestAlong(
+        history.braked,
+        plan.count,
+        settled,
+        Math.max(settled, crestFlight.ahead)
+      );
+  return lands ? speed : crestTakeoffSpeed(drops[index] ?? 0);
 };
 
 const planCorners = (
@@ -367,11 +368,14 @@ const planCorners = (
   const recovery = slick.metres + speed * OIL_RECOVERY_SECONDS;
   plan.count = count;
   plan.lowest = Number.POSITIVE_INFINITY;
+  let steepestFall = 0;
+  crestFlight.from = -1;
   for (let index = 0; index < count; index += 1) {
     const ahead = index * CORNER_SCAN_STEP;
     const curve = curvatureAt(track, rider.s + ahead);
     bends[index] = Math.abs(curve);
     slopes[index] = slopeAt(track, rider.s + ahead);
+    steepestFall = Math.max(steepestFall, -(slopes[index] ?? 0));
     drops[index] = slopeRateAt(track, rider.s + ahead);
     const grip = ahead <= manoeuvre && asked * curve > 0 ? 1 - reserve : 1;
     const bend = Math.abs(curve);
@@ -385,6 +389,7 @@ const planCorners = (
     ceilings[index] = ceiling;
     plan.lowest = Math.min(plan.lowest, ceiling);
   }
+  plan.pull = strongestPull(bike, speed) + GRAVITY * steepestFall;
   const { braked } = history;
   const last = count - 1;
   braked[last] = ceilings[last] ?? Number.POSITIVE_INFINITY;

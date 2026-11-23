@@ -14,7 +14,7 @@ import {
 import type { BikeSpec, RaceState, RiderState } from "./state.ts";
 
 export const HARD_LANDING = -11;
-const CRASHING_LANDING = -19;
+export const CRASHING_LANDING = -19;
 export const LANDING_SLIP = 0.6;
 const JUDGED_FLIGHT_TICKS = 15;
 const LANDING_LOSS_PER_IMPACT = 0.008;
@@ -78,44 +78,96 @@ export const settleVisuals = (
   );
 };
 
-interface Contact {
-  readonly s: number;
-  readonly x: number;
-  readonly slope: number;
-  readonly verticalSpeed: number;
+export interface Flight {
+  s: number;
+  x: number;
+  air: number;
+  verticalSpeed: number;
+  airTicks: number;
+  readonly speed: number;
+  readonly lateralSpeed: number;
+  readonly bike: BikeSpec;
 }
 
-const land = (
-  state: RaceState,
+export const touchdown = {
+  ground: 0,
+  impact: 0,
+  offRoad: false,
+  push: 0,
+  s: 0,
+  slip: 0,
+  x: 0,
+};
+
+export const stepFlight = (
   track: Track,
-  rider: RiderState,
-  contact: Contact,
-  forwardRate: number
-): void => {
-  const impact = contact.verticalSpeed - contact.slope * forwardRate;
-  const judged = rider.airTicks >= JUDGED_FLIGHT_TICKS;
-  const airSeconds = rider.airTicks * TICK_SECONDS;
-  const slip = landingSlipOf(
-    rider.bike,
-    rider.lateralSpeed,
-    curvatureAt(track, contact.s),
-    rider.speed
+  flight: Flight,
+  groundBefore: number
+): boolean => {
+  const fromS = flight.s;
+  const fromX = flight.x;
+  const fromAir = flight.air;
+  const rise = flight.verticalSpeed;
+  const curvature = curvatureAt(track, fromS);
+  const forwardRate = forwardRateAt(flight.speed, curvature, fromX);
+  const push = curvePushOf(flight.bike, curvature, flight.speed);
+  flight.x += (flight.lateralSpeed - push) * TICK_SECONDS;
+  flight.s += forwardRate * TICK_SECONDS;
+  touchdown.ground = heightAt(track, flight.s);
+  const drop = touchdown.ground - groundBefore;
+  flight.air +=
+    rise * TICK_SECONDS - (GRAVITY * TICK_SECONDS * TICK_SECONDS) / 2 - drop;
+  flight.verticalSpeed -= GRAVITY * TICK_SECONDS;
+  flight.airTicks += 1;
+  touchdown.push = push;
+  if (flight.air > 0) {
+    return false;
+  }
+  const share = clamp(fromAir / (fromAir - flight.air), 0, 1);
+  const s = fromS + (flight.s - fromS) * share;
+  touchdown.s = s;
+  touchdown.x = fromX + (flight.x - fromX) * share;
+  touchdown.impact =
+    rise - GRAVITY * TICK_SECONDS * share - slopeAt(track, s) * forwardRate;
+  return true;
+};
+
+export const settleTouchdown = (track: Track, flight: Flight): void => {
+  touchdown.slip = landingSlipOf(
+    flight.bike,
+    flight.lateralSpeed,
+    curvatureAt(track, touchdown.s),
+    flight.speed
   );
+  touchdown.offRoad =
+    Math.abs(touchdown.x) > roadHalfWidthAt(track, touchdown.s);
+};
+
+export const judgedFlight = (flight: Flight): boolean =>
+  flight.airTicks >= JUDGED_FLIGHT_TICKS;
+
+export const landingCrashes = (flight: Flight): boolean =>
+  touchdown.impact <= CRASHING_LANDING ||
+  (judgedFlight(flight) &&
+    (touchdown.offRoad || touchdown.slip > LANDING_SLIP));
+
+const land = (state: RaceState, track: Track, rider: RiderState): void => {
+  settleTouchdown(track, rider);
+  const crashes = landingCrashes(rider);
+  const { impact, s, slip, x } = touchdown;
+  const airSeconds = rider.airTicks * TICK_SECONDS;
   rider.air = 0;
   rider.airborne = false;
   rider.airTicks = 0;
   rider.verticalSpeed = 0;
-  rider.offRoad = Math.abs(contact.x) > roadHalfWidthAt(track, contact.s);
+  rider.offRoad = touchdown.offRoad;
   const bumpedBy =
     state.hazards[rider.bumpedBy] ??
     state.pedestrians[rider.bumpedWalker] ??
     null;
   rider.bumpedBy = -1;
   rider.bumpedWalker = -1;
-  if (
-    impact < CRASHING_LANDING ||
-    (judged && (rider.offRoad || slip > LANDING_SLIP))
-  ) {
+  if (crashes) {
     throwRider(
       state,
       rider,
@@ -142,8 +194,8 @@ const land = (
     impact,
     kind: "land",
     rider: rider.id,
-    s: contact.s,
-    x: contact.x,
+    s,
+    x,
   });
 };
 
@@ -152,39 +204,11 @@ export const fly = (
   track: Track,
   rider: RiderState
 ): void => {
-  const fromS = rider.s;
-  const fromX = rider.x;
-  const fromAir = rider.air;
-  const rise = rider.verticalSpeed;
-  const curvature = curvatureAt(track, rider.s);
-  const forwardRate = forwardRateOf(rider, curvature);
-  const groundBefore = heightAt(track, rider.s);
-  const push = curvePushOf(rider.bike, curvature, rider.speed);
-  rider.x += (rider.lateralSpeed - push) * TICK_SECONDS;
-  rider.s += forwardRate * TICK_SECONDS;
-  const drop = heightAt(track, rider.s) - groundBefore;
-  rider.air +=
-    rise * TICK_SECONDS - (GRAVITY * TICK_SECONDS * TICK_SECONDS) / 2 - drop;
-  rider.verticalSpeed -= GRAVITY * TICK_SECONDS;
+  const landed = stepFlight(track, rider, heightAt(track, rider.s));
   settleLean(rider, 0.6);
-  rider.heading = headingAcross(rider, rider.lateralSpeed - push);
+  rider.heading = headingAcross(rider, rider.lateralSpeed - touchdown.push);
   rider.load = 0;
-  rider.airTicks += 1;
-  if (rider.air > 0) {
-    return;
+  if (landed) {
+    land(state, track, rider);
   }
-  const share = clamp(fromAir / (fromAir - rider.air), 0, 1);
-  const contactS = fromS + (rider.s - fromS) * share;
-  land(
-    state,
-    track,
-    rider,
-    {
-      s: contactS,
-      slope: slopeAt(track, contactS),
-      verticalSpeed: rise - GRAVITY * TICK_SECONDS * share,
-      x: fromX + (rider.x - fromX) * share,
-    },
-    forwardRate
-  );
 };

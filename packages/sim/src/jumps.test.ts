@@ -59,14 +59,14 @@ const dropOnto = (metres: number): RaceEvent[] => {
   );
 };
 
-const landAt = (impact: number, steering = 0) => {
+const landAt = (impact: number, steering = 0, clearance = 0.01) => {
   const state = field(straight, 1, 0, 0);
   const rider = player(state);
   rider.s = 3000;
   rider.speed = 45;
   rider.airborne = true;
   rider.airTicks = TICK_RATE;
-  rider.air = 0.01;
+  rider.air = clearance;
   rider.verticalSpeed = -impact;
   rider.lateralSpeed = steering * lateralSpeedLimit(rider.bike, rider.speed);
   const pace = rider.speed;
@@ -158,6 +158,17 @@ describe("jumping", () => {
     expect(landAt(18.8).crashes).toHaveLength(0);
     expect(
       landAt(19.2).crashes.map((crash) => crash.kind === "crash" && crash.cause)
+    ).toStrictEqual(["landing"]);
+  });
+
+  it("a judged contact at exactly 19 m/s crashes and one a hair softer rides on", () => {
+    const softer = landAt(19 - 1e-6, 0, 0);
+    expect(softer.crashes).toHaveLength(0);
+    expect(softer.impact).toBeCloseTo(19 - 1e-6, 6);
+    expect(
+      landAt(19, 0, 0).crashes.map(
+        (crash) => crash.kind === "crash" && crash.cause
+      )
     ).toStrictEqual(["landing"]);
   });
 

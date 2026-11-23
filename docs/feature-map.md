@@ -285,6 +285,7 @@ Source files:
 - `packages/sim/src/pilot-forecast.ts`
 - `packages/sim/src/pilot-history.ts`
 - `packages/sim/src/pilot-jumps.ts`
+- `packages/sim/src/pilot-landing.ts`
 - `packages/sim/src/pilot-lines.ts`
 - `packages/sim/src/pilot-police.ts`
 - `packages/sim/src/pilot.ts`
@@ -298,6 +299,7 @@ Test files:
 - `apps/web/test/pilot-replay.ts`
 - `packages/sim/src/pilot-cornering.test.ts`
 - `packages/sim/src/pilot-flight.test.ts`
+- `packages/sim/src/pilot-landing.test.ts`
 - `packages/sim/src/pilot-traffic.test.ts`
 
 ### Bike and rider tables
