@@ -1588,8 +1588,8 @@
       "unit": "B"
     },
     {
-      "derivation": "exact baseline",
-      "value": 17006,
+      "derivation": "measured 17054 B at 651c2b98 on the Linux runner: truck clearance moves the 2 cars it used to delete ahead of the truck, 24 B each",
+      "value": 17054,
       "baseline": 17006,
       "direction": "max",
       "environment": "node-darwin-arm64",
@@ -1600,8 +1600,8 @@
       "unit": "B"
     },
     {
-      "derivation": "exact baseline",
-      "value": 17006,
+      "derivation": "measured 17054 B at 651c2b98 on the Linux runner: truck clearance moves the 2 cars it used to delete ahead of the truck, 24 B each",
+      "value": 17054,
       "baseline": 17006,
       "direction": "max",
       "environment": "node-linux-x64",
