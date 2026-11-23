@@ -118,6 +118,60 @@ const sirenNote = (step: number): Layer =>
     2200
   );
 
+const DRUM_GAIN = 0.5;
+const OVERTONE = 1.59;
+
+interface Drum {
+  readonly hertz: number;
+  readonly strike: number;
+  readonly weight: number;
+  readonly ring: number;
+  readonly at?: number;
+}
+
+const drum = ({ hertz, strike, weight, ring, at = 0 }: Drum): Layers => {
+  const gain = DRUM_GAIN * weight;
+  return [
+    tone("sine", hertz * strike, hertz * 1.02, {
+      at,
+      attack: 0.001,
+      decay: 0.06,
+      gain,
+    }),
+    tone("sine", hertz, hertz, {
+      at: at + 0.03,
+      attack: 0.03,
+      decay: ring * 1.9,
+      gain,
+    }),
+    tone("sine", hertz * OVERTONE, hertz * OVERTONE, {
+      at,
+      attack: 0.001,
+      decay: ring * 0.65,
+      gain: gain * 0.35,
+    }),
+    noise(
+      "bandpass",
+      870,
+      870,
+      { at, attack: 0.0005, decay: 0.15, gain: gain * 0.85 },
+      0.45
+    ),
+  ];
+};
+
+const CYMBAL_MODES = [3150, 4420, 5900, 7300, 9100] as const;
+const cymbal = (weight: number, at: number): Layers => {
+  const gain = DRUM_GAIN * weight;
+  const span = { at, decay: 2.6, gain: gain * 0.85 };
+  return [
+    noise("highpass", 4000, 4000, span, 0.7),
+    ...CYMBAL_MODES.map((hertz) =>
+      noise("bandpass", hertz, hertz, { ...span, gain: gain * 0.5 }, 18)
+    ),
+  ];
+};
+
 const stamp: Layers = [
   noise("bandpass", 1300, 600, { decay: 0.06, gain: 0.6 }, 0.8),
   tone("sine", 440, 280, { decay: 0.07, gain: 0.28 }),
@@ -159,10 +213,7 @@ export const recipes = {
   ]),
   count: recipe(
     "strike",
-    [
-      tone("sine", 880, 880, { decay: 0.08, gain: 0.22, hold: 0.12 }),
-      tone("square", 880, 880, { decay: 0.06, gain: 0.03, hold: 0.12 }, 3000),
-    ],
+    drum({ hertz: 78, ring: 1, strike: 1.6, weight: 1.1 }),
     1,
     0
   ),
@@ -293,9 +344,9 @@ export const recipes = {
   go: recipe(
     "strike",
     [
-      tone("sine", 1320, 1320, { decay: 0.3, gain: 0.26, hold: 0.35 }),
-      tone("sine", 1760, 1760, { decay: 0.25, gain: 0.08, hold: 0.3 }),
-      tone("square", 1320, 1320, { decay: 0.2, gain: 0.03, hold: 0.35 }, 3500),
+      ...drum({ hertz: 58, ring: 2, strike: 1.9, weight: 0.9 }),
+      ...drum({ at: 0.012, hertz: 92, ring: 1.3, strike: 1.5, weight: 0.48 }),
+      ...cymbal(0.5, 0.005),
     ],
     1,
     0

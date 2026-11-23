@@ -54,7 +54,7 @@ interface Staging {
   readonly level: Level;
   readonly early?: (desk: Desk) => void;
   readonly ready?: (desk: Desk) => void;
-  readonly at?: readonly [number, (desk: Desk) => void];
+  readonly timeline?: readonly (readonly [number, (desk: Desk) => void])[];
 }
 
 const later = async (
@@ -68,11 +68,11 @@ const later = async (
 };
 
 const staged = async ({
-  at,
   early,
   level,
   ready,
   seconds,
+  timeline = [],
 }: Staging): Promise<readonly [Float32Array, Float32Array]> => {
   const context = new OfflineAudioContext({
     length: Math.ceil(seconds * SAMPLE_RATE),
@@ -90,11 +90,13 @@ const staged = async ({
   early?.(desk);
   await readyFrom(desk, 0);
   ready?.(desk);
-  const pending = at
-    ? later(context, at[0], () => {
-        at[1](desk);
-      })
-    : Promise.resolve();
+  const pending = Promise.all(
+    timeline.map(async ([at, work]) => {
+      await later(context, at, () => {
+        work(desk);
+      });
+    })
+  );
   const rendered = await context.startRendering();
   await pending;
   if (faults.length > 0) {
@@ -167,18 +169,20 @@ const flatOut: Ride = {
 
 const hushedRide = async (bikeClass: BikeClass): Promise<Scene> => {
   const [left, right] = await staged({
-    at: [
-      HUSH_AT,
-      (desk) => {
-        desk.hush();
-      },
-    ],
     level: FULL,
     ready: (desk) => {
       desk.prepare(bikeClass);
       desk.ride({ ...flatOut, brake: 0, lean: 0, revs: 0.8, speed: 40 });
     },
     seconds: 2.5,
+    timeline: [
+      [
+        HUSH_AT,
+        (desk) => {
+          desk.hush();
+        },
+      ],
+    ],
   });
   const riding = peakOf(left, 0, HUSH_AT * SAMPLE_RATE);
   const after = Math.max(
@@ -226,14 +230,6 @@ const packAround = () => {
 const pileUp = async (): Promise<Scene> => {
   const race = packAround();
   const [left, right] = await staged({
-    at: [
-      PILE_UP_AT,
-      (desk) => {
-        for (let crash = 0; crash < CRASHES; crash += 1) {
-          desk.play("crash", 0, CRASH_GAIN);
-        }
-      },
-    ],
     level: FULL,
     ready: (desk) => {
       desk.prepare("featherweight");
@@ -241,6 +237,16 @@ const pileUp = async (): Promise<Scene> => {
       desk.hear(race, PLAYER_RIDER);
     },
     seconds: 3,
+    timeline: [
+      [
+        PILE_UP_AT,
+        (desk) => {
+          for (let crash = 0; crash < CRASHES; crash += 1) {
+            desk.play("crash", 0, CRASH_GAIN);
+          }
+        },
+      ],
+    ],
   });
   const peak = Math.max(peakOf(left), peakOf(right));
   return {
@@ -256,6 +262,55 @@ const pileUp = async (): Promise<Scene> => {
   };
 };
 
+const COUNT_LEAD = 0.16;
+const COUNTDOWN_HITS = [
+  [COUNT_LEAD, "count"],
+  [COUNT_LEAD + 1, "count"],
+  [COUNT_LEAD + 2, "count"],
+  [COUNT_LEAD + 3, "go"],
+] as const;
+const DEFAULT_LEVEL: Level = { muted: false, volume: 0.75 };
+const HIT_WINDOW = 0.25;
+const HIT_OVER_TAIL = 4;
+
+const countdown = async (): Promise<Scene> => {
+  const [left, right] = await staged({
+    level: DEFAULT_LEVEL,
+    seconds: 5,
+    timeline: COUNTDOWN_HITS.map(
+      ([at, cue]) =>
+        [
+          at,
+          (desk: Desk) => {
+            desk.play(cue, 0, 1);
+          },
+        ] as const
+    ),
+  });
+  const peak = Math.max(peakOf(left), peakOf(right));
+  const missed = COUNTDOWN_HITS.filter(([at]) => {
+    const hit = peakOf(left, at * SAMPLE_RATE, (at + HIT_WINDOW) * SAMPLE_RATE);
+    const before = peakOf(
+      left,
+      (at - HIT_WINDOW) * SAMPLE_RATE,
+      at * SAMPLE_RATE
+    );
+    return hit < HEARD || hit < before * HIT_OVER_TAIL;
+  });
+  return {
+    left,
+    name: "countdown",
+    problems: [
+      ...missed.map(
+        ([at, cue]) =>
+          `The ${cue} due at ${at.toFixed(2)} s does not stand out from what came before it.`
+      ),
+      ...(peak < 1 ? [] : [`The countdown reaches ${decibels(peak)}.`]),
+    ],
+    right,
+  };
+};
+
 export const scenes = async (): Promise<readonly Scene[]> => [
   await mutedFirstPress(),
   await earlyThump(),
@@ -263,4 +318,5 @@ export const scenes = async (): Promise<readonly Scene[]> => [
   await hushedRide("middleweight"),
   await hushedRide("heavyweight"),
   await pileUp(),
+  await countdown(),
 ];
