@@ -76,7 +76,9 @@ const calibrationBlock = (rounds: number) => {
   return { checksums: [...checksums], durations, rounds };
 };
 
-const prepareWindow = (scenario: Scenario) => {
+type TickClock = () => number;
+
+const prepareWindow = (scenario: Scenario, now: TickClock) => {
   const run = benchRun(scenario.bench);
   const police = run.view.riders.filter(
     (rider) => rider.profile.role === "police"
@@ -90,9 +92,9 @@ const prepareWindow = (scenario: Scenario) => {
     durations: () => [...durations],
     measure: () => {
       for (let index = 0; index < WINDOW_TICKS; index += 1) {
-        const started = performance.now();
+        const started = now();
         run.step();
-        durations[index] = performance.now() - started;
+        durations[index] = now() - started;
         observeWorkload(run.view, columns, index);
       }
     },
@@ -151,8 +153,8 @@ export const settleWindows = Effect.fnUntraced(function* settleWindows(
   });
 });
 
-const measuredWindow = (scenario: Scenario) => {
-  const prepared = prepareWindow(scenario);
+const measuredWindow = (scenario: Scenario, now: TickClock) => {
+  const prepared = prepareWindow(scenario, now);
   prepared.measure();
   return prepared;
 };
@@ -171,12 +173,13 @@ const inspector = (method: string) => (cause: unknown) =>
   });
 
 const allocationWindow = Effect.fnUntraced(function* allocationWindow(
-  scenario: Scenario
+  scenario: Scenario,
+  now: TickClock
 ) {
   const warmup = yield* settleWindows(scenario, () =>
-    measuredWindow(scenario).durations()
+    measuredWindow(scenario, now).durations()
   );
-  const prepared = prepareWindow(scenario);
+  const prepared = prepareWindow(scenario, now);
   const session = yield* Effect.acquireRelease(
     Effect.sync(() => {
       const opened = new Session();
@@ -337,7 +340,8 @@ const taskOf = Schema.decodeUnknownOption(Schema.Literals(tasks));
 
 const measure = Effect.fnUntraced(function* measure(
   task: ChildRecord["task"],
-  scenario: Scenario
+  scenario: Scenario,
+  now: TickClock
 ) {
   const base = {
     runtime: runtimeOf(),
@@ -349,17 +353,17 @@ const measure = Effect.fnUntraced(function* measure(
     return { ...base, calibration: calibrationBlock(CALIBRATION_ROUNDS) };
   }
   if (task === "alloc") {
-    return { ...base, ...(yield* allocationWindow(scenario)) };
+    return { ...base, ...(yield* allocationWindow(scenario, now)) };
   }
   if (task === "time") {
     const warmup = yield* settleWindows(scenario, () =>
-      measuredWindow(scenario).durations()
+      measuredWindow(scenario, now).durations()
     );
-    const first = measuredWindow(scenario);
+    const first = measuredWindow(scenario, now);
     const timed = [
       first,
       ...Array.from({ length: TIMED_WINDOWS - 1 }, () =>
-        measuredWindow(scenario)
+        measuredWindow(scenario, now)
       ),
     ];
     return {
@@ -371,7 +375,7 @@ const measure = Effect.fnUntraced(function* measure(
       warmup,
     };
   }
-  const prepared = prepareWindow(scenario);
+  const prepared = prepareWindow(scenario, now);
   prepared.measure();
   return {
     ...base,
@@ -381,16 +385,27 @@ const measure = Effect.fnUntraced(function* measure(
   };
 });
 
+export const produce = Effect.fnUntraced(function* produce(
+  task: ChildRecord["task"],
+  scenario: Scenario,
+  out: string,
+  now: TickClock
+) {
+  const fs = yield* FileSystem.FileSystem;
+  const record = yield* Effect.scoped(measure(task, scenario, now));
+  return yield* fs.writeFileString(out, JSON.stringify(record));
+});
+
 export const child = Effect.fn("node.child")(function* child(
   args: readonly string[]
 ) {
-  const fs = yield* FileSystem.FileSystem;
   const values = yield* readChildOptions(args);
   const scenario = scenarios.find((each) => each.id === values.scenario);
   const task = taskOf(values.task);
   if (!scenario || Option.isNone(task) || values.out === undefined) {
     return yield* new UsageError({ message: childUsage });
   }
-  const record = yield* Effect.scoped(measure(task.value, scenario));
-  return yield* fs.writeFileString(values.out, JSON.stringify(record));
+  return yield* produce(task.value, scenario, values.out, () =>
+    performance.now()
+  );
 });
