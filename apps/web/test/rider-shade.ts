@@ -9,7 +9,7 @@ import { createBikes } from "../src/game/actors.ts";
 import type { AcquiredAssets, RiderAsset } from "../src/game/assets.ts";
 import { bikeModelIds } from "../src/game/bike-models.ts";
 import type { BikeModelId } from "../src/game/bike-models.ts";
-import { createShading } from "../src/game/cel.ts";
+import { createShading, figureFloorOf } from "../src/game/cel.ts";
 import { bodyFor, paletteOf } from "../src/game/figure-rig.ts";
 import { assetParsers, createRenderer } from "../src/game/game.ts";
 import { lookOf } from "../src/game/looks.ts";
@@ -28,6 +28,14 @@ const SHEET_COLUMNS = 3;
 const HUE_FLOOR = 0.03;
 const INK_TOLERANCE = 3;
 const RIDER_BIKE_PAINT = 2;
+const OCCLUDER_LAYER = 2;
+const SUN_DISTANCE = 8;
+const OCCLUDER_DISTANCE = 5;
+const OCCLUDER_SIZE = 40;
+const LIGHTNESS_TOLERANCE = 0.01;
+const RIM_STEP = 0.1;
+const RIM_SHARE_FLOOR = 0.005;
+const FLAT_SHARE_FLOOR = 0.02;
 
 const lookNames = ["dusk", "night"] as const;
 type LookName = (typeof lookNames)[number];
@@ -132,6 +140,7 @@ interface Bands {
   readonly valid: Uint8Array;
   readonly lit: readonly Lab[];
   readonly shadow: readonly Lab[];
+  readonly world: readonly Lab[];
 }
 
 const labAt = (pixels: Uint8Array, pixel: number): Lab =>
@@ -155,6 +164,9 @@ const clearOfInk = (
   return gap <= INK_TOLERANCE;
 };
 
+const median = (values: readonly number[]): number =>
+  round(values.toSorted((a, b) => a - b)[Math.floor(values.length / 2)] ?? 0);
+
 const quantile = (values: readonly number[], at: number): number | null => {
   const sorted = values.toSorted((a, b) => a - b);
   const value = sorted[Math.floor((sorted.length - 1) * at)];
@@ -171,17 +183,20 @@ const bandsOf = (
   lit: Uint8Array,
   inked: Uint8Array,
   shadow: Uint8Array,
+  world: Uint8Array,
   width: number,
   height: number
 ): Bands => {
   const banded = new Uint8Array(width * height);
   const litLabs: Lab[] = Array.from({ length: width * height });
   const shadowLabs: Lab[] = Array.from({ length: width * height });
+  const worldLabs: Lab[] = Array.from({ length: width * height });
   for (let pixel = 0; pixel < width * height; pixel += 1) {
     const litLab = labAt(lit, pixel);
     const shadowLab = labAt(shadow, pixel);
     litLabs[pixel] = litLab;
     shadowLabs[pixel] = shadowLab;
+    worldLabs[pixel] = labAt(world, pixel);
     const onSubject =
       clearOfInk(lit, inked, pixel) &&
       distance(litLab, backgroundLab) > BAND_STEP &&
@@ -202,7 +217,7 @@ const bandsOf = (
           : 0;
     }
   }
-  return { lit: litLabs, shadow: shadowLabs, valid };
+  return { lit: litLabs, shadow: shadowLabs, valid, world: worldLabs };
 };
 
 const nearestOf = (centres: readonly Lab[], lab: Lab): number => {
@@ -300,6 +315,7 @@ const flatsIn = (identity: Identity, bands: Bands) =>
   identity.centres.map((_centre, flat) => {
     const lit: Lab[] = [];
     const shadow: Lab[] = [];
+    const world: number[] = [];
     const gaps: number[] = [];
     for (let pixel = 0; pixel < bands.valid.length; pixel += 1) {
       const litLab = bands.lit[pixel];
@@ -312,6 +328,7 @@ const flatsIn = (identity: Identity, bands: Bands) =>
       ) {
         lit.push(litLab);
         shadow.push(shadowLab);
+        world.push(bands.world[pixel]?.[0] ?? 0);
         const litLch = lchOf(litLab);
         const shadowLch = lchOf(shadowLab);
         if (litLch.c >= HUE_FLOOR && shadowLch.c >= HUE_FLOOR) {
@@ -331,8 +348,33 @@ const flatsIn = (identity: Identity, bands: Bands) =>
       },
       pixels: lit.length,
       shadow: lchRounded(shadowMean),
+      worldShade: {
+        lit: median(lit.map((lab) => lab[0])),
+        self: median(shadow.map((lab) => lab[0])),
+        world: median(world),
+      },
     };
   });
+
+const rimShareOf = (
+  identity: Identity,
+  bands: Bands,
+  flats: ReturnType<typeof flatsIn>
+): number => {
+  let rim = 0;
+  for (let pixel = 0; pixel < bands.valid.length; pixel += 1) {
+    const flat = flats[identity.flatOf[pixel] ?? -1];
+    const lightness = bands.world[pixel]?.[0];
+    if (
+      flat &&
+      lightness !== undefined &&
+      lightness - flat.worldShade.world > RIM_STEP
+    ) {
+      rim += 1;
+    }
+  }
+  return round(rim / Math.max(identity.counted, 1), 4);
+};
 
 const acquire = async (
   notes: string[]
@@ -373,13 +415,14 @@ const sheetCanvas = (
   return context;
 };
 
-type Subject = "riders" | "bikes";
+type Subject = "riders" | "bikes" | "palette";
 
 type Sitter =
   | {
       readonly kind: "rider";
       readonly name: string;
       readonly asset: RiderAsset;
+      readonly palette: number;
     }
   | {
       readonly kind: "bike";
@@ -399,7 +442,18 @@ const castOf = async (
   subject: Subject,
   assets: AcquiredAssets["assets"]
 ): Promise<{ sitters: Sitter[]; release: () => void }> => {
-  if (subject !== "riders") {
+  if (subject === "palette") {
+    return {
+      release: releaseEach([]),
+      sitters: riderPalette.map((_colours, palette): Sitter => ({
+        asset: bodyFor(assets, palette),
+        kind: "rider",
+        name: `generic palette ${palette}`,
+        palette,
+      })),
+    };
+  }
+  if (subject === "bikes") {
     return {
       release: releaseEach([]),
       sitters: riderPalette.flatMap((_colours, paint): Sitter[] => {
@@ -439,8 +493,9 @@ const castOf = async (
         asset: worn.value,
         kind: "rider",
         name: id,
+        palette: 0,
       })),
-      { asset: bodyFor(assets, 0), kind: "rider", name: "generic" },
+      { asset: bodyFor(assets, 0), kind: "rider", name: "generic", palette: 0 },
     ],
   };
 };
@@ -481,6 +536,7 @@ const frameFor = (view: View): Frame => {
 
 interface Shot {
   readonly bands: Bands;
+  readonly floor: number;
   readonly picture: HTMLCanvasElement;
 }
 
@@ -505,7 +561,7 @@ const shoot = (
   );
   const figure =
     sitter.kind === "rider"
-      ? createRiderFigure(sitter.asset, shading, paletteOf(0))
+      ? createRiderFigure(sitter.asset, shading, paletteOf(sitter.palette))
       : null;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(BACKGROUND);
@@ -516,6 +572,15 @@ const shoot = (
     light.target,
     bikes.group
   );
+  const occluder = new THREE.Mesh(
+    new THREE.PlaneGeometry(OCCLUDER_SIZE, OCCLUDER_SIZE),
+    new THREE.MeshBasicMaterial({ side: THREE.DoubleSide })
+  );
+  occluder.layers.set(OCCLUDER_LAYER);
+  occluder.castShadow = true;
+  occluder.position.copy(shading.key).multiplyScalar(OCCLUDER_DISTANCE);
+  occluder.lookAt(0, 0, 0);
+  light.shadow.camera.layers.enable(OCCLUDER_LAYER);
   const gl = renderer.getContext();
   const read = () => {
     const pixels = new Uint8Array(width * height * 4);
@@ -555,13 +620,58 @@ const shoot = (
     light.intensity = 0;
     pipeline.render(scene, camera);
     const shadow = read();
-    return { bands: bandsOf(lit, inked, shadow, width, height), picture };
+    light.intensity = 1;
+    light.castShadow = true;
+    light.position.copy(shading.key).multiplyScalar(SUN_DISTANCE);
+    scene.add(occluder);
+    pipeline.render(scene, camera);
+    const world = read();
+    return {
+      bands: bandsOf(lit, inked, shadow, world, width, height),
+      floor: figureFloorOf(look.ink),
+      picture,
+    };
   } finally {
+    occluder.geometry.dispose();
+    occluder.material.dispose();
     light.dispose();
     figure?.dispose();
     bikes.dispose();
     shading.dispose();
   }
+};
+
+const worldShadeFailures = (
+  name: string,
+  flats: ReturnType<typeof flatsIn>,
+  counted: number,
+  floor: number,
+  rim: number
+): string[] => {
+  const failures: string[] = [];
+  for (let flat = 0; flat < flats.length; flat += 1) {
+    const each = flats[flat];
+    if (!each || each.pixels / Math.max(counted, 1) < FLAT_SHARE_FLOOR) {
+      continue;
+    }
+    const { lit, self, world } = each.worldShade;
+    if (world > lit + LIGHTNESS_TOLERANCE) {
+      failures.push(
+        `${name} flat ${flat}: world shade ${world} is brighter than sun ${lit}`
+      );
+    }
+    if (world < Math.min(self, floor) - LIGHTNESS_TOLERANCE) {
+      failures.push(
+        `${name} flat ${flat}: world shade ${world} is under min(self-shade ${self}, floor ${round(floor)})`
+      );
+    }
+  }
+  if (rim < RIM_SHARE_FLOOR) {
+    failures.push(
+      `${name}: sky rim covers ${rim} of the figure in world shade`
+    );
+  }
+  return failures;
 };
 
 export const run = async (view: View, subject: Subject = "riders") => {
@@ -584,6 +694,8 @@ export const run = async (view: View, subject: Subject = "riders") => {
           }[];
         }
       > = {};
+      const failures: string[] = [];
+      const rims: Record<string, number> = {};
       for (let row = 0; row < cast.sitters.length; row += 1) {
         const sitter = cast.sitters[row];
         if (!sitter) {
@@ -599,7 +711,19 @@ export const run = async (view: View, subject: Subject = "riders") => {
           }
           const shot = shoot(frame, assets, sitter, lookName);
           identity ??= identityOf(shot.bands);
-          perLook[lookName] = flatsIn(identity, shot.bands);
+          const flats = flatsIn(identity, shot.bands);
+          perLook[lookName] = flats;
+          const rim = rimShareOf(identity, shot.bands, flats);
+          rims[`${sitter.name} ${lookName}`] = rim;
+          failures.push(
+            ...worldShadeFailures(
+              `${sitter.name} ${lookName}`,
+              flats,
+              identity.counted,
+              shot.floor,
+              rim
+            )
+          );
           sheet.drawImage(
             shot.picture,
             column * frame.width,
@@ -628,9 +752,11 @@ export const run = async (view: View, subject: Subject = "riders") => {
         }
       }
       return {
+        failures,
         notes,
         programs: frame.renderer.info.programs?.length ?? 0,
         results,
+        rims,
         sheet: sheet.canvas.toDataURL("image/png"),
         subject,
         view,
@@ -643,4 +769,12 @@ export const run = async (view: View, subject: Subject = "riders") => {
     frame.renderer.dispose();
     release();
   }
+};
+
+export const check = async (view: View, subject: Subject = "riders") => {
+  const outcome = await run(view, subject);
+  if (outcome.failures.length > 0) {
+    throw new Error(outcome.failures.join("\n"));
+  }
+  return { rims: outcome.rims, subject, view };
 };
