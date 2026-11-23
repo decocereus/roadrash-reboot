@@ -6,6 +6,17 @@ import { runRule } from "./cases.ts";
 
 const hotBodies = {
   "apps/web/src/game/bench-profile.ts": [["createBenchProfile", "record"]],
+  "apps/web/src/game/figure-ik.ts": [
+    ["placeChain"],
+    ["turnAbout"],
+    ["swingInto"],
+    ["swingGirdle"],
+    ["leanToward"],
+    ["spanAfter"],
+    ["reachFor"],
+    ["writeLocal"],
+  ],
+  "apps/web/src/game/figure-pose.ts": [["planterOf", "plant"]],
   "apps/web/src/game/fixed-tick.ts": [["createFixedTick", "advance"]],
   "apps/web/src/game/frame-loop.ts": [
     ["installFrameLoop", "setAnimationLoop()"],
@@ -17,6 +28,7 @@ const hotBodies = {
   ],
   "apps/web/src/game/input.ts": [["createControls", "read"]],
   "apps/web/src/game/presets.ts": [["bindQuality", "noteDisplay"]],
+  "apps/web/src/game/rider-figure.ts": [["createRiderFigure", "mount"]],
   "packages/sim/src/bench-workload.ts": [["observeWorkload"], ["racersAhead"]],
   "packages/sim/src/pilot-corners.ts": [["planForecast"]],
   "packages/sim/src/pilot-forecast.ts": [["carsAhead"]],

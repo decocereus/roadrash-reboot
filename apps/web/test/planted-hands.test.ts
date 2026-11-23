@@ -9,12 +9,12 @@ import { bikeModelIds } from "../src/game/bike-models.ts";
 import type { BikeModelId } from "../src/game/bike-models.ts";
 import { createShading } from "../src/game/cel.ts";
 import { contactsOf } from "../src/game/figure-contacts.ts";
-import type { Contacts } from "../src/game/figure-contacts.ts";
 import { paletteOf } from "../src/game/figure-rig.ts";
 import { lookOf } from "../src/game/looks.ts";
 import { createRiderFigure } from "../src/game/rider-figure.ts";
-import type { RiderFigure, Stance } from "../src/game/rider-figure.ts";
+import type { Stance } from "../src/game/rider-figure.ts";
 import { artFile } from "./art-files.ts";
+import { bodyOf, placesOf } from "./seated-contacts.ts";
 
 const CONTACT = 0.005;
 const FREE = 0.2;
@@ -103,7 +103,56 @@ const held: readonly Held[] = [
     name: "swing right",
     stance: { pose: "swing", reach: 1, side: 1 },
   },
+  {
+    free: ["foot_l"],
+    name: "kick left while hanging right",
+    stance: {
+      lean: 1,
+      pose: "kick",
+      reach: 1,
+      rise: 1,
+      side: -1,
+      speed: RIDING_SPEED,
+    },
+  },
+  {
+    free: ["foot_r"],
+    name: "kick right while hanging left",
+    stance: {
+      lean: -1,
+      pose: "kick",
+      reach: 1,
+      rise: 1,
+      side: 1,
+      speed: RIDING_SPEED,
+    },
+  },
 ];
+
+const strikes = [
+  { limb: "hand", pose: "punch", rise: 0 },
+  { limb: "hand", pose: "windup", rise: 0 },
+  { limb: "hand", pose: "swing", rise: 0 },
+  { limb: "hand", pose: "swung", rise: 0 },
+  { limb: "foot", pose: "kick", rise: 1 },
+] as const;
+
+const sides = [
+  { name: "left", side: -1, tag: "l" },
+  { name: "right", side: 1, tag: "r" },
+] as const;
+
+const struckInLeans: readonly Held[] = strikes.flatMap(({ limb, pose, rise }) =>
+  sides.flatMap(({ name, side, tag }) =>
+    [-1, -0.65, 0.65, 1].flatMap((lean) =>
+      [0, 1].map((tuck): Held => ({
+        free: [`${limb}_${tag}`],
+        name: `${pose} ${name} at lean ${lean}${tuck === 1 ? " tucked" : ""}`,
+        stance: { lean, pose, reach: 1, rise, side, speed: RIDING_SPEED, tuck },
+      }))
+    )
+  )
+);
 
 const stanceOf = (stance: Partial<Stance>): Stance => ({
   flinch: 0,
@@ -126,19 +175,6 @@ const fitOf = async (model: BikeModelId): Promise<BikeFit> => {
   return value.fit;
 };
 
-const bodyOf = (figure: RiderFigure): THREE.SkinnedMesh => {
-  let body: THREE.SkinnedMesh | null = null;
-  figure.root.traverse((node) => {
-    if (body === null && node instanceof THREE.SkinnedMesh) {
-      body = node;
-    }
-  });
-  if (body === null) {
-    throw new Error("The rider has no skinned body.");
-  }
-  return body;
-};
-
 const bike = new THREE.Object3D();
 
 const mountedOf = async (url: string, fit: BikeFit) => {
@@ -147,24 +183,7 @@ const mountedOf = async (url: string, fit: BikeFit) => {
   figure.mount(bike, fit, 0);
   figure.animate(stanceOf({}), SETTLED);
   figure.root.updateMatrixWorld(true);
-  return { contacts: contactsOf(bodyOf(figure), figure.root), figure };
-};
-
-const placesOf = (figure: RiderFigure, contacts: Contacts) => {
-  figure.root.updateMatrixWorld(true);
-  const placed = (contact: Contact) => {
-    const bone = figure.root.getObjectByName(contact);
-    if (!bone) {
-      throw new Error(`The rider has no ${contact} bone.`);
-    }
-    return bone.localToWorld(contacts[contact].clone());
-  };
-  return {
-    foot_l: placed("foot_l"),
-    foot_r: placed("foot_r"),
-    hand_l: placed("hand_l"),
-    hand_r: placed("hand_r"),
-  };
+  return { contacts: contactsOf(bodyOf(figure.root), figure.root), figure };
 };
 
 const tuckedCorner = Array.from(
@@ -184,6 +203,17 @@ const kickLanding: readonly Partial<Stance>[] = [
   ...Array.from({ length: SEATED_FRAMES }, () => ({})),
 ];
 
+const kickAgainstLean: readonly Partial<Stance>[] = [
+  0, 0.16, 0.36, 0.64, 0.84, 1, 1, 0.84, 0.64, 0.36, 0.16, 0,
+].map((rise) => ({
+  lean: 1,
+  pose: "kick",
+  reach: rise,
+  rise,
+  side: -1,
+  speed: RIDING_SPEED,
+}));
+
 const riderUrls = [
   ...modelUrls.figures,
   ...Object.values(modelUrls.celebrities),
@@ -200,9 +230,9 @@ describe("planted hands and feet on every shipped rider and bike", () => {
       const fit = await fitOf(model);
       const { contacts, figure } = await mountedOf(url, fit);
       const misses: string[] = [];
-      for (const { free, name, stance } of held) {
+      for (const { free, name, stance } of [...held, ...struckInLeans]) {
         figure.animate(stanceOf(stance), SETTLED);
-        const places = placesOf(figure, contacts);
+        const places = placesOf(figure.root, contacts);
         for (const contact of contactNames) {
           const off = places[contact].distanceTo(fit[contact]);
           const loose = free.includes(contact);
@@ -245,6 +275,7 @@ describe("planted hands and feet on every shipped rider and bike", () => {
     pairs.flatMap(([url, model]) => [
       [url, model, "a tucked corner", tuckedCorner] as const,
       [url, model, "a kick dropping back to the seat", kickLanding] as const,
+      [url, model, "a kick against a hard lean", kickAgainstLean] as const,
     ])
   )(
     "%s on the %s keeps both palms on the grips through %s",
@@ -255,7 +286,7 @@ describe("planted hands and feet on every shipped rider and bike", () => {
       let worst = 0;
       for (const frame of frames) {
         figure.animate(stanceOf(frame), FRAME);
-        const places = placesOf(figure, contacts);
+        const places = placesOf(figure.root, contacts);
         worst = Math.max(
           worst,
           places.hand_l.distanceTo(fit.hand_l),

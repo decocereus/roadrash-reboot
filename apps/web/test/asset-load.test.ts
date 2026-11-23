@@ -8,6 +8,7 @@ import { celebrityLoader } from "../src/asset-load.ts";
 import type { AssetRequest } from "../src/asset-load.ts";
 import { createAssetRuntime } from "../src/asset-runtime.ts";
 import type { ByteCache, Fonts, Transport } from "../src/assets/load.ts";
+import { ModelDecodeFailed } from "../src/assets/model-decode-failed.ts";
 import { modelUrls } from "../src/assets/model-urls.ts";
 import type { ModelUrls } from "../src/assets/model-urls.ts";
 import { assetParsers } from "../src/game/assets.ts";
@@ -507,7 +508,75 @@ const pinned: Transport = {
   fetch: async (url) => await Promise.resolve(new Response(artFile(url))),
 };
 
+const fitNodeNames = [
+  "fit_seat",
+  "fit_grip_l",
+  "fit_grip_r",
+  "fit_peg_l",
+  "fit_peg_r",
+] as const;
+
+const withoutNode = (
+  file: ArrayBuffer,
+  name: string
+): Uint8Array<ArrayBuffer> => {
+  const bytes = new Uint8Array(file);
+  const text = new TextDecoder("latin1").decode(bytes);
+  const quoted = `"${name}"`;
+  const at = text.indexOf(quoted);
+  if (at === -1 || text.includes(quoted, at + 1)) {
+    throw new Error(`The bike model names ${name} other than once.`);
+  }
+  const renamed = new Uint8Array(bytes.byteLength);
+  renamed.set(bytes);
+  renamed.set(new TextEncoder().encode(`"${"x".repeat(name.length)}"`), at);
+  return renamed;
+};
+
 describe("the real parser on the pinned models", () => {
+  it.each(fitNodeNames)(
+    "refuses a bike without its %s point instead of seating riders on zeros",
+    async (name) => {
+      const bike = modelUrls.bikes.classic;
+      const fetches = new Map<string, number>();
+      const runtime = createAssetRuntime(
+        {
+          fonts: readyFonts,
+          transport: {
+            fetch: async (url) => {
+              fetches.set(url, (fetches.get(url) ?? 0) + 1);
+              const bytes = artFile(url);
+              return await Promise.resolve(
+                new Response(url === bike ? withoutNode(bytes, name) : bytes)
+              );
+            },
+          },
+        },
+        new Map(),
+        modelUrls
+      );
+      const outcome = await mount(runtime, assetParsers).outcome;
+      if (outcome.kind !== "failed") {
+        throw new Error(`The mount ended ${outcome.kind}.`);
+      }
+      const { error } = outcome;
+      if (!(error instanceof ModelDecodeFailed)) {
+        throw new Error(`The mount failed with ${error.name}.`, {
+          cause: error,
+        });
+      }
+      expect({
+        fetched: fetches.get(bike),
+        message: error.message,
+        url: error.url,
+      }).toStrictEqual({
+        fetched: 1,
+        message: `The bike model ${bike} has no ${name} point.`,
+        url: bike,
+      });
+    }
+  );
+
   it("decodes the same assets as before the Effect boundary and releases their geometry and atlases", async () => {
     const runtime = createAssetRuntime(
       { fonts: readyFonts, transport: pinned },

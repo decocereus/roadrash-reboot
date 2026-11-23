@@ -409,7 +409,8 @@ export const createRiderFigure = (
       lift.x +=
         Math.sign(stance.lean) *
         HANG_SHIFT *
-        kneeOut(stance.lean, stance.speed);
+        kneeOut(stance.lean, stance.speed) *
+        (1 - stance.rise);
       const target = aim(stance);
       if (!target) {
         return;
