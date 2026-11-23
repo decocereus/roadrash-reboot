@@ -13,6 +13,7 @@ import {
 } from "./node-lane.ts";
 import type { NodeSample } from "./node-lane.ts";
 import type { ChildRecord } from "./node.ts";
+import { RACE_SOUND_BENCH } from "./race-sound-bench.ts";
 import { median } from "./result.ts";
 import { ROAD_LIFE } from "./road-life.ts";
 import { WINDOW_TICKS } from "./scenarios.ts";
@@ -28,11 +29,11 @@ export const sideBRecord = Schema.Struct({
 
 export type SideBLane = typeof sideBRecord.Type;
 
-interface SideBWindow {
+export interface SideBWindow {
   readonly id: string;
   readonly metric: string;
   readonly shortfall: (record: ChildRecord) => string | null;
-  readonly task: "lobby" | "roadLife";
+  readonly task: "lobby" | "raceSound" | "roadLife";
 }
 
 export const lobbyWindow: SideBWindow = {
@@ -66,7 +67,26 @@ export const roadLifeWindow: SideBWindow = {
   task: "roadLife",
 };
 
-export const sideBWindows = [lobbyWindow, roadLifeWindow] as const;
+export const raceSoundWindow: SideBWindow = {
+  id: RACE_SOUND_BENCH.id,
+  metric: "sound.race.p95",
+  shortfall: ({ raceSound }) => {
+    if (!raceSound) {
+      return "wrote no race sound window";
+    }
+    return raceSound.mostHeard >= RACE_SOUND_BENCH.leastHeard &&
+      raceSound.scheduled > 0
+      ? null
+      : `mostHeard=${raceSound.mostHeard} scheduled=${raceSound.scheduled} expected at least ${RACE_SOUND_BENCH.leastHeard} voices and some scheduling`;
+  },
+  task: "raceSound",
+};
+
+export const sideBWindows = [
+  lobbyWindow,
+  roadLifeWindow,
+  raceSoundWindow,
+] as const;
 
 export const sideBLane = Effect.fn("node.sideB")(function* sideBLane(
   { id, task }: SideBWindow,

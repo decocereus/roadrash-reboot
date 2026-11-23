@@ -11,6 +11,7 @@ import type { SideBLane } from "../src/node-lane-side-b.ts";
 import type { NodeLane, NodeSample } from "../src/node-lane.ts";
 import { CALIBRATION_ROUNDS } from "../src/node.ts";
 import type { ChildRecord } from "../src/node.ts";
+import { RACE_SOUND_BENCH } from "../src/race-sound-bench.ts";
 import { ROAD_LIFE } from "../src/road-life.ts";
 import { scenarioHash, scenarios, WINDOW_TICKS } from "../src/scenarios.ts";
 import type { Scenario, WorkloadRows } from "../src/scenarios.ts";
@@ -305,12 +306,27 @@ export const syntheticLobby = (
     "lobby"
   );
 
+export const syntheticRaceSound = (
+  slowdown: Slowdown,
+  mostHeard: number = RACE_SOUND_BENCH.leastHeard
+): SideBLane =>
+  syntheticSideB(
+    RACE_SOUND_BENCH.id,
+    slowdown,
+    (durations) => ({
+      durations,
+      raceSound: { fewestHeard: 0, mostHeard, scheduled: 1 },
+    }),
+    "raceSound"
+  );
+
 export const samplesOf = (
   comparisonId: string,
   node: readonly NodeLane[],
   build: { readonly A: BuildRecord; readonly B: BuildRecord },
   roadLife: SideBLane = syntheticRoadLife({ runner: 1, sim: 1 }),
-  lobby: SideBLane = syntheticLobby({ runner: 1, sim: 1 })
+  lobby: SideBLane = syntheticLobby({ runner: 1, sim: 1 }),
+  raceSound: SideBLane = syntheticRaceSound({ runner: 1, sim: 1 })
 ): Samples => ({
   build,
   comparisonId,
@@ -318,6 +334,7 @@ export const samplesOf = (
   lobby,
   mode: "gate",
   node,
+  raceSound,
   roadLife,
   sides: { A: identity, B: identity },
   version: 1,

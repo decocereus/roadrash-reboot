@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    "./sound/*": "./src/sound/*.ts"
+  },
   "scripts": {
     "build": "vite build",
     "typecheck": "tsrs --noEmit"

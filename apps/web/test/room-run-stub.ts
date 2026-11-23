@@ -29,6 +29,7 @@ export const roomRunStub = (
     pressed: never("hears a key"),
     report: never("reports"),
     reportNow: never("reports"),
+    restores: () => 0,
     riderColours: new Map(),
     roomId,
     stallLeftMs: () => null,

@@ -74,6 +74,7 @@ const nodeKinds: readonly MetricKind[] = [
   snapshotKind("timing.stamp.p95", "ms"),
   sideBKind("roadLife.tick.p95"),
   sideBKind("lobby.tick.p95"),
+  sideBKind("sound.race.p95"),
   snapshotKind("room.tick.p95", "ms"),
   snapshotKind("room.confirm.p95", "ms"),
   snapshotKind("room.rollback.p95", "ms"),

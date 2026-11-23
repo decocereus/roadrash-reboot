@@ -242,14 +242,13 @@ Each race track has three layers (drums and bass; rhythm; lead). The lead layer 
 
 ### Engines
 
-The current synthesised engine is kept and given a character per class by its oscillator mix and pitch range.
+The current synthesised engine is kept and given a character per class by its oscillator mix and pitch range. There are three classes; the Gutter Pup sounds like the class it belongs to.
 
 | Class | Character | Idle to redline |
 | --- | --- | --- |
 | Featherweight | Buzzy and thin, a small twin. Square-heavy mix, quick to rev. | 70 to 290 Hz |
 | Middleweight | A smooth four-cylinder whine. Today's sound. | 58 to 235 Hz |
 | Heavyweight | A deep, uneven growl with a second voice a fifth below. Slow to rev, loud on the overrun. | 44 to 190 Hz |
-| Gutter Pup | A rattly single with a random misfire every few seconds and a backfire when the throttle closes. | 62 to 210 Hz |
 
 Rival engines pan and fade by position, so a bike coming up on the left is heard on the left before it is seen. Police engines are Middleweights with a two-tone siren (today's 660 and 880 Hz) that starts when a pursuit starts.
 

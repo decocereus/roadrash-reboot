@@ -17,7 +17,12 @@ export const cues = [
   "shift",
   "swing",
   "hit",
-  "weaponHit",
+  "clubHit",
+  "chainHit",
+  "crowbarHit",
+  "batonHit",
+  "cueHit",
+  "signHit",
   "thump",
   "whoosh",
   "crash",
@@ -29,6 +34,12 @@ export const cues = [
   "sit",
   "pose",
   "door",
+  "count",
+  "go",
+  "land",
+  "gained",
+  "lost",
+  "finish",
 ] as const;
 
 export type Cue = (typeof cues)[number];

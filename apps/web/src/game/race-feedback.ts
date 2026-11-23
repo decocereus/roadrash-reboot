@@ -1,17 +1,25 @@
 import { chaserGap } from "@racer/sim/police";
-import { distanceLeft, standings } from "@racer/sim/race";
+import { distanceLeft, placeOf, standings } from "@racer/sim/race";
 import type { RiderView } from "@racer/sim/race-view";
 import { clamp, FULL_CONDITION, MAX_STAMINA, riderOf } from "@racer/sim/state";
-import type { HazardEffect, RaceEvent, RiderId } from "@racer/sim/state";
+import type {
+  HazardEffect,
+  RaceEvent,
+  RiderId,
+  WeaponKind,
+} from "@racer/sim/state";
 import { weapons } from "@racer/sim/weapons";
 
 import type { Recorder } from "../diagnostics/recorder.ts";
+import type { Cue } from "../sound/cues.ts";
 import type { Sound } from "../sound/sound.ts";
 import type { ChaseCamera } from "./chase-camera.ts";
 import { hudCountdown, roomOf } from "./game-session.ts";
 import type { Session } from "./game-session.ts";
 import { createTower } from "./hud-tower.ts";
 import type { GameEvents, Notice } from "./hud.ts";
+import { createRaceCues } from "./race-cues.ts";
+import type { PlaceHeard } from "./race-cues.ts";
 import type { Stage } from "./scene-lifecycle.ts";
 
 const NOTICE_SECONDS = 0.8;
@@ -22,6 +30,20 @@ const HAZARD_JOLT = {
   stagger: 0.6,
 } as const satisfies Record<HazardEffect, number>;
 const BUMP_PER_IMPACT = 1 / 9;
+const HEARD_FROM = 60;
+const OTHERS_GAIN = 0.7;
+const NEAR_SIDE = 6;
+const WIDEST_PAN = 0.85;
+
+const strikeCues = {
+  baton: "batonHit",
+  chain: "chainHit",
+  club: "clubHit",
+  crowbar: "crowbarHit",
+  cue: "cueHit",
+  none: "hit",
+  sign: "signHit",
+} as const satisfies Record<WeaponKind, Cue>;
 
 const thumpGain = (strength: number): number =>
   Math.min(1, 0.3 + strength * 0.6);
@@ -87,30 +109,53 @@ export const bindFeedback = ({
   const quiet = () => {
     sound.hush();
   };
+
+  const cues = createRaceCues(sound);
+  const placeHeard: PlaceHeard = {
+    atMs: 0,
+    place: 0,
+    racing: false,
+    restores: 0,
+    source: stage.race.view,
+  };
   owners.push(quiet);
 
   const toggleMute = () => {
     sound.toggleMute();
   };
 
-  const strikeSound = (armed: boolean) => {
-    if (armed) {
-      sound.play("weaponHit");
-    } else {
-      sound.play("hit");
+  const playFrom = (cue: Cue, from: RiderId, gain: number) => {
+    const source = riderOf(stage.race.view.riders, from);
+    if (!source) {
+      return;
+    }
+    const me = player();
+    const ds = source.s - me.s;
+    const dx = source.x - me.x;
+    const fade = Math.max(0, 1 - Math.hypot(ds, dx) / HEARD_FROM);
+    if (fade > 0) {
+      const side = clamp(dx / (Math.abs(ds) + NEAR_SIDE), -1, 1);
+      sound.play(cue, side * WIDEST_PAN, gain * fade * fade);
     }
   };
 
-  const reactToHit = (attacker: RiderId, target: RiderId, armed: boolean) => {
+  const reactToHit = (
+    attacker: RiderId,
+    target: RiderId,
+    weapon: WeaponKind
+  ) => {
+    const cue = strikeCues[weapon];
     if (attacker === stage.me) {
-      strikeSound(armed);
+      sound.play(cue);
       const victim = riderOf(stage.race.view.riders, target);
       if (victim && victim.stamina <= 0) {
         say("knockdown");
       }
     } else if (target === stage.me) {
-      strikeSound(armed);
-      chase.jolt(armed ? 0.8 : 0.5);
+      sound.play(cue);
+      chase.jolt(weapon === "none" ? 0.5 : 0.8);
+    } else {
+      playFrom(cue, target, OTHERS_GAIN);
     }
   };
 
@@ -129,7 +174,7 @@ export const bindFeedback = ({
       chase.bump(-event.impact * BUMP_PER_IMPACT);
       if (event.airSeconds > 0.35) {
         chase.jolt(Math.min(0.8, Math.abs(event.impact) * 0.07));
-        sound.play("thump", 0, thumpGain(Math.abs(event.impact) / 10));
+        sound.play("land", 0, thumpGain(Math.abs(event.impact) / 10));
       }
     } else if (event.kind === "glance" || event.kind === "bump") {
       chase.jolt(0.45);
@@ -161,21 +206,14 @@ export const bindFeedback = ({
       sound.play("siren");
       say("police");
     } else if (event.kind === "crash") {
-      const fallen = riderOf(stage.race.view.riders, event.rider);
-      if (
-        event.cause === "combat" &&
-        fallen &&
-        Math.abs(fallen.s - player().s) < 30
-      ) {
-        sound.play("thump", 0, thumpGain(0.6));
-      }
+      playFrom("crash", event.rider, OTHERS_GAIN);
     }
   };
 
   const react = (heard: readonly RaceEvent[]) => {
     for (const event of heard) {
       if (event.kind === "hit") {
-        reactToHit(event.rider, event.target, event.weapon !== "none");
+        reactToHit(event.rider, event.target, event.weapon);
       } else if (event.rider === stage.me) {
         reactToOwn(event);
       } else {
@@ -191,11 +229,21 @@ export const bindFeedback = ({
     const order = standings(stage.race.view);
     const state = session();
     const room = roomOf(state);
+    const countdown = hudCountdown(state);
+    const place = order.indexOf(stage.me) + 1;
+    const heardFrom = room?.confirmed ?? stage.race.view;
+    cues.countdown(countdown, state.phase);
+    placeHeard.atMs = performance.now();
+    placeHeard.place = placeOf(heardFrom, stage.me);
+    placeHeard.racing = state.phase === "racing" && countdown === 0;
+    placeHeard.restores = room?.restores() ?? 0;
+    placeHeard.source = heardFrom;
+    cues.place(placeHeard);
     events.onHud({
       bikeName: me.bike.name,
       condition: me.condition / FULL_CONDITION,
       copGap: chaserGap(stage.race.view, stage.me),
-      countdown: hudCountdown(state),
+      countdown,
       distanceLeft: distanceLeft(stage.track, me),
       gear: me.gear,
       lagging: room?.lagging() ?? false,
@@ -204,10 +252,7 @@ export const bindFeedback = ({
       noticeDetail: feedback.noticeDetail,
       offBike: me.mode !== "riding",
       phase: state.phase,
-      position:
-        state.phase === "settled"
-          ? state.outcome.place
-          : order.indexOf(stage.me) + 1,
+      position: state.phase === "settled" ? state.outcome.place : place,
       progress: clamp(me.bodyS / stage.track.length, 0, 1),
       remountPrompt: needsRemountPrompt(me),
       riderCount: order.length,
@@ -223,5 +268,5 @@ export const bindFeedback = ({
     });
   };
 
-  return { quiet, react, report, say, toggleMute };
+  return { quiet, react, report, say, settled: cues.settled, toggleMute };
 };

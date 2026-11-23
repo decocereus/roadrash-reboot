@@ -1,7 +1,8 @@
+import { engineCharacters } from "../src/sound/characters.ts";
+import type { EngineCharacter } from "../src/sound/characters.ts";
 import { cues } from "../src/sound/cues.ts";
 import type { Cue } from "../src/sound/cues.ts";
-import { engineCharacters, engineVoice } from "../src/sound/engine.ts";
-import type { EngineCharacter } from "../src/sound/engine.ts";
+import { engineVoice } from "../src/sound/engine.ts";
 import { recipes } from "../src/sound/recipes.ts";
 import { cueJob, seeded, whiteNoise } from "../src/sound/render.ts";
 import { scenes } from "./sound-scenes.ts";
@@ -109,6 +110,9 @@ const cueClip = async (
   noise: AudioBuffer
 ): Promise<Clip> => {
   const job = cueJob(recipes[cue], SAMPLE_RATE, noise, index + 1);
+  for (const step of job.steps) {
+    step();
+  }
   const rendered = await job.context.startRendering();
   return clipOf("cue", cue, rendered.getChannelData(0));
 };

@@ -28,6 +28,7 @@ export const samplesRecord = Schema.Struct({
   lobby: Schema.NullOr(sideBRecord),
   mode: Schema.Literals(["gate", "baseline"]),
   node: Schema.Array(nodeLaneRecord),
+  raceSound: Schema.NullOr(sideBRecord),
   roadLife: Schema.NullOr(sideBRecord),
   sides: Schema.Struct({ A: sideIdentity, B: sideIdentity }),
   version: Schema.Literal(1),

@@ -82,6 +82,14 @@
         "sha256": "6ed750d7075a87fd0dbf274d704ca3b8548b8cab7aaf4b4e69f366046deb2502"
       },
       {
+        "file": "tools/perf/baselines/race-sound.node-darwin-arm64.json.gz",
+        "sha256": "94d85c1cd77d5c18d5279845bd628299f779e50bc1332fc09b52176064d80b52"
+      },
+      {
+        "file": "tools/perf/baselines/race-sound.node-linux-x64.json.gz",
+        "sha256": "8dd765dba6ccb19db6067dfb8d4ab359a6dd9dab7e13da8b1df39d6e5c3453bf"
+      },
+      {
         "file": "tools/perf/baselines/room-checkpoint.node-darwin-arm64.json.gz",
         "sha256": "abdcd21316cf6fbc051db534d2ca56062300f2fab3d442731b8ef37398ed89a4"
       },
@@ -116,7 +124,7 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "db46b6dd71f4e96b752b4007ceae9b04fbd9ba2f6671596a79c2ab089f3e85a1"
+    "summarySha256": "9b23c5e1b6527e0c4b89a52f8290da049c42798c32acca703e25e5e15d632c25"
   },
   "limits": [
     {
@@ -2290,6 +2298,30 @@
       "scenario": "pack-riding-v1",
       "source": "baseline-2026-11-09T22-28-40-968Z-e4d8504-e4d8504",
       "unit": "ms"
+    },
+    {
+      "baseline": 0.006240380779336058,
+      "derivation": "1.15 x calibrated baseline median",
+      "direction": "max",
+      "environment": "node-darwin-arm64",
+      "metric": "sound.race.p95",
+      "paired": null,
+      "scenario": null,
+      "source": "gate-2026-11-19T16-21-50-205Z-9f67ba9-0b2c537",
+      "unit": "ms",
+      "value": 0.007176437896236466
+    },
+    {
+      "baseline": 0.014427798591994919,
+      "derivation": "1.15 x calibrated baseline median, with 1.3 x for the spread between GitHub runners",
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "sound.race.p95",
+      "paired": null,
+      "scenario": null,
+      "source": "gate-2026-11-19T16-26-24-205Z-9f67ba9-15fb2e7",
+      "unit": "ms",
+      "value": 0.0215695588950324
     },
     {
       "baseline": 0.0002155,
