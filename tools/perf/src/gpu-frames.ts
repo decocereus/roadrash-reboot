@@ -2,8 +2,6 @@ import * as Schema from "effect/Schema";
 
 import { judge, metricKinds, requiredRows } from "./budgets.ts";
 import type { Limit, MetricKind, Observation } from "./budgets.ts";
-import { barResult } from "./gpu-bar.ts";
-import type { BarSample } from "./gpu-bar.ts";
 import {
   frameReaders,
   gpuFrame,
@@ -13,6 +11,8 @@ import {
   total,
 } from "./gpu-frame-reads.ts";
 import type { GpuFrame } from "./gpu-frame-reads.ts";
+import { viewsResult } from "./gpu-views.ts";
+import type { ViewSample } from "./gpu-views.ts";
 import { median, quantile } from "./result.ts";
 import {
   scenarios,
@@ -455,7 +455,7 @@ const peaksText = (peaks: ReturnType<typeof countsOf>): string =>
 
 export const evaluateGpu = (
   samples: readonly GpuSample[],
-  bar: readonly BarSample[],
+  viewSamples: readonly ViewSample[],
   limits: readonly Limit[],
   environment: string,
   page: GpuSample["capture"]["viewport"] | null
@@ -470,15 +470,15 @@ export const evaluateGpu = (
     ),
   }));
   const firstUse = firstUseOf(samples);
-  const barRead = barResult(bar, environment, page);
+  const viewRead = viewsResult(viewSamples, environment, page);
   const failures = [
     ...results.flatMap((each) => each.failures),
     ...firstUse.failures,
-    ...barRead.failures,
+    ...viewRead.failures,
   ];
   const observations = [
     ...results.flatMap((each) => each.observations),
-    ...barRead.observations,
+    ...viewRead.observations,
   ];
   const verdicts = judge(
     limits,

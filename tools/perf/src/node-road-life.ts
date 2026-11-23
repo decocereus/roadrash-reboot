@@ -1,7 +1,7 @@
 import { performance } from "node:perf_hooks";
 import { parseArgs } from "node:util";
 
-import { roadLifeRace, roadLifeSetup } from "@racer/career/bench";
+import { benchRaces, benchSetup } from "@racer/career/bench";
 import { UsageError } from "@racer/devtools/usage-error";
 import { onRoad } from "@racer/sim/cross-traffic";
 import { createRaceRun } from "@racer/sim/race-run";
@@ -52,7 +52,7 @@ const walkersOnRoad = (view: RaceView): number => {
 };
 
 const measuredWindow = () => {
-  const setup = roadLifeSetup();
+  const setup = benchSetup("breakwater");
   const crossingS = setup.track.crossings
     .filter((crossing) => crossing.road)
     .map((crossing) => crossing.s);
@@ -110,7 +110,7 @@ export const roadLifeChild = Effect.fn("node.roadLife")(function* roadLifeChild(
     ...measuredWindow(),
     runtime: runtimeOf(),
     scenario: ROAD_LIFE.id,
-    scenarioHash: digestOf(roadLifeRace),
+    scenarioHash: digestOf(benchRaces.breakwater),
     task: "roadLife",
   };
   return yield* fs.writeFileString(values.out, JSON.stringify(record));

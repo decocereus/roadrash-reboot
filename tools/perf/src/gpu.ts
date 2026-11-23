@@ -14,7 +14,6 @@ import * as Schema from "effect/Schema";
 
 import { readBudgets } from "./approved.ts";
 import type { ConfigInvalid } from "./config-invalid.ts";
-import { measureBar } from "./gpu-bar-capture.ts";
 import {
   evaluateGpu,
   FRAME_RATE,
@@ -33,6 +32,7 @@ import {
   RV,
   WINDOW_TIMEOUT_S,
 } from "./gpu-rv.ts";
+import { measureViews } from "./gpu-views-capture.ts";
 import { MeasurementFailed } from "./measurement-failed.ts";
 import { sha256Of } from "./result.ts";
 import { scenarios } from "./scenarios.ts";
@@ -506,18 +506,18 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
       }
     }
   }
-  const bar = yield* measureBar(dir, options.runs.B);
-  yield* say(`gpu bar captured ${bar.length} windows on B`);
+  const viewSamples = yield* measureViews(dir, options.runs.B);
+  yield* say(`gpu views captured ${viewSamples.length} windows on B`);
   const after = yield* doctorAll(options, dir, "doctor-after");
   const evaluation = evaluateGpu(
     samples,
-    bar,
+    viewSamples,
     approved.budgets.limits,
     environment,
     host.page
   );
   const files = yield* Effect.all(
-    [...samples, ...bar].map((sample) =>
+    [...samples, ...viewSamples].map((sample) =>
       fs
         .readFileString(path.join(dir, "gpu", sample.file))
         .pipe(

@@ -7,10 +7,10 @@ import { describe, expect, it } from "vitest";
 
 import { budgetsFile, judge, metricKinds } from "../src/budgets.ts";
 import type { Limit } from "../src/budgets.ts";
-import { BAR_BENCH } from "../src/gpu-bar.ts";
-import type { BarSample } from "../src/gpu-bar.ts";
 import { evaluateGpu, FRAME_RATE, GPU_PAIRS } from "../src/gpu-frames.ts";
 import type { GpuSample } from "../src/gpu-frames.ts";
+import { VIEW_SAMPLES, views } from "../src/gpu-views.ts";
+import type { ViewId, ViewSample } from "../src/gpu-views.ts";
 import { scenarios, WINDOW_TICKS } from "../src/scenarios.ts";
 import type { Scenario } from "../src/scenarios.ts";
 import { validRows } from "./red-cases.ts";
@@ -190,16 +190,17 @@ const [reference, packRiding] = scenarios;
 
 const isPack = (scenario: Scenario): boolean => scenario.id === packRiding?.id;
 
-const BAR_FRAMES = BAR_BENCH.to - BAR_BENCH.from;
+type View = (typeof views)[number];
 
-const barSampleOf = (
+const viewSampleOf = (
+  view: View,
   index: number,
   interval: (frame: number) => number,
-  capture: Partial<BarSample["capture"]> = {}
-): BarSample => ({
+  capture: Partial<ViewSample["capture"]> = {}
+): ViewSample => ({
   capture: {
-    camera: BAR_BENCH.camera,
-    frames: Array.from({ length: BAR_FRAMES }, (_, frame) => ({
+    camera: view.camera?.value ?? null,
+    frames: Array.from({ length: view.to - view.from }, (_, frame) => ({
       calls: [90],
       cpu: [1],
       discarded: 0,
@@ -212,75 +213,135 @@ const barSampleOf = (
       sizeEpoch: 0,
       start: frame * SLOT,
       textures: 30,
-      tick: frame,
+      tick: view.from + frame,
       ticks: 1,
       triangles: [600_000],
     })),
+    modes: view.race
+      ? Array.from({ length: view.to - view.from }, () => "riding")
+      : null,
     viewport: steady.viewport,
     visibility: "visible",
     ...capture,
   },
   consoleErrors: 0,
-  file: `bar-${index}.json`,
+  file: `${view.id}-${index}.json`,
+  view: view.id,
 });
 
-const barOf = (
+const viewOf = (id: ViewId): View => {
+  const view = views.find((each) => each.id === id);
+  if (!view) {
+    throw new Error(`no view ${id}`);
+  }
+  return view;
+};
+
+const windowsOf = (
+  id: ViewId,
   interval: (frame: number) => number,
-  capture: Partial<BarSample["capture"]> = {}
-): BarSample[] =>
-  Array.from({ length: BAR_BENCH.samples }, (_, index) =>
-    barSampleOf(index, interval, capture)
+  capture: Partial<ViewSample["capture"]> = {}
+): ViewSample[] =>
+  Array.from({ length: VIEW_SAMPLES }, (_, index) =>
+    viewSampleOf(viewOf(id), index, interval, capture)
   );
 
-const steadyBar = barOf(() => 16.7);
+const withWindows = (
+  id: ViewId,
+  replaced: readonly ViewSample[]
+): ViewSample[] => [
+  ...views
+    .filter((view) => view.id !== id)
+    .flatMap((view) => windowsOf(view.id, () => 16.7)),
+  ...replaced,
+];
 
-const judged = (bar: readonly BarSample[]) =>
+const steadyViews = withWindows(
+  "bar",
+  windowsOf("bar", () => 16.7)
+);
+
+const judged = (viewSamples: readonly ViewSample[]) =>
   failing(
     evaluateGpu(
       campaign(() => steady),
-      bar,
+      viewSamples,
       limits,
       METAL,
       null
     ).lines
   ).join("\n");
 
-describe("bar frame rows", () => {
-  it("passes a steady bar", () => {
-    expect(judged(steadyBar)).toBe("");
+describe("side B view rows", () => {
+  it("passes steady views", () => {
+    expect(judged(steadyViews)).toBe("");
   });
 
-  it("fails when one window's frames slow past the cap", () => {
-    const slowOnce = [...steadyBar.slice(1), barSampleOf(0, () => 25)];
-    expect(judged(slowOnce)).toContain("bar.frame.interval.p50");
+  it("fails when one bar window's frames slow past the cap", () => {
+    const bar = windowsOf("bar", () => 16.7);
+    const slowOnce = [
+      ...bar.slice(1),
+      viewSampleOf(viewOf("bar"), 0, () => 25),
+    ];
+    expect(judged(withWindows("bar", slowOnce))).toContain(
+      "bar.frame.interval.p50"
+    );
   });
 
-  it("fails when the bar draws more than its budget", () => {
-    const heavy = steadyBar.map((sample) => ({
+  it("fails when a road draws more than its budget", () => {
+    const heavy = windowsOf("breakwater", () => 16.7).map((sample) => ({
       ...sample,
       capture: {
         ...sample.capture,
         frames: sample.capture.frames.map((frame) => ({
           ...frame,
-          triangles: [2_000_000],
+          calls: [5000],
         })),
       },
     }));
-    expect(judged(heavy)).toContain("bar.render.triangles.max");
+    expect(judged(withWindows("breakwater", heavy))).toContain(
+      "breakwater.render.calls.max"
+    );
   });
 
-  it("refuses a window on another camera", () => {
-    expect(judged(barOf(() => 16.7, { camera: "angled" }))).toContain(
-      "camera=angled expected=room"
+  it("refuses a bar window on another camera", () => {
+    expect(
+      judged(
+        withWindows(
+          "bar",
+          windowsOf("bar", () => 16.7, { camera: "angled" })
+        )
+      )
+    ).toContain("camera=angled expected=room");
+  });
+
+  it("refuses a road window where the player went down", () => {
+    const view = viewOf("ridge");
+    const modes = Array.from({ length: view.to - view.from }, (_, tick) =>
+      tick === 40 ? "thrown" : "riding"
     );
+    expect(
+      judged(
+        withWindows(
+          "ridge",
+          windowsOf("ridge", () => 16.7, { modes })
+        )
+      )
+    ).toContain("the player was thrown in the window, pick a new one");
   });
 
   it("refuses a short or missing capture", () => {
-    expect(judged(barOf(() => 16.7, { frames: [] }))).toContain(
-      `frames=0 expected>=${BAR_FRAMES}`
-    );
-    expect(judged([])).toContain(
-      `FAIL bar samples=0 expected=${BAR_BENCH.samples}`
+    const bar = viewOf("bar");
+    expect(
+      judged(
+        withWindows(
+          "bar",
+          windowsOf("bar", () => 16.7, { frames: [] })
+        )
+      )
+    ).toContain(`frames=0 expected>=${bar.frames}`);
+    expect(judged(withWindows("ridge", []))).toContain(
+      `FAIL ridge samples=0 expected=${VIEW_SAMPLES}`
     );
   });
 });
@@ -289,7 +350,7 @@ describe("gpu frame lane", () => {
   it("fails a campaign whose every page left the host's required page", () => {
     const evaluation = evaluateGpu(
       campaign(() => steady),
-      steadyBar,
+      steadyViews,
       limits,
       METAL,
       { dpr: 2, height: 773, width: 1512 }
@@ -303,7 +364,7 @@ describe("gpu frame lane", () => {
   it("passes a steady 60 Hz campaign against the owner caps", () => {
     const evaluation = evaluateGpu(
       campaign(() => steady),
-      steadyBar,
+      steadyViews,
       limits,
       METAL,
       null
@@ -329,7 +390,7 @@ describe("gpu frame lane", () => {
           ? { ...steady, discardedAt: 9 }
           : steady
       ),
-      steadyBar,
+      steadyViews,
       limits,
       METAL,
       null
@@ -361,7 +422,7 @@ describe("gpu frame lane", () => {
             }
           : steady
       ),
-      steadyBar,
+      steadyViews,
       limits,
       METAL,
       null
@@ -389,7 +450,7 @@ describe("gpu frame lane", () => {
       campaign((scenario, side) =>
         isPack(scenario) && side === "B" ? slower : steady
       ),
-      steadyBar,
+      steadyViews,
       limits,
       METAL,
       null
@@ -417,7 +478,7 @@ describe("gpu frame lane", () => {
       campaign((scenario, side, pair) =>
         isPack(scenario) && side === "B" && pair === 0 ? stalled : steady
       ),
-      steadyBar,
+      steadyViews,
       limits,
       METAL,
       null
@@ -436,7 +497,7 @@ describe("gpu frame lane", () => {
           ? { ...steady, viewport: { ...steady.viewport, height: 836 } }
           : steady
       ),
-      steadyBar,
+      steadyViews,
       limits,
       METAL,
       null
@@ -470,7 +531,7 @@ describe("gpu frame lane", () => {
             }
           : steady
       ),
-      steadyBar,
+      steadyViews,
       limits,
       METAL,
       null
@@ -498,7 +559,7 @@ describe("gpu frame lane", () => {
           ? { ...steady, riders: (index) => (index % 10 === 0 ? slow : 0.2) }
           : steady
       ),
-      steadyBar,
+      steadyViews,
       limits,
       METAL,
       null
@@ -529,7 +590,7 @@ describe("gpu frame lane", () => {
           ? { ...steady, ride: uploaded }
           : steady;
       }),
-      steadyBar,
+      steadyViews,
       limits,
       METAL,
       null
@@ -555,7 +616,7 @@ describe("gpu frame lane", () => {
           ? { ...steady, ride: replaced }
           : steady
       ),
-      steadyBar,
+      steadyViews,
       limits,
       METAL,
       null
@@ -576,7 +637,7 @@ describe("gpu frame lane", () => {
           ? { ...steady, ride: [] }
           : steady
       ),
-      steadyBar,
+      steadyViews,
       limits,
       METAL,
       null
@@ -590,7 +651,7 @@ describe("gpu frame lane", () => {
     const nvidia = browserHosts["linux-nvidia"].perfEnvironment;
     const evaluation = evaluateGpu(
       campaign(() => steady),
-      steadyBar,
+      steadyViews,
       limits.filter((limit) => limit.environment === nvidia),
       nvidia,
       null

@@ -638,7 +638,7 @@ The roads and their regions: each road's sections, crests, truck starts, roadblo
 - Start: `packages/track/src/tracks/slag-row.ts`, `packages/track/src/regions.ts`, `packages/sim/src/corner-warnings.ts`
 - Docs: [docs/architecture/tracks.md#tracks](architecture/tracks.md#tracks), [docs/design/tracks.md#summary](design/tracks.md#summary)
 - Verify: none yet
-- Perf: none yet
+- Perf: `breakwater.frame.interval.p50`, `breakwater.frame.interval.p95`, `breakwater.frame.interval.p99`, `breakwater.frame.missedFraction`, `breakwater.render.calls.max`, `breakwater.render.triangles.max`, `ridge.frame.interval.p50`, `ridge.frame.interval.p95`, `ridge.frame.interval.p99`, `ridge.frame.missedFraction`, `ridge.render.calls.max`, `ridge.render.triangles.max`
 - Owns: `packages/track/src/tracks/**`, `packages/track/src/regions.ts`, `packages/track/src/roads.test.ts`, `packages/track/src/chevron-runs.ts`, `packages/sim/src/corner-warnings.ts`, `packages/sim/src/corner-warnings.test.ts`, `tools/road-test/**`
 
 Source files:
@@ -1254,11 +1254,11 @@ Source files:
 - `tools/perf/src/evaluate.ts`
 - `tools/perf/src/gate.ts`
 - `tools/perf/src/glb-textures.ts`
-- `tools/perf/src/gpu-bar-capture.ts`
-- `tools/perf/src/gpu-bar.ts`
 - `tools/perf/src/gpu-frame-reads.ts`
 - `tools/perf/src/gpu-frames.ts`
 - `tools/perf/src/gpu-rv.ts`
+- `tools/perf/src/gpu-views-capture.ts`
+- `tools/perf/src/gpu-views.ts`
 - `tools/perf/src/gpu.ts`
 - `tools/perf/src/load.ts`
 - `tools/perf/src/measure-model.ts`

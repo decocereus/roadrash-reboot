@@ -8,7 +8,9 @@ import type { CareerRaceSetup, PracticeRace } from "./field.ts";
 import type { RaceRules } from "./rules.ts";
 import { STARTING_BIKE } from "./tables.ts";
 
-export type Bench = "stress" | "reference";
+export const benches = ["stress", "reference", "breakwater", "ridge"] as const;
+
+export type Bench = (typeof benches)[number];
 
 export const recordedCast = [
   "juno-kade",
@@ -37,11 +39,23 @@ export const recordedRules: RaceRules = {
 };
 
 export const benchRaces = {
+  breakwater: {
+    bikeId: "ostra-sesta-600",
+    roadId: "breakwater-run",
+    seed: 8,
+    tier: 3,
+  },
   reference: {
     bikeId: STARTING_BIKE,
     roadId: "slag-row",
     seed: 31,
     tier: 1,
+  },
+  ridge: {
+    bikeId: "ostra-sesta-600",
+    roadId: "ridge-road",
+    seed: 31,
+    tier: 3,
   },
   stress: {
     bikeId: "ostra-sesta-600",
@@ -51,13 +65,6 @@ export const benchRaces = {
   },
 } as const satisfies Readonly<Record<Bench, PracticeRace>>;
 
-export const roadLifeRace = {
-  bikeId: "ostra-sesta-600",
-  roadId: "breakwater-run",
-  seed: 8,
-  tier: 3,
-} as const satisfies PracticeRace;
-
 const STRESS_COPS = 8;
 const STRESS_SIGHT_RANGE = 250;
 const STRESS_PLAYER_AGGRESSION = 0.8;
@@ -65,9 +72,6 @@ const STRESS_PACING: PacingRules = { catchUp: 0.6, leadEase: 0.8 };
 
 const benchRaceSetup = (race: PracticeRace): CareerRaceSetup =>
   practiceSetup(recordedRules, race, trackFor(race.roadId));
-
-export const roadLifeSetup = (): CareerRaceSetup =>
-  benchRaceSetup(roadLifeRace);
 
 const stressSetup = (): CareerRaceSetup => {
   const setup = benchRaceSetup(benchRaces.stress);
@@ -93,7 +97,20 @@ const withoutWalkers = (setup: CareerRaceSetup): CareerRaceSetup => ({
   track: { ...setup.track, walkSites: [] },
 });
 
-export const benchSetup = (bench: Bench): CareerRaceSetup =>
-  withoutWalkers(
-    bench === "stress" ? stressSetup() : benchRaceSetup(benchRaces.reference)
-  );
+export const benchSetup = (bench: Bench): CareerRaceSetup => {
+  switch (bench) {
+    case "stress": {
+      return withoutWalkers(stressSetup());
+    }
+    case "reference": {
+      return withoutWalkers(benchRaceSetup(benchRaces.reference));
+    }
+    case "breakwater":
+    case "ridge": {
+      return benchRaceSetup(benchRaces[bench]);
+    }
+    default: {
+      return bench satisfies never;
+    }
+  }
+};

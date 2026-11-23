@@ -1,4 +1,9 @@
-import { benchRaces, benchSetup, recordedRules } from "@racer/career/bench";
+import {
+  benches,
+  benchRaces,
+  benchSetup,
+  recordedRules,
+} from "@racer/career/bench";
 import type { Bench } from "@racer/career/bench";
 import { practiceSetup } from "@racer/career/field";
 import type { RaceRules } from "@racer/career/rules";
@@ -20,7 +25,7 @@ export const benchOf = (search: string): Bench | null => {
   if (value === null) {
     return null;
   }
-  return value === "reference" ? "reference" : "stress";
+  return benches.find((each) => each === value) ?? "stress";
 };
 
 export const benchPlan = (bench: Bench): RacePlan => ({
