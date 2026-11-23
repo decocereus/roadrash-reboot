@@ -1,11 +1,13 @@
 import { createLobbyRider, sendRiderTo } from "@racer/sim/lobby";
 import type { LobbyRider } from "@racer/sim/lobby";
 import { GARAGE_PLINTH } from "@racer/sim/lobby-floor";
+import { lobbyPoses } from "@racer/sim/lobby-walk";
 import * as THREE from "three";
 import { describe, expect, it, vi } from "vitest";
 
 import { createBarPlayer } from "./bar-player.ts";
 import type { BarPlayer, PlayerSlot } from "./bar-player.ts";
+import type { BarSounds } from "./bar-sounds.ts";
 import type { BarWalker } from "./bar-walker.ts";
 
 const FRAME = 1 / 60;
@@ -28,7 +30,8 @@ const slotWith = (bikeIndex: number): PlayerSlot => ({
 const playerOf = (
   rider: LobbyRider,
   slot: () => PlayerSlot,
-  walkUp: (spot: "garage") => void = vi.fn<(spot: "garage") => void>()
+  walkUp: (spot: "garage") => void = vi.fn<(spot: "garage") => void>(),
+  mine: BarSounds["mine"] = vi.fn<BarSounds["mine"]>()
 ): BarPlayer =>
   createBarPlayer({
     bikes: {
@@ -46,6 +49,7 @@ const playerOf = (
     puffs: { burst: vi.fn<() => void>() },
     rider,
     slot,
+    sounds: { mine },
     speech: { say: vi.fn<() => void>() },
     walkUp,
   });
@@ -114,5 +118,19 @@ describe("a parked bike when the member list shifts", () => {
     expect(second.bike.position.x).toBe(x);
     expect(second.bike.position.z).toBe(z);
     expect(second.bike.rotation.y).toBe(y);
+  });
+});
+
+describe("the rider's own sounds in the bar", () => {
+  it("plays a shove, a pose and a pose dropped, and nothing for a shove still going", () => {
+    const rider = createLobbyRider();
+    const mine = vi.fn<BarSounds["mine"]>();
+    const player = playerOf(rider, () => slotWith(2), undefined, mine);
+    const [pose] = lobbyPoses;
+    player.act("shove", 0);
+    player.act("shove", 0);
+    player.pose(pose);
+    player.pose(pose);
+    expect(mine.mock.calls).toStrictEqual([["shove"], ["pose"], ["pose"]]);
   });
 });

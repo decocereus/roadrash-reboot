@@ -724,6 +724,7 @@ Source files:
 - `apps/web/src/game/bar-props.ts`
 - `apps/web/src/game/bar-room.ts`
 - `apps/web/src/game/bar-signs.ts`
+- `apps/web/src/game/bar-sounds.ts`
 - `apps/web/src/game/bar-speech.ts`
 - `apps/web/src/game/bar-stand.ts`
 - `apps/web/src/game/bar-tags.ts`
@@ -742,6 +743,7 @@ Test files:
 - `apps/web/src/game/bar-input.test.ts`
 - `apps/web/src/game/bar-members.test.ts`
 - `apps/web/src/game/bar-player.test.ts`
+- `apps/web/src/game/bar-sounds.test.ts`
 - `packages/sim/src/lobby.test.ts`
 
 ## Platform

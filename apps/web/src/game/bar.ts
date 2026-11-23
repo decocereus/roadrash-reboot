@@ -8,6 +8,7 @@ import { SOLO_SLOT } from "../bar-view.ts";
 import type { BarCamera, BarSpot } from "../bar-view.ts";
 import { diagnostics } from "../diagnostics/hub.ts";
 import { graphicsCard } from "../diagnostics/player-events.ts";
+import { sound } from "../sound/sound.ts";
 import { createBikes } from "./actors.ts";
 import type { Assets, Decoded } from "./assets.ts";
 import { createBarEye } from "./bar-camera.ts";
@@ -31,6 +32,7 @@ import {
   buildShell,
 } from "./bar-room.ts";
 import { countdownPlate, createSignAtlas, signGeometry } from "./bar-signs.ts";
+import { createBarSounds } from "./bar-sounds.ts";
 import { createSpeech } from "./bar-speech.ts";
 import {
   createGarageCorner,
@@ -305,6 +307,7 @@ const openRoom = (
   owners.push(() => {
     tags.dispose();
   });
+  const sounds = createBarSounds(sound());
   const speech = createSpeech(tags);
   const garage = createGarageCorner(bikes, tags);
   const cast = createCast(
@@ -315,13 +318,14 @@ const openRoom = (
     heroBike,
     garage.mount,
     pins.riders,
-    true
+    true,
+    sounds
   );
   scene.add(cast.group);
   owners.push(() => {
     cast.dispose();
   });
-  const walkers = createWalkers(assets, shading, tags, scene);
+  const walkers = createWalkers(assets, shading, tags, scene, sounds);
   owners.push(() => {
     walkers.dispose();
   });
@@ -356,6 +360,7 @@ const openRoom = (
     puffs,
     rider,
     slot: yourSlot,
+    sounds,
     speech,
     walkUp(spot) {
       if (doorOpenedAt === null) {
@@ -468,6 +473,7 @@ const openRoom = (
   const openDoor = (): void => {
     if (doorOpenedAt === null) {
       doorOpenedAt = clock;
+      sounds.mine("door");
       const spot = doorSpot(members?.mine() ?? 0);
       player.walkTo(spot.x, spot.z);
     }
@@ -505,6 +511,7 @@ const openRoom = (
         firstBike: FIRST_WALKER_BIKE,
         rider,
         seat: next,
+        sounds,
         speech,
         walkers,
       });
@@ -600,6 +607,12 @@ const openRoom = (
     );
 
     eye.aim(seconds, player.view, lift, input.dragging(), garage.isOpen());
+    sounds.listen(
+      player.view.x,
+      player.view.z,
+      camera,
+      members?.mine() ?? SOLO_SLOT
+    );
 
     viewSize.width = canvas.clientWidth;
     viewSize.height = canvas.clientHeight;
@@ -617,6 +630,7 @@ const openRoom = (
       camera,
       viewSize
     );
+    sounds.flush();
     garage.offer(rider, lift, you.walker.head, camera, viewSize);
     speech.update(clock, camera, viewSize);
     shading.aim(camera);

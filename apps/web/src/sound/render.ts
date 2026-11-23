@@ -153,6 +153,27 @@ const syllables = (
   }
 };
 
+const murmurVoice = (
+  context: BaseAudioContext,
+  voices: number,
+  begin: number,
+  end: number,
+  sources: Sources,
+  random: Random,
+  room: AudioNode
+): void => {
+  const mouth = context.createGain();
+  mouth.gain.value = 0;
+  syllables(mouth.gain, begin, end, random);
+  const weight = context.createGain();
+  weight.gain.value = (0.4 + random() * 0.6) / Math.sqrt(voices);
+  mouth.connect(weight).connect(room);
+  const low = filtered(context, "bandpass", 280 + random() * 500, 4, mouth);
+  const high = filtered(context, "bandpass", 900 + random() * 1300, 6, mouth);
+  noiseSource(context, sources.noise, random, begin, end, low);
+  noiseSource(context, sources.noise, random, begin, end, high);
+};
+
 const renderLayer = (
   context: BaseAudioContext,
   layer: Layer,
@@ -201,28 +222,7 @@ const renderLayer = (
     case "murmur": {
       const room = filtered(context, "lowpass", layer.cutoff, 0.7, level);
       for (let voice = 0; voice < layer.voices; voice += 1) {
-        const mouth = context.createGain();
-        mouth.gain.value = 0;
-        syllables(mouth.gain, begin, end, random);
-        const weight = context.createGain();
-        weight.gain.value = (0.4 + random() * 0.6) / Math.sqrt(layer.voices);
-        mouth.connect(weight).connect(room);
-        const low = filtered(
-          context,
-          "bandpass",
-          280 + random() * 500,
-          4,
-          mouth
-        );
-        const high = filtered(
-          context,
-          "bandpass",
-          900 + random() * 1300,
-          6,
-          mouth
-        );
-        noiseSource(context, sources.noise, random, begin, end, low);
-        noiseSource(context, sources.noise, random, begin, end, high);
+        murmurVoice(context, layer.voices, begin, end, sources, random, room);
       }
       return;
     }

@@ -170,6 +170,46 @@ export const recipes = {
     1,
     0.05
   ),
+  door: recipe(
+    "big",
+    [
+      burst(180, 0.18, 1, 70),
+      tone("sine", 70, 45, { decay: 0.12, gain: 0.3 }),
+      tone(
+        "sawtooth",
+        48,
+        58,
+        { at: 0.1, attack: 0.3, decay: 0.4, gain: 0.13, hold: 1.8 },
+        320
+      ),
+      crackle(140, 2600, {
+        at: 0.1,
+        attack: 0.25,
+        decay: 0.4,
+        gain: 0.45,
+        hold: 1.8,
+      }),
+      noise(
+        "bandpass",
+        1700,
+        2300,
+        { at: 0.1, attack: 0.3, decay: 0.4, gain: 0.14, hold: 1.8 },
+        3
+      ),
+      burst(240, 0.22, 0.9, 80, 2.55),
+      tone("sine", 690, 680, { at: 2.55, decay: 0.5, gain: 0.05 }),
+      tone("sine", 1530, 1510, { at: 2.55, decay: 0.35, gain: 0.03 }),
+    ],
+    1,
+    0
+  ),
+  greet: recipe("strike", [
+    burst(2300, 0.045, 0.7, 1300),
+    noise("highpass", 4200, 4200, { decay: 0.015, gain: 0.25 }, 0.7),
+    tone("sine", 190, 120, { decay: 0.05, gain: 0.2 }),
+    burst(1600, 0.05, 0.5, 900, 0.1),
+    tone("sine", 160, 110, { at: 0.1, decay: 0.05, gain: 0.15 }),
+  ]),
   hit: recipe("strike", [
     burst(260, 0.16, 0.9, 70),
     burst(1200, 0.08, 0.35, 300),
@@ -192,6 +232,17 @@ export const recipes = {
     4,
     0.08
   ),
+  pose: recipe("step", [
+    noise(
+      "bandpass",
+      2600,
+      1400,
+      { attack: 0.02, decay: 0.12, gain: 0.4 },
+      0.7
+    ),
+    crackle(220, 4500, { attack: 0.02, decay: 0.12, gain: 0.12 }),
+    noise("lowpass", 300, 100, { at: 0.1, decay: 0.06, gain: 0.7 }, 0.7),
+  ]),
   press: recipe("interface", stamp),
   refused: recipe(
     "interface",
@@ -217,12 +268,30 @@ export const recipes = {
     0.12
   ),
   shift: recipe("strike", [burst(1600, 0.05, 0.3, 700)], 2),
+  shove: recipe("strike", [
+    noise("bandpass", 900, 380, { attack: 0.03, decay: 0.12, gain: 0.55 }, 0.8),
+    noise("lowpass", 320, 90, { at: 0.06, decay: 0.12, gain: 1 }, 0.7),
+    tone("sine", 95, 55, { at: 0.06, decay: 0.1, gain: 0.3 }),
+    crackle(260, 3500, { at: 0.06, decay: 0.1, gain: 0.12 }),
+  ]),
   siren: recipe(
     "big",
     [sirenNote(0), sirenNote(1), sirenNote(2), sirenNote(3)],
     1,
     0
   ),
+  sit: recipe("step", [
+    tone(
+      "sawtooth",
+      190,
+      150,
+      { attack: 0.02, decay: 0.16, gain: 0.12, hold: 0.04 },
+      900
+    ),
+    tone("sine", 880, 1040, { at: 0.03, decay: 0.08, gain: 0.03 }),
+    noise("lowpass", 220, 80, { at: 0.05, decay: 0.1, gain: 0.85 }, 0.7),
+    tone("sine", 85, 55, { at: 0.05, decay: 0.08, gain: 0.25 }),
+  ]),
   swing: recipe("strike", [burst(1800, 0.12, 0.45, 500)]),
   tab: recipe("interface", [
     tone("sine", 1100, 800, { decay: 0.03, gain: 0.13 }),
