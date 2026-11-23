@@ -48,7 +48,7 @@ const CEL_UNIFORMS =
 
 const FIGURE_SHADE = `
 varying vec4 vSunAnchor;
-uniform float figureShade;uniform vec3 figureLight;uniform vec3 figureSun;uniform float figureDepth;uniform float figureChroma;uniform float figureFloor;
+uniform float figureShade;uniform vec3 figureLight;uniform vec3 figureSun;uniform float figureDepth;uniform float figureChroma;uniform float figureFloor;uniform vec3 skyDirection;
 const vec3 FIGURE_LUMA = vec3(0.2126, 0.7152, 0.0722);
 const vec2 SHADE_HUE = vec2(0.8660254, -0.5);
 const float SHADE_TURN = 0.17453293;
@@ -120,7 +120,7 @@ const CEL_FRAGMENT = `
   float celRim = step(0.64, celFresnel) * step(0.25, dot(celNormal, rimDirection)) * rimStrength;
   #ifdef PAINTED
     if (figureShade > 0.5) {
-      celRim = step(FIGURE_RIM_EDGE, celFresnel) * mix(step(FIGURE_SKY_FACING, dot(celNormal, rimDirection)) * FIGURE_SKY_RIM, step(FIGURE_RIM_FACING, dot(celNormal, keyDirection)), figureSunlit);
+      celRim = step(FIGURE_RIM_EDGE, celFresnel) * mix(step(FIGURE_SKY_FACING, dot(celNormal, skyDirection)) * FIGURE_SKY_RIM, step(FIGURE_RIM_FACING, dot(celNormal, keyDirection)), figureSunlit);
     }
   #endif
   outgoingLight = mix(outgoingLight, rimColour, celRim);
@@ -246,6 +246,7 @@ export const createShading = (look: Look): Shading => {
   const rimWorld = new THREE.Vector3();
   const rimDirection = { value: new THREE.Vector3(0, 0, 1) };
   const keyDirection = { value: new THREE.Vector3(0, 0, 1) };
+  const skyDirection = { value: new THREE.Vector3(0, 1, 0) };
   const rimColour = { value: new THREE.Color() };
   const toView = new THREE.Matrix3();
   const ambient = new THREE.Color();
@@ -298,6 +299,7 @@ export const createShading = (look: Look): Shading => {
         shader.uniforms.figureDepth = figureDepth;
         shader.uniforms.figureChroma = figureChroma;
         shader.uniforms.figureFloor = figureFloor;
+        shader.uniforms.skyDirection = skyDirection;
         shader.vertexShader = `attribute float gloss;varying float vGloss;varying vec4 vSunAnchor;\n${shader.vertexShader
           .replace(
             "#include <begin_vertex>",
@@ -327,6 +329,7 @@ export const createShading = (look: Look): Shading => {
       toView.setFromMatrix4(camera.matrixWorldInverse);
       rimDirection.value.copy(rimWorld).applyMatrix3(toView).normalize();
       keyDirection.value.copy(key).applyMatrix3(toView).normalize();
+      skyDirection.value.set(0, 1, 0).applyMatrix3(toView).normalize();
     },
     ambient,
     cel(colour, options = {}) {

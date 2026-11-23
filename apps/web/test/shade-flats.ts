@@ -8,8 +8,8 @@ const BAND_STEP = 0.02;
 const HUE_FLOOR = 0.03;
 const INK_TOLERANCE = 3;
 const LIGHTNESS_TOLERANCE = 0.01;
-const RIM_STEP = 0.1;
-const RIM_SHARE_FLOOR = 0.005;
+const RIM_GAP = 24;
+const RIM_SHARE_FLOOR = 0.002;
 const FLAT_SHARE_FLOOR = 0.02;
 
 type Lab = readonly [number, number, number];
@@ -65,6 +65,7 @@ export const round = (value: number, places = 3): number =>
 
 export interface Bands {
   readonly valid: Uint8Array;
+  readonly subject: Uint8Array;
   readonly lit: readonly Lab[];
   readonly shadow: readonly Lab[];
   readonly world: readonly Lab[];
@@ -106,6 +107,28 @@ const backgroundLab = labOf(
   Number.parseInt(BACKGROUND.slice(5, 7), 16)
 );
 
+const eroded = (
+  mask: Uint8Array,
+  width: number,
+  height: number
+): Uint8Array => {
+  const inner = new Uint8Array(width * height);
+  for (let row = 1; row < height - 1; row += 1) {
+    for (let column = 1; column < width - 1; column += 1) {
+      const pixel = row * width + column;
+      inner[pixel] =
+        mask[pixel] === 1 &&
+        mask[pixel - 1] === 1 &&
+        mask[pixel + 1] === 1 &&
+        mask[pixel - width] === 1 &&
+        mask[pixel + width] === 1
+          ? 1
+          : 0;
+    }
+  }
+  return inner;
+};
+
 export const bandsOf = (
   lit: Uint8Array,
   inked: Uint8Array,
@@ -115,6 +138,7 @@ export const bandsOf = (
   height: number
 ): Bands => {
   const banded = new Uint8Array(width * height);
+  const subject = new Uint8Array(width * height);
   const litLabs: Lab[] = Array.from({ length: width * height });
   const shadowLabs: Lab[] = Array.from({ length: width * height });
   const worldLabs: Lab[] = Array.from({ length: width * height });
@@ -128,23 +152,16 @@ export const bandsOf = (
       clearOfInk(lit, inked, pixel) &&
       distance(litLab, backgroundLab) > BAND_STEP &&
       distance(shadowLab, backgroundLab) > BAND_STEP;
+    subject[pixel] = onSubject ? 1 : 0;
     banded[pixel] = onSubject && litLab[0] - shadowLab[0] > BAND_STEP ? 1 : 0;
   }
-  const valid = new Uint8Array(width * height);
-  for (let row = 1; row < height - 1; row += 1) {
-    for (let column = 1; column < width - 1; column += 1) {
-      const pixel = row * width + column;
-      valid[pixel] =
-        banded[pixel] === 1 &&
-        banded[pixel - 1] === 1 &&
-        banded[pixel + 1] === 1 &&
-        banded[pixel - width] === 1 &&
-        banded[pixel + width] === 1
-          ? 1
-          : 0;
-    }
-  }
-  return { lit: litLabs, shadow: shadowLabs, valid, world: worldLabs };
+  return {
+    lit: litLabs,
+    shadow: shadowLabs,
+    subject: eroded(subject, width, height),
+    valid: eroded(banded, width, height),
+    world: worldLabs,
+  };
 };
 
 const nearestOf = (centres: readonly Lab[], lab: Lab): number => {
@@ -200,17 +217,20 @@ export interface Identity {
   readonly counted: number;
 }
 
-export const identityOf = (reference: Bands): Identity => {
+export const identityOf = (
+  reference: Bands,
+  mask: Uint8Array = reference.valid
+): Identity => {
   const sample: Lab[] = [];
   let counted = 0;
-  for (const valid of reference.valid) {
+  for (const valid of mask) {
     counted += valid;
   }
   const stride = Math.max(1, Math.floor(counted / SAMPLE_LIMIT));
   let seen = 0;
-  for (let pixel = 0; pixel < reference.valid.length; pixel += 1) {
+  for (let pixel = 0; pixel < mask.length; pixel += 1) {
     const lab = reference.lit[pixel];
-    if (reference.valid[pixel] === 1 && lab) {
+    if (mask[pixel] === 1 && lab) {
       if (seen % stride === 0) {
         sample.push(lab);
       }
@@ -218,10 +238,10 @@ export const identityOf = (reference: Bands): Identity => {
     }
   }
   const centres = centresOf(sample);
-  const flatOf = new Int16Array(reference.valid.length).fill(-1);
-  for (let pixel = 0; pixel < reference.valid.length; pixel += 1) {
+  const flatOf = new Int16Array(mask.length).fill(-1);
+  for (let pixel = 0; pixel < mask.length; pixel += 1) {
     const lab = reference.lit[pixel];
-    if (reference.valid[pixel] === 1 && lab) {
+    if (mask[pixel] === 1 && lab) {
       flatOf[pixel] = nearestOf(centres, lab);
     }
   }
@@ -238,18 +258,22 @@ const lchRounded = (lab: Lab) => {
   };
 };
 
-export const flatsIn = (identity: Identity, bands: Bands) =>
+export const flatsIn = (
+  identity: Identity,
+  bands: Bands,
+  mask: Uint8Array = bands.valid
+) =>
   identity.centres.map((_centre, flat) => {
     const lit: Lab[] = [];
     const shadow: Lab[] = [];
     const world: number[] = [];
     const gaps: number[] = [];
-    for (let pixel = 0; pixel < bands.valid.length; pixel += 1) {
+    for (let pixel = 0; pixel < mask.length; pixel += 1) {
       const litLab = bands.lit[pixel];
       const shadowLab = bands.shadow[pixel];
       if (
         identity.flatOf[pixel] === flat &&
-        bands.valid[pixel] === 1 &&
+        mask[pixel] === 1 &&
         litLab &&
         shadowLab
       ) {
@@ -284,23 +308,21 @@ export const flatsIn = (identity: Identity, bands: Bands) =>
   });
 
 export const rimShareOf = (
-  identity: Identity,
-  bands: Bands,
-  flats: ReturnType<typeof flatsIn>
+  rimmed: Uint8Array,
+  rimless: Uint8Array,
+  counted: number
 ): number => {
   let rim = 0;
-  for (let pixel = 0; pixel < bands.valid.length; pixel += 1) {
-    const flat = flats[identity.flatOf[pixel] ?? -1];
-    const lightness = bands.world[pixel]?.[0];
-    if (
-      flat &&
-      lightness !== undefined &&
-      lightness - flat.worldShade.world > RIM_STEP
-    ) {
-      rim += 1;
+  for (let pixel = 0; pixel * 4 < rimmed.length; pixel += 1) {
+    let gap = 0;
+    for (let channel = 0; channel < 3; channel += 1) {
+      gap += Math.abs(
+        (rimmed[pixel * 4 + channel] ?? 0) - (rimless[pixel * 4 + channel] ?? 0)
+      );
     }
+    rim += gap > RIM_GAP ? 1 : 0;
   }
-  return round(rim / Math.max(identity.counted, 1), 4);
+  return round(rim / Math.max(counted, 1), 4);
 };
 
 export const worldShadeFailures = (

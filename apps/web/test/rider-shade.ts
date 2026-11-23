@@ -31,7 +31,6 @@ const PIXEL_RATIO = 2;
 const SETTLE_STEPS = 8;
 const SHEET_COLUMNS = 3;
 const RIDER_BIKE_PAINT = 2;
-const OCCLUDER_LAYER = 2;
 const SUN_DISTANCE = 8;
 const OCCLUDER_DISTANCE = 5;
 const OCCLUDER_SIZE = 40;
@@ -244,6 +243,8 @@ const frameFor = (view: View): Frame => {
 
 interface Shot {
   readonly bands: Bands;
+  readonly rimmed: Uint8Array;
+  readonly world: Uint8Array;
   readonly floor: number;
   readonly picture: HTMLCanvasElement;
 }
@@ -282,13 +283,11 @@ const shoot = (
   );
   const occluder = new THREE.Mesh(
     new THREE.PlaneGeometry(OCCLUDER_SIZE, OCCLUDER_SIZE),
-    new THREE.MeshBasicMaterial({ side: THREE.DoubleSide })
+    new THREE.MeshBasicMaterial({ shadowSide: THREE.DoubleSide })
   );
-  occluder.layers.set(OCCLUDER_LAYER);
   occluder.castShadow = true;
   occluder.position.copy(shading.key).multiplyScalar(OCCLUDER_DISTANCE);
-  occluder.lookAt(0, 0, 0);
-  light.shadow.camera.layers.enable(OCCLUDER_LAYER);
+  occluder.lookAt(shading.key.clone().multiplyScalar(SUN_DISTANCE * 2));
   const gl = renderer.getContext();
   const read = () => {
     const pixels = new Uint8Array(width * height * 4);
@@ -333,11 +332,16 @@ const shoot = (
     light.position.copy(shading.key).multiplyScalar(SUN_DISTANCE);
     scene.add(occluder);
     pipeline.render(scene, camera);
+    const rimmed = read();
+    shading.relight({ ...look, rim: "#000000" });
+    pipeline.render(scene, camera);
     const world = read();
     return {
       bands: bandsOf(lit, inked, shadow, world, width, height),
       floor: figureFloorOf(look.ink),
       picture,
+      rimmed,
+      world,
     };
   } finally {
     occluder.geometry.dispose();
@@ -377,6 +381,7 @@ export const run = async (view: View, subject: Subject = "riders") => {
           continue;
         }
         let identity: Identity | null = null;
+        let figure: Identity | null = null;
         const perLook: Partial<Record<LookName, ReturnType<typeof flatsIn>>> =
           {};
         for (let column = 0; column < lookNames.length; column += 1) {
@@ -386,15 +391,16 @@ export const run = async (view: View, subject: Subject = "riders") => {
           }
           const shot = shoot(frame, assets, sitter, lookName);
           identity ??= identityOf(shot.bands);
-          const flats = flatsIn(identity, shot.bands);
-          perLook[lookName] = flats;
-          const rim = rimShareOf(identity, shot.bands, flats);
+          figure ??= identityOf(shot.bands, shot.bands.subject);
+          perLook[lookName] = flatsIn(identity, shot.bands);
+          const whole = flatsIn(figure, shot.bands, shot.bands.subject);
+          const rim = rimShareOf(shot.rimmed, shot.world, figure.counted);
           rims[`${sitter.name} ${lookName}`] = rim;
           failures.push(
             ...worldShadeFailures(
               `${sitter.name} ${lookName}`,
-              flats,
-              identity.counted,
+              whole,
+              figure.counted,
               shot.floor,
               rim
             )
