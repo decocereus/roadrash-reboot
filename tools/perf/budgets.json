@@ -116,7 +116,7 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "073af6d31a71aa6a9458eba25b4f5eea1bba215479f93b3e10a7a18b71b1eb9f"
+    "summarySha256": "58132a221e5afa805986a52a8b078fc0d4e75b305f65c20569da32fd3471ac59"
   },
   "limits": [
     {
@@ -2292,7 +2292,7 @@
       "unit": "ms"
     },
     {
-      "baseline": 0.0001373095234351279,
+      "baseline": 0.0001353957624793588,
       "derivation": "1.06 x calibrated baseline median of five runs",
       "direction": "max",
       "environment": "node-darwin-arm64",
@@ -2301,34 +2301,34 @@
       "scenario": "reference-v1",
       "source": "gate-2026-11-23T12-19-09-676Z-9f67ba9-1cd7416",
       "unit": "ms",
-      "value": 0.0001455480948412356
+      "value": 0.00014351950822812033
     },
     {
-      "baseline": 0.00015659838808314833,
+      "baseline": 0.000153150828273084,
       "derivation": "1.06 x calibrated baseline median of five runs",
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "timing.stamp.p50",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "gate-2026-11-23T12-19-09-676Z-9f67ba9-1cd7416",
+      "source": "gate-2026-11-23T11-59-34-837Z-9f67ba9-1cd7416",
       "unit": "ms",
-      "value": 0.00016599429136813726
+      "value": 0.00016233987796946905
     },
     {
-      "baseline": 0.0002627058703505786,
+      "baseline": 0.00024259103544461394,
       "derivation": "1.06 x calibrated baseline median of five runs, with 1.3 x for the spread between GitHub runners",
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "timing.stamp.p50",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "gate-2026-11-23T11-18-33-621Z-9f67ba9-7cf5536",
+      "source": "gate-2026-11-23T12-03-19-896Z-9f67ba9-7cf5536",
       "unit": "ms",
-      "value": 0.0003620086893430974
+      "value": 0.00033429044684267804
     },
     {
-      "baseline": 0.00032725362980626173,
+      "baseline": 0.0003156337130684454,
       "derivation": "1.06 x calibrated baseline median of five runs, with 1.3 x for the spread between GitHub runners",
       "direction": "max",
       "environment": "node-linux-x64",
@@ -2337,7 +2337,7 @@
       "scenario": "pack-riding-v1",
       "source": "gate-2026-11-23T12-03-19-896Z-9f67ba9-7cf5536",
       "unit": "ms",
-      "value": 0.00045095550187302866
+      "value": 0.00043494325660831774
     }
   ],
   "nodeProfiles": {

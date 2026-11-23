@@ -3607,7 +3607,7 @@
       "scenario": "reference-v1",
       "side": "B",
       "source": "gate-2026-11-23T11-59-34-837Z-9f67ba9-1cd7416",
-      "value": 0.0001361384980181795
+      "value": 0.00013413054335503863
     },
     {
       "environment": "node-darwin-arm64",
@@ -3615,7 +3615,7 @@
       "scenario": "pack-riding-v1",
       "side": "B",
       "source": "gate-2026-11-23T11-59-34-837Z-9f67ba9-1cd7416",
-      "value": 0.00016349506245367037
+      "value": 0.000153150828273084
     },
     {
       "environment": "node-darwin-arm64",
@@ -3623,7 +3623,7 @@
       "scenario": "reference-v1",
       "side": "B",
       "source": "gate-2026-11-23T12-02-44-080Z-9f67ba9-1cd7416",
-      "value": 0.00013894635989341293
+      "value": 0.0001377541098919602
     },
     {
       "environment": "node-darwin-arm64",
@@ -3631,7 +3631,7 @@
       "scenario": "pack-riding-v1",
       "side": "B",
       "source": "gate-2026-11-23T12-02-44-080Z-9f67ba9-1cd7416",
-      "value": 0.0001524554192272586
+      "value": 0.00014845784311126356
     },
     {
       "environment": "node-darwin-arm64",
@@ -3639,7 +3639,7 @@
       "scenario": "reference-v1",
       "side": "B",
       "source": "gate-2026-11-23T12-14-20-834Z-9f67ba9-1cd7416",
-      "value": 0.00014083530038732866
+      "value": 0.0001390375968412596
     },
     {
       "environment": "node-darwin-arm64",
@@ -3647,7 +3647,7 @@
       "scenario": "pack-riding-v1",
       "side": "B",
       "source": "gate-2026-11-23T12-14-20-834Z-9f67ba9-1cd7416",
-      "value": 0.00015261858451690843
+      "value": 0.00014939863222364425
     },
     {
       "environment": "node-darwin-arm64",
@@ -3655,7 +3655,7 @@
       "scenario": "reference-v1",
       "side": "B",
       "source": "gate-2026-11-23T12-19-09-676Z-9f67ba9-1cd7416",
-      "value": 0.0001373095234351279
+      "value": 0.0001353957624793588
     },
     {
       "environment": "node-darwin-arm64",
@@ -3663,7 +3663,7 @@
       "scenario": "pack-riding-v1",
       "side": "B",
       "source": "gate-2026-11-23T12-19-09-676Z-9f67ba9-1cd7416",
-      "value": 0.00015659838808314833
+      "value": 0.0001548468704612273
     },
     {
       "environment": "node-darwin-arm64",
@@ -3671,7 +3671,7 @@
       "scenario": "reference-v1",
       "side": "B",
       "source": "gate-2026-11-23T12-23-22-959Z-9f67ba9-1cd7416",
-      "value": 0.0001372428806851932
+      "value": 0.00013536908080526386
     },
     {
       "environment": "node-darwin-arm64",
@@ -3679,7 +3679,7 @@
       "scenario": "pack-riding-v1",
       "side": "B",
       "source": "gate-2026-11-23T12-23-22-959Z-9f67ba9-1cd7416",
-      "value": 0.00015723763061026923
+      "value": 0.00015446090436044448
     },
     {
       "environment": "node-linux-x64",
@@ -3687,7 +3687,7 @@
       "scenario": "reference-v1",
       "side": "B",
       "source": "gate-2026-11-23T11-18-33-621Z-9f67ba9-7cf5536",
-      "value": 0.0002627058703505786
+      "value": 0.00024165370409122988
     },
     {
       "environment": "node-linux-x64",
@@ -3695,7 +3695,7 @@
       "scenario": "pack-riding-v1",
       "side": "B",
       "source": "gate-2026-11-23T11-18-33-621Z-9f67ba9-7cf5536",
-      "value": 0.0003332205987273313
+      "value": 0.000328534052847217
     },
     {
       "environment": "node-linux-x64",
@@ -3703,7 +3703,7 @@
       "scenario": "reference-v1",
       "side": "B",
       "source": "gate-2026-11-23T11-25-04-341Z-9f67ba9-7cf5536",
-      "value": 0.00028972332402699683
+      "value": 0.00027079948596499465
     },
     {
       "environment": "node-linux-x64",
@@ -3711,7 +3711,7 @@
       "scenario": "pack-riding-v1",
       "side": "B",
       "source": "gate-2026-11-23T11-25-04-341Z-9f67ba9-7cf5536",
-      "value": 0.00033994100053391446
+      "value": 0.00033393211237585954
     },
     {
       "environment": "node-linux-x64",
@@ -3719,7 +3719,7 @@
       "scenario": "reference-v1",
       "side": "B",
       "source": "gate-2026-11-23T11-37-35-632Z-9f67ba9-7cf5536",
-      "value": 0.00026275810988280054
+      "value": 0.0002611777902591896
     },
     {
       "environment": "node-linux-x64",
@@ -3727,7 +3727,7 @@
       "scenario": "pack-riding-v1",
       "side": "B",
       "source": "gate-2026-11-23T11-37-35-632Z-9f67ba9-7cf5536",
-      "value": 0.00030956570958924243
+      "value": 0.00030767847088318865
     },
     {
       "environment": "node-linux-x64",
@@ -3735,7 +3735,7 @@
       "scenario": "reference-v1",
       "side": "B",
       "source": "gate-2026-11-23T11-43-58-497Z-9f67ba9-7cf5536",
-      "value": 0.0002429997925958716
+      "value": 0.00024105474244724175
     },
     {
       "environment": "node-linux-x64",
@@ -3743,7 +3743,7 @@
       "scenario": "pack-riding-v1",
       "side": "B",
       "source": "gate-2026-11-23T11-43-58-497Z-9f67ba9-7cf5536",
-      "value": 0.0002843143558151149
+      "value": 0.00028232503280855795
     },
     {
       "environment": "node-linux-x64",
@@ -3751,7 +3751,7 @@
       "scenario": "reference-v1",
       "side": "B",
       "source": "gate-2026-11-23T12-03-19-896Z-9f67ba9-7cf5536",
-      "value": 0.00024304350678378667
+      "value": 0.00024259103544461394
     },
     {
       "environment": "node-linux-x64",
@@ -3759,7 +3759,7 @@
       "scenario": "pack-riding-v1",
       "side": "B",
       "source": "gate-2026-11-23T12-03-19-896Z-9f67ba9-7cf5536",
-      "value": 0.00032725362980626173
+      "value": 0.0003156337130684454
     }
   ],
   "revisions": {

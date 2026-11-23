@@ -398,7 +398,7 @@ const stampObservation = (
     paired: null,
     runs: { a: [], b: measured },
     scenario: scenario.id,
-    value: median(measured),
+    value: Math.min(...measured),
   };
 };
 

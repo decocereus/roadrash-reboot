@@ -74,7 +74,9 @@ const middle = Math.floor(WINDOW_TICKS / 2);
 const fonts = (files: readonly string[]) =>
   files.filter((file) => file.includes("/face-"));
 
-const stampsOf = (stamped: (duration: number, tick: number) => number) =>
+const stampsOf = (
+  stamped: (duration: number, tick: number, run: number) => number
+) =>
   scenarios.map((scenario) =>
     syntheticLane(scenario, steady, validRows(scenario), stamped)
   );
@@ -250,7 +252,7 @@ describe("perf gate red cases", { timeout: 30_000 }, () => {
     expect(throughEntry(runnerOnly, budgets).status).toBe(0);
   });
 
-  it("judges the timing stamp by its middle tick, so a noisy tail passes and a 10% slower stamp fails", () => {
+  it("judges the timing stamp by the middle tick of its fastest run, so a noisy tail or slow processes pass and a 10% slower stamp fails", () => {
     const noisyTail = evaluateGate(
       samplesOf(
         "tail",
@@ -262,6 +264,17 @@ describe("perf gate red cases", { timeout: 30_000 }, () => {
       budgets
     );
     expect(failing(noisyTail.lines)).toStrictEqual([]);
+    const slowProcesses = evaluateGate(
+      samplesOf(
+        "processes",
+        stampsOf((duration, _tick, run) =>
+          run === 2 ? duration : duration * 1.3
+        ),
+        build
+      ),
+      budgets
+    );
+    expect(failing(slowProcesses.lines)).toStrictEqual([]);
     const slower = evaluateGate(
       samplesOf(
         "stamp",

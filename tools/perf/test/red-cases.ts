@@ -109,7 +109,9 @@ export const syntheticLane = (
   scenario: Scenario,
   slowdown: Slowdown,
   rowsB: WorkloadRows = validRows(scenario),
-  stamped: (duration: number, tick: number) => number = (duration) => duration
+  stamped: (duration: number, tick: number, run: number) => number = (
+    duration
+  ) => duration
 ): NodeLane => {
   const rows = validRows(scenario);
   const workload = { police: scenario.police, racers: scenario.racers };
@@ -139,7 +141,9 @@ export const syntheticLane = (
         bytes: Array.from({ length: WINDOW_TICKS }, () => SNAPSHOT_BYTES),
         hash: tickDurations(SNAPSHOT_HASH_MS * slowdown.runner),
         restore: tickDurations(SNAPSHOT_RESTORE_MS * slowdown.runner),
-        stamp: tickDurations(TIMING_STAMP_MS * slowdown.runner).map(stamped),
+        stamp: tickDurations(TIMING_STAMP_MS * slowdown.runner).map(
+          (duration, tick) => stamped(duration, tick, run)
+        ),
         write: tickDurations(SNAPSHOT_WRITE_MS * slowdown.runner),
       },
     });
