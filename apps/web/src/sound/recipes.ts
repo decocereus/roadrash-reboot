@@ -118,59 +118,34 @@ const sirenNote = (step: number): Layer =>
     2200
   );
 
-const DRUM_GAIN = 0.5;
-const OVERTONE = 1.59;
+const drum = (
+  hertz: number,
+  strike: number,
+  gain: number,
+  ring: number,
+  at = 0
+): Layers => [
+  tone("sine", hertz * strike, hertz, { at, decay: 0.06, gain }),
+  tone("sine", hertz, hertz, {
+    at: at + 0.03,
+    attack: 0.03,
+    decay: ring * 1.9,
+    gain,
+  }),
+  tone("sine", hertz * 1.59, hertz * 1.59, {
+    at,
+    decay: ring * 0.65,
+    gain: gain * 0.35,
+  }),
+  noise("bandpass", 870, 870, { at, decay: 0.15, gain: gain * 0.85 }, 0.45),
+];
 
-interface Drum {
-  readonly hertz: number;
-  readonly strike: number;
-  readonly weight: number;
-  readonly ring: number;
-  readonly at?: number;
-}
-
-const drum = ({ hertz, strike, weight, ring, at = 0 }: Drum): Layers => {
-  const gain = DRUM_GAIN * weight;
-  return [
-    tone("sine", hertz * strike, hertz * 1.02, {
-      at,
-      attack: 0.001,
-      decay: 0.06,
-      gain,
-    }),
-    tone("sine", hertz, hertz, {
-      at: at + 0.03,
-      attack: 0.03,
-      decay: ring * 1.9,
-      gain,
-    }),
-    tone("sine", hertz * OVERTONE, hertz * OVERTONE, {
-      at,
-      attack: 0.001,
-      decay: ring * 0.65,
-      gain: gain * 0.35,
-    }),
-    noise(
-      "bandpass",
-      870,
-      870,
-      { at, attack: 0.0005, decay: 0.15, gain: gain * 0.85 },
-      0.45
-    ),
-  ];
-};
-
-const CYMBAL_MODES = [3150, 4420, 5900, 7300, 9100] as const;
-const cymbal = (weight: number, at: number): Layers => {
-  const gain = DRUM_GAIN * weight;
-  const span = { at, decay: 2.6, gain: gain * 0.85 };
-  return [
-    noise("highpass", 4000, 4000, span, 0.7),
-    ...CYMBAL_MODES.map((hertz) =>
-      noise("bandpass", hertz, hertz, { ...span, gain: gain * 0.5 }, 18)
-    ),
-  ];
-};
+const cymbal = (gain: number, at: number): Layers => [
+  noise("highpass", 4000, 4000, { at, decay: 2.6, gain: gain * 0.85 }, 0.7),
+  ...[3150, 4420, 5900, 7300, 9100].map((hertz) =>
+    noise("bandpass", hertz, hertz, { at, decay: 2.6, gain: gain * 0.5 }, 18)
+  ),
+];
 
 const stamp: Layers = [
   noise("bandpass", 1300, 600, { decay: 0.06, gain: 0.6 }, 0.8),
@@ -211,12 +186,7 @@ export const recipes = {
     tone("sine", 420, 380, { decay: 0.08, gain: 0.3 }),
     burst(1800, 0.03, 0.4, 1200),
   ]),
-  count: recipe(
-    "strike",
-    drum({ hertz: 78, ring: 1, strike: 1.6, weight: 1.1 }),
-    1,
-    0
-  ),
+  count: recipe("strike", drum(78, 1.6, 0.55, 1), 1, 0),
   crash: recipe(
     "big",
     [
@@ -344,9 +314,9 @@ export const recipes = {
   go: recipe(
     "strike",
     [
-      ...drum({ hertz: 58, ring: 2, strike: 1.9, weight: 0.9 }),
-      ...drum({ at: 0.012, hertz: 92, ring: 1.3, strike: 1.5, weight: 0.48 }),
-      ...cymbal(0.5, 0.005),
+      ...drum(58, 1.9, 0.45, 2),
+      ...drum(92, 1.5, 0.24, 1.3, 0.012),
+      ...cymbal(0.25, 0.005),
     ],
     1,
     0
