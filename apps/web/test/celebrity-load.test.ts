@@ -30,7 +30,6 @@ const fakeRider = (): RiderAsset => ({
   poses: new Map(),
   primitives: [],
   scene: new THREE.Object3D(),
-  seat: new THREE.Vector3(),
   standHeight: 0,
 });
 
@@ -78,6 +77,7 @@ const wardrobeOf = (answer: (url: string) => Promise<Response>) => {
       runtime.mountCelebrity,
       Promise.resolve({
         assetParsers: {
+          bike: onlyRiders,
           parts: onlyRiders,
           rider,
           walkers: onlyRiders,

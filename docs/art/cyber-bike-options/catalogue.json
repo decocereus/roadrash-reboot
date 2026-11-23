@@ -13,7 +13,7 @@
       "wheel_f": 2897,
       "wheel_r": 2467
     },
-    "glbBytes": 432980,
+    "glbBytes": 433456,
     "textures": 0,
     "wheelbaseMetres": 1.38
   },
@@ -31,7 +31,7 @@
       "wheel_f": 2946,
       "wheel_r": 2516
     },
-    "glbBytes": 425740,
+    "glbBytes": 426212,
     "textures": 0,
     "wheelbaseMetres": 1.38
   },
@@ -49,7 +49,7 @@
       "wheel_f": 2892,
       "wheel_r": 2462
     },
-    "glbBytes": 468744,
+    "glbBytes": 469216,
     "textures": 0,
     "wheelbaseMetres": 1.38
   }
