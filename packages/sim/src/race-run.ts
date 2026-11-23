@@ -15,12 +15,15 @@ import type {
   RaceSetup,
   RiderId,
 } from "./state.ts";
+import { createRaceTiming } from "./timing.ts";
+import type { TimingView } from "./timing.ts";
 
 export interface RaceRun {
   readonly events: () => readonly RaceEvent[];
   readonly takeCorrections: () => readonly RiderCorrection[];
   readonly takeFights: () => readonly HeardFight[];
   readonly view: RaceView;
+  readonly timing: TimingView;
   readonly step: (frame: InputFrame) => void;
 }
 
@@ -36,6 +39,7 @@ const NO_CORRECTIONS: readonly RiderCorrection[] = [];
 export const createRaceRun = (setup: RaceSetup): LocalRun => {
   const state = createRace(setup);
   const { track } = setup;
+  const timing = createRaceTiming(state, track.length);
   let fights: HeardFight[] = [];
   const hear = (): void => {
     for (const event of state.events) {
@@ -60,6 +64,7 @@ export const createRaceRun = (setup: RaceSetup): LocalRun => {
     },
     step: (frame) => {
       stepRace(state, track, frame);
+      timing.record(state);
       hear();
     },
     takeCorrections: () => NO_CORRECTIONS,
@@ -71,6 +76,7 @@ export const createRaceRun = (setup: RaceSetup): LocalRun => {
       fights = [];
       return taken;
     },
+    timing,
     view: state,
   };
 };
