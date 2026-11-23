@@ -14,6 +14,7 @@ import {
   CALIBRATION_ROUNDS,
   CALIBRATION_VERSION,
   childRecord,
+  TIMED_WINDOWS,
 } from "./node.ts";
 import type { ChildRecord } from "./node.ts";
 import { median, quantile } from "./result.ts";
@@ -23,8 +24,6 @@ import type { Side, SideName } from "./sides.ts";
 
 const TIMING_PAIRS = 5;
 const ALLOCATION_PAIRS = 3;
-const SNAPSHOT_RUNS = 3;
-const ROOM_RUNS = 3;
 
 const decodeChild = Schema.decodeUnknownEffect(
   Schema.fromJsonString(childRecord)
@@ -41,6 +40,26 @@ export const nodeSample = Schema.Struct({
 
 export type NodeSample = typeof nodeSample.Type;
 
+const snapshotSample = Schema.Struct({
+  ...nodeSample.fields,
+  record: Schema.Struct({
+    ...childRecord.fields,
+    snapshot: childRecord.fields.snapshot.schema,
+  }),
+});
+
+export type SnapshotSample = typeof snapshotSample.Type;
+
+const roomSample = Schema.Struct({
+  ...nodeSample.fields,
+  record: Schema.Struct({
+    ...childRecord.fields,
+    room: childRecord.fields.room.schema,
+  }),
+});
+
+export type RoomSample = typeof roomSample.Type;
+
 const nodePair = Schema.Struct({
   a: nodeSample,
   b: nodeSample,
@@ -53,9 +72,9 @@ type NodePair = typeof nodePair.Type;
 export const nodeLaneRecord = Schema.Struct({
   allocation: Schema.Array(nodePair),
   calibrations: Schema.Array(nodeSample),
-  rooms: Schema.Array(nodeSample),
+  rooms: Schema.Tuple([roomSample, roomSample, roomSample]),
   scenario: Schema.String,
-  snapshots: Schema.Array(nodeSample),
+  snapshots: Schema.Tuple([snapshotSample, snapshotSample, snapshotSample]),
   timing: Schema.Array(nodePair),
   validation: Schema.Array(nodeSample),
 });
@@ -175,6 +194,60 @@ const pairOf = Effect.fnUntraced(function* pairOf(
   return measured;
 });
 
+const missingPayload = (sample: NodeSample, payload: string) =>
+  new MeasurementFailed({
+    lane: "node",
+    message: `${sample.file} wrote no ${payload} timings.`,
+  });
+
+const snapshotRun = Effect.fnUntraced(function* snapshotRun(
+  sides: Sides,
+  scenario: Scenario,
+  dir: string,
+  run: number
+) {
+  const sample = yield* runChild(
+    sides.B,
+    "snapshot",
+    scenario,
+    dir,
+    `snapshot-${run}-B`
+  );
+  const { snapshot } = sample.record;
+  if (!snapshot) {
+    return yield* missingPayload(sample, "snapshot");
+  }
+  const measured: SnapshotSample = {
+    ...sample,
+    record: { ...sample.record, snapshot },
+  };
+  return measured;
+});
+
+const roomRun = Effect.fnUntraced(function* roomRun(
+  sides: Sides,
+  scenario: Scenario,
+  dir: string,
+  run: number
+) {
+  const sample = yield* runChild(
+    sides.B,
+    "room",
+    scenario,
+    dir,
+    `room-${run}-B`
+  );
+  const { room } = sample.record;
+  if (!room) {
+    return yield* missingPayload(sample, "room");
+  }
+  const measured: RoomSample = {
+    ...sample,
+    record: { ...sample.record, room },
+  };
+  return measured;
+});
+
 export const nodeLane = Effect.fn("node.lane")(function* nodeLane(
   scenario: Scenario,
   sides: Sides,
@@ -196,18 +269,16 @@ export const nodeLane = Effect.fn("node.lane")(function* nodeLane(
   for (let pair = 0; pair < ALLOCATION_PAIRS; pair += 1) {
     allocation.push(yield* pairOf(sides, "alloc", scenario, dir, pair));
   }
-  const snapshots: NodeSample[] = [];
-  for (let run = 0; run < SNAPSHOT_RUNS; run += 1) {
-    snapshots.push(
-      yield* runChild(sides.B, "snapshot", scenario, dir, `snapshot-${run}-B`)
-    );
-  }
-  const rooms: NodeSample[] = [];
-  for (let run = 0; run < ROOM_RUNS; run += 1) {
-    rooms.push(
-      yield* runChild(sides.B, "room", scenario, dir, `room-${run}-B`)
-    );
-  }
+  const snapshots = [
+    yield* snapshotRun(sides, scenario, dir, 0),
+    yield* snapshotRun(sides, scenario, dir, 1),
+    yield* snapshotRun(sides, scenario, dir, 2),
+  ] as const;
+  const rooms = [
+    yield* roomRun(sides, scenario, dir, 0),
+    yield* roomRun(sides, scenario, dir, 1),
+    yield* roomRun(sides, scenario, dir, 2),
+  ] as const;
   const lane: NodeLane = {
     allocation,
     calibrations,
@@ -253,6 +324,12 @@ const workloadFailures = (
     }
     if (!record.rows) {
       return [`${where} wrote no workload rows`];
+    }
+    if (
+      (record.task === "time" || record.task === "alloc") &&
+      (record.warmup?.length ?? 0) < 2
+    ) {
+      return [`${where} wrote no settled warm-up windows`];
     }
     const problem = validateWorkload(scenario, record.rows);
     return problem
@@ -343,7 +420,9 @@ const timingOf = (record: ChildRecord): RunTiming => {
     p95: quantile(sorted, 0.95),
     p99: quantile(sorted, 0.99),
     ticksPerSecond:
-      durations.length === WINDOW_TICKS ? 1000 / mean(durations) : Number.NaN,
+      durations.length === WINDOW_TICKS * TIMED_WINDOWS
+        ? 1000 / mean(durations)
+        : Number.NaN,
   };
 };
 
@@ -352,23 +431,74 @@ const allocatedPerTick = (record: ChildRecord): number =>
 
 type SnapshotRun = NonNullable<ChildRecord["snapshot"]>;
 
-const snapshotMetrics = [
-  { metric: "snapshot.write.p95", of: (run: SnapshotRun) => run.write },
-  { metric: "snapshot.restore.p95", of: (run: SnapshotRun) => run.restore },
-  { metric: "snapshot.hash.p95", of: (run: SnapshotRun) => run.hash },
-  { metric: "timing.stamp.p95", of: (run: SnapshotRun) => run.stamp },
-] as const;
-
 export const p95Of = (durations: readonly number[]): number =>
   quantile(
     durations.toSorted((left, right) => left - right),
     0.95
   );
 
-const snapshotRuns = (lane: NodeLane): readonly SnapshotRun[] =>
-  lane.snapshots.flatMap((sample) =>
-    sample.record.snapshot ? [sample.record.snapshot] : []
+const STAMP_TRIM = 0.05;
+
+const trimmedMeanOf = (durations: readonly number[]): number => {
+  const sorted = durations.toSorted((left, right) => left - right);
+  return mean(
+    sorted.slice(0, sorted.length - Math.floor(sorted.length * STAMP_TRIM))
   );
+};
+
+export const stampMetric = {
+  metric: "timing.stamp.trimmedMean",
+  of: (run: SnapshotRun) => run.stamp,
+  per: trimmedMeanOf,
+  perRun: "mean without the slowest 5%",
+} as const;
+
+const snapshotMetrics = [
+  {
+    metric: "snapshot.write.p95",
+    of: (run: SnapshotRun) => run.write,
+    per: p95Of,
+    perRun: "p95",
+  },
+  {
+    metric: "snapshot.restore.p95",
+    of: (run: SnapshotRun) => run.restore,
+    per: p95Of,
+    perRun: "p95",
+  },
+  {
+    metric: "snapshot.hash.p95",
+    of: (run: SnapshotRun) => run.hash,
+    per: p95Of,
+    perRun: "p95",
+  },
+  stampMetric,
+] as const;
+
+type SnapshotMetric = (typeof snapshotMetrics)[number];
+
+export const snapshotTiming = (
+  { metric, per, perRun }: SnapshotMetric,
+  scenario: string,
+  environment: string,
+  windows: readonly (readonly number[])[],
+  scale: number
+): Observation => {
+  const measured = windows.map((window) => per(window) / scale);
+  return {
+    environment,
+    lane: "node",
+    metric,
+    note: `runs=${measured.length} median of each run's ${perRun} scale=${scale.toFixed(3)}`,
+    paired: null,
+    runs: { a: [], b: measured },
+    scenario,
+    value: median(measured),
+  };
+};
+
+const snapshotRuns = (lane: NodeLane): readonly SnapshotRun[] =>
+  lane.snapshots.map((sample) => sample.record.snapshot);
 
 const snapshotObservations = (
   scenario: Scenario,
@@ -379,19 +509,9 @@ const snapshotObservations = (
   const runs = snapshotRuns(lane);
   const bytes = runs.map((run) => Math.max(...run.bytes));
   return [
-    ...snapshotMetrics.map(({ metric, of }): Observation => {
-      const measured = runs.map((run) => p95Of(of(run)) / scale);
-      return {
-        environment,
-        lane: "node",
-        metric,
-        note: `runs=${measured.length} scale=${scale.toFixed(3)}`,
-        paired: null,
-        runs: { a: [], b: measured },
-        scenario: scenario.id,
-        value: median(measured),
-      };
-    }),
+    ...snapshotMetrics.map((spec) =>
+      snapshotTiming(spec, scenario.id, environment, runs.map(spec.of), scale)
+    ),
     {
       environment,
       lane: "node",
@@ -408,9 +528,7 @@ const snapshotObservations = (
 type RoomRun = NonNullable<ChildRecord["room"]>;
 
 const roomRuns = (lane: NodeLane): readonly RoomRun[] =>
-  lane.rooms.flatMap((sample) =>
-    sample.record.room ? [sample.record.room] : []
-  );
+  lane.rooms.map((sample) => sample.record.room);
 
 const roomObservations = (
   scenario: Scenario,
@@ -453,6 +571,27 @@ const roomObservations = (
     ),
     allocated("room.frame.allocatedBytesPerTick", (run) => run.allocated.frame),
   ];
+};
+
+export const coldLine = (
+  scenario: Scenario,
+  lane: NodeLane,
+  scales: readonly number[]
+): string => {
+  const side = (pick: (pair: NodePair) => NodeSample) => {
+    const cold = lane.timing.map(
+      (pair, index) =>
+        (pick(pair).record.warmup?.[0]?.p99 ?? Number.NaN) /
+        (scales[index] ?? Number.NaN)
+    );
+    const windows = lane.timing.map(
+      (pair) => pick(pair).record.warmup?.length ?? 0
+    );
+    return { cold: median(cold), windows: windows.join(",") };
+  };
+  const a = side((pair) => pair.a);
+  const b = side((pair) => pair.b);
+  return `info node ${scenario.id} cold.tick.p99 A=${a.cold.toPrecision(4)} ms B=${b.cold.toPrecision(4)} ms, the first window of a fresh process, calibrated, no budget; warm windows A=${a.windows} B=${b.windows}`;
 };
 
 export const nodeVerdicts = (
