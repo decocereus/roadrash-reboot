@@ -205,6 +205,13 @@ export const compose = (into: LiveHour, air: AirLight): void => {
 export const hourOf = (nightTick: number, tick: number): number =>
   THREE.MathUtils.clamp(tick / nightTick, 0, 1);
 
+export const hourPinOf = (search: string): number | null => {
+  const pin = new URLSearchParams(search).get("hour");
+  return pin !== null && Number.isFinite(Number(pin))
+    ? THREE.MathUtils.clamp(Number(pin), 0, 1)
+    : null;
+};
+
 export const skyClock = (look: Look): SkyClock => {
   const keyframes: Keyframe[] = [
     { at: 0, hour: liveOf(look) },

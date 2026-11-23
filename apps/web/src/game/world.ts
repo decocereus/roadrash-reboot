@@ -39,7 +39,7 @@ import {
 } from "./road-texture.ts";
 import { boulderParts, buildRoadside, pineParts } from "./roadside.ts";
 import { bannerTexture, chevronTexture } from "./sign-textures.ts";
-import { skyClock } from "./sky-clock.ts";
+import { hourOf, skyClock } from "./sky-clock.ts";
 import type { SkyClock } from "./sky-clock.ts";
 import { buildSky } from "./sky.ts";
 import { owned } from "./texture-canvas.ts";
@@ -289,7 +289,7 @@ export interface World {
   readonly scene: THREE.Scene;
   readonly shading: Shading;
   readonly clock: SkyClock;
-  light: (time: number) => boolean;
+  light: (tick: number, pinned: number | null) => boolean;
   follow: (camera: THREE.Camera, s: number) => void;
   showRoadLife: (
     view: Pick<RaceView, "hazards" | "pedestrians" | "tick">,
@@ -438,8 +438,8 @@ export const createWorld = (
   scene.add(plain, sky.mesh, backdrop);
   const clock = skyClock(look);
 
-  const light = (time: number): boolean => {
-    if (!clock.at(time)) {
+  const light = (tick: number, pinned: number | null): boolean => {
+    if (!clock.at(pinned ?? hourOf(look.nightTick, tick))) {
       return false;
     }
     const { hour } = clock;
@@ -453,7 +453,7 @@ export const createWorld = (
     sky.setHour(hour, shading.key);
     return true;
   };
-  light(0);
+  light(0, null);
 
   return {
     clock,

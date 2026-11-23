@@ -2,7 +2,13 @@ import type * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
 import { lookOf, night, sunset } from "../src/game/looks.ts";
-import { airOf, compose, hourOf, skyClock } from "../src/game/sky-clock.ts";
+import {
+  airOf,
+  compose,
+  hourOf,
+  hourPinOf,
+  skyClock,
+} from "../src/game/sky-clock.ts";
 
 const hexOf = (colour: THREE.Color): string => `#${colour.getHexString()}`;
 
@@ -67,5 +73,12 @@ describe("the race clock", () => {
     expect(hexOf(clock.hour.fog)).toBe(fog);
     compose(clock.hour, airOf({ haze: "#ff0000", hazeShare: 1 }));
     expect(hexOf(clock.hour.fog)).toBe("#ff0000");
+  });
+
+  it("pins the clock only to a number, clamped to the race", () => {
+    expect(hourPinOf("?hour=0.5")).toBe(0.5);
+    expect(hourPinOf("?hour=3")).toBe(1);
+    expect(hourPinOf("?hour=dusk")).toBeNull();
+    expect(hourPinOf("?ride=slag-row")).toBeNull();
   });
 });
