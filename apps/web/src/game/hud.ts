@@ -3,6 +3,7 @@ import type { RaceOutcome } from "@racer/career/outcome";
 import type { RaceRules } from "@racer/career/rules";
 import type { RoomRun } from "@racer/rooms/room-run";
 import type { BikeId } from "@racer/sim/bikes";
+import type { RiderId } from "@racer/sim/state";
 
 import type { PrepareOutcome } from "../prepare-outcome.ts";
 import type { GamePhase } from "./game-session.ts";
@@ -27,6 +28,21 @@ export type Notice =
   | "police"
   | "lastKm"
   | "marked";
+
+const towerMarks = ["lead", "gap", "blank", "wrecked", "busted"] as const;
+
+export type TowerMark = (typeof towerMarks)[number];
+
+export interface TowerRow {
+  readonly id: RiderId;
+  readonly place: number;
+  readonly name: string;
+  readonly chip: string;
+  readonly you: boolean;
+  readonly finished: boolean;
+  readonly mark: TowerMark;
+  readonly tenths: number;
+}
 
 export interface HudState {
   readonly phase: GamePhase;
@@ -53,6 +69,7 @@ export interface HudState {
   readonly distanceLeft: number;
   readonly roadName: string;
   readonly roadLength: number;
+  readonly tower: readonly TowerRow[];
 }
 
 export interface GameEvents {
