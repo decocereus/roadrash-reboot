@@ -9,7 +9,7 @@ import type { Samples } from "../src/evaluate.ts";
 import { LOBBY_BENCH } from "../src/lobby-bench.ts";
 import type { SideBLane } from "../src/node-lane-side-b.ts";
 import type { NodeLane, NodeSample } from "../src/node-lane.ts";
-import { CALIBRATION_ROUNDS } from "../src/node.ts";
+import { CALIBRATION_ROUNDS, TIMED_WINDOWS } from "../src/node.ts";
 import type { ChildRecord } from "../src/node.ts";
 import { ROAD_LIFE } from "../src/road-life.ts";
 import { scenarioHash, scenarios, WINDOW_TICKS } from "../src/scenarios.ts";
@@ -30,6 +30,7 @@ const CHECKSUM = 1;
 const CALIBRATION_MS = 8;
 const CALIBRATION_SAMPLES = 31;
 const TICK_MS = 0.3;
+export const COLD_TICK_MS = 1.2;
 const SPREAD_STEP = 37;
 const SPREAD_SPAN = 101;
 export const ALLOCATED_PER_TICK = 1_000_000;
@@ -77,6 +78,24 @@ export interface Slowdown {
   readonly sim: number;
 }
 
+const warmWindows = (factor: number) => [
+  {
+    mean: TICK_MS * factor * 2,
+    p95: TICK_MS * factor * 3,
+    p99: COLD_TICK_MS * factor,
+  },
+  {
+    mean: TICK_MS * factor,
+    p95: TICK_MS * factor * 2,
+    p99: TICK_MS * factor * 2,
+  },
+  {
+    mean: TICK_MS * factor,
+    p95: TICK_MS * factor * 2,
+    p99: TICK_MS * factor * 2,
+  },
+];
+
 const tickDurations = (factor: number): number[] =>
   Array.from(
     { length: WINDOW_TICKS },
@@ -112,14 +131,17 @@ export const syntheticLane = (
 ): NodeLane => {
   const rows = validRows(scenario);
   const workload = { police: scenario.police, racers: scenario.racers };
-  const timed = (side: NodeSample["side"], pair: number) =>
-    sampleOf(scenario, side, "time", `time-${pair}-${side}.json`, {
+  const timed = (side: NodeSample["side"], pair: number) => {
+    const factor = slowdown.runner * (side === "B" ? slowdown.sim : 1);
+    return sampleOf(scenario, side, "time", `time-${pair}-${side}.json`, {
       ...workload,
-      durations: tickDurations(
-        slowdown.runner * (side === "B" ? slowdown.sim : 1)
-      ),
+      durations: Array.from({ length: TIMED_WINDOWS }, () =>
+        tickDurations(factor)
+      ).flat(),
       rows: side === "B" ? rowsB : rows,
+      warmup: warmWindows(factor),
     });
+  };
   const allocated = (side: NodeSample["side"], pair: number) =>
     sampleOf(scenario, side, "alloc", `alloc-${pair}-${side}.json`, {
       ...workload,
@@ -129,6 +151,7 @@ export const syntheticLane = (
         tree: {},
       },
       rows: side === "B" ? rowsB : rows,
+      warmup: warmWindows(slowdown.runner),
     });
   const snapshotted = (run: number) =>
     sampleOf(scenario, "B", "snapshot", `snapshot-${run}-B.json`, {
