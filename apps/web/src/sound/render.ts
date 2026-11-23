@@ -1,4 +1,4 @@
-import type { Layer, Layers, LoopRecipe, Recipe, Envelope } from "./recipes.ts";
+import type { Layer, Layers, Recipe, Envelope } from "./recipes.ts";
 import { recipeSeconds } from "./recipes.ts";
 
 const MODULUS = 2_147_483_647;
@@ -272,34 +272,4 @@ export const cueJob = (
     renderLayers(context, recipe.layers, variant * seconds, sources, random);
   }
   return { context, seconds };
-};
-
-export const loopJob = (
-  recipe: LoopRecipe,
-  sampleRate: number,
-  noise: AudioBuffer,
-  seed: number
-): CueJob => {
-  const context = new OfflineAudioContext({
-    length: Math.ceil((recipe.seconds + recipe.fade) * sampleRate),
-    numberOfChannels: 1,
-    sampleRate,
-  });
-  renderLayers(context, recipe.layers, 0, { noise, spread: 0 }, seeded(seed));
-  return { context, seconds: recipe.seconds };
-};
-
-export const closeLoop = (rendered: AudioBuffer, recipe: LoopRecipe): void => {
-  const samples = rendered.getChannelData(0);
-  const length = Math.round(recipe.seconds * rendered.sampleRate);
-  const fade = Math.min(
-    Math.round(recipe.fade * rendered.sampleRate),
-    samples.length - length
-  );
-  for (let index = 0; index < fade; index += 1) {
-    const into = Math.sin((index / fade) * (Math.PI / 2));
-    const outOf = Math.cos((index / fade) * (Math.PI / 2));
-    samples[index] =
-      (samples[index] ?? 0) * into + (samples[length + index] ?? 0) * outOf;
-  }
 };

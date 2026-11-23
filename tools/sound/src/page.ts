@@ -16,7 +16,7 @@ const sections = [
     ],
     title: "Menus",
   },
-  { names: ["walkStep", "runStep", "roomBed"], title: "The bar" },
+  { names: ["walkStep", "runStep"], title: "The bar" },
   {
     names: [
       "crash",
@@ -69,7 +69,6 @@ const labels = new Map<string, string>([
   ["move", "Hover or focus moves to another button (several takes)"],
   ["press", "Click or confirm"],
   ["refused", "Something you can't do yet"],
-  ["roomBed", "The bar's room bed, played twice to hear the loop point"],
   ["runStep", "Running footsteps (six takes)"],
   ["shift", "Gear change click"],
   ["siren", "Police siren"],

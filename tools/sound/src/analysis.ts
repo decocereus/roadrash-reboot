@@ -2,7 +2,6 @@ const FRAME = 4096;
 const CEILING = 10 ** (-1 / 20);
 const FLOOR = 10 ** (-40 / 20);
 const MAX_DC = 0.01;
-const SEAM_SHARE = 0.25;
 const PCM_SCALE = 32_767;
 const HEADER_BYTES = 44;
 
@@ -112,20 +111,7 @@ export const measure = (
   };
 };
 
-export const seamJump = (samples: Float32Array): number => {
-  const half = samples.length / 2;
-  let peak = 0;
-  for (const sample of samples) {
-    peak = Math.max(peak, Math.abs(sample));
-  }
-  const jump = Math.abs((samples[half] ?? 0) - (samples[half - 1] ?? 0));
-  return peak > 0 ? jump / peak : 0;
-};
-
-export const problemsOf = (
-  measures: readonly Measure[],
-  seams: ReadonlyMap<string, number>
-): readonly string[] => {
+export const problemsOf = (measures: readonly Measure[]): readonly string[] => {
   const problems: string[] = [];
   for (const each of measures) {
     if (each.peakDb > decibels(CEILING)) {
@@ -139,11 +125,6 @@ export const problemsOf = (
     }
     if (Math.abs(each.dc) > MAX_DC) {
       problems.push(`${each.name} has a DC offset of ${each.dc.toFixed(3)}.`);
-    }
-  }
-  for (const [name, jump] of seams) {
-    if (jump > SEAM_SHARE) {
-      problems.push(`${name} jumps at its loop seam.`);
     }
   }
   return problems;
