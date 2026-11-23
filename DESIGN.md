@@ -180,7 +180,7 @@ Every display face is set in capitals except a line and a button's detail. Money
 
 In the bar, the tab strip runs across the top with the rider's colour chip and name at its right, the hint strip runs along the bottom with the moves and the camera, and one panel sits on the right between them. A card sits in the centre over a dimmed bar or race. Panels are 25 rem wide and cards 30 rem, both held to the window less 2 rem, so the layout holds at 1280 × 720.
 
-In the race, the HUD is drawn over the canvas: place at the top left, the speedometer at the bottom centre at a quarter of the screen height, notices and the countdown centred at 30% of the height, the cop warning at the top centre, and a rival's taunt above the rival.
+In the race, the HUD is drawn over the canvas: place at the top left, the timing tower at the top right, the speedometer at the bottom centre at a quarter of the screen height, notices and the countdown centred at 30% of the height, the cop warning at the top centre, and a rival's taunt above the rival.
 
 ## Elevation & Depth
 
@@ -222,6 +222,10 @@ All of them live in `packages/ui/src/components`, and `/kit` (development only) 
 ### Speedometer
 
 The whole race HUD in one dial. A 240° ring of 48 ticks that light neon yellow with speed and turn neon red past the redline, a major tick and number every quarter, a cyan arc that fills with progress along the road, the gear as a small yellow numeral at the top, the speed as a large skewed numeral split into cyan and red with a white face and ink stroke, the unit in small capitals, and the place as ink on a yellow plate with a clipped corner. It dims to 60% while the rider is off the bike.
+
+### Timing tower
+
+Every racer in race order at the top right, one row each, on a flat ink panel at 55% so the rows read over bright signs and dark sky alike: the place, the rider's colour chip, the name and the interval to the rider directly ahead in seconds to one decimal, such as `+1.4`. The leader's row reads `Lead`. All of it is Saira in warm white with the HUD ink outline. The player's row is neon yellow with a yellow bar on its left edge. A wrecked or busted rider reads `Wrecked` or `Busted` and dims to half, and a finished rider gets a small chequered square before the interval. The interval stays blank on the grid and until the rider ahead has ridden across the follower's spot, and after a rejoin until the rider ahead crosses the follower's spot again. A dropped room rider looks like any other. Rows move to a new place over 220 ms on an ease-out, and reduced motion makes the move instant. Long names cut off with an ellipsis, so the interval column never moves. When the window is too narrow for the tower to sit clear of the centred cop warning, notices and speedometer, as on a phone, the tower starts under the warning band and shows a short window instead: the leader, then the riders around you, as many rows as fit above the notice band and never more than five. Wider windows show the whole field at the top right. The layout reads both cases from `hud-layout.ts`, which holds the HUD's top-band geometry. The tower publishes with the rest of the HUD, fifteen times a second, and React draws it again only when a place, a mark or a shown tenth changes.
 
 ### HUD text
 

@@ -115,11 +115,17 @@ describe("rebuilding the race on screen", () => {
         [
           last.id,
           {
-            ...body,
-            primitives: [
-              ...body.primitives,
-              { geometry: new THREE.BoxGeometry(), slot: "stall_cel" as const },
-            ],
+            body: {
+              ...body,
+              primitives: [
+                ...body.primitives,
+                {
+                  geometry: new THREE.BoxGeometry(),
+                  slot: "stall_cel" as const,
+                },
+              ],
+            },
+            suit: 0,
           },
         ],
       ]);

@@ -10,6 +10,7 @@ import type { Sound } from "../sound/sound.ts";
 import type { ChaseCamera } from "./chase-camera.ts";
 import { hudCountdown, roomOf } from "./game-session.ts";
 import type { Session } from "./game-session.ts";
+import { createTower } from "./hud-tower.ts";
 import type { GameEvents, Notice } from "./hud.ts";
 import type { Stage } from "./scene-lifecycle.ts";
 
@@ -62,7 +63,7 @@ interface FeedbackParts {
   readonly recorder: Pick<Recorder, "race">;
   readonly session: () => Session;
   readonly sound: Pick<Sound, "hush" | "muted" | "play" | "toggleMute">;
-  readonly stage: Pick<Stage, "me" | "race" | "track">;
+  readonly stage: Pick<Stage, "colours" | "me" | "race" | "track">;
 }
 
 export const bindFeedback = ({
@@ -183,6 +184,8 @@ export const bindFeedback = ({
     }
   };
 
+  const tower = createTower();
+
   const report = () => {
     const me = player();
     const order = standings(stage.race.view);
@@ -213,6 +216,7 @@ export const bindFeedback = ({
       speedKmh: Math.abs(drawnSpeed()) * 3.6,
       stallLeftMs: room?.stallLeftMs() ?? null,
       stamina: me.stamina / MAX_STAMINA,
+      tower: tower.read(state, stage, order),
       weaponCapacity: weaponCapacity(me),
       weaponHits: me.weaponHits,
       weaponName: weaponName(me),
