@@ -33,4 +33,3 @@ Preconditions:
 
 - `pnpm art:stage` writes the cache before `pnpm art:upload` puts the file in R2, so a local build shows new art that the deployed game and CI cannot fetch yet. Run `pnpm art:upload` before you push.
 - The cache is shared by every worktree. Deleting it only costs a download, but deleting a file that was staged and never uploaded loses it.
-- `?ride=madrid-*` stretches are development-only, so the deployed game cannot ride them by URL.
