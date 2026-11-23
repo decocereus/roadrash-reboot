@@ -108,7 +108,8 @@ const sampleOf = (
 export const syntheticLane = (
   scenario: Scenario,
   slowdown: Slowdown,
-  rowsB: WorkloadRows = validRows(scenario)
+  rowsB: WorkloadRows = validRows(scenario),
+  stamped: (duration: number, tick: number) => number = (duration) => duration
 ): NodeLane => {
   const rows = validRows(scenario);
   const workload = { police: scenario.police, racers: scenario.racers };
@@ -138,7 +139,7 @@ export const syntheticLane = (
         bytes: Array.from({ length: WINDOW_TICKS }, () => SNAPSHOT_BYTES),
         hash: tickDurations(SNAPSHOT_HASH_MS * slowdown.runner),
         restore: tickDurations(SNAPSHOT_RESTORE_MS * slowdown.runner),
-        stamp: tickDurations(TIMING_STAMP_MS * slowdown.runner),
+        stamp: tickDurations(TIMING_STAMP_MS * slowdown.runner).map(stamped),
         write: tickDurations(SNAPSHOT_WRITE_MS * slowdown.runner),
       },
     });
@@ -154,6 +155,17 @@ export const syntheticLane = (
         tick: tickDurations(ROOM_TICK_MS * slowdown.runner),
       },
     });
+  const calibrated = (file: string) =>
+    sampleOf(scenario, "B", "calibrate", file, {
+      calibration: {
+        checksums: [CHECKSUM],
+        durations: Array.from(
+          { length: CALIBRATION_SAMPLES },
+          () => CALIBRATION_MS * slowdown.runner
+        ),
+        rounds: CALIBRATION_ROUNDS,
+      },
+    });
   return {
     allocation: pairs(ALLOCATION_PAIRS).map((pair) => ({
       a: allocated("A", pair),
@@ -162,19 +174,13 @@ export const syntheticLane = (
       pair,
     })),
     calibrations: pairs(TIMING_PAIRS + 1).map((index) =>
-      sampleOf(scenario, "B", "calibrate", `calibrate-${index}.json`, {
-        calibration: {
-          checksums: [CHECKSUM],
-          durations: Array.from(
-            { length: CALIBRATION_SAMPLES },
-            () => CALIBRATION_MS * slowdown.runner
-          ),
-          rounds: CALIBRATION_ROUNDS,
-        },
-      })
+      calibrated(`calibrate-${index}.json`)
     ),
     rooms: pairs(SNAPSHOT_RUNS).map(roomed),
     scenario: scenario.id,
+    snapshotCalibrations: pairs(SNAPSHOT_RUNS + 1).map((index) =>
+      calibrated(`snapshot-calibrate-${index}.json`)
+    ),
     snapshots: pairs(SNAPSHOT_RUNS).map(snapshotted),
     timing: pairs(TIMING_PAIRS).map((pair) => ({
       a: timed("A", pair),

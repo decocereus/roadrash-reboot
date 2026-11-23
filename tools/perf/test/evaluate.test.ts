@@ -74,6 +74,11 @@ const middle = Math.floor(WINDOW_TICKS / 2);
 const fonts = (files: readonly string[]) =>
   files.filter((file) => file.includes("/face-"));
 
+const stampsOf = (stamped: (duration: number, tick: number) => number) =>
+  scenarios.map((scenario) =>
+    syntheticLane(scenario, steady, validRows(scenario), stamped)
+  );
+
 const failing = (lines: readonly string[]) =>
   lines.filter((line) => line.startsWith("FAIL"));
 
@@ -243,6 +248,35 @@ describe("perf gate red cases", { timeout: 30_000 }, () => {
         .map((each) => each.value)
     );
     expect(throughEntry(runnerOnly, budgets).status).toBe(0);
+  });
+
+  it("judges the timing stamp by its middle tick, so a noisy tail passes and a 10% slower stamp fails", () => {
+    const noisyTail = evaluateGate(
+      samplesOf(
+        "tail",
+        stampsOf((duration, tick) =>
+          tick % 20 === 0 ? duration * 3 : duration
+        ),
+        build
+      ),
+      budgets
+    );
+    expect(failing(noisyTail.lines)).toStrictEqual([]);
+    const slower = evaluateGate(
+      samplesOf(
+        "stamp",
+        stampsOf((duration) => duration * 1.1),
+        build
+      ),
+      budgets
+    );
+    expect(
+      failing(slower.lines).map((line) => line.split(" observed=")[0])
+    ).toStrictEqual(
+      scenarios.map(
+        (scenario) => `FAIL node ${scenario.id} timing.stamp.p50 [node-test-x]`
+      )
+    );
   });
 
   it("fails a slower sim on the same slower runner", () => {

@@ -55,6 +55,7 @@ export const nodeLaneRecord = Schema.Struct({
   calibrations: Schema.Array(nodeSample),
   rooms: Schema.Array(nodeSample),
   scenario: Schema.String,
+  snapshotCalibrations: Schema.Array(nodeSample),
   snapshots: Schema.Array(nodeSample),
   timing: Schema.Array(nodePair),
   validation: Schema.Array(nodeSample),
@@ -196,11 +197,21 @@ export const nodeLane = Effect.fn("node.lane")(function* nodeLane(
   for (let pair = 0; pair < ALLOCATION_PAIRS; pair += 1) {
     allocation.push(yield* pairOf(sides, "alloc", scenario, dir, pair));
   }
+  const calibrateSnapshot = (index: number) =>
+    runChild(
+      sides.B,
+      "calibrate",
+      scenario,
+      dir,
+      `snapshot-calibrate-${index}`
+    );
+  const snapshotCalibrations = [yield* calibrateSnapshot(0)];
   const snapshots: NodeSample[] = [];
   for (let run = 0; run < SNAPSHOT_RUNS; run += 1) {
     snapshots.push(
       yield* runChild(sides.B, "snapshot", scenario, dir, `snapshot-${run}-B`)
     );
+    snapshotCalibrations.push(yield* calibrateSnapshot(run + 1));
   }
   const rooms: NodeSample[] = [];
   for (let run = 0; run < ROOM_RUNS; run += 1) {
@@ -213,6 +224,7 @@ export const nodeLane = Effect.fn("node.lane")(function* nodeLane(
     calibrations,
     rooms,
     scenario: scenario.id,
+    snapshotCalibrations,
     snapshots,
     timing,
     validation,
@@ -356,7 +368,6 @@ const snapshotMetrics = [
   { metric: "snapshot.write.p95", of: (run: SnapshotRun) => run.write },
   { metric: "snapshot.restore.p95", of: (run: SnapshotRun) => run.restore },
   { metric: "snapshot.hash.p95", of: (run: SnapshotRun) => run.hash },
-  { metric: "timing.stamp.p95", of: (run: SnapshotRun) => run.stamp },
 ] as const;
 
 export const p95Of = (durations: readonly number[]): number =>
@@ -370,11 +381,33 @@ const snapshotRuns = (lane: NodeLane): readonly SnapshotRun[] =>
     sample.record.snapshot ? [sample.record.snapshot] : []
   );
 
+const stampObservation = (
+  scenario: Scenario,
+  runs: readonly SnapshotRun[],
+  environment: string,
+  scales: readonly number[]
+): Observation => {
+  const measured = runs.map(
+    (run, index) => median(run.stamp) / (scales[index] ?? Number.NaN)
+  );
+  return {
+    environment,
+    lane: "node",
+    metric: "timing.stamp.p50",
+    note: `runs=${measured.length} scale=${median(scales).toFixed(3)}`,
+    paired: null,
+    runs: { a: [], b: measured },
+    scenario: scenario.id,
+    value: median(measured),
+  };
+};
+
 const snapshotObservations = (
   scenario: Scenario,
   lane: NodeLane,
   environment: string,
-  scale: number
+  scale: number,
+  stampScales: readonly number[]
 ): readonly Observation[] => {
   const runs = snapshotRuns(lane);
   const bytes = runs.map((run) => Math.max(...run.bytes));
@@ -392,6 +425,7 @@ const snapshotObservations = (
         value: median(measured),
       };
     }),
+    stampObservation(scenario, runs, environment, stampScales),
     {
       environment,
       lane: "node",
@@ -466,17 +500,29 @@ export const nodeVerdicts = (
   const profile = profiles[environment];
   const failures = [
     ...workloadFailures(scenario, lane, expectedHash),
-    ...calibrationFailures(scenario, lane, environment, profile),
+    ...calibrationFailures(
+      scenario,
+      { calibrations: [...lane.calibrations, ...lane.snapshotCalibrations] },
+      environment,
+      profile
+    ),
   ];
   if (failures.length > 0 || !profile) {
     return { environment, failures, observations: [], scales: [] };
   }
-  const { failures: unstable, scales } = scalesAcross(
+  const { failures: timingUnstable, scales } = scalesAcross(
     scenario,
     lane.calibrations,
     lane.timing.length,
     profile.calibration
   );
+  const stamp = scalesAcross(
+    { id: `${scenario.id} stamp` },
+    lane.snapshotCalibrations,
+    lane.snapshots.length,
+    profile.calibration
+  );
+  const unstable = [...timingUnstable, ...stamp.failures];
   if (unstable.length > 0) {
     return { environment, failures: unstable, observations: [], scales };
   }
@@ -540,7 +586,13 @@ export const nodeVerdicts = (
       scenario: scenario.id,
       value: median(allocated.b),
     },
-    ...snapshotObservations(scenario, lane, environment, laneScale),
+    ...snapshotObservations(
+      scenario,
+      lane,
+      environment,
+      laneScale,
+      stamp.scales.map((each) => each.scale)
+    ),
     ...roomObservations(scenario, lane, environment, laneScale),
   ];
   return { environment, failures, observations, scales };

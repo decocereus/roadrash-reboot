@@ -19,6 +19,7 @@ export interface MetricKind {
 
 const SNAPSHOT_BYTES_METRIC = "snapshot.bytes.max";
 const SNAPSHOT_HEADROOM = 1.15;
+const STAMP_HEADROOM = 1.06;
 
 const nodeKind = (
   metric: string,
@@ -35,9 +36,13 @@ const nodeKind = (
   unit,
 });
 
-const snapshotKind = (metric: string, unit: string): MetricKind => ({
+const snapshotKind = (
+  metric: string,
+  unit: string,
+  headroom = SNAPSHOT_HEADROOM
+): MetricKind => ({
   direction: "max",
-  headroom: metric === SNAPSHOT_BYTES_METRIC ? 1 : SNAPSHOT_HEADROOM,
+  headroom,
   lane: "node",
   metric,
   paired: null,
@@ -70,8 +75,8 @@ const nodeKinds: readonly MetricKind[] = [
   snapshotKind("snapshot.write.p95", "ms"),
   snapshotKind("snapshot.restore.p95", "ms"),
   snapshotKind("snapshot.hash.p95", "ms"),
-  snapshotKind(SNAPSHOT_BYTES_METRIC, "B"),
-  snapshotKind("timing.stamp.p95", "ms"),
+  snapshotKind(SNAPSHOT_BYTES_METRIC, "B", 1),
+  snapshotKind("timing.stamp.p50", "ms", STAMP_HEADROOM),
   sideBKind("roadLife.tick.p95"),
   sideBKind("lobby.tick.p95"),
   snapshotKind("room.tick.p95", "ms"),
