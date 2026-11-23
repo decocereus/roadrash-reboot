@@ -296,7 +296,7 @@ const takesOffAt = (
   return speed > takeoff && reachableSquared(rider, index) > takeoff * takeoff;
 };
 
-const crestCeiling = (
+const landsCrestFlight = (
   history: PilotHistory,
   track: Track,
   rider: RiderState,
@@ -304,11 +304,8 @@ const crestCeiling = (
   line: number,
   speed: number,
   margin: number
-): number => {
+): boolean => {
   const fastest = Math.min(speed, FASTEST_LAUNCH);
-  if ((drops[index] ?? 0) >= 0 || !takesOffAt(rider, index, fastest)) {
-    return speed;
-  }
   let from = index;
   while (from > 0 && takesOffAt(rider, from - 1, fastest)) {
     from -= 1;
@@ -316,7 +313,7 @@ const crestCeiling = (
   const flying = Math.min(fastest, Math.sqrt(reachableSquared(rider, from)));
   const settled = (index + 1) * CORNER_SCAN_STEP;
   if (flying > sampleOf(history.braked, plan.count, settled)) {
-    return crestTakeoffSpeed(drops[index] ?? 0);
+    return false;
   }
   if (crestFlight.from !== from || crestFlight.speed !== flying) {
     crestFlight.from = from;
@@ -331,7 +328,7 @@ const crestCeiling = (
     );
     crestFlight.ahead = landed.s - rider.s;
   }
-  const lands =
+  return (
     crestFlight.lands &&
     flying <=
       lowestAlong(
@@ -339,8 +336,25 @@ const crestCeiling = (
         plan.count,
         settled,
         Math.max(settled, crestFlight.ahead)
-      );
-  return lands ? speed : crestTakeoffSpeed(drops[index] ?? 0);
+      )
+  );
+};
+
+const crestCeiling = (
+  history: PilotHistory,
+  track: Track,
+  rider: RiderState,
+  index: number,
+  line: number,
+  speed: number,
+  margin: number
+): number => {
+  const drop = drops[index] ?? 0;
+  return drop < 0 &&
+    takesOffAt(rider, index, Math.min(speed, FASTEST_LAUNCH)) &&
+    !landsCrestFlight(history, track, rider, index, line, speed, margin)
+    ? crestTakeoffSpeed(drop)
+    : speed;
 };
 
 const planCorners = (
