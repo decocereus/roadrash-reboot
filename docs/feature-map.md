@@ -34,7 +34,6 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 
 ### Platform
 
-- [Madrid corridor and data credits](#madrid-corridor-and-data-credits): `madrid-corridor`
 - [Race simulation core](#race-simulation-core): `race-core`
 - [Race snapshots and the replay hash](#race-snapshots-and-the-replay-hash): `race-snapshot`
 - [Deterministic math and randomness](#deterministic-math-and-randomness): `deterministic-math`
@@ -83,7 +82,6 @@ Source files:
 - `tools/handling/src/acceptance.ts`
 - `tools/handling/src/bends.ts`
 - `tools/handling/src/course.ts`
-- `tools/handling/src/keyboard.ts`
 - `tools/handling/src/probe.ts`
 - `tools/handling/src/report.ts`
 - `tools/handling/src/steering.ts`
@@ -511,14 +509,14 @@ Test files: none
 
 ### Roads, cities and scenery on screen
 
-The road, terrain, sky, city blocks, signs and roadside props drawn from the compiled track, in the look of each region, built in chunks around the player, and the clearance that hides a prop while the chase camera passes it. A plan that carries its own scenery gets a greybox instead: world-space ground under its grass or paved cover, grey blocks, flat water, grass patches and simple trees. The ring of mountains on the horizon stands behind open country and is left out of a city, whether that city is the kit's or a paved greybox.
+The road, terrain, sky, city blocks, signs and roadside props drawn from the compiled track, in the look of each region, built in chunks around the player, and the clearance that hides a prop while the chase camera passes it. The ring of mountains on the horizon stands behind open country and is left out of a city.
 
 - Id: `world`
 - Start: `apps/web/src/game/world.ts`, `apps/web/src/game/looks.ts`, `apps/web/src/game/city.ts`
 - Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/design/art-direction.md#palette](design/art-direction.md#palette), [docs/design/art-direction.md#regions](design/art-direction.md#regions)
 - Verify: [roadside-clearance.md](../.claude/skills/verify-rushline/features/roadside-clearance.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`
-- Owns: `apps/web/src/game/world.ts`, `apps/web/src/game/city-blocks.ts`, `apps/web/src/game/road-strips.ts`, `apps/web/src/game/city.ts`, `apps/web/src/game/clearance.ts`, `apps/web/src/game/ground.ts`, `apps/web/src/game/greybox.ts`, `apps/web/src/game/roadside.ts`, `apps/web/src/game/looks.ts`, `apps/web/src/game/facade-texture.ts`, `apps/web/src/game/road-texture.ts`, `apps/web/src/game/shop-texture.ts`, `apps/web/src/game/sky-texture.ts`, `apps/web/src/game/sign-*.ts`, `apps/web/src/game/texture-canvas.ts`, `apps/web/test/roadside-clearance.test.ts`, `apps/web/test/road-districts.test.ts`
+- Owns: `apps/web/src/game/world.ts`, `apps/web/src/game/city-blocks.ts`, `apps/web/src/game/road-strips.ts`, `apps/web/src/game/city.ts`, `apps/web/src/game/clearance.ts`, `apps/web/src/game/ground.ts`, `apps/web/src/game/roadside.ts`, `apps/web/src/game/looks.ts`, `apps/web/src/game/facade-texture.ts`, `apps/web/src/game/road-texture.ts`, `apps/web/src/game/shop-texture.ts`, `apps/web/src/game/sky-texture.ts`, `apps/web/src/game/sign-*.ts`, `apps/web/src/game/texture-canvas.ts`, `apps/web/test/roadside-clearance.test.ts`, `apps/web/test/road-districts.test.ts`
 
 Source files:
 
@@ -526,7 +524,6 @@ Source files:
 - `apps/web/src/game/city.ts`
 - `apps/web/src/game/clearance.ts`
 - `apps/web/src/game/facade-texture.ts`
-- `apps/web/src/game/greybox.ts`
 - `apps/web/src/game/ground.ts`
 - `apps/web/src/game/looks.ts`
 - `apps/web/src/game/road-strips.ts`
@@ -637,30 +634,21 @@ Test files:
 
 ### The roads
 
-The roads and their regions: each road's sections, crests, truck starts, roadblock spots, the chevron runs that the riding-speed audit writes for the bends a rider has to brake for, and the blocks that levels 2 to 5 add. Also the two generated Madrid stretches, the Casa de Campo hook and Puerta de Alcalá into Gran Vía, development-only greyboxes outside the career. `pnpm road:test` races the bots to judge a road.
+The roads and their regions: each road's sections, crests, truck starts, roadblock spots, the chevron runs that the riding-speed audit writes for the bends a rider has to brake for, and the blocks that levels 2 to 5 add. `pnpm road:test` races the bots to judge a road.
 
 - Id: `roads`
 - Start: `packages/track/src/tracks/slag-row.ts`, `packages/track/src/regions.ts`, `packages/sim/src/corner-warnings.ts`
 - Docs: [docs/architecture/tracks.md#tracks](architecture/tracks.md#tracks), [docs/design/tracks.md#summary](design/tracks.md#summary)
 - Verify: none yet
 - Perf: none yet
-- Owns: `packages/track/src/tracks/**`, `packages/track/src/regions.ts`, `packages/track/src/roads.test.ts`, `packages/track/src/stretches.ts`, `packages/track/src/chevron-runs.ts`, `packages/sim/src/corner-warnings.ts`, `packages/sim/src/corner-warnings.test.ts`, `tools/road-test/**`
+- Owns: `packages/track/src/tracks/**`, `packages/track/src/regions.ts`, `packages/track/src/roads.test.ts`, `packages/track/src/chevron-runs.ts`, `packages/sim/src/corner-warnings.ts`, `packages/sim/src/corner-warnings.test.ts`, `tools/road-test/**`
 
 Source files:
 
 - `packages/sim/src/corner-warnings.ts`
 - `packages/track/src/chevron-runs.ts`
 - `packages/track/src/regions.ts`
-- `packages/track/src/stretches.ts`
 - `packages/track/src/tracks/breakwater-run.ts`
-- `packages/track/src/tracks/madrid-gran-via-blocks-1.ts`
-- `packages/track/src/tracks/madrid-gran-via-blocks-2.ts`
-- `packages/track/src/tracks/madrid-gran-via-blocks-3.ts`
-- `packages/track/src/tracks/madrid-gran-via-scenery.ts`
-- `packages/track/src/tracks/madrid-gran-via.ts`
-- `packages/track/src/tracks/madrid-hook-blocks-1.ts`
-- `packages/track/src/tracks/madrid-hook-scenery.ts`
-- `packages/track/src/tracks/madrid-hook.ts`
 - `packages/track/src/tracks/ridge-road.ts`
 - `packages/track/src/tracks/slag-row.ts`
 - `tools/road-test/road-test.ts`
@@ -729,50 +717,6 @@ Test files:
 - `packages/sim/src/lobby.test.ts`
 
 ## Platform
-
-### Madrid corridor and data credits
-
-Pinned, permissively licensed Madrid source data, the offline corridor generator, its connectivity checks, the fitter that turns the corridor centreline into track pieces under a radius limit with slower places, the one builder that writes each stretch's plan with its grade, blocks, landmark massing and ground cover, and the public data credits page. The Casa de Campo hook and the Puerta de Alcalá into Gran Vía stretch ride through development URLs.
-
-- Id: `madrid-corridor`
-- Start: `tools/madrid/generate.ts`, `tools/madrid/stretch.ts`, `apps/web/src/routes/credits.tsx`
-- Docs: [docs/madrid-corridor.md#route-and-coordinates](madrid-corridor.md#route-and-coordinates), [docs/madrid-corridor.md#fitting-track-pieces](madrid-corridor.md#fitting-track-pieces), [docs/madrid-corridor.md#casa-de-campo-hook](madrid-corridor.md#casa-de-campo-hook), [docs/madrid-corridor.md#puerta-de-alcalá-into-gran-vía](madrid-corridor.md#puerta-de-alcalá-into-gran-vía)
-- Verify: [credits.md](../.claude/skills/verify-rushline/features/credits.md), [madrid-gran-via.md](../.claude/skills/verify-rushline/features/madrid-gran-via.md), [madrid-hook.md](../.claude/skills/verify-rushline/features/madrid-hook.md)
-- Perf: none yet
-- Owns: `tools/madrid/**`, `packages/track/src/madrid-*.ts`, `packages/sim/src/madrid-stretches.test.ts`, `apps/web/test/madrid-*.test.ts`, `apps/web/src/routes/credits.tsx`
-
-Source files:
-
-- `apps/web/src/routes/credits.tsx`
-- `packages/track/src/madrid-corridor.ts`
-- `packages/track/src/madrid-schema.ts`
-- `packages/track/src/madrid-sources.ts`
-- `tools/madrid/fit.ts`
-- `tools/madrid/generate.ts`
-- `tools/madrid/src/acquire.ts`
-- `tools/madrid/src/context.ts`
-- `tools/madrid/src/elevation.ts`
-- `tools/madrid/src/fit-system.ts`
-- `tools/madrid/src/fit.ts`
-- `tools/madrid/src/geometry.ts`
-- `tools/madrid/src/grade.ts`
-- `tools/madrid/src/preview.ts`
-- `tools/madrid/src/roads.ts`
-- `tools/madrid/src/scene.ts`
-- `tools/madrid/src/schema.ts`
-- `tools/madrid/src/settings.ts`
-- `tools/madrid/src/smoothness.ts`
-- `tools/madrid/src/stretch.ts`
-- `tools/madrid/stretch.ts`
-
-Test files:
-
-- `apps/web/test/madrid-camera.test.ts`
-- `apps/web/test/madrid-scenery.test.ts`
-- `packages/sim/src/madrid-stretches.test.ts`
-- `tools/madrid/test/corridor.test.ts`
-- `tools/madrid/test/fit.test.ts`
-- `tools/madrid/test/stretch.test.ts`
 
 ### Race simulation core
 

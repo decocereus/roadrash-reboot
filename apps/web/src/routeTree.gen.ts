@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BarRouteImport } from './routes/bar'
-import { Route as CreditsRouteImport } from './routes/credits'
 import { Route as KitRouteImport } from './routes/kit'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ApiEventsRouteImport } from './routes/api/events'
@@ -27,11 +26,6 @@ const IndexRoute = IndexRouteImport.update({
 const BarRoute = BarRouteImport.update({
   id: '/bar',
   path: '/bar',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CreditsRoute = CreditsRouteImport.update({
-  id: '/credits',
-  path: '/credits',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KitRoute = KitRouteImport.update({
@@ -68,7 +62,6 @@ const ArtKeyRoute = ArtKeyRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/bar': typeof BarRoute
-  '/credits': typeof CreditsRoute
   '/kit': typeof KitRoute
   '/privacy': typeof PrivacyRoute
   '/api/events': typeof ApiEventsRoute
@@ -79,7 +72,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/bar': typeof BarRoute
-  '/credits': typeof CreditsRoute
   '/kit': typeof KitRoute
   '/privacy': typeof PrivacyRoute
   '/api/events': typeof ApiEventsRoute
@@ -91,7 +83,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/bar': typeof BarRoute
-  '/credits': typeof CreditsRoute
   '/kit': typeof KitRoute
   '/privacy': typeof PrivacyRoute
   '/api/events': typeof ApiEventsRoute
@@ -104,7 +95,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/bar'
-    | '/credits'
     | '/kit'
     | '/privacy'
     | '/api/events'
@@ -115,7 +105,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/bar'
-    | '/credits'
     | '/kit'
     | '/privacy'
     | '/api/events'
@@ -126,7 +115,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/bar'
-    | '/credits'
     | '/kit'
     | '/privacy'
     | '/api/events'
@@ -138,7 +126,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BarRoute: typeof BarRoute
-  CreditsRoute: typeof CreditsRoute
   KitRoute: typeof KitRoute
   PrivacyRoute: typeof PrivacyRoute
   ApiEventsRoute: typeof ApiEventsRoute
@@ -161,13 +148,6 @@ declare module '@tanstack/react-router' {
       path: '/bar'
       fullPath: '/bar'
       preLoaderRoute: typeof BarRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/credits': {
-      id: '/credits'
-      path: '/credits'
-      fullPath: '/credits'
-      preLoaderRoute: typeof CreditsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/kit': {
@@ -218,7 +198,6 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BarRoute: BarRoute,
-  CreditsRoute: CreditsRoute,
   KitRoute: KitRoute,
   PrivacyRoute: PrivacyRoute,
   ApiEventsRoute: ApiEventsRoute,

@@ -19,7 +19,6 @@ import type { City } from "./city.ts";
 import { createClearance } from "./clearance.ts";
 import type { Clearance } from "./clearance.ts";
 import { disposeTree } from "./dispose.ts";
-import { buildGreybox, coverPalette } from "./greybox.ts";
 import { freeze, KERB_WIDTH, lifted, plant, showWithin } from "./ground.ts";
 import type { Stretch } from "./ground.ts";
 import { createHazardMarks } from "./hazards.ts";
@@ -372,10 +371,6 @@ export const createWorld = (
   const walkMaterial = shading.cel("#ffffff", { map: walkTexture });
   const kerbMaterial = shading.cel(look.kerb);
   const terrainMaterial = shading.cel("#ffffff", { vertexColors: true });
-  const { scenery } = track.plan;
-  const vergeMaterial = scenery
-    ? shading.cel(coverPalette(look, scenery.cover).near)
-    : null;
 
   const add = (
     geometry: THREE.BufferGeometry,
@@ -424,17 +419,6 @@ export const createWorld = (
           add(buildRibbon(track, piece, kerb, 2), kerbMaterial, span);
           add(buildRibbon(track, piece, walk, 2), walkMaterial, span);
         }
-      } else if (vergeMaterial) {
-        const shoulder: RailsAt = (s) => {
-          const verge = vergeHalfWidthAt(track, s);
-          const rails: Rail[] = [
-            [side * roadHalfWidthAt(track, s), 0, 0],
-            [side * verge, 0, 0],
-            [side * (verge + 3), -0.3, 0],
-          ];
-          return side > 0 ? rails : rails.toReversed();
-        };
-        add(buildRibbon(track, span, shoulder, 2), vergeMaterial, span);
       } else {
         add(buildTerrainChunk(track, span, side, look), terrainMaterial, span);
       }
@@ -455,8 +439,6 @@ export const createWorld = (
   stretches.push(...junctions.stretches);
   if (city) {
     scene.add(freeze(city.group));
-  } else if (scenery) {
-    scene.add(freeze(buildGreybox(track, scenery, shading)));
   } else {
     const dressing = buildRoadside(track, shading, textures, clearance);
     scene.add(freeze(dressing.group));
@@ -477,7 +459,7 @@ export const createWorld = (
   plain.position.y = lowest - 24;
   const sky = buildSky(look, shading, track.plan.seed + 3, textures);
   const backdrop = buildMountains(look);
-  backdrop.visible = city === null && scenery?.cover !== "paving";
+  backdrop.visible = city === null;
   scene.add(plain, sky, backdrop);
 
   return {
