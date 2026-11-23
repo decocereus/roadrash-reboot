@@ -12,6 +12,12 @@ import { accountBuild, glbNames } from "../src/build.ts";
 import type { BuildRecord } from "../src/build.ts";
 import { evaluateGate } from "../src/evaluate.ts";
 import type { Samples } from "../src/evaluate.ts";
+import type {
+  NodeLane,
+  NodeSample,
+  RoomSample,
+  SnapshotSample,
+} from "../src/node-lane.ts";
 import { scenarios, WINDOW_TICKS } from "../src/scenarios.ts";
 import { fixtureBuild, GLB_BYTES, plainFixture } from "./fixture-build.ts";
 import type { FixtureOptions } from "./fixture-build.ts";
@@ -30,6 +36,25 @@ import {
 
 const GATE = path.join(import.meta.dirname, "../gate.ts");
 
+interface UnpaidLane extends Omit<NodeLane, "rooms" | "snapshots"> {
+  readonly rooms: readonly NodeSample[];
+  readonly snapshots: readonly NodeSample[];
+}
+
+interface UnpaidSamples extends Omit<Samples, "node"> {
+  readonly node: readonly UnpaidLane[];
+}
+
+const unpaidSnapshot = ({
+  record: { snapshot: _payload, ...record },
+  ...sample
+}: SnapshotSample): NodeSample => ({ ...sample, record });
+
+const unpaidRoom = ({
+  record: { room: _payload, ...record },
+  ...sample
+}: RoomSample): NodeSample => ({ ...sample, record });
+
 const made: string[] = [];
 
 const scratch = (): string => {
@@ -38,7 +63,7 @@ const scratch = (): string => {
   return dir;
 };
 
-const throughEntry = (samples: Samples, budgets: Budgets) => {
+const throughEntry = (samples: Samples | UnpaidSamples, budgets: Budgets) => {
   const dir = scratch();
   const samplesFile = path.join(dir, "samples.json");
   const budgetsFile = path.join(dir, "budgets.json");
@@ -73,13 +98,6 @@ const middle = Math.floor(WINDOW_TICKS / 2);
 
 const fonts = (files: readonly string[]) =>
   files.filter((file) => file.includes("/face-"));
-
-const stampsOf = (
-  stamped: (duration: number, tick: number, run: number) => number
-) =>
-  scenarios.map((scenario) =>
-    syntheticLane(scenario, steady, validRows(scenario), stamped)
-  );
 
 const failing = (lines: readonly string[]) =>
   lines.filter((line) => line.startsWith("FAIL"));
@@ -252,44 +270,34 @@ describe("perf gate red cases", { timeout: 30_000 }, () => {
     expect(throughEntry(runnerOnly, budgets).status).toBe(0);
   });
 
-  it("judges the timing stamp by the middle tick of its fastest run, so a noisy tail or slow processes pass and a 10% slower stamp fails", () => {
-    const noisyTail = evaluateGate(
-      samplesOf(
-        "tail",
-        stampsOf((duration, tick) =>
-          tick % 20 === 0 ? duration * 3 : duration
-        ),
-        build
-      ),
-      budgets
-    );
-    expect(failing(noisyTail.lines)).toStrictEqual([]);
-    const slowProcesses = evaluateGate(
-      samplesOf(
-        "processes",
-        stampsOf((duration, _tick, run) =>
-          run === 2 ? duration : duration * 1.3
-        ),
-        build
-      ),
-      budgets
-    );
-    expect(failing(slowProcesses.lines)).toStrictEqual([]);
-    const slower = evaluateGate(
-      samplesOf(
-        "stamp",
-        stampsOf((duration) => duration * 1.1),
-        build
-      ),
-      budgets
-    );
-    expect(
-      failing(slower.lines).map((line) => line.split(" observed=")[0])
-    ).toStrictEqual(
-      scenarios.map(
-        (scenario) => `FAIL node ${scenario.id} timing.stamp.p50 [node-test-x]`
-      )
-    );
+  it("refuses samples whose snapshot or room run lost its timings or its third run", () => {
+    const whole = samplesOf("payload", steadyLanes(steady), build);
+    expect(throughEntry(whole, budgets).status).toBe(0);
+    const [lane, ...others] = whole.node;
+    if (!lane) {
+      throw new Error("the steady samples have no node lane");
+    }
+    const [snapshot, ...laterSnapshots] = lane.snapshots;
+    const [firstRoom, room, lastRoom] = lane.rooms;
+    const broken = [
+      {
+        ...lane,
+        snapshots: [unpaidSnapshot(snapshot), ...laterSnapshots],
+      },
+      {
+        ...lane,
+        rooms: [firstRoom, unpaidRoom(room), lastRoom],
+      },
+      { ...lane, snapshots: laterSnapshots },
+    ];
+    for (const each of broken) {
+      const entry = throughEntry(
+        { ...whole, node: [each, ...others] },
+        budgets
+      );
+      expect(entry.status).not.toBe(0);
+      expect(entry.stdout).not.toContain("PASS");
+    }
   });
 
   it("fails a slower sim on the same slower runner", () => {

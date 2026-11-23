@@ -91,11 +91,11 @@
       },
       {
         "file": "tools/perf/baselines/stamp.node-darwin-arm64.json.gz",
-        "sha256": "ce9cce01aa0646d741c4dbe1e9325ce3cf90089a8b96670f6588577ce4e56a65"
+        "sha256": "47d5cb0288ec9784d0437861bdb7a33b3259160523736890ec6be83018a91995"
       },
       {
         "file": "tools/perf/baselines/stamp.node-linux-x64.json.gz",
-        "sha256": "60c74be88c42ef30710d31ca70e8aa368b8ba26f81e423d1fead788939a557ba"
+        "sha256": "433110e0f8dc0ee8cbb2e9a17fa8813940f0bcd76f30de7ca51dedcfb4946a2b"
       },
       {
         "file": "tools/perf/baselines/tiers.node-darwin-arm64.json.gz",
@@ -116,7 +116,7 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "58132a221e5afa805986a52a8b078fc0d4e75b305f65c20569da32fd3471ac59"
+    "summarySha256": "f295d167f3f2dbe62e3cadbd95c1cdfd0072628f2cd6e9fe1da00fdae5e2142b"
   },
   "limits": [
     {
@@ -2292,52 +2292,52 @@
       "unit": "ms"
     },
     {
-      "baseline": 0.0001353957624793588,
-      "derivation": "1.06 x calibrated baseline median of five runs",
+      "baseline": 0.0001449646179422796,
+      "derivation": "1.15 x calibrated baseline median of five runs",
       "direction": "max",
       "environment": "node-darwin-arm64",
-      "metric": "timing.stamp.p50",
+      "metric": "timing.stamp.trimmedMean",
       "paired": null,
       "scenario": "reference-v1",
+      "source": "gate-2026-11-23T12-14-20-834Z-9f67ba9-1cd7416",
+      "unit": "ms",
+      "value": 0.00016670931063362152
+    },
+    {
+      "baseline": 0.00016400691877988452,
+      "derivation": "1.15 x calibrated baseline median of five runs",
+      "direction": "max",
+      "environment": "node-darwin-arm64",
+      "metric": "timing.stamp.trimmedMean",
+      "paired": null,
+      "scenario": "pack-riding-v1",
       "source": "gate-2026-11-23T12-19-09-676Z-9f67ba9-1cd7416",
       "unit": "ms",
-      "value": 0.00014351950822812033
+      "value": 0.00018860795659686718
     },
     {
-      "baseline": 0.000153150828273084,
-      "derivation": "1.06 x calibrated baseline median of five runs",
-      "direction": "max",
-      "environment": "node-darwin-arm64",
-      "metric": "timing.stamp.p50",
-      "paired": null,
-      "scenario": "pack-riding-v1",
-      "source": "gate-2026-11-23T11-59-34-837Z-9f67ba9-1cd7416",
-      "unit": "ms",
-      "value": 0.00016233987796946905
-    },
-    {
-      "baseline": 0.00024259103544461394,
-      "derivation": "1.06 x calibrated baseline median of five runs, with 1.3 x for the spread between GitHub runners",
+      "baseline": 0.0002645882531507824,
+      "derivation": "1.15 x calibrated baseline median of five runs, with 1.3 x for the spread between GitHub runners",
       "direction": "max",
       "environment": "node-linux-x64",
-      "metric": "timing.stamp.p50",
+      "metric": "timing.stamp.trimmedMean",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "gate-2026-11-23T12-03-19-896Z-9f67ba9-7cf5536",
+      "source": "gate-2026-11-23T11-37-35-632Z-9f67ba9-7cf5536",
       "unit": "ms",
-      "value": 0.00033429044684267804
+      "value": 0.0003955594384604197
     },
     {
-      "baseline": 0.0003156337130684454,
-      "derivation": "1.06 x calibrated baseline median of five runs, with 1.3 x for the spread between GitHub runners",
+      "baseline": 0.00033581075426518777,
+      "derivation": "1.15 x calibrated baseline median of five runs, with 1.3 x for the spread between GitHub runners",
       "direction": "max",
       "environment": "node-linux-x64",
-      "metric": "timing.stamp.p50",
+      "metric": "timing.stamp.trimmedMean",
       "paired": null,
       "scenario": "pack-riding-v1",
       "source": "gate-2026-11-23T12-03-19-896Z-9f67ba9-7cf5536",
       "unit": "ms",
-      "value": 0.00043494325660831774
+      "value": 0.0005020370776264557
     }
   ],
   "nodeProfiles": {

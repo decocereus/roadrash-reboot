@@ -23,8 +23,6 @@ import type { Side, SideName } from "./sides.ts";
 
 const TIMING_PAIRS = 5;
 const ALLOCATION_PAIRS = 3;
-const SNAPSHOT_RUNS = 3;
-const ROOM_RUNS = 3;
 
 const decodeChild = Schema.decodeUnknownEffect(
   Schema.fromJsonString(childRecord)
@@ -41,6 +39,26 @@ export const nodeSample = Schema.Struct({
 
 export type NodeSample = typeof nodeSample.Type;
 
+const snapshotSample = Schema.Struct({
+  ...nodeSample.fields,
+  record: Schema.Struct({
+    ...childRecord.fields,
+    snapshot: childRecord.fields.snapshot.schema,
+  }),
+});
+
+export type SnapshotSample = typeof snapshotSample.Type;
+
+const roomSample = Schema.Struct({
+  ...nodeSample.fields,
+  record: Schema.Struct({
+    ...childRecord.fields,
+    room: childRecord.fields.room.schema,
+  }),
+});
+
+export type RoomSample = typeof roomSample.Type;
+
 const nodePair = Schema.Struct({
   a: nodeSample,
   b: nodeSample,
@@ -53,10 +71,9 @@ type NodePair = typeof nodePair.Type;
 export const nodeLaneRecord = Schema.Struct({
   allocation: Schema.Array(nodePair),
   calibrations: Schema.Array(nodeSample),
-  rooms: Schema.Array(nodeSample),
+  rooms: Schema.Tuple([roomSample, roomSample, roomSample]),
   scenario: Schema.String,
-  snapshotCalibrations: Schema.Array(nodeSample),
-  snapshots: Schema.Array(nodeSample),
+  snapshots: Schema.Tuple([snapshotSample, snapshotSample, snapshotSample]),
   timing: Schema.Array(nodePair),
   validation: Schema.Array(nodeSample),
 });
@@ -176,6 +193,60 @@ const pairOf = Effect.fnUntraced(function* pairOf(
   return measured;
 });
 
+const missingPayload = (sample: NodeSample, payload: string) =>
+  new MeasurementFailed({
+    lane: "node",
+    message: `${sample.file} wrote no ${payload} timings.`,
+  });
+
+const snapshotRun = Effect.fnUntraced(function* snapshotRun(
+  sides: Sides,
+  scenario: Scenario,
+  dir: string,
+  run: number
+) {
+  const sample = yield* runChild(
+    sides.B,
+    "snapshot",
+    scenario,
+    dir,
+    `snapshot-${run}-B`
+  );
+  const { snapshot } = sample.record;
+  if (!snapshot) {
+    return yield* missingPayload(sample, "snapshot");
+  }
+  const measured: SnapshotSample = {
+    ...sample,
+    record: { ...sample.record, snapshot },
+  };
+  return measured;
+});
+
+const roomRun = Effect.fnUntraced(function* roomRun(
+  sides: Sides,
+  scenario: Scenario,
+  dir: string,
+  run: number
+) {
+  const sample = yield* runChild(
+    sides.B,
+    "room",
+    scenario,
+    dir,
+    `room-${run}-B`
+  );
+  const { room } = sample.record;
+  if (!room) {
+    return yield* missingPayload(sample, "room");
+  }
+  const measured: RoomSample = {
+    ...sample,
+    record: { ...sample.record, room },
+  };
+  return measured;
+});
+
 export const nodeLane = Effect.fn("node.lane")(function* nodeLane(
   scenario: Scenario,
   sides: Sides,
@@ -197,34 +268,21 @@ export const nodeLane = Effect.fn("node.lane")(function* nodeLane(
   for (let pair = 0; pair < ALLOCATION_PAIRS; pair += 1) {
     allocation.push(yield* pairOf(sides, "alloc", scenario, dir, pair));
   }
-  const calibrateSnapshot = (index: number) =>
-    runChild(
-      sides.B,
-      "calibrate",
-      scenario,
-      dir,
-      `snapshot-calibrate-${index}`
-    );
-  const snapshotCalibrations = [yield* calibrateSnapshot(0)];
-  const snapshots: NodeSample[] = [];
-  for (let run = 0; run < SNAPSHOT_RUNS; run += 1) {
-    snapshots.push(
-      yield* runChild(sides.B, "snapshot", scenario, dir, `snapshot-${run}-B`)
-    );
-    snapshotCalibrations.push(yield* calibrateSnapshot(run + 1));
-  }
-  const rooms: NodeSample[] = [];
-  for (let run = 0; run < ROOM_RUNS; run += 1) {
-    rooms.push(
-      yield* runChild(sides.B, "room", scenario, dir, `room-${run}-B`)
-    );
-  }
+  const snapshots = [
+    yield* snapshotRun(sides, scenario, dir, 0),
+    yield* snapshotRun(sides, scenario, dir, 1),
+    yield* snapshotRun(sides, scenario, dir, 2),
+  ] as const;
+  const rooms = [
+    yield* roomRun(sides, scenario, dir, 0),
+    yield* roomRun(sides, scenario, dir, 1),
+    yield* roomRun(sides, scenario, dir, 2),
+  ] as const;
   const lane: NodeLane = {
     allocation,
     calibrations,
     rooms,
     scenario: scenario.id,
-    snapshotCalibrations,
     snapshots,
     timing,
     validation,
@@ -364,68 +422,87 @@ const allocatedPerTick = (record: ChildRecord): number =>
 
 type SnapshotRun = NonNullable<ChildRecord["snapshot"]>;
 
-const snapshotMetrics = [
-  { metric: "snapshot.write.p95", of: (run: SnapshotRun) => run.write },
-  { metric: "snapshot.restore.p95", of: (run: SnapshotRun) => run.restore },
-  { metric: "snapshot.hash.p95", of: (run: SnapshotRun) => run.hash },
-] as const;
-
 export const p95Of = (durations: readonly number[]): number =>
   quantile(
     durations.toSorted((left, right) => left - right),
     0.95
   );
 
-const snapshotRuns = (lane: NodeLane): readonly SnapshotRun[] =>
-  lane.snapshots.flatMap((sample) =>
-    sample.record.snapshot ? [sample.record.snapshot] : []
-  );
+const STAMP_TRIM = 0.05;
 
-const stampObservation = (
-  scenario: Scenario,
-  runs: readonly SnapshotRun[],
-  environment: string,
-  scales: readonly number[]
-): Observation => {
-  const measured = runs.map(
-    (run, index) => median(run.stamp) / (scales[index] ?? Number.NaN)
+const trimmedMeanOf = (durations: readonly number[]): number => {
+  const sorted = durations.toSorted((left, right) => left - right);
+  return mean(
+    sorted.slice(0, sorted.length - Math.floor(sorted.length * STAMP_TRIM))
   );
+};
+
+export const stampMetric = {
+  metric: "timing.stamp.trimmedMean",
+  of: (run: SnapshotRun) => run.stamp,
+  per: trimmedMeanOf,
+  perRun: "mean without the slowest 5%",
+} as const;
+
+const snapshotMetrics = [
+  {
+    metric: "snapshot.write.p95",
+    of: (run: SnapshotRun) => run.write,
+    per: p95Of,
+    perRun: "p95",
+  },
+  {
+    metric: "snapshot.restore.p95",
+    of: (run: SnapshotRun) => run.restore,
+    per: p95Of,
+    perRun: "p95",
+  },
+  {
+    metric: "snapshot.hash.p95",
+    of: (run: SnapshotRun) => run.hash,
+    per: p95Of,
+    perRun: "p95",
+  },
+  stampMetric,
+] as const;
+
+type SnapshotMetric = (typeof snapshotMetrics)[number];
+
+export const snapshotTiming = (
+  { metric, per, perRun }: SnapshotMetric,
+  scenario: string,
+  environment: string,
+  windows: readonly (readonly number[])[],
+  scale: number
+): Observation => {
+  const measured = windows.map((window) => per(window) / scale);
   return {
     environment,
     lane: "node",
-    metric: "timing.stamp.p50",
-    note: `runs=${measured.length} scale=${median(scales).toFixed(3)}`,
+    metric,
+    note: `runs=${measured.length} median of each run's ${perRun} scale=${scale.toFixed(3)}`,
     paired: null,
     runs: { a: [], b: measured },
-    scenario: scenario.id,
-    value: Math.min(...measured),
+    scenario,
+    value: median(measured),
   };
 };
+
+const snapshotRuns = (lane: NodeLane): readonly SnapshotRun[] =>
+  lane.snapshots.map((sample) => sample.record.snapshot);
 
 const snapshotObservations = (
   scenario: Scenario,
   lane: NodeLane,
   environment: string,
-  scale: number,
-  stampScales: readonly number[]
+  scale: number
 ): readonly Observation[] => {
   const runs = snapshotRuns(lane);
   const bytes = runs.map((run) => Math.max(...run.bytes));
   return [
-    ...snapshotMetrics.map(({ metric, of }): Observation => {
-      const measured = runs.map((run) => p95Of(of(run)) / scale);
-      return {
-        environment,
-        lane: "node",
-        metric,
-        note: `runs=${measured.length} scale=${scale.toFixed(3)}`,
-        paired: null,
-        runs: { a: [], b: measured },
-        scenario: scenario.id,
-        value: median(measured),
-      };
-    }),
-    stampObservation(scenario, runs, environment, stampScales),
+    ...snapshotMetrics.map((spec) =>
+      snapshotTiming(spec, scenario.id, environment, runs.map(spec.of), scale)
+    ),
     {
       environment,
       lane: "node",
@@ -442,9 +519,7 @@ const snapshotObservations = (
 type RoomRun = NonNullable<ChildRecord["room"]>;
 
 const roomRuns = (lane: NodeLane): readonly RoomRun[] =>
-  lane.rooms.flatMap((sample) =>
-    sample.record.room ? [sample.record.room] : []
-  );
+  lane.rooms.map((sample) => sample.record.room);
 
 const roomObservations = (
   scenario: Scenario,
@@ -500,29 +575,17 @@ export const nodeVerdicts = (
   const profile = profiles[environment];
   const failures = [
     ...workloadFailures(scenario, lane, expectedHash),
-    ...calibrationFailures(
-      scenario,
-      { calibrations: [...lane.calibrations, ...lane.snapshotCalibrations] },
-      environment,
-      profile
-    ),
+    ...calibrationFailures(scenario, lane, environment, profile),
   ];
   if (failures.length > 0 || !profile) {
     return { environment, failures, observations: [], scales: [] };
   }
-  const { failures: timingUnstable, scales } = scalesAcross(
+  const { failures: unstable, scales } = scalesAcross(
     scenario,
     lane.calibrations,
     lane.timing.length,
     profile.calibration
   );
-  const stamp = scalesAcross(
-    { id: `${scenario.id} stamp` },
-    lane.snapshotCalibrations,
-    lane.snapshots.length,
-    profile.calibration
-  );
-  const unstable = [...timingUnstable, ...stamp.failures];
   if (unstable.length > 0) {
     return { environment, failures: unstable, observations: [], scales };
   }
@@ -586,13 +649,7 @@ export const nodeVerdicts = (
       scenario: scenario.id,
       value: median(allocated.b),
     },
-    ...snapshotObservations(
-      scenario,
-      lane,
-      environment,
-      laneScale,
-      stamp.scales.map((each) => each.scale)
-    ),
+    ...snapshotObservations(scenario, lane, environment, laneScale),
     ...roomObservations(scenario, lane, environment, laneScale),
   ];
   return { environment, failures, observations, scales };
