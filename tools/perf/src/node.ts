@@ -10,8 +10,10 @@ import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
+import { TaggedError as TaggedErrorClass } from "effect/Schema";
 
 import { MeasurementFailed } from "./measurement-failed.ts";
+import { quantile } from "./result.ts";
 import {
   benchRun,
   rowsOf,
@@ -32,6 +34,9 @@ const INCREMENT = 1_013_904_223;
 const CALIBRATION_WARMUP = 5;
 export const CALIBRATION_ROUNDS = 10;
 const ALLOCATION_SAMPLING_BYTES = 4096;
+export const STEADY_TOLERANCE = 0.03;
+export const MAX_WARM_WINDOWS = 10;
+export const TIMED_WINDOWS = 4;
 
 const calibrationData = new Uint32Array(CALIBRATION_WORDS);
 
@@ -97,9 +102,59 @@ const prepareWindow = (scenario: Scenario) => {
   };
 };
 
-const warmWindow = (scenario: Scenario) => {
-  prepareWindow(scenario).measure();
-  return prepareWindow(scenario);
+const windowTiming = Schema.Struct({
+  mean: Schema.Number,
+  p95: Schema.Number,
+  p99: Schema.Number,
+});
+
+type WindowTiming = typeof windowTiming.Type;
+
+const timingOfWindow = (durations: readonly number[]): WindowTiming => {
+  const sorted = durations.toSorted((left, right) => left - right);
+  return {
+    mean: sorted.reduce((sum, each) => sum + each, 0) / sorted.length,
+    p95: quantile(sorted, 0.95),
+    p99: quantile(sorted, 0.99),
+  };
+};
+
+const settled = (before: WindowTiming, after: WindowTiming): boolean =>
+  Math.abs(after.mean - before.mean) / Math.min(after.mean, before.mean) <=
+  STEADY_TOLERANCE;
+
+class WarmUpUnsettled extends TaggedErrorClass<WarmUpUnsettled>()(
+  "WarmUpUnsettled",
+  {
+    message: Schema.String,
+    scenario: Schema.String,
+    windows: Schema.Array(windowTiming),
+  }
+) {}
+
+export const settleWindows = Effect.fnUntraced(function* settleWindows(
+  scenario: { readonly id: string },
+  timeWindow: () => readonly number[]
+) {
+  const warmup: WindowTiming[] = [];
+  while (warmup.length < MAX_WARM_WINDOWS) {
+    warmup.push(timingOfWindow(timeWindow()));
+    const [before, after] = warmup.slice(-2);
+    if (before && after && settled(before, after)) {
+      return warmup;
+    }
+  }
+  return yield* new WarmUpUnsettled({
+    message: `${scenario.id} did not settle in ${MAX_WARM_WINDOWS} warm windows: no two consecutive windows' mean ticks came within ${STEADY_TOLERANCE * 100}% (${warmup.map((each) => each.mean.toFixed(4)).join(", ")} ms), so it times nothing.`,
+    scenario: scenario.id,
+    windows: warmup,
+  });
+});
+
+const measuredWindow = (scenario: Scenario) => {
+  const prepared = prepareWindow(scenario);
+  prepared.measure();
+  return prepared;
 };
 
 const sampledBytes = (node: HeapProfiler.SamplingHeapProfileNode): number =>
@@ -118,7 +173,10 @@ const inspector = (method: string) => (cause: unknown) =>
 const allocationWindow = Effect.fnUntraced(function* allocationWindow(
   scenario: Scenario
 ) {
-  const prepared = warmWindow(scenario);
+  const warmup = yield* settleWindows(scenario, () =>
+    measuredWindow(scenario).durations()
+  );
+  const prepared = prepareWindow(scenario);
   const session = yield* Effect.acquireRelease(
     Effect.sync(() => {
       const opened = new Session();
@@ -160,6 +218,7 @@ const allocationWindow = Effect.fnUntraced(function* allocationWindow(
     police: prepared.police,
     racers: prepared.racers,
     rows: prepared.rows(),
+    warmup,
   };
 });
 
@@ -251,6 +310,7 @@ export const childRecord = Schema.Struct({
     })
   ),
   task: Schema.Literals(tasks),
+  warmup: Schema.optionalKey(Schema.Array(windowTiming)),
 });
 
 export type ChildRecord = typeof childRecord.Type;
@@ -291,18 +351,34 @@ const measure = Effect.fnUntraced(function* measure(
   if (task === "alloc") {
     return { ...base, ...(yield* allocationWindow(scenario)) };
   }
-  const prepared =
-    task === "time" ? warmWindow(scenario) : prepareWindow(scenario);
+  if (task === "time") {
+    const warmup = yield* settleWindows(scenario, () =>
+      measuredWindow(scenario).durations()
+    );
+    const first = measuredWindow(scenario);
+    const timed = [
+      first,
+      ...Array.from({ length: TIMED_WINDOWS - 1 }, () =>
+        measuredWindow(scenario)
+      ),
+    ];
+    return {
+      ...base,
+      durations: timed.flatMap((each) => each.durations()),
+      police: first.police,
+      racers: first.racers,
+      rows: first.rows(),
+      warmup,
+    };
+  }
+  const prepared = prepareWindow(scenario);
   prepared.measure();
-  const measured = {
+  return {
     ...base,
     police: prepared.police,
     racers: prepared.racers,
     rows: prepared.rows(),
   };
-  return task === "time"
-    ? { ...measured, durations: prepared.durations() }
-    : measured;
 });
 
 export const child = Effect.fn("node.child")(function* child(
