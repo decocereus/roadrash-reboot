@@ -1,8 +1,6 @@
 import { chevronRuns } from "@racer/track/chevron-runs";
 import { roadIds } from "@racer/track/road";
-import { trackFor } from "@racer/track/roads";
-import { stretches, stretchIds } from "@racer/track/stretches";
-import type { StretchId } from "@racer/track/stretches";
+import { roads, trackFor } from "@racer/track/roads";
 import { compileTrack, curvatureAt } from "@racer/track/track";
 import type { ChevronRun, Track } from "@racer/track/track";
 import { describe, expect, it } from "vitest";
@@ -19,15 +17,18 @@ import { createRace, defaultSetup, neutralInput, stepRace } from "./race.ts";
 import { clamp, curvePushOf, steerFor, TICK_RATE } from "./state.ts";
 import type { BikeSpec, RiderInput } from "./state.ts";
 
-const trackOf = (id: StretchId): Track => compileTrack(stretches[id]);
-const quietTrackOf = (id: StretchId): Track =>
-  compileTrack({
-    ...stretches[id],
-    hazardsPerKilometre: 0,
-    trafficPerKilometre: 0,
-  });
-const stretchTracks = stretchIds.map((id) => [id, trackOf(id)] as const);
-const quietStretches = stretchIds.map((id) => [id, quietTrackOf(id)] as const);
+const roadTracks = roadIds.map((id) => [id, trackFor(id)] as const);
+const quietRoads = roadIds.map(
+  (id) =>
+    [
+      id,
+      compileTrack({
+        ...roads[id],
+        hazardsPerKilometre: 0,
+        trafficPerKilometre: 0,
+      }),
+    ] as const
+);
 
 const RIDE_LIMIT = TICK_RATE * 60;
 const BOARD_GAP = 18;
@@ -63,20 +64,17 @@ const runLines = (runs: readonly ChevronRun[]): string =>
     .join("");
 
 const tableOf = (): string =>
-  [
-    ...roadIds.map((id) => [id, chevronRunsOf(trackFor(id))] as const),
-    ...stretchTracks.map(([id, track]) => [id, chevronRunsOf(track)] as const),
-  ]
+  roadTracks
+    .map(([id, track]) => [id, chevronRunsOf(track)] as const)
     .toSorted(([left], [right]) => left.localeCompare(right))
     .map(([id, runs]) => `  "${id}": [\n${runLines(runs)}  ],\n`)
     .join("");
 
 const moduleOf = (): string => `import type { RoadId } from "./road.ts";
-import type { StretchId } from "./stretches.ts";
 import type { ChevronRun } from "./track.ts";
 
 export const chevronRuns = {
-${tableOf()}} as const satisfies Record<RoadId | StretchId, readonly ChevronRun[]>;
+${tableOf()}} as const satisfies Record<RoadId, readonly ChevronRun[]>;
 `;
 
 const brakeFromChevron = (
@@ -134,7 +132,7 @@ describe("corner warnings", () => {
     );
   });
 
-  it.each(stretchTracks)(
+  it.each(roadTracks)(
     "every chevron run on %s has boards from its start to its end, on its side",
     (id, track) => {
       const boards = boardsOf(track);
@@ -161,24 +159,32 @@ describe("corner warnings", () => {
     }
   );
 
-  it.each(
-    quietStretches.flatMap(([id, track]) =>
-      signedFor.map((bike) => [bike.name, id, bike, track] as const)
-    )
-  )(
-    "a %s rider who brakes at the first board before each warned bend on %s makes the bend",
-    (_name, _id, bike, track) => {
-      const warned = brakingZonesOf(track, bike).filter(isWarned);
-      const boards = boardsOf(track).map((board) => board.s);
-      const rides = warned.map((zone) => {
-        const from = firstBoardOf(boards, zone.start);
-        return from === undefined
-          ? undefined
-          : brakeFromChevron(track, bike, from, zone);
+  it.each(signedFor.map((bike) => [bike.name, bike] as const))(
+    "a %s rider who brakes at the first board before each warned bend makes the bend on every road",
+    (_name, bike) => {
+      const rides = quietRoads.flatMap(([id, track]) => {
+        const boards = boardsOf(track).map((board) => board.s);
+        return brakingZonesOf(track, bike)
+          .filter(isWarned)
+          .map((zone) => {
+            const from = firstBoardOf(boards, zone.start);
+            return {
+              at: zone.start,
+              id,
+              ride:
+                from === undefined
+                  ? undefined
+                  : brakeFromChevron(track, bike, from, zone),
+            };
+          });
       });
-      expect(warned.length).toBeGreaterThan(0);
+      expect(rides.length).toBeGreaterThan(0);
       expect(rides).toStrictEqual(
-        warned.map(() => ({ crashes: 0, offRoad: false, through: true }))
+        rides.map(({ at, id }) => ({
+          at,
+          id,
+          ride: { crashes: 0, offRoad: false, through: true },
+        }))
       );
     }
   );

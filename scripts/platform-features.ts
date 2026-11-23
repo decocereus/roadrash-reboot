@@ -5,33 +5,6 @@ import type { FeatureEntry } from "./feature-map.ts";
 export const platformFeatures: readonly FeatureEntry[] = [
   {
     docs: [
-      "docs/madrid-corridor.md#route-and-coordinates",
-      "docs/madrid-corridor.md#fitting-track-pieces",
-      "docs/madrid-corridor.md#casa-de-campo-hook",
-      "docs/madrid-corridor.md#puerta-de-alcalá-into-gran-vía",
-    ],
-    id: "madrid-corridor",
-    kind: "platform",
-    owns: [
-      "tools/madrid/**",
-      "packages/track/src/madrid-*.ts",
-      "packages/sim/src/madrid-stretches.test.ts",
-      "apps/web/test/madrid-*.test.ts",
-      "apps/web/src/routes/credits.tsx",
-    ],
-    perf: [],
-    start: [
-      "tools/madrid/generate.ts",
-      "tools/madrid/stretch.ts",
-      "apps/web/src/routes/credits.tsx",
-    ],
-    summary:
-      "Pinned, permissively licensed Madrid source data, the offline corridor generator, its connectivity checks, the fitter that turns the corridor centreline into track pieces under a radius limit with slower places, the one builder that writes each stretch's plan with its grade, blocks, landmark massing and ground cover, and the public data credits page. The Casa de Campo hook and the Puerta de Alcalá into Gran Vía stretch ride through development URLs.",
-    title: "Madrid corridor and data credits",
-    verify: ["credits.md", "madrid-gran-via.md", "madrid-hook.md"],
-  },
-  {
-    docs: [
       "docs/architecture/race-setup.md#race-setup-and-cast",
       "docs/standards/simulation.md#keep-the-simulation-deterministic",
     ],

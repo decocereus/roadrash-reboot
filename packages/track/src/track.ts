@@ -28,33 +28,6 @@ import type { Bazaar, StallFootprint } from "./stalls.ts";
 import { placeWalkSites } from "./walk-sites.ts";
 import type { WalkSite } from "./walk-sites.ts";
 
-export type GroundPoint = readonly [x: number, z: number];
-
-export type GroundCover = "grass" | "paving";
-
-export interface SceneryBlock {
-  readonly height: number;
-  readonly lift: number;
-  readonly ring: readonly GroundPoint[];
-}
-
-export interface SceneryPatch {
-  readonly cover: GroundCover;
-  readonly ring: readonly GroundPoint[];
-}
-
-export interface SceneryWater {
-  readonly level: number;
-  readonly ring: readonly GroundPoint[];
-}
-
-export interface Scenery {
-  readonly blocks: readonly SceneryBlock[];
-  readonly cover: GroundCover;
-  readonly patches: readonly SceneryPatch[];
-  readonly water: readonly SceneryWater[];
-}
-
 interface Crowd {
   readonly from: number;
   readonly to: number;
@@ -75,7 +48,6 @@ export interface TrackPlan extends Alignment {
   readonly trafficPerKilometre: number;
   readonly hazardsPerKilometre: number;
   readonly carriers: readonly number[];
-  readonly scenery?: Scenery;
 }
 
 export interface ChevronRun {

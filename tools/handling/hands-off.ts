@@ -2,15 +2,10 @@ import { writeFileSync } from "node:fs";
 import process from "node:process";
 import { parseArgs } from "node:util";
 
-import { bikes } from "@racer/sim/bikes";
 import { roadHalfWidthAt } from "@racer/track/districts";
 import { compileTrack } from "@racer/track/track";
 
-import {
-  courseProblems,
-  shadowProblems,
-  stagedProblems,
-} from "./src/acceptance.ts";
+import { courseProblems, shadowProblems } from "./src/acceptance.ts";
 import { bendsOf } from "./src/bends.ts";
 import {
   courses,
@@ -19,16 +14,11 @@ import {
   quietPlan,
   shadowDivergence,
 } from "./src/course.ts";
-import { compileQuiet, stagedRide } from "./src/keyboard.ts";
 import { coverageOf, fromTheGrid, probeBends } from "./src/probe.ts";
-import { printCourse, printStaged } from "./src/report.ts";
+import { printCourse } from "./src/report.ts";
 import { fields, pilotSteering } from "./src/steering.ts";
 
 const SHADOW_TICKS = 6000;
-const stagedOn = [
-  ["madrid-hook", 125],
-  ["madrid-gran-via", 1090],
-] as const;
 
 const { values } = parseArgs({
   options: {
@@ -98,29 +88,19 @@ for (const course of courses) {
   });
 }
 
-const staged = stagedOn.flatMap(([id, at]) => {
-  const course = courses.find((each) => each.id === id);
-  if (!course) {
-    throw new Error(`No course ${id}.`);
-  }
-  const track = compileQuiet(course.plan);
-  return [bikes["ostra-sesta-600"], bikes["halden-wren-400"]].map((on) =>
-    stagedRide(id, track, on, at)
-  );
-});
-problems.push(...stagedProblems(staged));
-
 const ridge = courses.find((each) => each.id === "ridge-road");
 if (ridge) {
   problems.push(
-    ...shadowProblems(shadowDivergence(compileQuiet(ridge.plan), SHADOW_TICKS))
+    ...shadowProblems(
+      shadowDivergence(compileTrack(quietPlan(ridge.plan)), SHADOW_TICKS)
+    )
   );
 }
 
 if (values.json !== undefined) {
   writeFileSync(
     values.json,
-    `${JSON.stringify({ courses: report, staged }, null, 2)}\n`
+    `${JSON.stringify({ courses: report }, null, 2)}\n`
   );
 }
 
@@ -130,7 +110,6 @@ if (values.check) {
   }
   process.exitCode = problems.length > 0 ? 1 : 0;
 } else {
-  printStaged(staged);
   for (const problem of problems) {
     process.stdout.write(`PROBLEM ${problem}\n`);
   }

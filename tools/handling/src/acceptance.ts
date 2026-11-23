@@ -1,4 +1,3 @@
-import type { StagedRide } from "./keyboard.ts";
 import type { BendResult, FromTheGrid } from "./probe.ts";
 import type { Steering } from "./steering.ts";
 
@@ -7,8 +6,6 @@ const LEAST_PILOT_CORNER_SHARE = 0.8;
 
 const mostBendsSurvivedHandsOff = new Map([
   ["breakwater-run", 5],
-  ["madrid-gran-via", 9],
-  ["madrid-hook", 4],
   ["ridge-road", 0],
   ["slag-row", 3],
 ]);
@@ -48,16 +45,6 @@ export const courseProblems = (course: CourseVerdict): readonly string[] => {
   }
   return problems;
 };
-
-export const stagedProblems = (
-  rides: readonly StagedRide[]
-): readonly string[] =>
-  rides
-    .filter((each) => each.reacting.offRoadSeconds > 0)
-    .map(
-      (each) =>
-        `${each.course} ${each.bike}: a reacting rider left the road for ${each.reacting.offRoadSeconds.toFixed(2)} s at ${each.at} m.`
-    );
 
 export const shadowProblems = (divergence: number): readonly string[] =>
   divergence > MOST_SHADOW_DIVERGENCE

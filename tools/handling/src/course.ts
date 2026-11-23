@@ -16,7 +16,6 @@ import type {
 } from "@racer/sim/state";
 import { roadIds } from "@racer/track/road";
 import { roads } from "@racer/track/roads";
-import { stretches, stretchIds } from "@racer/track/stretches";
 import type { Track, TrackPlan } from "@racer/track/track";
 
 export const KMH = 3.6;
@@ -28,10 +27,10 @@ export interface Course {
   readonly plan: TrackPlan;
 }
 
-export const courses: readonly Course[] = [
-  ...roadIds.map((id) => ({ id, plan: roads[id] })),
-  ...stretchIds.map((id) => ({ id, plan: stretches[id] })),
-];
+export const courses: readonly Course[] = roadIds.map((id) => ({
+  id,
+  plan: roads[id],
+}));
 
 export const quietPlan = (plan: TrackPlan): TrackPlan => ({
   ...plan,
