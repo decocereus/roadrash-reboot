@@ -511,8 +511,6 @@ Source files:
 - `apps/web/src/sound/interface.ts`
 - `apps/web/src/sound/recipes.ts`
 - `apps/web/src/sound/render.ts`
-- `apps/web/src/sound/render.ts`
-- `apps/web/src/sound/render.ts`
 - `apps/web/src/sound/sound.ts`
 - `apps/web/src/sound/tap.ts`
 - `tools/sound/audition.ts`
@@ -520,14 +518,10 @@ Source files:
 - `tools/sound/src/audition-failed.ts`
 - `tools/sound/src/audition.ts`
 - `tools/sound/src/page.ts`
-- `tools/sound/src/page.ts`
-- `tools/sound/src/page.ts`
 
 Test files:
 
 - `apps/web/src/sound/sound.test.ts`
-- `apps/web/test/sound-bundle.ts`
-- `apps/web/test/sound-bundle.ts`
 - `apps/web/test/sound-bundle.ts`
 - `apps/web/test/sound-scenes.ts`
 
