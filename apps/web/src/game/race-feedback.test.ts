@@ -35,7 +35,7 @@ describe(bindFeedback, () => {
         play: vi.fn<() => void>(),
         toggleMute: vi.fn<() => void>(),
       },
-      stage: { me: PLAYER_RIDER, race, track },
+      stage: { colours: new Map(), me: PLAYER_RIDER, race, track },
     });
     expect(hush).not.toHaveBeenCalled();
     releaseAll(owners);
