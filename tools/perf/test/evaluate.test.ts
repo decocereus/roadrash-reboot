@@ -24,6 +24,7 @@ import type { FixtureOptions } from "./fixture-build.ts";
 import {
   ALLOCATED_PER_TICK,
   BIKE_BYTES,
+  COLD_TICK_MS,
   samplesOf,
   steadyLanes,
   syntheticLobby,
@@ -298,6 +299,45 @@ describe("perf gate red cases", { timeout: 30_000 }, () => {
       expect(entry.status).not.toBe(0);
       expect(entry.stdout).not.toContain("PASS");
     }
+  });
+
+  it("reports each scenario's cold tick p99 without judging it", () => {
+    const evaluation = evaluateGate(
+      samplesOf("sim", steadyLanes({ runner: 1.6, sim: 1.3 }), build),
+      budgets
+    );
+    expect(
+      evaluation.lines.filter((line) => line.startsWith("info node"))
+    ).toStrictEqual(
+      scenarios.map(
+        (scenario) =>
+          `info node ${scenario.id} cold.tick.p99 A=${COLD_TICK_MS.toPrecision(4)} ms B=${(COLD_TICK_MS * 1.3).toPrecision(4)} ms, the first window of a fresh process, calibrated, no budget; warm windows A=3,3,3,3,3 B=3,3,3,3,3`
+      )
+    );
+    expect(
+      evaluation.observations.some((each) => each.metric.includes("cold"))
+    ).toBeFalsy();
+  });
+
+  it("fails a timing child that wrote no warm-up windows", () => {
+    const [first, ...rest] = steadyLanes(steady);
+    const [pair, ...pairs] = first?.timing ?? [];
+    if (!(first && pair)) {
+      throw new Error("The synthetic lane lost its timing pairs.");
+    }
+    const { warmup: _dropped, ...bare } = pair.b.record;
+    const unwarmed = {
+      ...first,
+      timing: [{ ...pair, b: { ...pair.b, record: bare } }, ...pairs],
+    };
+    const evaluation = evaluateGate(
+      samplesOf("warm-up", [unwarmed, ...rest], build),
+      budgets
+    );
+    expect(failing(evaluation.lines)).toContain(
+      `FAIL workload ${first.scenario} side=B ${pair.b.file} wrote no settled warm-up windows`
+    );
+    expect(evaluation.ok).toBeFalsy();
   });
 
   it("fails a slower sim on the same slower runner", () => {
