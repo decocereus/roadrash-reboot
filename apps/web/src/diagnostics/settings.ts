@@ -3,7 +3,12 @@ import type { FrameRate, TestDevice } from "@racer/telemetry/limits";
 
 const SETTINGS_KEY = "rushline.settings.v1";
 
+export const effectsVolumes = ["low", "mid", "high", "full"] as const;
+export type EffectsVolume = (typeof effectsVolumes)[number];
+
 export interface Settings {
+  readonly effectsVolume: EffectsVolume;
+  readonly muted: boolean;
   readonly overlay: boolean;
   readonly recording: boolean;
   readonly automaticUpload: boolean;
@@ -16,7 +21,9 @@ export interface Settings {
 const defaultSettings: Settings = {
   automaticUpload: false,
   device: "unspecified",
+  effectsVolume: "high",
   frameRate: "60",
+  muted: false,
   noticeSeen: false,
   overlay: false,
   raceData: true,
@@ -34,9 +41,14 @@ const parseSettings = (text: string | null): Settings => {
       device:
         testDevices.find((device) => device === fields.get("device")) ??
         defaultSettings.device,
+      effectsVolume:
+        effectsVolumes.find(
+          (volume) => volume === fields.get("effectsVolume")
+        ) ?? defaultSettings.effectsVolume,
       frameRate:
         frameRates.find((rate) => rate === fields.get("frameRate")) ??
         defaultSettings.frameRate,
+      muted: fields.get("muted") === true,
       noticeSeen: fields.get("noticeSeen") === true,
       overlay: fields.get("overlay") === true,
       raceData: fields.get("raceData") !== false,

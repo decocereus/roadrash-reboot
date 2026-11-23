@@ -506,6 +506,28 @@ importers:
         specifier: 5.0.0
         version: 5.0.0(@types/node@26.4.1)(vite@8.3.2(@types/node@26.4.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
 
+  tools/sound:
+    dependencies:
+      '@effect/platform-node':
+        specifier: 4.0.0
+        version: 4.0.0(effect@4.0.0)(redis@6.3.0)
+      '@racer/devtools':
+        specifier: workspace:*
+        version: link:../../packages/devtools
+      effect:
+        specifier: 4.0.0
+        version: 4.0.0
+      esbuild:
+        specifier: 0.28.2
+        version: 0.28.2
+      playwright:
+        specifier: 1.64.1
+        version: 1.64.1
+    devDependencies:
+      '@types/node':
+        specifier: 26.4.1
+        version: 26.4.1
+
   tools/verify:
     dependencies:
       '@effect/platform-node':

@@ -14,6 +14,7 @@ coverage/
 .wrangler/
 tools/perf/results/
 tools/replay/results/
+tools/sound/results/
 tools/blender/out/
 .claude/*
 !.claude/skills/

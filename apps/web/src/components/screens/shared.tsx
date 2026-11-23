@@ -1,6 +1,7 @@
 import { blockCssOf } from "@racer/sim/palette";
 import { useEffect, useRef } from "react";
 
+import { cue } from "../../sound/interface.ts";
 import { createEscapeLayers } from "./escape-layers.ts";
 
 const escapeLayers = createEscapeLayers((press) => {
@@ -20,6 +21,7 @@ export const useEscape = (run: () => void, enabled = true): void => {
       enabled
         ? escapeLayers.open(() => {
             latest.current();
+            cue("back");
           })
         : undefined,
     [enabled]
