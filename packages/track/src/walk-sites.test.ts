@@ -36,23 +36,24 @@ describe("walk sites", () => {
     }
   });
 
-  it("seats a road's crowd along its stretch, on unmarked crossings with no lights", () => {
-    const crowd = breakwater.walkSites.filter((site) =>
-      site.id.startsWith("crowd-")
-    );
-    const [plan] = breakwater.plan.crowds;
-    expect(plan).toBeDefined();
-    expect(crowd).toHaveLength(plan?.sites ?? 0);
-    for (const site of crowd) {
-      expect(site.kind).toBe("unmarked");
-      expect(site.crossing).toBe(NO_CROSSING);
-      expect(site.s).toBeGreaterThanOrEqual(plan?.from ?? 0);
-      expect(site.s).toBeLessThanOrEqual(plan?.to ?? 0);
+  it("seats each of a road's crowds along its stretch, on unmarked crossings with no lights", () => {
+    expect(breakwater.plan.crowds).toHaveLength(2);
+    for (const [index, plan] of breakwater.plan.crowds.entries()) {
+      const crowd = breakwater.walkSites.filter((site) =>
+        site.id.startsWith(`crowd-${index}-`)
+      );
+      expect(crowd).toHaveLength(plan.sites);
+      for (const site of crowd) {
+        expect(site.kind).toBe("unmarked");
+        expect(site.crossing).toBe(NO_CROSSING);
+        expect(site.s).toBeGreaterThanOrEqual(plan.from);
+        expect(site.s).toBeLessThanOrEqual(plan.to);
+      }
     }
   });
 
   it("makes the Salt Coast busier without moving another city's sites", () => {
-    expect(walkersOn(breakwater.walkSites)).toBe(59);
+    expect(walkersOn(breakwater.walkSites)).toBe(73);
     expect(walkersOn(trackFor("slag-row").walkSites)).toBe(20);
   });
 

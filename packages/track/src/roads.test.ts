@@ -42,7 +42,7 @@ interface Expected {
 
 const design: readonly Expected[] = [
   {
-    carriers: [3900, 4650],
+    carriers: [2000, 3750],
     firstTierHazards: [12, 18],
     length: 8500,
     lowestLaunch: 169,

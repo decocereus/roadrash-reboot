@@ -154,15 +154,17 @@ No hazard lies in a reserved stretch, and no tree, pole or rock stands within 3 
 
 The lights run main green 9 s, main amber 2.5 s, all red 1 s, cross green 7 s, cross amber 2.5 s and all red 1 s, a 23 s cycle, so a rider meets a red about half the time. A pedestrian crossing runs main green 10 s, amber 2.5 s, all red 1 s, walk 6 s, flashing 2 s and all red 1 s. The phase is a function of the race tick and the entry's offset, so it needs no race state and replays exactly.
 
-A region's `footfall` sets how many unmarked crossings and jaywalkers it seeds per kilometre. Lowtown is city scenery, at 1 unmarked crossing and 1.5 jaywalkers per kilometre, the Salt Coast is busier at 2 and 2.5, and every other region has none. A plan's `crowds` seats extra unmarked crossings along a stretch, evenly with a seeded jitter, with no lights, where a crossing could not go because the road bends. Breakwater Run seats 11 along the market squeeze, from 1,300 to 1,740 m. Sites keep their places in every race. A road gets them without declaring anything.
+A region's `footfall` sets how many unmarked crossings and jaywalkers it seeds per kilometre. Lowtown is city scenery, at 1 unmarked crossing and 1.5 jaywalkers per kilometre, the Salt Coast is busier at 2 and 2.5, and every other region has none. A plan's `crowds` seats extra unmarked crossings along a stretch, evenly with a seeded jitter, with no lights, where a crossing could not go because the road bends. Breakwater Run seats 11 along the market squeeze, from 1,300 to 1,740 m, and 4 along the battery from 6,480 to 7,140 m, where the hill falls into the docks. Sites keep their places in every race. A road gets them without declaring anything.
 
-Cars come down the cross roads at the rate each one declares: Breakwater Run has 14 a minute at `harbour-cross` and 8 at `market-cross`. They obey the lights and queue at the stop line, and at a give-way they wait for a five-second gap. A car on a through junction drives across the main road and off the far arm. A car on a T turns into a main-road lane and drops out once no rider can see it go. A car crossing at speed throws a rider it reaches; a rider who reaches it at speed crashes the same way as into main-road traffic, so a slow, upright rider can glance off or clear it.
+Cars come down the cross roads at the rate each one declares: Breakwater Run has 14 a minute at `harbour-cross`, 10 at `plaza-cross` and 8 at `market-cross`. They obey the lights and queue at the stop line, and at a give-way they wait for a five-second gap. A car on a through junction drives across the main road and off the far arm. A car on a T turns into a main-road lane and drops out once no rider can see it go. A car crossing at speed throws a rider it reaches; a rider who reaches it at speed crashes the same way as into main-road traffic, so a slow, upright rider can glance off or clear it.
 
 Main-road traffic obeys the lights. On a red, and on an amber it can stop for at its normal 7 m/s² braking, a car stops with its nose a metre short of its stop line, and the cars behind it queue 2 m apart. A car too close to stop runs the amber, so no car stops inside the box. Riders and the pilot ignore the lights. They meet the queue as slow or stopped cars.
 
 | Road | Id | At (m) | Lights | Cross road | Walk |
 | --- | --- | --: | --- | --- | --- |
-| Breakwater Run | `harbour-cross` | 560 | offset 0 | two lanes each way, both arms | zebra |
+| Breakwater Run | `harbour-cross` | 560 | offset 0 | one lane each way, both arms | zebra |
+| Breakwater Run | `plaza-cross` | 2,000 | offset 900 | one lane each way, both arms | zebra |
+| Breakwater Run | `pier-lights` | 3,650 | offset 540 | none | zebra |
 | Breakwater Run | `market-cross` | 6,000 | offset 540 | one lane each way, right arm | zebra |
 | Breakwater Run | `pier-crossing` | 7,850 | offset 300 | none | zebra |
 
@@ -242,7 +244,7 @@ Eight straights over 250 m remain: 0 to 307, 474 to 756, 1,691 to 2,249 (the pla
 | 9 | 1,480 | 80 | 0 | 0 | Squeeze, between the bends |
 | 10 | 1,560 | 140 | -58 | 0 | Squeeze, left; 129 km/h on a Sesta 600, 155 on a Wren |
 | 11 | 1,700 | 240 | 0 | 0 | Out of the squeeze, widening to the plaza at 1,740 m |
-| 12 | 1,940 | 300 | 0 | 0 | The plaza |
+| 12 | 1,940 | 300 | 0 | 0 | The plaza, over `plaza-cross` at 2,000 m |
 | 13 | 2,240 | 140 | -68 | 0 | Lighthouse Kink as the plaza closes; 118 km/h on a Sesta 600, 142 on a Wren |
 | 14 | 2,380 | 160 | 62 | 2 | Right, recovering; 134 km/h on a Sesta 600, 161 on a Wren |
 | 15 | 2,540 | 360 | 0 | 8 | Seawall climb |
@@ -250,7 +252,7 @@ Eight straights over 250 m remain: 0 to 307, 474 to 756, 1,691 to 2,249 (the pla
 | 17 | 3,000 | 100 | 0 | -9 | Seawall hump, drop; launches at 169 km/h |
 | 18 | 3,100 | 300 | -26 | -5 | Sweeping left down to the pier |
 | 19 | 3,400 | 200 | 30 | 0 | Pier approach, narrowing to two lanes |
-| 20 | 3,600 | 120 | 0 | 0 | Along the pier |
+| 20 | 3,600 | 120 | 0 | 0 | Along the pier, over `pier-lights` at 3,650 m |
 | 21 | 3,720 | 40 | 0 | 1.4 | Pier hump, rise |
 | 22 | 3,760 | 40 | 0 | -1.4 | Pier hump, drop; launches at 172 km/h |
 | 23 | 3,800 | 100 | 0 | 0 | Along the pier, the old finish, closing to one lane |

@@ -15,7 +15,7 @@ A road declares junctions and pedestrian crossings in its plan's `crossings`. A 
 
 ## How to get to it (user POV)
 
-Breakwater Run has `harbour-cross` at 560 m (two lanes each way, both arms, lights), `market-cross` at 6,000 m (one lane each way, a right arm only, lights), and `pier-crossing` at 7,850 m (a signalled zebra). List them from the checkout under test with no browser: `node --input-type=module -e 'import { trackFor } from "./packages/track/src/roads.ts"; for (const c of trackFor("breakwater-run").crossings) console.log(c.id, c.s, c.fromS, c.toS, c.road?.arms ?? "no road", c.lights ? "lights" : "no lights", c.walk);'`.
+Breakwater Run has `harbour-cross` at 560 m (one lane each way, both arms, lights), `plaza-cross` at 2,000 m (one lane each way, both arms, lights), `pier-lights` at 3,650 m (a signalled zebra), `market-cross` at 6,000 m (one lane each way, a right arm only, lights), and `pier-crossing` at 7,850 m (a signalled zebra). List them from the checkout under test with no browser: `node --input-type=module -e 'import { trackFor } from "./packages/track/src/roads.ts"; for (const c of trackFor("breakwater-run").crossings) console.log(c.id, c.s, c.fromS, c.toS, c.road?.arms ?? "no road", c.lights ? "lights" : "no lights", c.walk);'`.
 
 ## Driving it with rv
 
