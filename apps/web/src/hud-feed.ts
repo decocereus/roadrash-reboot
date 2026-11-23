@@ -22,6 +22,7 @@ export const idleHud: HudState = {
   speedKmh: 0,
   stallLeftMs: null,
   stamina: 1,
+  tower: [],
   weaponCapacity: 0,
   weaponHits: 0,
   weaponName: "",

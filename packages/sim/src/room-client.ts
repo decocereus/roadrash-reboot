@@ -37,6 +37,8 @@ import type {
   RiderId,
   RiderState,
 } from "./state.ts";
+import { createShownTiming } from "./timing.ts";
+import type { TimingView } from "./timing.ts";
 
 const NO_EVENTS: readonly RaceEvent[] = [];
 const NO_CORRECTIONS: readonly RiderCorrection[] = [];
@@ -91,6 +93,7 @@ export interface RoomClient {
   readonly predicted: RaceState;
   readonly restores: () => number;
   readonly stats: RoomStats;
+  readonly timing: TimingView;
   readonly predict: (control: Control, delay?: number) => boolean;
   readonly confirm: (frame: TickFrame, hash: Uint32Array | null) => void;
   readonly catchUpFrom: (snapshot: DataView) => void;
@@ -176,6 +179,7 @@ export const createRoomClient = (
   const confirmed = createRace(setup);
   const predicted = createRace(setup);
   const mended = createRace(setup);
+  const timing = createShownTiming(confirmed, setup.track.length);
   const digest = setupDigest(confirmed, setup.track);
   const scratch = createScratch(confirmed);
   const hash = new Uint32Array(HASH_WORDS);
@@ -295,6 +299,7 @@ export const createRoomClient = (
 
   const advance = (tick: number): void => {
     stepRace(predicted, setup.track, guess(predicted, tick));
+    timing.shown(predicted);
     hearFights(predicted);
   };
 
@@ -322,11 +327,26 @@ export const createRoomClient = (
     restoreInto(into, digest, view, setup.track);
   };
 
+  const showConfirmed = (): void => {
+    copyRace(confirmed, predicted);
+    timing.showConfirmed();
+  };
+
+  const showMended = (): void => {
+    copyRace(mended, predicted);
+    timing.showMended();
+  };
+
+  const mendFromConfirmed = (): void => {
+    copyRace(confirmed, mended);
+    timing.startMending();
+  };
+
   const rewind = (): void => {
     mending = false;
     mendedFights.length = 0;
     hits.replayDropped();
-    copyRace(confirmed, predicted);
+    showConfirmed();
   };
 
   const noteJump = (cause: JumpCause, fromS: number, fromX: number): void => {
@@ -400,7 +420,7 @@ export const createRoomClient = (
     const fromX = mine.x;
     const crashesBefore = mine.crashes;
     noteWhereRidersAre();
-    copyRace(mended, predicted);
+    showMended();
     mending = false;
     fights.push(...mendedFights);
     mendedFights.length = 0;
@@ -415,7 +435,7 @@ export const createRoomClient = (
     mending = true;
     mendCause = staleCause;
     staleCause = "otherRiders";
-    copyRace(confirmed, mended);
+    mendFromConfirmed();
     mendedFights.length = 0;
     hits.replayStarted();
     stats.rollbacks += 1;
@@ -432,6 +452,7 @@ export const createRoomClient = (
     const until = Math.min(predicted.tick, from + most);
     for (let tick = from + 1; tick <= until; tick += 1) {
       stepRace(mended, setup.track, guess(mended, tick));
+      timing.mended(mended);
       hearFights(mended);
       stats.resimulatedTicks += 1;
     }
@@ -531,6 +552,7 @@ export const createRoomClient = (
       outOfOrder(frame.tick, confirmed.tick);
     }
     stepRace(confirmed, setup.track, frame);
+    timing.confirmed(confirmed);
     learn(frame);
     if (serverHash) {
       hashRace(confirmed, digest, scratchFor(scratch, confirmed), hash);
@@ -545,6 +567,7 @@ export const createRoomClient = (
     catchUpFrom: (snapshot) => {
       restoreInto(confirmed, digest, snapshot, setup.track);
       restores += 1;
+      timing.startOver(confirmed);
       const repaired = asked;
       stats.repairs += repaired ? 1 : 0;
       asked = false;
@@ -655,6 +678,7 @@ export const createRoomClient = (
       fights = [];
       return taken;
     },
+    timing,
     writeInputs: (view) => {
       const unsent = Math.max(sentThrough, confirmed.tick) + 1;
       const last = Math.min(plannedThrough, unsent + MOST_BATCHED_CONTROLS - 1);

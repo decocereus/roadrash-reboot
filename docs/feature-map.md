@@ -405,7 +405,7 @@ Every screen React draws around a race: the first-visit card, the bar's Race, Ga
 - Docs: [docs/design/screens.md#flow](design/screens.md#flow), [docs/design/game-design.md#3-modes](design/game-design.md#3-modes), [DESIGN.md#components](../DESIGN.md#components)
 - Verify: [single-race.md](../.claude/skills/verify-rushline/features/single-race.md), [career.md](../.claude/skills/verify-rushline/features/career.md)
 - Perf: `bytes.route.root.gzip`, `bytes.route.root.raw`
-- Owns: `apps/web/src/components/screens/**`, `apps/web/test/escape-layers.test.ts`, `apps/web/test/career-screens.test.tsx`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/solo-door.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/navigation.ts`, `apps/web/test/navigation.test.ts`, `apps/web/test/welcome-navigation.test.ts`, `apps/web/test/navigation-tabs.test.ts`, `apps/web/test/navigation-walk.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/garage-stand.ts`, `apps/web/src/career/garage-stand.test.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`
+- Owns: `apps/web/src/components/screens/**`, `apps/web/test/escape-layers.test.ts`, `apps/web/test/hud-layout.test.tsx`, `apps/web/test/career-screens.test.tsx`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/solo-door.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/navigation.ts`, `apps/web/test/navigation.test.ts`, `apps/web/test/welcome-navigation.test.ts`, `apps/web/test/navigation-tabs.test.ts`, `apps/web/test/navigation-walk.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/garage-stand.ts`, `apps/web/src/career/garage-stand.test.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`
 
 Source files:
 
@@ -420,10 +420,12 @@ Source files:
 - `apps/web/src/components/screens/escape-layers.ts`
 - `apps/web/src/components/screens/finish.tsx`
 - `apps/web/src/components/screens/garage-panel.tsx`
+- `apps/web/src/components/screens/hud-layout.ts`
 - `apps/web/src/components/screens/name-card.tsx`
 - `apps/web/src/components/screens/pause.tsx`
 - `apps/web/src/components/screens/race-hud.tsx`
 - `apps/web/src/components/screens/race-panel.tsx`
+- `apps/web/src/components/screens/race-tower.tsx`
 - `apps/web/src/components/screens/rejoin.tsx`
 - `apps/web/src/components/screens/results-panel.tsx`
 - `apps/web/src/components/screens/room-lobby.tsx`
@@ -439,6 +441,7 @@ Test files:
 - `apps/web/src/career/garage-stand.test.ts`
 - `apps/web/test/career-screens.test.tsx`
 - `apps/web/test/escape-layers.test.ts`
+- `apps/web/test/hud-layout.test.tsx`
 - `apps/web/test/navigation-tabs.test.ts`
 - `apps/web/test/navigation-walk.ts`
 - `apps/web/test/navigation.test.ts`
@@ -446,26 +449,32 @@ Test files:
 
 ### Race HUD and notices
 
-The race state the HUD shows and how often it is published: speed, gear, place, progress, the countdown, notices and the cop warning; the React HUD screen sits with the menus.
+The race state the HUD shows and how often it is published: speed, gear, place, progress, the countdown, notices, the cop warning and the timing tower with each racer's interval to the rider ahead, read from the timing lines the race run and the room client keep beside the race; the React HUD screen and the tower sit with the menus.
 
 - Id: `hud`
-- Start: `apps/web/src/game/hud.ts`, `apps/web/src/game/race-feedback.ts`, `apps/web/src/hud-feed.ts`
+- Start: `apps/web/src/game/race-feedback.ts`, `apps/web/src/game/hud-tower.ts`, `packages/sim/src/timing.ts`
 - Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/design/screens.md#6-race-hud](design/screens.md#6-race-hud), [docs/design/art-direction.md#hud-style](design/art-direction.md#hud-style), [DESIGN.md#speedometer](../DESIGN.md#speedometer)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md), [single-race.md](../.claude/skills/verify-rushline/features/single-race.md)
-- Perf: none yet
-- Owns: `apps/web/src/game/hud*.ts`, `apps/web/src/game/race-feedback.test.ts`, `apps/web/src/game/race-feedback.ts`, `apps/web/src/hud-feed.ts`, `apps/web/test/hud-cadence.test.ts`
+- Perf: `timing.stamp.p95`, `sim.tick.p95`, `room.rollback.p95`
+- Owns: `apps/web/src/game/hud*.ts`, `apps/web/src/game/race-feedback.test.ts`, `apps/web/src/game/race-feedback.ts`, `apps/web/src/hud-feed.ts`, `apps/web/test/hud-cadence.test.ts`, `apps/web/test/race-tower.test.tsx`, `packages/sim/src/timing*.ts`
 
 Source files:
 
 - `apps/web/src/game/hud-cadence.ts`
+- `apps/web/src/game/hud-tower.ts`
 - `apps/web/src/game/hud.ts`
 - `apps/web/src/game/race-feedback.ts`
 - `apps/web/src/hud-feed.ts`
+- `packages/sim/src/timing.ts`
 
 Test files:
 
 - `apps/web/src/game/race-feedback.test.ts`
+- `apps/web/src/game/race-feedback.test.ts`
+- `apps/web/src/game/race-feedback.test.ts`
 - `apps/web/test/hud-cadence.test.ts`
+- `apps/web/test/race-tower.test.tsx`
+- `packages/sim/src/timing.test.ts`
 
 ### Chase camera
 
@@ -501,6 +510,8 @@ Source files:
 - `apps/web/src/sound/characters.ts`
 - `apps/web/src/sound/cues.ts`
 - `apps/web/src/sound/desk.ts`
+- `apps/web/src/sound/desk.ts`
+- `apps/web/src/sound/desk.ts`
 - `apps/web/src/sound/engine-control.ts`
 - `apps/web/src/sound/engine.ts`
 - `apps/web/src/sound/glide.ts`
@@ -508,6 +519,8 @@ Source files:
 - `apps/web/src/sound/passing.ts`
 - `apps/web/src/sound/race-mix.ts`
 - `apps/web/src/sound/recipes.ts`
+- `apps/web/src/sound/render.ts`
+- `apps/web/src/sound/render.ts`
 - `apps/web/src/sound/render.ts`
 - `apps/web/src/sound/sound.ts`
 - `apps/web/src/sound/tap.ts`
@@ -526,6 +539,8 @@ Test files:
 - `apps/web/src/sound/race-mix.test.ts`
 - `apps/web/src/sound/sound.test.ts`
 - `apps/web/test/passing-field.ts`
+- `apps/web/test/sound-bundle.ts`
+- `apps/web/test/sound-bundle.ts`
 - `apps/web/test/sound-bundle.ts`
 - `apps/web/test/sound-scenes.ts`
 
@@ -1594,6 +1609,8 @@ Source files:
 - `apps/web/src/race-handoff.ts`
 - `apps/web/src/room-handoff.ts`
 - `packages/career/src/room-race.ts`
+- `packages/sim/src/room-client.ts`
+- `packages/sim/src/room-client.ts`
 - `packages/sim/src/room-client.ts`
 - `packages/sim/src/room-clock.ts`
 - `packages/sim/src/room-frame.ts`

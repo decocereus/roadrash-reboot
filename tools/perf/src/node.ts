@@ -254,6 +254,7 @@ export const childRecord = Schema.Struct({
       bytes: Schema.Array(Schema.Number),
       hash: Schema.Array(Schema.Number),
       restore: Schema.Array(Schema.Number),
+      stamp: Schema.Array(Schema.Number),
       write: Schema.Array(Schema.Number),
     })
   ),

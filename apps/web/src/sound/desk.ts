@@ -2,12 +2,10 @@ import type { RaceView } from "@racer/sim/race-view";
 import type { BikeClass, RiderId } from "@racer/sim/state";
 
 import { engineCharacters } from "./characters.ts";
-import { cues, loops } from "./cues.ts";
-import type { Cue, Loop } from "./cues.ts";
+import { cues } from "./cues.ts";
+import type { Cue } from "./cues.ts";
 import { engineVoice } from "./engine.ts";
 import type { EngineVoice } from "./engine.ts";
-import { gainGlide } from "./glide.ts";
-import type { Glide } from "./glide.ts";
 import { PASSING_VOICES } from "./passing.ts";
 import {
   bandControl,
@@ -18,22 +16,14 @@ import {
   rideMix,
 } from "./race-mix.ts";
 import type { BandParams, PassingParams, Ride } from "./race-mix.ts";
-import { loopRecipes, priorities, recipes } from "./recipes.ts";
-import {
-  closeLoop,
-  cueJob,
-  fillNoise,
-  loopJob,
-  noiseBuffer,
-  seeded,
-} from "./render.ts";
+import { priorities, recipes } from "./recipes.ts";
+import { cueJob, fillNoise, noiseBuffer, seeded } from "./render.ts";
 import type { Random } from "./render.ts";
 
 const CHANNELS = 8;
 const NOISE_CHUNK = 16_384;
 const LATE_SECONDS = 0.4;
 const MUTE_SECONDS = 0.02;
-const LOOP_SECONDS = 0.3;
 const STEP_MS = 1.5;
 const CEILING = 0.98;
 const KNEE = 0.7;
@@ -77,7 +67,6 @@ export interface Desk {
   readonly hear: (view: RaceView, me: RiderId) => void;
   readonly hush: () => void;
   readonly shift: () => void;
-  readonly loop: (loop: Loop, gain: number) => void;
   readonly level: (level: Level) => void;
   readonly heard: () => ReadonlyMap<Cue, number>;
   readonly stats: () => RenderStats;
@@ -238,10 +227,6 @@ export const openDesk = (
   const channels: Channel[] = [];
   const bank: Partial<Record<Cue, Rendered>> = {};
   const counts = new Map<Cue, number>(cues.map((cue) => [cue, 0] as const));
-  const loopWanted = new Map<Loop, number>(
-    loops.map((loop) => [loop, 0] as const)
-  );
-  const loopGains = new Map<Loop, Glide>();
   let rendered = 0;
   let waitedMs = 0;
 
@@ -312,6 +297,7 @@ export const openDesk = (
   const renderFrom = async (index: number): Promise<void> => {
     const cue = cues[index];
     if (cue === undefined) {
+      waitedMs = performance.now() - started;
       return;
     }
     const recipe = recipes[cue];
@@ -338,47 +324,6 @@ export const openDesk = (
     }
     await renderFrom(index + 1);
   };
-  const startLoop = (loop: Loop, buffer: AudioBuffer): void => {
-    const recipe = loopRecipes[loop];
-    closeLoop(buffer, recipe);
-    const gain = context.createGain();
-    gain.gain.value = 0;
-    gain.connect(effects);
-    const source = context.createBufferSource();
-    source.buffer = buffer;
-    source.loop = true;
-    source.loopEnd = recipe.seconds;
-    source.connect(gain);
-    source.start();
-    const glide = gainGlide(gain.gain, LOOP_SECONDS);
-    glide.to(loopWanted.get(loop) ?? 0, context.currentTime);
-    loopGains.set(loop, glide);
-  };
-
-  const renderLoopFrom = async (index: number): Promise<void> => {
-    const loop = loops[index];
-    if (loop === undefined) {
-      waitedMs = performance.now() - started;
-      return;
-    }
-    const sliceStart = performance.now();
-    const job = loopJob(
-      loopRecipes[loop],
-      context.sampleRate,
-      noise,
-      100 + index
-    );
-    noteSlice(performance.now() - sliceStart);
-    await stepFrom(job.steps, 0);
-    const buffer = await job.context.startRendering();
-    await nextTask();
-    timed(() => {
-      startLoop(loop, buffer);
-    });
-    rendered += 1;
-    await renderLoopFrom(index + 1);
-  };
-
   const renderBank = async (): Promise<void> => {
     try {
       await nextTask();
@@ -403,7 +348,6 @@ export const openDesk = (
         }
       });
       await renderFrom(0);
-      await renderLoopFrom(0);
     } catch (error) {
       failed(messageOf(error));
     }
@@ -428,13 +372,6 @@ export const openDesk = (
   });
   Reflect.set(globalThis, "__rushlineSound", {
     heard: () => Object.fromEntries(counts),
-    looping: () =>
-      Object.fromEntries(
-        loops.map((loop) => [
-          loop,
-          loopGains.has(loop) ? (loopWanted.get(loop) ?? 0) : null,
-        ])
-      ),
     passing: () =>
       mix.passing.map(({ gain, key, pan }) => ({
         gain: Math.round(gain * 1000) / 1000,
@@ -467,10 +404,6 @@ export const openDesk = (
       const now = context.currentTime;
       effects.gain.setTargetAtTime(next.volume, now, MUTE_SECONDS);
       master.gain.setTargetAtTime(next.muted ? 0 : 1, now, MUTE_SECONDS);
-    },
-    loop(loop, gain) {
-      loopWanted.set(loop, gain);
-      loopGains.get(loop)?.to(gain, context.currentTime);
     },
     play,
     prepare(bikeClass) {

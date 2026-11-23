@@ -12,7 +12,7 @@ export const roomRunStub = (
   roomId: string,
   countdownSeconds: () => number = () => 3
 ): RoomRun => {
-  const { step, view } = createRaceRun(setup);
+  const { step, timing, view } = createRaceRun(setup);
   return {
     awayMs: null,
     confirmed: view,
@@ -24,6 +24,7 @@ export const roomRunStub = (
     leave: never("leaves a room"),
     listen: never("listens"),
     me: PLAYER_RIDER,
+    names: new Map(),
     pace: () => 1,
     pressed: never("hears a key"),
     report: never("reports"),
@@ -37,6 +38,7 @@ export const roomRunStub = (
     stoppedDrawing: never("draws"),
     takeCorrections: () => [],
     takeFights: () => [],
+    timing,
     view,
   };
 };

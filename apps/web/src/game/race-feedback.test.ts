@@ -58,7 +58,7 @@ const feedbackOn = (race: RaceRun, track: Track, session: () => Session) => {
       play,
       toggleMute: vi.fn<() => void>(),
     },
-    stage: { me: PLAYER_RIDER, race, track },
+    stage: { colours: new Map(), me: PLAYER_RIDER, race, track },
   });
   return { hush, owners, play, player, race, react, report, settled };
 };

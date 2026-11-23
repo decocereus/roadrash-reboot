@@ -10,13 +10,7 @@ import * as esbuild from "esbuild";
 import { chromium, webkit } from "playwright";
 import type { BrowserType } from "playwright";
 
-import {
-  brighterThan,
-  measure,
-  problemsOf,
-  seamJump,
-  wavOf,
-} from "./analysis.ts";
+import { brighterThan, measure, problemsOf, wavOf } from "./analysis.ts";
 import type { Measure } from "./analysis.ts";
 import { AuditionFailed } from "./audition-failed.ts";
 import { pageOf } from "./page.ts";
@@ -49,7 +43,7 @@ const launcherOf = (name: EngineName): BrowserType => {
 };
 
 const ClipRecord = Schema.Struct({
-  group: Schema.Literals(["cue", "loop", "engine", "scene"]),
+  group: Schema.Literals(["cue", "engine", "scene"]),
   name: Schema.String,
   problems: Schema.Array(Schema.String),
   sampleRate: Schema.Number,
@@ -186,13 +180,9 @@ const auditionAll = Effect.fnUntraced(function* auditionAll(options: Options) {
     .makeDirectory(out, { recursive: true })
     .pipe(Effect.mapError(failed(`Could not make ${out}`)));
   const measures: Measure[] = [];
-  const seams = new Map<string, number>();
   for (const clip of clips) {
     const samples = samplesOf(clip);
     measures.push(measure(clip.name, samples, clip.sampleRate));
-    if (clip.group === "loop") {
-      seams.set(clip.name, seamJump(samples));
-    }
     const file = path.join(out, `${clip.name}.wav`);
     yield* fs
       .writeFile(file, wavOf(samples, clip.sampleRate))
@@ -206,10 +196,7 @@ const auditionAll = Effect.fnUntraced(function* auditionAll(options: Options) {
     clips.filter((clip) => clip.group === "scene").map((clip) => clip.name)
   );
   const problems = [
-    ...problemsOf(
-      measures.filter((each) => !sceneNames.has(each.name)),
-      seams
-    ),
+    ...problemsOf(measures.filter((each) => !sceneNames.has(each.name))),
     ...brighterThan(measures, BRIGHTER),
     ...clips.flatMap((clip) => clip.problems),
   ];

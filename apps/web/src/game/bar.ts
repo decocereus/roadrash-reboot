@@ -308,7 +308,6 @@ const openRoom = (
     tags.dispose();
   });
   const sounds = createBarSounds(sound());
-  owners.push(sounds.close);
   const speech = createSpeech(tags);
   const garage = createGarageCorner(bikes, tags);
   const cast = createCast(
@@ -551,7 +550,6 @@ const openRoom = (
     const opened = doorOpenedAt === null ? 0 : clock - doorOpenedAt;
     const lift = THREE.MathUtils.smoothstep(opened / DOOR_SECONDS, 0, 1);
     door.position.y = lift * DOOR_RISE;
-    sounds.bed(1 - lift);
     countdown.show(
       left === null
         ? NO_RACE_YET

@@ -139,8 +139,8 @@ Rebuilt on November 11, 2026. The Garage is the bar's second tab, not a painted 
 
 ```
 +------------------------------------------------------------------------------+
-| 3rd / 15                   ▲ COP 40 m ▲                         2.1 km to go |
-|                                                    ├────────●───────────┤    |
+| 3rd / 15                   ▲ COP 40 m ▲                    1 [] SKY    LEAD  |
+|                                                            2 [] YOU    +1.4  |
 |                                                                              |
 |                                                                              |
 |                         ┌──────────────┐                                     |
@@ -160,7 +160,7 @@ Rebuilt on November 11, 2026. The Garage is the bar's second tab, not a painted 
 | --- | --- | --- | --- |
 | Top left | Position | `3rd / 15`, large numerals. Turns yellow when it changes, holds for half a second, and returns to white. It does not blink. | `standings` |
 | Top centre | Cop warning | Hidden unless a cop is chasing the player. `▲ COP {m} m AHEAD ▲` or `▼ COP {m} m BEHIND ▼` in police blue and red, alternating at 2 Hz, with a short siren cue. Under 15 m it reads `COP ON YOU`. This is the only element on the HUD that blinks. | `chase` on police riders, distance to the player |
-| Top right | Distance | `{km} km to go` over a thin progress line with a dot for the player and small ticks for the riders ahead. Police roadblocks the player knows about (Dee's tip) show as a blue tick. | `s` over track length |
+| Top right | Timing tower | Every racer in race order: place, colour chip, name and the interval to the rider ahead, `+{s.t}`. The leader reads `Lead`; `Wrecked` and `Busted` rows dim; a finished rider has a chequered square; the interval is blank until the rider ahead has ridden across the follower's spot. The rows sit on a flat ink panel at 55%. The player's row is yellow. In a window too narrow to clear the centred elements it starts under the cop warning and shows the leader, then the riders around you, above the notice band. | `standings`, `intervalAhead` |
 | Bottom left | Speed | Speed in km/h as large tabular numerals with `km/h` under it. No dial. | `speed` |
 | Bottom centre | Player bars | `YOU` stamina bar and, under it, a thinner `BIKE` condition bar. Stamina goes green, yellow under 50, red under 25. The bike bar is warm white, yellow under 50, and red under 25. Both bars change colour and hold it; neither flashes. | `stamina`, `condition` |
 | Bottom right | Weapon | Weapon name and one pip per hit left. Shows `FISTS` with no pips when unarmed. | `weapon`, `weaponHits` |
@@ -174,7 +174,7 @@ Rebuilt on November 11, 2026. The Garage is the bar's second tab, not a painted 
 
 - Nothing is drawn in the middle 60% of the width between 25% and 80% of the height, except the brief notice.
 - Only the cop warning blinks. Position and the two bars change colour without flashing, and notices appear once and fade.
-- No rival tags, names or speech during a race. No rear-view mirror.
+- No rival tags or speech over the riders during a race; names appear only in the timing tower. No rear-view mirror.
 - All numerals are tabular so they do not jitter.
 - The HUD scales with the shorter screen side and stays readable at 1280 × 720.
 

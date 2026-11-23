@@ -3,7 +3,7 @@ import type { BikeClass, RiderId } from "@racer/sim/state";
 
 import { diagnostics } from "../diagnostics/hub.ts";
 import type { EffectsVolume, SettingsStore } from "../diagnostics/settings.ts";
-import type { Cue, Loop } from "./cues.ts";
+import type { Cue } from "./cues.ts";
 import type { Desk, Level } from "./desk.ts";
 import type { Ride } from "./race-mix.ts";
 
@@ -31,7 +31,6 @@ export interface Sound {
   readonly hear: (view: RaceView, me: RiderId) => void;
   readonly hush: () => void;
   readonly shift: () => void;
-  readonly loop: (loop: Loop, gain: number) => void;
   readonly toggleMute: () => void;
   readonly muted: () => boolean;
   readonly desk: () => Desk | null;
@@ -130,9 +129,6 @@ export const createSound = <Context extends Unlockable>({
     },
     hush() {
       desk?.hush();
-    },
-    loop(loop, gain) {
-      desk?.loop(loop, gain);
     },
     muted: () => muted,
     play(cue, pan = 0, gain = 1) {

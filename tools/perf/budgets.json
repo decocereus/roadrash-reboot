@@ -112,11 +112,19 @@
       {
         "file": "tools/perf/baselines/uhd630.vimaan.gpu-chromium-intel.json.gz",
         "sha256": "fbd6ed619b13e9b5b48d776e6d974ae2aaeed0473c7c659b50613b4129874939"
+      },
+      {
+        "file": "tools/perf/baselines/timing.node-darwin-arm64.json.gz",
+        "sha256": "cc7cb8068b977761a0928c7f3c763f49a4e2c8d391aa4ad71660f051c32dcbbb"
+      },
+      {
+        "file": "tools/perf/baselines/timing.node-linux-x64.json.gz",
+        "sha256": "b1503143e31f4ad753b64b88ad6acbe35fe84ebb760f05218420a4423ea51064"
       }
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "e120cb08bd310503d26adeee5e2a6598d6e66c0d632c46227a0851b06a29b521"
+    "summarySha256": "9b23c5e1b6527e0c4b89a52f8290da049c42798c32acca703e25e5e15d632c25"
   },
   "limits": [
     {
@@ -2314,6 +2322,54 @@
       "source": "gate-2026-11-19T16-26-24-205Z-9f67ba9-15fb2e7",
       "unit": "ms",
       "value": 0.0215695588950324
+    },
+    {
+      "baseline": 0.0002155,
+      "derivation": "1.15 x calibrated baseline median",
+      "direction": "max",
+      "environment": "node-darwin-arm64",
+      "metric": "timing.stamp.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "baseline-2026-11-19T15-28-11-312Z-9f67ba9-db125dc",
+      "unit": "ms",
+      "value": 0.00024782499999999997
+    },
+    {
+      "baseline": 0.00026031,
+      "derivation": "1.15 x calibrated baseline median",
+      "direction": "max",
+      "environment": "node-darwin-arm64",
+      "metric": "timing.stamp.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "baseline-2026-11-19T15-28-11-312Z-9f67ba9-db125dc",
+      "unit": "ms",
+      "value": 0.0002993565
+    },
+    {
+      "baseline": 0.00037299,
+      "derivation": "1.15 x calibrated baseline median, with 1.3 x for the spread between GitHub runners",
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "timing.stamp.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gate-2026-11-19T16-03-05-306Z-9f67ba9-38eaebb",
+      "unit": "ms",
+      "value": 0.00055762005
+    },
+    {
+      "baseline": 0.00042264,
+      "derivation": "1.15 x calibrated baseline median, with 1.3 x for the spread between GitHub runners",
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "timing.stamp.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gate-2026-11-19T16-03-05-306Z-9f67ba9-38eaebb",
+      "unit": "ms",
+      "value": 0.0006318468
     }
   ],
   "nodeProfiles": {
