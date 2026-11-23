@@ -11,13 +11,15 @@ import type { BarSpeech } from "./bar-speech.ts";
 import type { Tag, TagLayer } from "./bar-tags.ts";
 import type { Shading } from "./cel.ts";
 import { bodyFor } from "./figure-rig.ts";
+import { gaitOf } from "./gait.ts";
 import { blockPaletteOf } from "./rider-blocks.ts";
 import { createRiderFigure } from "./rider-figure.ts";
 import type { RiderFigure, Stance } from "./rider-figure.ts";
+import { createStrider } from "./strider.ts";
+import type { Strider } from "./strider.ts";
 
 const FULL_TURN = Math.PI * 2;
 const WALK_SPEED = 1.3;
-const WALK_HZ = 1;
 const TAG_LIFT = 1;
 const FORWARD_YAW = Math.PI;
 
@@ -43,20 +45,11 @@ const actTurns = {
   walk: poseTurns.relaxed,
 } as const;
 
-const STEP_SHARE = 0.46;
 const FLOOR_RADIUS = 0.34;
 const FACE_SECONDS = 3.5;
 const ON_MOUNT_REACH = 3.6;
 const AMBIENT_EVERY = 9;
 const NOBODY: readonly never[] = [];
-
-const mixPose = (from: number[], to: number[], share: number): number[] => {
-  const mixed = [...from];
-  for (let offset = 0; offset < mixed.length; offset += 4) {
-    THREE.Quaternion.slerpFlat(mixed, offset, from, offset, to, offset, share);
-  }
-  return mixed;
-};
 
 interface CastSpot {
   readonly x: number;
@@ -105,8 +98,7 @@ const offsetOf = (index: number): number => index * 1.37;
 interface Motion {
   readonly still: number[];
   readonly breath: number[];
-  readonly stepA: number[];
-  readonly stepB: number[];
+  readonly strider: Strider;
 }
 
 const turnOff = (figure: RiderFigure, wanted: number): number =>
@@ -142,7 +134,6 @@ export const createCast = (
   ];
   let leg = 0;
   let pause = 2;
-  let walked = 0;
   const pushes = riderBlocks.map(() => ({ pushX: 0, pushZ: 0, x: 0, z: 0 }));
   const faces = riderBlocks.map(() => ({ until: 0, yaw: 0 }));
   for (let index = 0; index < riderBlocks.length; index += 1) {
@@ -151,11 +142,8 @@ export const createCast = (
     if (!(blocks && spot)) {
       continue;
     }
-    const figure = createRiderFigure(
-      bodyFor(assets, index),
-      shading,
-      blockPaletteOf(blocks)
-    );
+    const body = bodyFor(assets, index);
+    const figure = createRiderFigure(body, shading, blockPaletteOf(blocks));
     const base =
       spot.act === "stool" || mounts.has(spot.act) ? "seated" : "stand";
     const still = figure.bakePose(base, actTurns[spot.act]);
@@ -163,9 +151,11 @@ export const createCast = (
       ...actTurns[spot.act],
       ...breathTurns,
     ]);
-    const stepA = mixPose(still, figure.bakePose("run_a", []), STEP_SHARE);
-    const stepB = mixPose(still, figure.bakePose("run_b", []), STEP_SHARE);
-    motions.push({ breath, stepA, stepB, still });
+    const strider = createStrider(
+      gaitOf(body, assets.moves),
+      body.bones.length
+    );
+    motions.push({ breath, still, strider });
     group.add(figure.root);
     const tag = tags.name(blocks.name);
     members.push({
@@ -255,13 +245,21 @@ export const createCast = (
     figure.holdPose(motion.still, motion.breath, blend, seconds);
   };
 
+  const walkOn = (
+    figure: RiderFigure,
+    { strider }: Motion,
+    pace: number,
+    seconds: number
+  ): void => {
+    strider.step(pace, seconds);
+    figure.onFoot(strider, "none", seconds);
+  };
+
   const walkToDoor = (
     figure: RiderFigure,
     motion: Motion,
     gather: readonly [number, number],
-    index: number,
     door: number,
-    time: number,
     seconds: number
   ): void => {
     stride.set(
@@ -269,36 +267,26 @@ export const createCast = (
       0,
       gather[1] - figure.root.position.z
     );
+    let pace = 0;
     if (stride.length() > 0.2) {
+      pace = WALK_SPEED * 1.4 * door;
       figure.root.rotation.y = Math.atan2(stride.x, stride.z) + FORWARD_YAW;
-      figure.root.position.addScaledVector(
-        stride.normalize(),
-        WALK_SPEED * 1.4 * door * seconds
-      );
-      const phase = time * WALK_HZ * 1.4 + offsetOf(index);
-      figure.holdPose(
-        motion.stepA,
-        motion.stepB,
-        0.5 - 0.5 * Math.cos(phase * FULL_TURN),
-        seconds
-      );
+      figure.root.position.addScaledVector(stride.normalize(), pace * seconds);
     } else {
       figure.root.rotation.y = FORWARD_YAW + FORWARD_YAW;
-      figure.holdPose(motion.still, motion.breath, 0.5, seconds);
     }
+    walkOn(figure, motion, pace, seconds);
   };
 
   const walkTheRoute = (
     figure: RiderFigure,
     motion: Motion,
-    index: number,
-    time: number,
     seconds: number
   ): void => {
     const target = route[leg] ?? route[0];
     if (pause > 0 || !target) {
       pause -= seconds;
-      breathe(figure, motion, index, time, seconds);
+      walkOn(figure, motion, 0, seconds);
       return;
     }
     stride.set(
@@ -306,25 +294,18 @@ export const createCast = (
       0,
       target.z - figure.root.position.z
     );
+    let pace = 0;
     if (stride.length() < 0.1) {
       leg = (leg + 1) % route.length;
       pause = 2.5;
     } else {
+      pace = WALK_SPEED;
       const wanted = Math.atan2(stride.x, stride.z) + FORWARD_YAW;
       figure.root.rotation.y +=
         turnOff(figure, wanted) * Math.min(1, seconds * 5);
-      figure.root.position.addScaledVector(
-        stride.normalize(),
-        WALK_SPEED * seconds
-      );
+      figure.root.position.addScaledVector(stride.normalize(), pace * seconds);
     }
-    walked += seconds;
-    figure.holdPose(
-      motion.stepA,
-      motion.stepB,
-      0.5 - 0.5 * Math.cos(walked * WALK_HZ * FULL_TURN),
-      seconds
-    );
+    walkOn(figure, motion, pace, seconds);
   };
 
   const moveOnFoot = (
@@ -336,9 +317,9 @@ export const createCast = (
     seconds: number
   ): void => {
     if (door > 0 && spot.gather) {
-      walkToDoor(figure, motion, spot.gather, index, door, time, seconds);
+      walkToDoor(figure, motion, spot.gather, door, seconds);
     } else if (spot.act === "walk" && door === 0) {
-      walkTheRoute(figure, motion, index, time, seconds);
+      walkTheRoute(figure, motion, seconds);
     } else {
       breathe(figure, motion, index, time, seconds);
     }

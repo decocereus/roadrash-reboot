@@ -31,6 +31,10 @@ interface ParserModule {
 }
 
 const parsersOf = (module: Promise<ParserModule>): AssetParsers => ({
+  moves: async (bytes, url) => {
+    const { assetParsers } = await module;
+    return await assetParsers.moves(bytes, url);
+  },
   parts: async (bytes, url) => {
     const { assetParsers } = await module;
     return await assetParsers.parts(bytes, url);

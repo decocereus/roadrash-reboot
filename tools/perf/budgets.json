@@ -116,7 +116,7 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "db46b6dd71f4e96b752b4007ceae9b04fbd9ba2f6671596a79c2ab089f3e85a1"
+    "summarySha256": "914280266d6f373ec2b1a2f7c3aaf2d847d3cdeb22edb329eb8b3f8b013ef45e"
   },
   "limits": [
     {
@@ -253,6 +253,18 @@
     },
     {
       "derivation": "exact baseline",
+      "value": 41132,
+      "baseline": 41132,
+      "direction": "max",
+      "environment": "build",
+      "metric": "assets.glb.rider_moves",
+      "paired": null,
+      "scenario": null,
+      "source": "baseline-2026-11-23T10-29-05-736Z-68344ba-68344ba",
+      "unit": "B"
+    },
+    {
+      "derivation": "exact baseline",
       "value": 261240,
       "baseline": 261240,
       "direction": "max",
@@ -313,14 +325,14 @@
     },
     {
       "derivation": "exact baseline",
-      "value": 3561280,
-      "baseline": 3561280,
+      "value": 3602412,
+      "baseline": 3602412,
       "direction": "max",
       "environment": "build",
       "metric": "assets.glb.total",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-05T08-54-54-799Z-d743540-d743540",
+      "source": "baseline-2026-11-23T10-29-05-736Z-68344ba-68344ba",
       "unit": "B"
     },
     {
@@ -409,26 +421,26 @@
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 242215,
-      "baseline": 237465,
+      "value": 248242,
+      "baseline": 243374,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.incremental.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-08T23-11-30-469Z-b1c4332-b1c4332",
+      "source": "baseline-2026-11-23T10-29-05-736Z-68344ba-68344ba",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 849060,
-      "baseline": 832411,
+      "value": 864093,
+      "baseline": 847150,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.incremental.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-08T23-11-30-469Z-b1c4332-b1c4332",
+      "source": "baseline-2026-11-23T10-29-05-736Z-68344ba-68344ba",
       "unit": "B"
     },
     {

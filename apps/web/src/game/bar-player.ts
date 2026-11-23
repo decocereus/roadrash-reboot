@@ -90,7 +90,6 @@ export const createBarPlayer = ({
     lean: 0,
     mounted: false,
     pace: 0,
-    stride: 0,
     x: rider.x,
     z: rider.z,
   };
@@ -229,7 +228,6 @@ export const createBarPlayer = ({
     view.heading = fromHeading + angleOff(fromHeading, rider.heading) * share;
     view.lean = fromLean + (rider.lean - fromLean) * share;
     view.pace = rider.pace;
-    view.stride = rider.stride;
     view.mounted = rider.place.kind === "bike";
     if (view.mounted) {
       bike.position.set(view.x, 0, view.z);

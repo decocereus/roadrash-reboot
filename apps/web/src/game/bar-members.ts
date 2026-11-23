@@ -29,7 +29,6 @@ import type { BarWalkers, WalkerView } from "./bar-walker.ts";
 const SEND_EVERY_SECONDS = 1 / WALKS_PER_SECOND;
 const FOLLOW_RATE = 12;
 const SNAP_METRES = 4;
-const STRIDE_RUN_SPEED = 7;
 const TICKS_PER_SECOND = 60;
 const READY_SUFFIX = " READY";
 const NO_CONTROL = { forward: 0, right: 0, sprint: false };
@@ -89,7 +88,6 @@ const newBody = (): Body => ({
     lean: 0,
     mounted: false,
     pace: 0,
-    stride: 0,
     x: 0,
     z: 0,
   },
@@ -109,7 +107,6 @@ const followWalk = (
   view.heading += angleOff(view.heading, walk.heading) * share;
   view.lean += (walk.lean - view.lean) * ease;
   view.pace = walk.pace;
-  view.stride += (walk.pace / STRIDE_RUN_SPEED) * seconds;
   view.mounted = walk.place === "bike";
   occupant.shoving = Math.max(0, occupant.shoving - seconds * TICKS_PER_SECOND);
 };

@@ -110,6 +110,7 @@ const modelParts = (parsers: AssetParsers) => parsers.parts;
 const wholeModel = (parsers: AssetParsers) => parsers.whole;
 const riderModel = (parsers: AssetParsers) => parsers.rider;
 const walkerModel = (parsers: AssetParsers) => parsers.walkers;
+const movesModel = (parsers: AssetParsers) => parsers.moves;
 
 const displayFont = Effect.gen(function* loadDisplayFont() {
   const fonts = yield* FontReadiness;
@@ -153,6 +154,7 @@ export const loadAssets = Effect.fn("assets.load")(function* loadAssets(
     riderA,
     riderB,
     riderC,
+    moves,
     stalls,
     walkers,
     fontFallback,
@@ -165,6 +167,7 @@ export const loadAssets = Effect.fn("assets.load")(function* loadAssets(
       model(cache, buildA, riderModel),
       model(cache, buildB, riderModel),
       model(cache, buildC, riderModel),
+      model(cache, urls.moves, movesModel),
       model(cache, urls.stalls, modelParts),
       model(cache, urls.walkers, walkerModel),
       displayFont,
@@ -176,6 +179,7 @@ export const loadAssets = Effect.fn("assets.load")(function* loadAssets(
       bikes,
       car,
       figures: [riderA, riderB, riderC],
+      moves,
       stalls,
       truck,
       van,

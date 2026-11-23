@@ -8,22 +8,36 @@ import { artFile } from "./art-files.ts";
 export const pinnedAssets = async (): Promise<Assets> => {
   const [riderA, riderB, riderC] = modelUrls.figures;
   const { classic, ghost, oni, seraph } = modelUrls.bikes;
-  const { car, stalls, truck, van, walkers } = modelUrls;
-  const [bikeA, bikeB, bikeC, bikeD, cars, trucks, vans, a, b, c, people, kit] =
-    await Promise.all([
-      assetParsers.parts(artFile(classic), classic),
-      assetParsers.parts(artFile(ghost), ghost),
-      assetParsers.parts(artFile(oni), oni),
-      assetParsers.parts(artFile(seraph), seraph),
-      assetParsers.whole(artFile(car), car),
-      assetParsers.whole(artFile(truck), truck),
-      assetParsers.whole(artFile(van), van),
-      assetParsers.rider(artFile(riderA), riderA),
-      assetParsers.rider(artFile(riderB), riderB),
-      assetParsers.rider(artFile(riderC), riderC),
-      assetParsers.walkers(artFile(walkers), walkers),
-      assetParsers.parts(artFile(stalls), stalls),
-    ]);
+  const { car, moves, stalls, truck, van, walkers } = modelUrls;
+  const [
+    bikeA,
+    bikeB,
+    bikeC,
+    bikeD,
+    cars,
+    trucks,
+    vans,
+    a,
+    b,
+    c,
+    people,
+    kit,
+    stride,
+  ] = await Promise.all([
+    assetParsers.parts(artFile(classic), classic),
+    assetParsers.parts(artFile(ghost), ghost),
+    assetParsers.parts(artFile(oni), oni),
+    assetParsers.parts(artFile(seraph), seraph),
+    assetParsers.whole(artFile(car), car),
+    assetParsers.whole(artFile(truck), truck),
+    assetParsers.whole(artFile(van), van),
+    assetParsers.rider(artFile(riderA), riderA),
+    assetParsers.rider(artFile(riderB), riderB),
+    assetParsers.rider(artFile(riderC), riderC),
+    assetParsers.walkers(artFile(walkers), walkers),
+    assetParsers.parts(artFile(stalls), stalls),
+    assetParsers.moves(artFile(moves), moves),
+  ]);
   return {
     bikes: {
       classic: bikeA.value,
@@ -33,6 +47,7 @@ export const pinnedAssets = async (): Promise<Assets> => {
     },
     car: cars.value,
     figures: [a.value, b.value, c.value],
+    moves: stride.value,
     stalls: kit.value,
     truck: trucks.value,
     van: vans.value,

@@ -18,8 +18,6 @@ export type RiderPose =
   | "seated"
   | "tumble"
   | "lying"
-  | "run"
-  | "stand"
   | "lift"
   | "punch"
   | "kick"
@@ -166,8 +164,6 @@ const plantedIn = (pose: RiderPose): Planted => {
     }
     case "tumble":
     case "lying":
-    case "run":
-    case "stand":
     case "lift":
     case "surrender": {
       return "none";

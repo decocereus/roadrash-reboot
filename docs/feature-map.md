@@ -541,14 +541,14 @@ Test files:
 
 ### Riders, bikes and cars on screen
 
-The riders, bikes and traffic cars drawn from the race each frame: placement on the road, poses, punches and kicks, falls, weapons in hand, the painted celebrity figures, the `?as` and `?against` flags that dress riders in them and the wardrobe that holds the celebrity figures the race on screen wears, each maker's bike model, and the instanced fleet of cars.
+The riders, bikes and traffic cars drawn from the race each frame: placement on the road, poses, punches and kicks, falls, the walk, run and sprint on foot in the race and the bar, weapons in hand, the painted celebrity figures, the `?as` and `?against` flags that dress riders in them and the wardrobe that holds the celebrity figures the race on screen wears, each maker's bike model, and the instanced fleet of cars.
 
 - Id: `riders-on-screen`
 - Start: `apps/web/src/game/rider-views.ts`, `apps/web/src/game/rider-figure.ts`, `apps/web/src/game/actors.ts`
 - Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/design/art-direction.md#riders-and-bikes](design/art-direction.md#riders-and-bikes), [docs/design/art-direction.md#budget-and-build](design/art-direction.md#budget-and-build)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`, `riders.cpu.p95`
-- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/fleet.ts`, `apps/web/src/game/cross-car-pose.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/test/actor-tables.test.ts`, `apps/web/test/bike-contact.ts`, `apps/web/test/figure-wear.test.ts`, `apps/web/test/figure-shadow.test.ts`, `apps/web/test/planted-hands.test.ts`, `apps/web/test/rider-shade.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`
+- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/fleet.ts`, `apps/web/src/game/cross-car-pose.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/test/actor-tables.test.ts`, `apps/web/test/bike-contact.ts`, `apps/web/test/figure-wear.test.ts`, `apps/web/test/figure-shadow.test.ts`, `apps/web/test/planted-hands.test.ts`, `apps/web/test/rider-gait.test.ts`, `apps/web/test/rider-shade.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`, `apps/web/src/game/gait.ts`, `apps/web/src/game/strider.ts`, `apps/web/src/game/foot-lock.ts`
 
 Source files:
 
@@ -564,11 +564,15 @@ Source files:
 - `apps/web/src/game/figure-weapons.ts`
 - `apps/web/src/game/figure-wear.ts`
 - `apps/web/src/game/fleet.ts`
+- `apps/web/src/game/foot-lock.ts`
+- `apps/web/src/game/gait.ts`
 - `apps/web/src/game/rider-blocks.ts`
 - `apps/web/src/game/rider-drift.ts`
 - `apps/web/src/game/rider-fight.ts`
 - `apps/web/src/game/rider-figure.ts`
+- `apps/web/src/game/rider-moves.ts`
 - `apps/web/src/game/rider-views.ts`
+- `apps/web/src/game/strider.ts`
 
 Test files:
 
@@ -579,6 +583,7 @@ Test files:
 - `apps/web/test/figure-shadow.test.ts`
 - `apps/web/test/figure-wear.test.ts`
 - `apps/web/test/planted-hands.test.ts`
+- `apps/web/test/rider-gait.test.ts`
 - `apps/web/test/rider-shade.ts`
 
 ### Frame rate and quality

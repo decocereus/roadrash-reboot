@@ -193,30 +193,6 @@ def surrender(p):
         p.aim("hand" + s, (sx * 0.05, -0.05, 1))
 
 
-def run(p, sx):
-    p.reset()
-    p.rot("spine_01", X, 8)
-    p.rot("spine_03", X, 8)
-    p.rot("spine_02", Z, -sx * 10)
-    p.rot("head", X, -10)
-    for s, k in SIDES:
-        fwd = k == sx
-        if fwd:
-            p.aim("thigh" + s, (k * 0.06, -0.72, -0.7))
-            p.aim("calf" + s, (k * 0.02, 0.28, -0.96))
-            p.aim("foot" + s, (k * 0.05, -0.9, -0.4))
-            p.aim("upperarm" + s, (k * 0.2, 0.6, -0.78))
-            p.aim("lowerarm" + s, (k * 0.05, -0.35, -0.94))
-        else:
-            p.aim("thigh" + s, (k * 0.06, 0.34, -0.94))
-            p.aim("calf" + s, (k * 0.02, 0.86, -0.5))
-            p.aim("foot" + s, (k * 0.05, 0.2, -1))
-            p.aim("upperarm" + s, (k * 0.2, -0.5, -0.85))
-            p.aim("lowerarm" + s, (-k * 0.1, -0.92, 0.25))
-        p.aim("hand" + s, (0, -0.6, -0.5))
-        p.grip(s, k, (55, 60, 45))
-
-
 def lift(p):
     p.reset()
     p.rot("pelvis", X, 30)
@@ -276,8 +252,9 @@ POSES = [
     ("windup_r", lambda p: windup(p, -1)),
     ("swing_l", lambda p: swing(p, 1)),
     ("swing_r", lambda p: swing(p, -1)),
-    ("run_a", lambda p: run(p, 1)),
-    ("run_b", lambda p: run(p, -1)),
+    # Two retired frames hold their places so the poses after them stay on the frames the game reads.
+    ("retired_a", lambda p: p.reset()),
+    ("retired_b", lambda p: p.reset()),
     ("lift", lift),
     ("lying", lying),
     ("tumble_a", lambda p: tumble(p, 1)),

@@ -37,6 +37,7 @@ export const glbNames = [
   "rider_a",
   "rider_b",
   "rider_c",
+  "rider_moves",
   "seraph",
   "stalls",
   "truck",
