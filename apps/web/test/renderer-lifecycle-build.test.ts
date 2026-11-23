@@ -8,8 +8,8 @@ import { describe, expect, it, vi } from "vitest";
 import { createChaseCamera } from "../src/game/chase-camera.ts";
 import { bodyFor } from "../src/game/figure-rig.ts";
 import { undressed } from "../src/game/figure-wardrobe.ts";
-import type { Look } from "../src/game/looks.ts";
 import { isMesh, isPoints } from "../src/game/meshes.ts";
+import type { Grade } from "../src/game/post.ts";
 import { presets } from "../src/game/presets.ts";
 import { bindCast, createCast } from "../src/game/rider-views.ts";
 import { bindStage, createStage } from "../src/game/scene-lifecycle.ts";
@@ -56,7 +56,7 @@ describe("rebuilding the race on screen", () => {
         stage,
       });
       showCast(castFor(stage, undressed));
-      const looks: Look[] = [];
+      const looks: Grade[] = [];
       const { build } = bindStage({
         assets,
         autopilot: true,
@@ -162,7 +162,7 @@ describe("rebuilding the race on screen", () => {
 
       build(setup, undressed, true)();
       expect({
-        looked: looks.map((look) => look === stage.world.shading.look),
+        looked: looks.map((look) => look === stage.world.clock.hour),
         retired: retired.map((spy) => spy.mock.calls.length),
         track: stage.track === away,
       }).toStrictEqual({

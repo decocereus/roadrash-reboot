@@ -1,6 +1,5 @@
 import { celebrityIds } from "@racer/sim/cast";
 import { riderPalette } from "@racer/sim/palette";
-import type { RegionId } from "@racer/track/regions";
 import * as THREE from "three";
 
 import { celebrityLoader } from "../src/asset-load.ts";
@@ -12,7 +11,8 @@ import type { BikeModelId } from "../src/game/bike-models.ts";
 import { createShading, figureFloorOf } from "../src/game/cel.ts";
 import { bodyFor, paletteOf } from "../src/game/figure-rig.ts";
 import { assetParsers, createRenderer } from "../src/game/game.ts";
-import { lookOf } from "../src/game/looks.ts";
+import { lookOf, night, sunset } from "../src/game/looks.ts";
+import type { Look } from "../src/game/looks.ts";
 import { createPipeline } from "../src/game/post.ts";
 import { createRiderFigure } from "../src/game/rider-figure.ts";
 import type { Stance } from "../src/game/rider-figure.ts";
@@ -39,9 +39,9 @@ const lookNames = ["dusk", "night"] as const;
 type LookName = (typeof lookNames)[number];
 
 const looks = {
-  dusk: "salt-coast",
-  night: "lowtown",
-} as const satisfies Record<LookName, RegionId>;
+  dusk: { ...lookOf("salt-coast"), ...sunset },
+  night: { ...lookOf("lowtown"), ...night },
+} as const satisfies Record<LookName, Look>;
 
 const views = {
   bike: {
@@ -256,7 +256,7 @@ const shoot = (
   lookName: LookName
 ): Shot => {
   const { camera, height, pipeline, renderer, width } = frame;
-  const look = lookOf(looks[lookName]);
+  const look = looks[lookName];
   const shading = createShading(look);
   shading.aim(camera);
   const bikes = createBikes(

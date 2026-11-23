@@ -75,6 +75,7 @@ import { rendererOf } from "./profile.ts";
 import { bindFeedback, createFeedback, out } from "./race-feedback.ts";
 import { bindCast, createCast, pickFarRiders } from "./rider-views.ts";
 import { bindStage, createStage } from "./scene-lifecycle.ts";
+import { hourOf } from "./sky-clock.ts";
 
 const LAST_STRETCH = 1000;
 const MARKER_KEY = "KeyB";
@@ -91,6 +92,15 @@ const devRide = import.meta.env.DEV
 const wearing = import.meta.env.DEV
   ? wearingFrom(globalThis.location.search)
   : wearingNothing;
+
+const hourParam = new URLSearchParams(globalThis.location.search).get("hour");
+
+const pinnedHour =
+  import.meta.env.DEV &&
+  hourParam !== null &&
+  Number.isFinite(Number(hourParam))
+    ? Number(hourParam)
+    : null;
 
 const firstRoad = import.meta.env.DEV
   ? Number(new URLSearchParams(globalThis.location.search).get("road") ?? 0)
@@ -186,7 +196,7 @@ const startGame = (
   owners.push(() => {
     stage.world.dispose();
   });
-  pipeline.setLook(stage.world.shading.look);
+  pipeline.setLook(stage.world.clock.hour);
   stage.world.scene.add(stage.fleet.group);
   const chase = createChaseCamera();
   const sound = createSound();
@@ -513,6 +523,17 @@ const startGame = (
     }
     frame.profiler?.lap("camera");
     stage.world.showRoadLife(stage.race.view, cast.subject.s);
+    if (
+      stage.world.light(
+        pinnedHour ??
+          hourOf(
+            stage.world.shading.look.nightTick,
+            stage.race.view.tick + blend
+          )
+      )
+    ) {
+      pipeline.setLook(stage.world.clock.hour);
+    }
     stage.world.follow(chase.camera, cast.subject.s);
     frame.profiler?.lap("world");
     present();

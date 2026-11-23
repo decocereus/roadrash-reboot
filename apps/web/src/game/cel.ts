@@ -139,10 +139,17 @@ interface CelOptions {
   readonly vertexColors?: boolean;
 }
 
-export type Tone = Pick<
-  Look,
-  "ink" | "lit" | "rim" | "rimDirection" | "shadow"
->;
+type Triple = readonly [number, number, number];
+
+interface Tone {
+  readonly ink: THREE.ColorRepresentation;
+  readonly rim: THREE.ColorRepresentation;
+  readonly lit: Triple;
+  readonly shadow: Triple;
+  readonly keyDirection: Triple;
+  readonly rimDirection: Triple;
+  readonly glow: number;
+}
 
 export interface Shading {
   readonly look: Look;
@@ -159,7 +166,8 @@ export interface Shading {
   walker: (atlas: THREE.Texture) => THREE.MeshToonMaterial;
   glow: (
     colour: THREE.ColorRepresentation,
-    strength?: number
+    strength?: number,
+    map?: THREE.Texture | null
   ) => THREE.MeshBasicMaterial;
   glowPaint: () => THREE.MeshBasicMaterial;
   aim: (camera: THREE.Camera) => void;
@@ -175,17 +183,16 @@ const createRamp = (): THREE.DataTexture => {
   return ramp;
 };
 
-const linearOf = (tone: readonly [number, number, number]): THREE.Vector3 =>
-  new THREE.Vector3(
+const linearInto = (tone: Triple, into: THREE.Vector3): THREE.Vector3 =>
+  into.set(
     tone[0] ** DISPLAY_GAMMA,
     tone[1] ** DISPLAY_GAMMA,
     tone[2] ** DISPLAY_GAMMA
   );
 
-const lightOf = (tone: readonly [number, number, number]): THREE.Color => {
-  const linear = linearOf(tone).multiplyScalar(Math.PI);
-  return new THREE.Color().setRGB(linear.x, linear.y, linear.z);
-};
+const litScratch = new THREE.Vector3();
+const shadowScratch = new THREE.Vector3();
+const figureLinear = linearInto(FIGURE_LIGHT, new THREE.Vector3());
 
 export const onFxLayer = <Target extends THREE.Object3D>(
   target: Target
@@ -204,18 +211,19 @@ export const seesFx = (camera: THREE.Camera, sees: boolean): void => {
   }
 };
 
-export const figureShadowOf = ({
+export const figureDepthOf = ({
   lit,
   shadow,
-}: Pick<Look, "lit" | "shadow">) => {
-  const depth = Math.max(
-    Math.cbrt(linearOf(shadow).dot(LUMA) / linearOf(lit).dot(LUMA)),
+}: Pick<Tone, "lit" | "shadow">): number =>
+  Math.max(
+    Math.cbrt(
+      linearInto(shadow, shadowScratch).dot(LUMA) /
+        linearInto(lit, litScratch).dot(LUMA)
+    ),
     FIGURE_DEPTH_FLOOR
   );
-  return { chroma: Math.min(depth * SHADE_CHROMA, 1), depth };
-};
 
-export const figureFloorOf = (ink: string): number => {
+export const figureFloorOf = (ink: THREE.ColorRepresentation): number => {
   inkColour.set(ink);
   const long = Math.cbrt(
     0.4122214708 * inkColour.r +
@@ -242,7 +250,7 @@ export const figureFloorOf = (ink: string): number => {
 
 export const createShading = (look: Look): Shading => {
   const ramp = createRamp();
-  const key = new THREE.Vector3(...look.keyDirection).normalize();
+  const key = new THREE.Vector3();
   const rimWorld = new THREE.Vector3();
   const rimDirection = { value: new THREE.Vector3(0, 0, 1) };
   const keyDirection = { value: new THREE.Vector3(0, 0, 1) };
@@ -256,25 +264,52 @@ export const createShading = (look: Look): Shading => {
   const figureDepth = { value: 1 };
   const figureChroma = { value: 1 };
   const figureFloor = { value: 0 };
+  const glows: { material: THREE.MeshBasicMaterial; base: THREE.Color }[] = [];
+  const emissives: { material: THREE.MeshToonMaterial; base: number }[] = [];
+  let glowNow = 1;
 
   const relight = (tone: Tone): void => {
+    key.set(...tone.keyDirection).normalize();
     rimWorld.set(...tone.rimDirection).normalize();
     rimColour.value.set(tone.rim);
-    ambient.copy(lightOf(tone.shadow));
-    sun.copy(lightOf(tone.lit)).sub(ambient);
-    const litLinear = linearOf(tone.lit);
-    const shadowLinear = linearOf(tone.shadow);
-    const figureLinear = linearOf(FIGURE_LIGHT);
-    figureLight.value.copy(
-      figureLinear.multiplyScalar(litLinear.dot(LUMA) / figureLinear.dot(LUMA))
+    const litLinear = linearInto(tone.lit, litScratch);
+    const shadowLinear = linearInto(tone.shadow, shadowScratch);
+    ambient.setRGB(
+      shadowLinear.x * Math.PI,
+      shadowLinear.y * Math.PI,
+      shadowLinear.z * Math.PI
     );
+    sun.setRGB(
+      (litLinear.x - shadowLinear.x) * Math.PI,
+      (litLinear.y - shadowLinear.y) * Math.PI,
+      (litLinear.z - shadowLinear.z) * Math.PI
+    );
+    figureLight.value
+      .copy(figureLinear)
+      .multiplyScalar(litLinear.dot(LUMA) / figureLinear.dot(LUMA));
     figureSun.value.copy(litLinear).sub(shadowLinear);
-    const shade = figureShadowOf(tone);
-    figureDepth.value = shade.depth;
-    figureChroma.value = shade.chroma;
+    figureDepth.value = figureDepthOf(tone);
+    figureChroma.value = Math.min(figureDepth.value * SHADE_CHROMA, 1);
     figureFloor.value = figureFloorOf(tone.ink);
+    glowNow = tone.glow;
+    for (const { base, material } of glows) {
+      material.color.copy(base).multiplyScalar(glowNow);
+    }
+    for (const { base, material } of emissives) {
+      material.emissiveIntensity = base * glowNow;
+    }
   };
   relight(look);
+
+  const glowing = (
+    base: THREE.Color,
+    parameters: THREE.MeshBasicMaterialParameters
+  ): THREE.MeshBasicMaterial => {
+    const material = new THREE.MeshBasicMaterial(parameters);
+    material.color.copy(base).multiplyScalar(glowNow);
+    glows.push({ base, material });
+    return material;
+  };
 
   const build = (
     parameters: THREE.MeshToonMaterialParameters,
@@ -333,8 +368,13 @@ export const createShading = (look: Look): Shading => {
     },
     ambient,
     cel(colour, options = {}) {
-      const { rim = 0, ...parameters } = options;
-      return build({ color: colour, ...parameters }, rim, false);
+      const { emissiveIntensity = 1, rim = 0, ...parameters } = options;
+      const material = build({ color: colour, ...parameters }, rim, false);
+      if (parameters.emissiveMap) {
+        material.emissiveIntensity = emissiveIntensity * glowNow;
+        emissives.push({ base: emissiveIntensity, material });
+      }
+      return material;
     },
     dispose() {
       ramp.dispose();
@@ -342,13 +382,13 @@ export const createShading = (look: Look): Shading => {
     figure(atlas) {
       return build({ map: atlas, vertexColors: true }, 1, true, true);
     },
-    glow(colour, strength = 1.6) {
-      return new THREE.MeshBasicMaterial({
-        color: new THREE.Color(colour).multiplyScalar(strength),
+    glow(colour, strength = 1.6, map = null) {
+      return glowing(new THREE.Color(colour).multiplyScalar(strength), {
+        map,
       });
     },
     glowPaint() {
-      return new THREE.MeshBasicMaterial({ vertexColors: true });
+      return glowing(new THREE.Color("#ffffff"), { vertexColors: true });
     },
     key,
     look,

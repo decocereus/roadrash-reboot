@@ -444,7 +444,9 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/facade-texture.ts",
       "apps/web/src/game/road-texture.ts",
       "apps/web/src/game/shop-texture.ts",
-      "apps/web/src/game/sky-texture.ts",
+      "apps/web/src/game/sky.ts",
+      "apps/web/src/game/sky-clock.ts",
+      "apps/web/test/sky-clock.test.ts",
       "apps/web/src/game/sign-*.ts",
       "apps/web/src/game/texture-canvas.ts",
       "apps/web/test/roadside-clearance.test.ts",
@@ -459,7 +461,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
     summary:
       "The road, terrain, sky, city blocks, signs and roadside props drawn from the compiled track, in the look of each region, built in chunks around the player, and the clearance that hides a prop while the chase camera passes it. The ring of mountains on the horizon stands behind open country and is left out of a city.",
     title: "Roads, cities and scenery on screen",
-    verify: ["roadside-clearance.md"],
+    verify: ["roadside-clearance.md", "time-of-day.md"],
   },
   {
     docs: [

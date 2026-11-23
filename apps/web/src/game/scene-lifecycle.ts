@@ -250,7 +250,7 @@ export const bindStage = ({
     stage.track = setup.track;
     stage.world = next.world;
     if (replaced) {
-      pipeline.setLook(next.world.shading.look);
+      pipeline.setLook(next.world.clock.hour);
     }
     stage.colours = next.colours;
     stage.race = next.race;

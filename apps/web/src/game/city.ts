@@ -225,13 +225,7 @@ export const createCity = (track: Track, shading: Shading): City => {
   textures.push(atlas.texture);
   materials.set("solid", shading.cel("#ffffff", { vertexColors: true }));
   materials.set("glow", shading.glowPaint());
-  materials.set(
-    "sign",
-    new THREE.MeshBasicMaterial({
-      color: new THREE.Color("#ffffff").multiplyScalar(SIGN_GLOW),
-      map: atlas.texture,
-    })
-  );
+  materials.set("sign", shading.glow("#ffffff", SIGN_GLOW, atlas.texture));
   materials.set("cable", new THREE.MeshBasicMaterial({ color: look.ink }));
 
   const blocks = layBlocks(track);
