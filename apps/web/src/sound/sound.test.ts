@@ -20,7 +20,6 @@ const recordingDesk = (): Desk => ({
   heard: () => new Map(),
   hush: vi.fn<() => void>(),
   level: vi.fn<(level: Level) => void>(),
-  loop: vi.fn<Desk["loop"]>(),
   play: vi.fn<Desk["play"]>(),
   ride: vi.fn<Desk["ride"]>(),
   shift: vi.fn<() => void>(),

@@ -8,11 +8,10 @@ const OWN = 3;
 
 const heardBy = () => {
   const play = vi.fn<Sound["play"]>();
-  const loop = vi.fn<Sound["loop"]>();
-  const sounds = createBarSounds({ loop, play });
+  const sounds = createBarSounds({ play });
   const camera = new THREE.PerspectiveCamera();
   sounds.listen(0, 0, camera, OWN);
-  return { loop, play, sounds };
+  return { play, sounds };
 };
 
 describe(footfalls, () => {
@@ -83,19 +82,5 @@ describe("footsteps in the bar", () => {
     const { play, sounds } = heardBy();
     sounds.near("greet", 30, 0);
     expect(play).not.toHaveBeenCalled();
-  });
-});
-
-describe("the room bed", () => {
-  it("plays under the bar, lowers as the door lifts and stops when the bar closes", () => {
-    const { loop, sounds } = heardBy();
-    sounds.bed(1);
-    sounds.bed(0.5);
-    sounds.close();
-    expect(loop.mock.calls).toStrictEqual([
-      ["roomBed", 0.5],
-      ["roomBed", 0.25],
-      ["roomBed", 0],
-    ]);
   });
 });

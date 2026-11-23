@@ -9,7 +9,6 @@ const OTHERS_HEARD = 2;
 const OTHER_GAIN = 0.5;
 const HEARING_RANGE = 10;
 const WIDEST_PAN = 0.8;
-const BED_GAIN = 0.5;
 
 export const footfalls = (from: number, to: number): number =>
   Math.floor(to * FEET_PER_CYCLE) - Math.floor(from * FEET_PER_CYCLE);
@@ -36,8 +35,6 @@ interface Heard {
 }
 
 export interface BarSounds {
-  readonly bed: (level: number) => void;
-  readonly close: () => void;
   readonly listen: (
     x: number,
     z: number,
@@ -56,9 +53,7 @@ export interface BarSounds {
   readonly flush: () => void;
 }
 
-export const createBarSounds = (
-  sound: Pick<Sound, "loop" | "play">
-): BarSounds => {
+export const createBarSounds = (sound: Pick<Sound, "play">): BarSounds => {
   const right = new THREE.Vector3();
   const nearest: readonly [Heard, Heard] = [
     { away: Number.POSITIVE_INFINITY, cue: null, x: 0, z: 0 },
@@ -86,12 +81,6 @@ export const createBarSounds = (
   };
 
   return {
-    bed(level) {
-      sound.loop("roomBed", BED_GAIN * level);
-    },
-    close() {
-      sound.loop("roomBed", 0);
-    },
     flush() {
       if (ownStep !== null) {
         sound.play(ownStep, 0, 1);
