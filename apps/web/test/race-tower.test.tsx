@@ -149,6 +149,11 @@ const windowsIn = async (
         ...(await windowsIn(count - 1, file, work)),
       ];
 
+const layoutBoundary = (drawn: number): readonly string[] => [
+  "contain:layout size",
+  `height:${0.6 + drawn * ROW_EM}em`,
+];
+
 const markupOf = (rows: readonly TowerRow[]): string =>
   renderToStaticMarkup(<RaceTower rows={rows} shown="all" />);
 
@@ -270,24 +275,55 @@ describe("the race tower", () => {
     expect({ built, unchanged }).toStrictEqual({ built: 0, unchanged: true });
   });
 
-  it("slides a row to its new place by its top, so no compositor animation runs over the race", () => {
+  it("slides a row to its new place by its top and moves nothing in the tower any other way", () => {
     const rows = rowsOf(createTower(), rideFor(soloPlan, 30));
     const markup = markupOf(rows);
     const rowStyles = [
       ...markup.matchAll(/<li class="[^"]*" style="(?<style>[^"]*)"/gu),
     ].map((match) => match.groups?.style);
-    const motion = [...markup.matchAll(/class="(?<names>[^"]*)"/gu)]
+    const motionWord =
+      /transition|animat|transform|translate|scale|rotate|will-change|duration|ease|delay/u;
+    const motionClasses = [...markup.matchAll(/class="(?<names>[^"]*)"/gu)]
       .flatMap((match) => match.groups?.names?.split(" ") ?? [])
-      .filter(
-        (name) =>
-          name.startsWith("transition") ||
-          name.startsWith("animate-") ||
-          name.startsWith("will-change")
-      );
+      .filter((name) => motionWord.test(name));
+    const motionStyles = [...markup.matchAll(/style="(?<style>[^"]*)"/gu)]
+      .flatMap((match) => match.groups?.style?.split(";") ?? [])
+      .filter((declaration) => motionWord.test(declaration));
     expect(rowStyles).toStrictEqual(
       rows.map((_, slot) => `height:${ROW_EM}em;top:${slot * ROW_EM}em`)
     );
-    expect(new Set(motion)).toStrictEqual(new Set(["transition-[top]"]));
+    expect({
+      classes: new Set(motionClasses),
+      styles: motionStyles,
+    }).toStrictEqual({
+      classes: new Set([
+        "transition-[top]",
+        "duration-[220ms]",
+        "ease-out",
+        "motion-reduce:transition-none",
+      ]),
+      styles: [],
+    });
+  });
+
+  it("lays out a slide or a new gap inside the tower, never the page around it", () => {
+    const rows = rowsOf(createTower(), rideFor(soloPlan, 30));
+    const boundaryOf = (shown: "all" | number): readonly string[] =>
+      (
+        /^<div class="[^"]*" style="(?<style>[^"]*)"/u.exec(
+          renderToStaticMarkup(<RaceTower rows={rows} shown={shown} />)
+        )?.groups?.style ?? ""
+      )
+        .split(";")
+        .filter(
+          (declaration) =>
+            declaration.startsWith("contain:") ||
+            declaration.startsWith("height:")
+        );
+    expect({ narrow: boundaryOf(3), whole: boundaryOf("all") }).toStrictEqual({
+      narrow: layoutBoundary(3),
+      whole: layoutBoundary(rows.length),
+    });
   });
 
   it("hands React the same rows while nothing it shows has changed", () => {

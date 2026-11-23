@@ -76,7 +76,7 @@ export const RaceTower = memo(
     return (
       <div
         className="font-display tracking-display numeric hud-ink bg-ink/55 absolute leading-none font-bold uppercase"
-        style={towerBox(shown)}
+        style={towerBox(shown, drawn.length)}
       >
         <ol
           aria-label="Race order"
