@@ -72,6 +72,11 @@ export const breakwaterRun: TrackPlan = {
     { from: 4220, lanesEachWay: 2, shoulderWidth: 0.3, vergeWidth: 7 },
     { from: 7150, lanesEachWay: 3, shoulderWidth: 0.2, vergeWidth: 7 },
   ],
+  hazardFloors: [
+    { from: 1740, to: 2300 },
+    { from: 3500, to: 3900 },
+    { from: 6480, to: 7140 },
+  ],
   hazardsPerKilometre: 3,
   id: "breakwater-run",
   laneWidth: 3.6,

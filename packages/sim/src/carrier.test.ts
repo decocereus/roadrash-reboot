@@ -1,6 +1,7 @@
 import { clothoids } from "@racer/track/alignment";
 import { roadHalfWidthAt } from "@racer/track/districts";
-import { trackFor } from "@racer/track/roads";
+import { roadIds } from "@racer/track/road";
+import { roads, trackFor } from "@racer/track/roads";
 import { compileTrack, curvatureAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 import { breakwaterRun } from "@racer/track/tracks/breakwater-run";
@@ -207,6 +208,47 @@ describe("the moving carrier jump", () => {
 });
 
 describe("trucks on the roads", () => {
+  it("move the cars in their way ahead of them, so every road keeps its traffic", () => {
+    const races = roadIds.flatMap((roadId) => {
+      const track = trackFor(roadId);
+      const bare = compileTrack({ ...roads[roadId], carriers: [] });
+      const [lane] = track.sameWayLanes;
+      return tiers.flatMap((tier) =>
+        [1, 2, 3, 4, 5, 6, 7, 8].map((seed) => {
+          const { conditions } = difficulties[tier];
+          const cars = createRace({
+            ...defaultSetup(track, seed),
+            conditions,
+          }).cars.filter((car) => !car.carrier);
+          const without = createRace({
+            ...defaultSetup(bare, seed),
+            conditions,
+          }).cars;
+          return {
+            inTheWay: without.filter((car) =>
+              track.carrierStarts.some(
+                (start) =>
+                  Math.abs(car.s - start) <= 30 && Math.abs(car.x - lane) <= 1
+              )
+            ).length,
+            kept: cars.length === without.length,
+            overlaps: cars.filter((car, index) =>
+              cars.some(
+                (other, before) =>
+                  before < index &&
+                  Math.abs(other.x - car.x) <= 1 &&
+                  Math.abs(other.s - car.s) < other.halfLength + car.halfLength
+              )
+            ).length,
+          };
+        })
+      );
+    });
+    expect(races.filter(({ kept }) => !kept)).toStrictEqual([]);
+    expect(races.reduce((sum, { overlaps }) => sum + overlaps, 0)).toBe(0);
+    expect(races.some(({ inTheWay }) => inTheWay > 0)).toBeTruthy();
+  });
+
   it.each(tiers)(
     "at tier %i the trucks are the last cars, where the ramp and the pilot look for them",
     (tier) => {

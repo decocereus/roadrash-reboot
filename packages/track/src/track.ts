@@ -34,6 +34,11 @@ interface Crowd {
   readonly sites: number;
 }
 
+interface HazardFloor {
+  readonly from: number;
+  readonly to: number;
+}
+
 export interface TrackPlan extends Alignment {
   readonly bazaars: readonly Bazaar[];
   readonly id: string;
@@ -47,6 +52,7 @@ export interface TrackPlan extends Alignment {
   readonly laneWidth: number;
   readonly trafficPerKilometre: number;
   readonly hazardsPerKilometre: number;
+  readonly hazardFloors: readonly HazardFloor[];
   readonly carriers: readonly number[];
 }
 

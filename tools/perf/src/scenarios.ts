@@ -175,6 +175,7 @@ type RaceSettings = Omit<
   | "crossings"
   | "crowds"
   | "districts"
+  | "hazardFloors"
   | "leadInLength"
   | "pieces"
   | "runoffLength"

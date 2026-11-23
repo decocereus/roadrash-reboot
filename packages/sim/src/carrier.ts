@@ -20,7 +20,7 @@ const DECK_STEP = 0.1;
 const CARRIER_SPEED = 20;
 const CARRIER_HALF_WIDTH = 1.25;
 const CARRIER_HEIGHT = 4.22;
-const CLEAR_OF_TRAFFIC = 30;
+export const CLEAR_OF_TRAFFIC = 30;
 const PASS_MARGIN = 0.15;
 const SAME_LINE = 0.05;
 

@@ -9,6 +9,7 @@ export const ridgeRoad: TrackPlan = {
   crossings: [],
   crowds: [],
   districts: [{ from: 0, lanesEachWay: 1, shoulderWidth: 0.9, vergeWidth: 9 }],
+  hazardFloors: [],
   hazardsPerKilometre: 1,
   id: "ridge-road",
   laneWidth: 3.6,

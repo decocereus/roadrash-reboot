@@ -376,8 +376,22 @@ export const placeHazards = (road: Road): HazardPlacement[] => {
     }
   }
   const byRoll = placed.toSorted((one, other) => one.rarity - other.rarity);
+  const picks = road.plan.hazardFloors.flatMap(({ from, to }) =>
+    byRoll.filter(({ s }) => s >= from && s <= to).slice(0, 1)
+  );
+  const ranked = [...byRoll];
+  for (const pick of picks) {
+    const first = ranked.findIndex(
+      (hazard) => hazard.kind === pick.kind && !picks.includes(hazard)
+    );
+    const own = ranked.indexOf(pick);
+    if (first !== -1 && first < own) {
+      ranked[own] = ranked[first] ?? pick;
+      ranked[first] = pick;
+    }
+  }
   return placed.map((hazard) => ({
     ...hazard,
-    rarity: byRoll.indexOf(hazard) / placed.length,
+    rarity: ranked.indexOf(hazard) / placed.length,
   }));
 };

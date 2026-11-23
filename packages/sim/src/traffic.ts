@@ -3,7 +3,7 @@ import type { LaneCentres } from "@racer/track/districts";
 import type { Random } from "@racer/track/random";
 import type { Track } from "@racer/track/track";
 
-import { carrierAt, clearOfCarrier } from "./carrier.ts";
+import { CLEAR_OF_TRAFFIC, carrierAt, clearOfCarrier } from "./carrier.ts";
 import { trafficPaints } from "./palette.ts";
 import { blocksCars } from "./pedestrians.ts";
 import { isSignalled, mainLightOf, signalPhaseAt } from "./signals.ts";
@@ -29,6 +29,7 @@ export const ACCELERATION = 2.5;
 const FOLLOW_GAP = 10;
 const FOLLOW_SECONDS = 0.9;
 const LOOK_AHEAD = 70;
+const CAR_GAP = 8;
 export const PAINT_COUNT = trafficPaints.length;
 const SLOW_CRUISE = 23;
 const FAVOURED_LANE_SHARE = 0.8;
@@ -171,6 +172,50 @@ const clearOfConvoys = (
   car.cruiseSpeed < 0 ||
   convoys.every((other) => Math.abs(car.s - other.s) > CONVOY_GAP);
 
+const freeFor = (
+  car: TrafficCar,
+  s: number,
+  cars: readonly TrafficCar[],
+  carriers: readonly TrafficCar[],
+  convoys: readonly TrafficCar[],
+  track: Track
+): boolean => {
+  const x = seatOf(car.home, track, s);
+  return (
+    carriers.every((carrier) =>
+      clearOfCarrier({ ...car, s, x }, carrier.s, carrier.x)
+    ) &&
+    clearOfConvoys({ ...car, s }, convoys) &&
+    cars.every(
+      (other) =>
+        other === car ||
+        Math.abs(other.x - x) > 1 ||
+        Math.abs(other.s - s) > other.halfLength + car.halfLength + CAR_GAP
+    )
+  );
+};
+
+const moveOutOfCarriers = (
+  cars: readonly TrafficCar[],
+  carriers: readonly TrafficCar[],
+  convoys: readonly TrafficCar[],
+  track: Track
+): void => {
+  for (const car of cars) {
+    const carrier = carriers.find(
+      (each) => !clearOfCarrier(car, each.s, each.x)
+    );
+    if (carrier) {
+      let s = carrier.s + CLEAR_OF_TRAFFIC + 1;
+      while (!freeFor(car, s, cars, carriers, convoys, track)) {
+        s += CAR_GAP;
+      }
+      car.s = s;
+      seatCar(car, track);
+    }
+  }
+};
+
 export const createTraffic = (
   track: Track,
   random: Random,
@@ -223,16 +268,9 @@ export const createTraffic = (
     patience
   );
   seatCars(convoys, track);
-  return [
-    ...cars.filter(
-      (car) =>
-        carriers.every((carrier) =>
-          clearOfCarrier(car, carrier.s, carrier.x)
-        ) && clearOfConvoys(car, convoys)
-    ),
-    ...convoys,
-    ...carriers,
-  ];
+  const kept = cars.filter((car) => clearOfConvoys(car, convoys));
+  moveOutOfCarriers(kept, carriers, convoys, track);
+  return [...kept, ...convoys, ...carriers];
 };
 
 const gapToRider = (car: TrafficCar, rider: RiderState): number => {

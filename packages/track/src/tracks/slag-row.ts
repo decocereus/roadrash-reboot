@@ -9,6 +9,7 @@ export const slagRow: TrackPlan = {
   crossings: [],
   crowds: [],
   districts: [{ from: 0, lanesEachWay: 2, shoulderWidth: 0.5, vergeWidth: 6 }],
+  hazardFloors: [],
   hazardsPerKilometre: 1,
   id: "slag-row",
   laneWidth: 3.5,

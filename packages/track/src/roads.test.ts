@@ -22,6 +22,17 @@ import type { Track, TrackProp, TrackPropKind } from "./track.ts";
 
 const GRAVITY = 9.81;
 const FIRST_TIER_SHARE = 0.6;
+
+const hazardTiersOf = (track: Track) =>
+  [FIRST_TIER_SHARE, 0.8, 1].map((share) =>
+    hazardKinds.map(
+      (kind) =>
+        track.hazards.filter(
+          (hazard) => hazard.kind === kind && hazard.rarity < share
+        ).length
+    )
+  );
+
 const PINNED_RIDGE_LENGTH = 4250;
 
 interface Stretch {
@@ -276,6 +287,38 @@ describe("hazards", () => {
         (kind) => hazards.filter((hazard) => hazard.kind === kind).length
       )
     ).toStrictEqual([5, 5, 5]);
+  });
+
+  it("puts a first-tier hazard in every hazard floor of every road", () => {
+    const empty = roadIds.flatMap((roadId) =>
+      roads[roadId].hazardFloors
+        .filter(
+          ({ from, to }) =>
+            !trackFor(roadId).hazards.some(
+              (hazard) =>
+                hazard.s >= from &&
+                hazard.s <= to &&
+                hazard.rarity < FIRST_TIER_SHARE
+            )
+        )
+        .map(({ from, to }) => `${roadId} ${from}-${to}`)
+    );
+    expect(empty).toStrictEqual([]);
+  });
+
+  it("ranks a floor without moving a hazard or changing what each tier holds of each kind", () => {
+    const floored = trackFor("breakwater-run");
+    const plain = compileTrack({
+      ...roads["breakwater-run"],
+      hazardFloors: [],
+    });
+    expect(
+      floored.hazards.map(({ id, kind, s, x }) => ({ id, kind, s, x }))
+    ).toStrictEqual(
+      plain.hazards.map(({ id, kind, s, x }) => ({ id, kind, s, x }))
+    );
+    expect(hazardTiersOf(floored)).toStrictEqual(hazardTiersOf(plain));
+    expect(floored.hazards).not.toStrictEqual(plain.hazards);
   });
 
   it("on the only lane no road has a rock, or oil within reach of a sharp bend", () => {
