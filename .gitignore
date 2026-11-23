@@ -15,6 +15,7 @@ coverage/
 tools/perf/results/
 tools/replay/results/
 tools/blender/out/
+tools/blender/work/
 .claude/*
 !.claude/skills/
 !.claude/settings.json

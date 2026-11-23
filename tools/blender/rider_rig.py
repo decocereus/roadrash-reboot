@@ -3,6 +3,7 @@ import bpy, bmesh, math, sys, os
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from common import *
+from rider_poses import ON_BIKE, POSE_FRAMES, UNUSED
 import rider as R
 import bike as bike_mod
 from mathutils import Vector, Matrix
@@ -241,27 +242,25 @@ def tumble(p, k):
         p.aim("calf" + s, (sx * 0.1, 0.75 if a > 0 else 0.2, -0.6))
 
 
-POSES = [
-    ("rest", lambda p: p.reset()),
-    ("seated", lambda p: ride(p)),
-    ("punch_l", lambda p: punch(p, 1)),
-    ("punch_r", lambda p: punch(p, -1)),
-    ("kick_l", lambda p: kick(p, 1)),
-    ("kick_r", lambda p: kick(p, -1)),
-    ("windup_l", lambda p: windup(p, 1)),
-    ("windup_r", lambda p: windup(p, -1)),
-    ("swing_l", lambda p: swing(p, 1)),
-    ("swing_r", lambda p: swing(p, -1)),
-    # Two retired frames hold their places so the poses after them stay on the frames the game reads.
-    ("retired_a", lambda p: p.reset()),
-    ("retired_b", lambda p: p.reset()),
-    ("lift", lift),
-    ("lying", lying),
-    ("tumble_a", lambda p: tumble(p, 1)),
-    ("tumble_b", lambda p: tumble(p, -1)),
-    ("surrender", surrender),
-    ("stand", stand),
-]
+MAKERS = {
+    "rest": lambda p: p.reset(),
+    "seated": lambda p: ride(p),
+    "punch_l": lambda p: punch(p, 1),
+    "punch_r": lambda p: punch(p, -1),
+    "kick_l": lambda p: kick(p, 1),
+    "kick_r": lambda p: kick(p, -1),
+    "windup_l": lambda p: windup(p, 1),
+    "windup_r": lambda p: windup(p, -1),
+    "swing_l": lambda p: swing(p, 1),
+    "swing_r": lambda p: swing(p, -1),
+    "lift": lift,
+    "lying": lying,
+    "tumble_a": lambda p: tumble(p, 1),
+    "tumble_b": lambda p: tumble(p, -1),
+    "surrender": surrender,
+    "stand": stand,
+}
+POSES = [(name, (lambda p: p.reset()) if name in UNUSED else MAKERS[name]) for name in POSE_FRAMES]
 
 
 def bake_body(h):
@@ -347,7 +346,7 @@ def lineup(h, arm, bike_objs, path):
         col, row = f % 6, f // 6
         o.location = (col * 1.5, 0, -row * 2.3)
         made.append(o)
-        if 1 <= f <= 9:
+        if name in ON_BIKE:
             for b in bike_objs:
                 c = b.copy()
                 sc.collection.objects.link(c)

@@ -1,8 +1,9 @@
 """Retarget the on-foot loops from Quaternius' Universal Animation Library (CC0, see ual/PROVENANCE.md) onto the rider skeleton.
 
 Blender -b -P tools/blender/rider_moves.py -- trim <AnimationLibrary_Godot_Standard.glb>
-    Writes tools/blender/out/ual_moves.glb: the library's skeleton and the four loops below, no mesh. The library file comes
-    from the zip that ual/PROVENANCE.md pins by URL and hash; models are not committed.
+    Writes tools/blender/work/ual_moves.glb: the library's skeleton and the four loops below, no mesh. It sits outside
+    out/ so `compress.ts` never stages it. The library file comes from the zip that ual/PROVENANCE.md pins by URL and
+    hash; models are not committed.
 Blender -b -P tools/blender/rider_moves.py -- <rider_a.glb>
     Writes tools/blender/out/rider_moves.glb: the rider skeleton, one animation per loop named as in MOVES, and `stand`,
     one frame of the rider's own standing pose. The game fits every other rider to these loops through `stand`.
@@ -16,7 +17,10 @@ import bpy, math, os, sys
 from mathutils import Matrix, Quaternion, Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SOURCE = os.path.join(HERE, "out", "ual_moves.glb")
+sys.path.insert(0, HERE)
+from rider_poses import POSE_FRAMES
+
+SOURCE = os.path.join(HERE, "work", "ual_moves.glb")
 OUT = os.path.join(HERE, "out", "rider_moves.glb")
 ARGS = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 
@@ -44,8 +48,7 @@ for ours, theirs in (("l", "L"), ("r", "R")):
 BONES = {**TORSO, **LIMBS}
 CONTACT_REACH = 0.01
 FPS = 30
-# The rider GLB's pose clip holds one frame per pose, in the order of POSE_FRAMES in apps/web/src/game/assets.ts.
-STAND_FRAME = 17
+STAND_FRAME = POSE_FRAMES.index("stand")
 
 
 def imported(path):

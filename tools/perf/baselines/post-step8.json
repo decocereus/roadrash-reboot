@@ -3558,16 +3558,16 @@
       "metric": "bytes.game.incremental.gzip",
       "scenario": null,
       "side": "B",
-      "source": "baseline-2026-11-23T10-29-05-736Z-68344ba-68344ba",
-      "value": 243374
+      "source": "baseline-2026-11-08T23-11-30-469Z-b1c4332-b1c4332",
+      "value": 237465
     },
     {
       "environment": "build",
       "metric": "bytes.game.incremental.raw",
       "scenario": null,
       "side": "B",
-      "source": "baseline-2026-11-23T10-29-05-736Z-68344ba-68344ba",
-      "value": 847150
+      "source": "baseline-2026-11-08T23-11-30-469Z-b1c4332-b1c4332",
+      "value": 832411
     },
     {
       "environment": "node-linux-x64",
@@ -5086,7 +5086,7 @@
         "pnpm": "11.21.0",
         "sideASourceDigest": "2318126d386a4679e8cfdaac7d22f12aac58430930c7f3d56a3ed30014c86917",
         "sideBSourceDigest": "2318126d386a4679e8cfdaac7d22f12aac58430930c7f3d56a3ed30014c86917",
-        "why": "Riders on foot play four shared loops, idle, walk, jog and sprint, from one new model on the art CDN, models/rider_moves.glb. The game's incremental chunk grew 3,878 B gzip over main (239,496 to 243,374 B) with the strider, the per-rider fit, the foot lock and the moves parser, past its 242,215 B limit, so both bytes.game.incremental rows come from this run. No other GLB or code byte row moved past its limit, so those rows stay."
+        "why": "Riders on foot play four shared loops, idle, walk, jog and sprint, from one new model on the art CDN, models/rider_moves.glb, so assets.glb.rider_moves and assets.glb.total come from this run. A GLB's limit is its exact size, which this revision does not change. This revision still carried the Madrid code a later main deleted, so no code byte row comes from it: the pull request's own build fits the existing code byte limits."
       },
       "id": "baseline-2026-11-23T10-29-05-736Z-68344ba-68344ba",
       "lanes": ["build"],

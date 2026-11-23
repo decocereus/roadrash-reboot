@@ -19,7 +19,7 @@ import type {
 } from "./walker-clips.ts";
 import { POSE_TEXELS_PER_BONE } from "./walker-skin.ts";
 
-const POSE_FRAMES = [
+export const POSE_FRAMES = [
   "rest",
   "seated",
   "punch_l",

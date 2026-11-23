@@ -8,7 +8,7 @@
 | Download | https://opengameart.org/sites/default/files/universal_animation_librarystandard.zip, fetched 2026-11-23 |
 | Zip sha256 | `18ff1a7215f4852b320203e8aaf02a1578b5c8eef9027fbaedfcedc7b85a3ac2` |
 | File used | `Animation Library[Standard]/Godot/AnimationLibrary_Godot_Standard.glb`, sha256 `1b7bf67866360665426bb99e4c71bd619f19b408453c24e30f0c3071601eee5c` |
-| Cut | `tools/blender/out/ual_moves.glb`, sha256 `2705ba07e7f016ed088b542382d63368d3850983c613c413372eb578cc16308d` from Blender 5.2 |
+| Cut | `tools/blender/work/ual_moves.glb`, sha256 `2705ba07e7f016ed088b542382d63368d3850983c613c413372eb578cc16308d` from Blender 5.2 |
 | Licence | CC0 1.0 Universal, full text in `LICENSE` beside this file |
 
 ## Licence

@@ -154,7 +154,11 @@ export const hotBodies = {
   ],
   "apps/web/src/game/figure-pose.ts": [["planterOf", "plant"]],
   "apps/web/src/game/fixed-tick.ts": [["createFixedTick", "advance"]],
-  "apps/web/src/game/foot-lock.ts": [["reach"], ["createFootLock", "hold"]],
+  "apps/web/src/game/foot-lock.ts": [
+    ["groundAt"],
+    ["reach"],
+    ["createFootLock", "hold"],
+  ],
   "apps/web/src/game/frame-loop.ts": [
     ["installFrameLoop", "setAnimationLoop()"],
   ],

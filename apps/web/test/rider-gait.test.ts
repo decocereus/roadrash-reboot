@@ -1,9 +1,21 @@
+import type { RoomLobbyMessage, RoomWalked } from "@racer/rooms/messages";
+import { launchRoomConfig, publicRuleFor } from "@racer/rooms/room-config";
+import { createLobbyRider } from "@racer/sim/lobby";
+import { riderBlocks } from "@racer/sim/palette";
+import { trackFor } from "@racer/track/roads";
+import { placeOnTrack } from "@racer/track/track";
+import type { TrackPoint } from "@racer/track/track";
 import * as THREE from "three";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { modelUrls } from "../src/assets/model-urls.ts";
+import { poseOnTrack } from "../src/game/actors.ts";
 import { assetParsers } from "../src/game/assets.ts";
 import type { RiderAsset } from "../src/game/assets.ts";
+import { createMembers } from "../src/game/bar-members.ts";
+import type { BarSpeech } from "../src/game/bar-speech.ts";
+import type { Tag, TagLayer } from "../src/game/bar-tags.ts";
+import { createWalkers } from "../src/game/bar-walker.ts";
 import { createShading } from "../src/game/cel.ts";
 import { paletteOf } from "../src/game/figure-rig.ts";
 import { gaitOf } from "../src/game/gait.ts";
@@ -15,6 +27,7 @@ import type { RiderMoves } from "../src/game/rider-moves.ts";
 import { createStrider } from "../src/game/strider.ts";
 import type { Strider } from "../src/game/strider.ts";
 import { artFile } from "./art-files.ts";
+import { pinnedAssets } from "./pinned-assets.ts";
 
 const FRAME = 1 / 60;
 const WARM_FRAMES = 60;
@@ -33,6 +46,15 @@ const SIDES = [
   { ankle: "foot_r", ball: "ball_r", strike: 0.5 },
 ] as const;
 const PACES = [1.6, 4.4, 7] as const;
+const STOP_PACE = 5.5;
+const CORRECTION = 0.29;
+const SETTLE_FRAMES = 120;
+const IDLE_FRAMES = 240;
+const RIDGE_ROAD_FROM = 2235;
+const RIDGE_ROAD_PACE = 7;
+const ROAD_FRAMES = 360;
+const ROAD_SEARCH = 1.5;
+const ROAD_STEP = 0.01;
 
 const shading = createShading(lookOf("salt-coast"));
 
@@ -158,6 +180,90 @@ const renamed = (bytes: ArrayBuffer, from: string, to: string): ArrayBuffer => {
   return copy;
 };
 
+interface Idle {
+  readonly figure: RiderFigure;
+  readonly strider: Strider;
+}
+
+const standing = (rider: RiderAsset, moves: RiderMoves): Idle => {
+  const figure = createRiderFigure(rider, shading, paletteOf(0));
+  const strider = createStrider(gaitOf(rider, moves), rider.bones.length);
+  figure.root.position.set(0, figure.standHeight, 0);
+  return { figure, strider };
+};
+
+const stepOn = ({ figure, strider }: Idle, pace: number): void => {
+  strider.step(pace, FRAME);
+  figure.onFoot(strider, "none", FRAME);
+  figure.root.updateMatrixWorld(true);
+};
+
+const highestBall = (root: THREE.Object3D): number =>
+  Math.max(
+    ...SIDES.map(({ ball }) => {
+      const bone = root.getObjectByName(ball);
+      if (!bone) {
+        throw new Error(`The figure has no ${ball}.`);
+      }
+      return bone.getWorldPosition(new THREE.Vector3()).y;
+    })
+  );
+
+const silentTag: Tag = {
+  rename: vi.fn<() => void>(),
+  set: vi.fn<() => void>(),
+  show: vi.fn<() => void>(),
+};
+
+const silentTags: TagLayer = {
+  bubble: () => silentTag,
+  dispose: vi.fn<() => void>(),
+  name: () => silentTag,
+  prompt: () => silentTag,
+  reveal: vi.fn<() => void>(),
+};
+
+const twoInTheRoom: RoomLobbyMessage = {
+  atMs: 0,
+  edition: 0,
+  hostId: null,
+  kind: "lobby",
+  lostRace: null,
+  members: ["near", "far"].map((id, colour) => ({
+    colour,
+    here: true,
+    id,
+    name: id,
+    ready: false,
+    rttMs: null,
+  })),
+  phase: "gathering",
+  roomKind: "custom",
+  rule: publicRuleFor(launchRoomConfig.publicRace, 0),
+  seatHoldSeconds: 30,
+  startsInMs: null,
+  you: "near",
+};
+
+const roadUnder = (
+  track: ReturnType<typeof trackFor>,
+  along: number,
+  ball: THREE.Vector3
+): number => {
+  const point: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
+  let nearest = Number.POSITIVE_INFINITY;
+  let height = Number.NaN;
+  for (let s = along - ROAD_SEARCH; s <= along + ROAD_SEARCH; s += ROAD_STEP) {
+    placeOnTrack(track, s, 0, point);
+    const away = Math.hypot(point.x - ball.x, point.z - ball.z);
+    if (away < nearest) {
+      nearest = away;
+      height = point.y;
+    }
+  }
+  return height;
+};
+
 describe("riders on foot", () => {
   it.each(PACES)(
     "keep each planted foot still and on the floor at %s m/s",
@@ -209,6 +315,138 @@ describe("riders on foot", () => {
       }
       figure.dispose();
     }
+  });
+
+  it("puts both feet down when a run stops dead", async () => {
+    const moves = await movesOf();
+    for (const rider of await ridersOf()) {
+      const idle = standing(rider, moves);
+      const forward = forwardOf(idle.figure, idle.strider);
+      for (let frame = 0; frame < SETTLE_FRAMES; frame += 1) {
+        idle.figure.root.position.addScaledVector(forward, STOP_PACE * FRAME);
+        stepOn(idle, STOP_PACE);
+      }
+      let highest = 0;
+      for (let frame = 0; frame < IDLE_FRAMES; frame += 1) {
+        stepOn(idle, 0);
+        if (frame >= SETTLE_FRAMES) {
+          highest = Math.max(highest, highestBall(idle.figure.root));
+        }
+      }
+      idle.figure.dispose();
+      expect(highest).toBeLessThan(FLOAT);
+    }
+  });
+
+  it("re-plants a standing rider's feet after the body is moved 29 cm", async () => {
+    const moves = await movesOf();
+    for (const rider of await ridersOf()) {
+      const idle = standing(rider, moves);
+      for (let frame = 0; frame < SETTLE_FRAMES; frame += 1) {
+        stepOn(idle, 0);
+      }
+      idle.figure.root.position.x += CORRECTION;
+      let highest = 0;
+      for (let frame = 0; frame < IDLE_FRAMES; frame += 1) {
+        stepOn(idle, 0);
+        if (frame >= SETTLE_FRAMES) {
+          highest = Math.max(highest, highestBall(idle.figure.root));
+        }
+      }
+      idle.figure.dispose();
+      expect(highest).toBeLessThan(FLOAT);
+    }
+  });
+
+  it("re-plants a room member's feet after a 29 cm correction while they stand", async () => {
+    const assets = await pinnedAssets();
+    const parent = new THREE.Group();
+    const walkers = createWalkers(assets, shading, silentTags, parent);
+    let heard: RoomWalked = {
+      heading: 0,
+      kind: "walk",
+      lean: 0,
+      member: "far",
+      pace: 0,
+      place: "foot",
+      pose: null,
+      x: 0,
+      z: 2,
+    };
+    const corrected: RoomWalked = { ...heard, x: CORRECTION };
+    const members = createMembers({
+      bikes: {
+        roots: riderBlocks.map(() => new THREE.Object3D()),
+        show: vi.fn<(index: number) => void>(),
+        spin: vi.fn<(index: number, distance: number) => void>(),
+      },
+      firstBike: 0,
+      rider: createLobbyRider(),
+      seat: {
+        act: vi.fn<() => void>(),
+        listen: vi.fn<() => void>(),
+        lobby: () => twoInTheRoom,
+        phase: () => "lobby",
+        walk: vi.fn<() => void>(),
+        walkOf: (id) => (id === heard.member ? heard : undefined),
+      },
+      speech: { say: vi.fn<BarSpeech["say"]>() },
+      walkers,
+    });
+    const camera = new THREE.Camera();
+    const size = { height: 1, width: 1 };
+    let highest = 0;
+    for (let frame = 0; frame < SETTLE_FRAMES + IDLE_FRAMES; frame += 1) {
+      if (frame === SETTLE_FRAMES) {
+        heard = corrected;
+      }
+      members.step(FRAME, frame * FRAME);
+      members.draw(FRAME, camera, size);
+      if (frame >= 2 * SETTLE_FRAMES) {
+        const root = parent.children.at(-1);
+        if (!root) {
+          throw new Error("The room drew nobody.");
+        }
+        root.updateMatrixWorld(true);
+        highest = Math.max(highest, highestBall(root));
+      }
+    }
+    walkers.dispose();
+    expect(parent.children).toHaveLength(1);
+    expect(highest).toBeLessThan(FLOAT);
+  });
+
+  it("keeps a running foot on a sloping road, not on a level floor through the hips", async () => {
+    const moves = await movesOf();
+    const [rider] = await ridersOf();
+    if (!rider) {
+      throw new Error("No rider model is loaded.");
+    }
+    const track = trackFor("ridge-road");
+    const idle = standing(rider, moves);
+    let deepest = Number.POSITIVE_INFINITY;
+    for (let frame = 0; frame < ROAD_FRAMES; frame += 1) {
+      const along = RIDGE_ROAD_FROM + frame * RIDGE_ROAD_PACE * FRAME;
+      poseOnTrack(
+        idle.figure.root,
+        track,
+        along,
+        0,
+        idle.figure.standHeight,
+        0,
+        0,
+        0
+      );
+      stepOn(idle, RIDGE_ROAD_PACE);
+      if (frame >= WARM_FRAMES) {
+        for (const { ball } of SIDES) {
+          const at = placeOf(idle.figure, ball);
+          deepest = Math.min(deepest, at.y - roadUnder(track, along, at));
+        }
+      }
+    }
+    idle.figure.dispose();
+    expect(deepest).toBeGreaterThan(-SINK);
   });
 
   it("refuses a moves file without one of its loops", async () => {

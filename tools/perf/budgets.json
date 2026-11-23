@@ -116,7 +116,7 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "914280266d6f373ec2b1a2f7c3aaf2d847d3cdeb22edb329eb8b3f8b013ef45e"
+    "summarySha256": "73f3772e1432a0372cdf078437757d328550722221da29b581ce8778dfa87629"
   },
   "limits": [
     {
@@ -421,26 +421,26 @@
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 248242,
-      "baseline": 243374,
+      "value": 242215,
+      "baseline": 237465,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.incremental.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-23T10-29-05-736Z-68344ba-68344ba",
+      "source": "baseline-2026-11-08T23-11-30-469Z-b1c4332-b1c4332",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 864093,
-      "baseline": 847150,
+      "value": 849060,
+      "baseline": 832411,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.incremental.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-23T10-29-05-736Z-68344ba-68344ba",
+      "source": "baseline-2026-11-08T23-11-30-469Z-b1c4332-b1c4332",
       "unit": "B"
     },
     {

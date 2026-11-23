@@ -7,6 +7,7 @@ const SLACK = 1e-4;
 const DOWN_METRES = 0.015;
 const LIFTED_METRES = 0.035;
 const UPRIGHT = 0.98;
+const SHORT_METRES = 0.01;
 
 interface Leg {
   readonly thigh: THREE.Object3D;
@@ -58,15 +59,19 @@ const turnApart = (a: number, b: number): number =>
     THREE.MathUtils.euclideanModulo(a - b + Math.PI, 2 * Math.PI) - Math.PI
   );
 
-const reach = (leg: Leg, pose: number[]) => {
+const groundAt = (x: number, z: number, level: number): number =>
+  level - (up.x * (x - standing.x) + up.z * (z - standing.z)) / up.y;
+
+const reach = (leg: Leg, pose: number[]): number => {
   leg.thigh.getWorldPosition(hip);
   leg.calf.getWorldPosition(knee);
   leg.foot.getWorldPosition(ankle);
   const upper = knee.distanceTo(hip);
   const lower = ankle.distanceTo(knee);
   toward.subVectors(target, hip);
+  const wanted = toward.length();
   const distance = THREE.MathUtils.clamp(
-    toward.length(),
+    wanted,
     Math.abs(upper - lower) + SLACK,
     upper + lower - SLACK
   );
@@ -74,7 +79,7 @@ const reach = (leg: Leg, pose: number[]) => {
   bend.subVectors(knee, hip);
   bend.addScaledVector(toward, -bend.dot(toward));
   if (bend.lengthSq() < SLACK * SLACK) {
-    return;
+    return 0;
   }
   bend.normalize();
   const cosine =
@@ -113,6 +118,7 @@ const reach = (leg: Leg, pose: number[]) => {
     .invert()
     .multiply(footTurn)
     .toArray(pose, leg.footIndex * 4);
+  return wanted - distance;
 };
 
 export const createFootLock = (
@@ -160,7 +166,7 @@ export const createFootLock = (
       }
       root.getWorldDirection(facing);
       const yaw = Math.atan2(facing.x, facing.z);
-      const ground = root.getWorldPosition(standing).y - standHeight;
+      const level = root.getWorldPosition(standing).y - standHeight;
       for (let side = 0; side < legs.length; side += 1) {
         const leg = legs[side];
         if (!leg) {
@@ -168,7 +174,7 @@ export const createFootLock = (
         }
         leg.foot.getWorldPosition(ankle);
         leg.ball.getWorldPosition(ball);
-        const clear = ball.y - ground;
+        const clear = ball.y - groundAt(ball.x, ball.z, level);
         const down = planted[side] === true || clear < DOWN_METRES;
         if (
           leg.locked &&
@@ -187,15 +193,19 @@ export const createFootLock = (
         }
         if (leg.locked) {
           target.set(leg.anchor.x, ball.y, leg.anchor.z);
-        } else if (leg.release > 0 || ball.y < ground) {
+        } else if (leg.release > 0 || clear < 0) {
           leg.release = Math.max(0, leg.release - seconds / RELEASE_SECONDS);
           target.copy(ball).addScaledVector(leg.offset, leg.release);
         } else {
           continue;
         }
-        target.y = Math.max(target.y, ground);
+        target.y = Math.max(target.y, groundAt(target.x, target.z, level));
         target.sub(ball).add(ankle);
-        reach(leg, pose);
+        if (reach(leg, pose) > SHORT_METRES && leg.locked) {
+          leg.locked = false;
+          leg.offset.subVectors(leg.anchor, ball).setY(0);
+          leg.release = 1;
+        }
       }
     },
   };
