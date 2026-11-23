@@ -273,11 +273,11 @@ describe("the race tower", () => {
   it("slides a row to its new place by its top, so no compositor animation runs over the race", () => {
     const rows = rowsOf(createTower(), rideFor(soloPlan, 30));
     const markup = markupOf(rows);
-    const rowStyles = [...markup.matchAll(/<li class="[^"]*" style="([^"]*)"/gu)].map(
-      (match) => match[1]
-    );
-    const motion = [...markup.matchAll(/class="([^"]*)"/gu)]
-      .flatMap((match) => match[1]?.split(" ") ?? [])
+    const rowStyles = [
+      ...markup.matchAll(/<li class="[^"]*" style="(?<style>[^"]*)"/gu),
+    ].map((match) => match.groups?.style);
+    const motion = [...markup.matchAll(/class="(?<names>[^"]*)"/gu)]
+      .flatMap((match) => match.groups?.names?.split(" ") ?? [])
       .filter(
         (name) =>
           name.startsWith("transition") ||
