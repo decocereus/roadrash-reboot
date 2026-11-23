@@ -33,9 +33,5 @@ export const cues = [
 
 export type Cue = (typeof cues)[number];
 
-export const loops = ["roomBed"] as const;
-
-export type Loop = (typeof loops)[number];
-
 export const uiCueOf = (text: string | undefined): UiCue | null =>
   uiCues.find((cue) => cue === text) ?? null;

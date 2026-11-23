@@ -17,16 +17,7 @@ const sections = [
     title: "Menus",
   },
   {
-    names: [
-      "walkStep",
-      "runStep",
-      "greet",
-      "shove",
-      "sit",
-      "pose",
-      "door",
-      "roomBed",
-    ],
+    names: ["walkStep", "runStep", "greet", "shove", "sit", "pose", "door"],
     title: "The bar",
   },
   {
@@ -84,7 +75,6 @@ const labels = new Map<string, string>([
   ["pose", "Striking a pose"],
   ["press", "Click or confirm"],
   ["refused", "Something you can't do yet"],
-  ["roomBed", "The bar's room bed, played twice to hear the loop point"],
   ["runStep", "Running footsteps (six takes)"],
   ["shift", "Gear change click"],
   ["shove", "Shoving someone in the bar"],

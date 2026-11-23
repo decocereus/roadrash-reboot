@@ -1,15 +1,9 @@
-import { cues, loops } from "../src/sound/cues.ts";
-import type { Cue, Loop } from "../src/sound/cues.ts";
+import { cues } from "../src/sound/cues.ts";
+import type { Cue } from "../src/sound/cues.ts";
 import { engineCharacters, engineVoice } from "../src/sound/engine.ts";
 import type { EngineCharacter } from "../src/sound/engine.ts";
-import { loopRecipes, recipes } from "../src/sound/recipes.ts";
-import {
-  closeLoop,
-  cueJob,
-  loopJob,
-  seeded,
-  whiteNoise,
-} from "../src/sound/render.ts";
+import { recipes } from "../src/sound/recipes.ts";
+import { cueJob, seeded, whiteNoise } from "../src/sound/render.ts";
 import { scenes } from "./sound-scenes.ts";
 
 const SAMPLE_RATE = 48_000;
@@ -20,7 +14,7 @@ const BYTES_PER_CHUNK = 0x80_00;
 
 export interface Clip {
   readonly name: string;
-  readonly group: "cue" | "loop" | "engine" | "scene";
+  readonly group: "cue" | "engine" | "scene";
   readonly sampleRate: number;
   readonly samples: string;
   readonly problems: readonly string[];
@@ -119,22 +113,6 @@ const cueClip = async (
   return clipOf("cue", cue, rendered.getChannelData(0));
 };
 
-const loopClip = async (loop: Loop, noise: AudioBuffer): Promise<Clip> => {
-  const recipe = loopRecipes[loop];
-  const job = loopJob(recipe, SAMPLE_RATE, noise, 99);
-  for (const step of job.steps) {
-    step();
-  }
-  const rendered = await job.context.startRendering();
-  closeLoop(rendered, recipe);
-  const length = Math.round(recipe.seconds * SAMPLE_RATE);
-  const once = rendered.getChannelData(0).subarray(0, length);
-  const twice = new Float32Array(length * 2);
-  twice.set(once);
-  twice.set(once, length);
-  return clipOf("loop", loop, twice);
-};
-
 const sceneClips = async (): Promise<Clip[]> => {
   const staged = await scenes();
   return staged.map(({ left, name, problems, right }) => {
@@ -147,10 +125,9 @@ const sceneClips = async (): Promise<Clip[]> => {
 
 export const renderClips = async (): Promise<string> => {
   const noise = whiteNoise(offline(1), seeded(7));
-  const clips = await Promise.all([
-    ...cues.map(async (cue, index) => await cueClip(cue, index, noise)),
-    ...loops.map(async (loop) => await loopClip(loop, noise)),
-  ]);
+  const clips = await Promise.all(
+    cues.map(async (cue, index) => await cueClip(cue, index, noise))
+  );
   return JSON.stringify([
     ...clips,
     ...(await engineClips()),

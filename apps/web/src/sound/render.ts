@@ -1,4 +1,4 @@
-import type { Layer, Layers, LoopRecipe, Recipe, Envelope } from "./recipes.ts";
+import type { Layer, Layers, Recipe, Envelope } from "./recipes.ts";
 import { recipeSeconds } from "./recipes.ts";
 
 const MODULUS = 2_147_483_647;
@@ -272,55 +272,4 @@ export const cueJob = (
     renderLayers(context, recipe.layers, variant * seconds, sources, random);
   }
   return { context, seconds };
-};
-
-export interface LoopJob extends CueJob {
-  readonly steps: readonly (() => void)[];
-}
-
-export const loopJob = (
-  recipe: LoopRecipe,
-  sampleRate: number,
-  noise: AudioBuffer,
-  seed: number
-): LoopJob => {
-  const context = new OfflineAudioContext({
-    length: Math.ceil((recipe.seconds + recipe.fade) * sampleRate),
-    numberOfChannels: 1,
-    sampleRate,
-  });
-  const random = seeded(seed);
-  const sources = { noise, spread: 0 };
-  const out = context.destination;
-  const steps = recipe.layers.flatMap((layer) => {
-    if (layer.kind !== "murmur") {
-      return [
-        () => {
-          renderLayer(context, layer, 0, sources, random, out);
-        },
-      ];
-    }
-    const level = enveloped(context, layer, 0, out);
-    const room = filtered(context, "lowpass", layer.cutoff, 0.7, level);
-    const end = endOf(layer, 0) + 0.01;
-    return Array.from({ length: layer.voices }, () => () => {
-      murmurVoice(context, layer.voices, layer.at, end, sources, random, room);
-    });
-  });
-  return { context, seconds: recipe.seconds, steps };
-};
-
-export const closeLoop = (rendered: AudioBuffer, recipe: LoopRecipe): void => {
-  const samples = rendered.getChannelData(0);
-  const length = Math.round(recipe.seconds * rendered.sampleRate);
-  const fade = Math.min(
-    Math.round(recipe.fade * rendered.sampleRate),
-    samples.length - length
-  );
-  for (let index = 0; index < fade; index += 1) {
-    const into = Math.sin((index / fade) * (Math.PI / 2));
-    const outOf = Math.cos((index / fade) * (Math.PI / 2));
-    samples[index] =
-      (samples[index] ?? 0) * into + (samples[length + index] ?? 0) * outOf;
-  }
 };

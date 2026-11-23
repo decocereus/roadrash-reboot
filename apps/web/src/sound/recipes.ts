@@ -1,4 +1,4 @@
-import type { Cue, Loop } from "./cues.ts";
+import type { Cue } from "./cues.ts";
 
 type Wave = "sine" | "square" | "sawtooth" | "triangle";
 type Band = "lowpass" | "bandpass" | "highpass";
@@ -48,12 +48,6 @@ export interface Recipe {
   readonly variants: number;
   readonly spread: number;
   readonly priority: Priority;
-}
-
-export interface LoopRecipe {
-  readonly layers: Layers;
-  readonly seconds: number;
-  readonly fade: number;
 }
 
 type EnvelopeAt = Partial<Envelope> & Pick<Envelope, "decay" | "gain">;
@@ -339,46 +333,6 @@ export const recipes = {
   ),
   whoosh: recipe("strike", [burst(1400, 0.35, 0.7, 260)]),
 } as const satisfies Record<Cue, Recipe>;
-
-const BEAT = 60 / 92;
-const BEATS = 12;
-const BED_SECONDS = BEAT * BEATS;
-const whole = (gain: number): EnvelopeAt => ({
-  attack: 0.001,
-  decay: 0.001,
-  gain,
-  hold: BED_SECONDS + 0.5,
-});
-
-export const loopRecipes = {
-  roomBed: {
-    fade: 0.4,
-    layers: [
-      { ...enveloped(whole(0.55)), cutoff: 2600, kind: "murmur", voices: 14 },
-      crackle(6, 3000, whole(0.12)),
-      crackle(900, 1800, whole(0.02)),
-      ...Array.from({ length: BEATS }, (_, beat) =>
-        tone("sine", 62, 45, { at: beat * BEAT, decay: 0.15, gain: 0.1 }, 400)
-      ),
-      ...Array.from({ length: BEATS / 2 }, (_, bar) =>
-        tone(
-          "triangle",
-          bar % 2 === 0 ? 55 : 73.4,
-          bar % 2 === 0 ? 55 : 73.4,
-          {
-            at: bar * BEAT * 2,
-            attack: 0.02,
-            decay: 0.3,
-            gain: 0.09,
-            hold: BEAT * 1.4,
-          },
-          260
-        )
-      ),
-    ],
-    seconds: BED_SECONDS,
-  },
-} as const satisfies Record<Loop, LoopRecipe>;
 
 export const recipeSeconds = (layers: Layers): number => {
   let longest = 0;
