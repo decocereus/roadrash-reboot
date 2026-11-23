@@ -464,8 +464,6 @@ Source files:
 - `apps/web/src/game/hud-tower.ts`
 - `apps/web/src/game/hud.ts`
 - `apps/web/src/game/race-feedback.ts`
-- `apps/web/src/game/race-feedback.ts`
-- `apps/web/src/game/race-feedback.ts`
 - `apps/web/src/hud-feed.ts`
 - `packages/sim/src/timing.ts`
 
