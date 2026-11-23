@@ -10,7 +10,12 @@ import {
 import type { Budgets, Limit, NodeProfile, Observation } from "./budgets.ts";
 import { buildRecord, buildVerdicts } from "./build.ts";
 import { sideBRecord, sideBVerdict, sideBWindows } from "./node-lane-side-b.ts";
-import { nodeEnvironment, nodeLaneRecord, nodeVerdicts } from "./node-lane.ts";
+import {
+  coldLine,
+  nodeEnvironment,
+  nodeLaneRecord,
+  nodeVerdicts,
+} from "./node-lane.ts";
 import type { NodeLane } from "./node-lane.ts";
 import { CALIBRATION_ROUNDS, CALIBRATION_VERSION } from "./node.ts";
 import { median } from "./result.ts";
@@ -44,6 +49,7 @@ const observe = (
 ) => {
   const failures: string[] = [];
   const observations: Observation[] = [];
+  const reported: string[] = [];
   let environment = "node-unknown";
   if (samples.sides.A.harnessDigest !== samples.sides.B.harnessDigest) {
     failures.push(
@@ -63,6 +69,15 @@ const observe = (
         ({ environment } = verdict);
         failures.push(...verdict.failures);
         observations.push(...verdict.observations);
+        if (verdict.observations.length > 0) {
+          reported.push(
+            coldLine(
+              scenario,
+              lane,
+              verdict.scales.map((each) => each.scale)
+            )
+          );
+        }
       } else {
         failures.push(`FAIL node ${scenario.id} has no samples`);
       }
@@ -87,7 +102,7 @@ const observe = (
       failures.push("FAIL bytes no build records");
     }
   }
-  return { environment, failures, observations };
+  return { environment, failures, observations, reported };
 };
 
 const missingLanes = (samples: Samples): PortableLane[] =>
@@ -123,6 +138,7 @@ export const evaluateGate = (
     lines: [
       ...observed.failures,
       ...verdicts.map((verdict) => verdict.text),
+      ...observed.reported,
       ...incomplete,
     ],
     observations: observed.observations,
@@ -237,6 +253,7 @@ export const evaluateBaseline = (samples: Samples): BaselineEvaluation => {
     "MEASUREMENT ONLY: baseline proposal, not a gate result",
     ...observed.failures,
     ...observed.observations.map(spreadLine),
+    ...observed.reported,
     ...incomplete,
   ];
   return {
