@@ -393,12 +393,12 @@ No crest on Breakwater Run launches below 160 km/h. The hill's fall into the doc
 
 A truck runs in the inner same-way lane. The first starts as the squeeze opens into the plaza and meets the pack on the seawall climb, where the plaza's three lanes have just closed to two. The second starts on the pier, past `pier-lights`, and has left the pier before the pack arrives, so it meets them on the battery, after the hilltop and its `market-cross`. In 30 seeds of a full pilot field the leader met the first truck between 2,285 and 2,948 m (10th to 90th percentile) and the second between 6,109 and 7,584 m.
 
-| Truck | Tier | Ramp rides | Soft | Hard | Crashes |
-| --: | --: | --: | --: | --: | --- |
-| 1,750 | 1 | 43 | 35 | 6 | 2: one traffic, one landing |
-| 1,750 | 3 | 24 | 19 | 3 | 2: one traffic, one prop |
-| 3,650 | 1 | 71 | 46 | 21 | 4: three landing, one traffic |
-| 3,650 | 3 | 18 | 14 | 3 | 1: landing |
+| Truck | Tier | Ramp rides | Soft | Hard | Crashes                       |
+| ----: | ---: | ---------: | ---: | ---: | ----------------------------- |
+| 1,750 |    1 |         43 |   35 |    6 | 2: one traffic, one landing   |
+| 1,750 |    3 |         24 |   19 |    3 | 2: one traffic, one prop      |
+| 3,650 |    1 |         71 |   46 |   21 | 4: three landing, one traffic |
+| 3,650 |    3 |         18 |   14 |    3 | 1: landing                    |
 
 The second truck's landing crashes all come down at 7,500 to 7,515 m, in the 48° right onto the quay, from riders who meet it late, after it has passed the battery crest. A start at 3,750 m had six of them at tier 1; 3,550 m had none in that bend but moved the median meeting to 6,027 m, out of the battery. A first truck at 2,000 m landed riders in the Lighthouse Kink and crashed 15 at tier 1 and 27 at tier 3, mostly into traffic.
 

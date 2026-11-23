@@ -520,7 +520,7 @@ const yieldToWalker = (
   const reach = pedestrian.s * direction;
   for (
     let place = firstPast(lane, reach - LOOK_AHEAD - longest);
-    place < count && (along[place] ?? reach) < reach;
+    place < count && (along[place] ?? reach) < reach + longest;
     place += 1
   ) {
     const index = order[place] ?? -1;
@@ -528,6 +528,7 @@ const yieldToWalker = (
     const speed = lastSpeed[index] ?? 0;
     if (
       car &&
+      (along[place] ?? reach) - car.halfLength < reach &&
       walkerComesInto(pedestrian, speed, car.x, car.halfWidth + WALKER_MARGIN)
     ) {
       const gap = reach - (along[place] ?? reach) - car.halfLength;

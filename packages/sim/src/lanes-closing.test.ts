@@ -220,6 +220,7 @@ describe("a car's x on a road of districts", () => {
     const track = compileTrack({
       ...breakwaterRun,
       carriers: [],
+      crossings: [],
       districts: [
         { ...threeOneThree, from: 0, lanesEachWay: 3 },
         { ...threeOneThree, from: 3000, lanesEachWay: 1 },
@@ -408,7 +409,7 @@ describe("a convoy on Breakwater Run in a full race", () => {
     let offTheRoad = 0;
     let singleFile = true;
     let sawOneLane = false;
-    for (let tick = 0; tick < 150 * TICK_RATE; tick += 1) {
+    for (let tick = 0; tick < 180 * TICK_RATE; tick += 1) {
       stepRace(state, track, emptyFrame);
       overlaps += overlapping(state.cars) ? 1 : 0;
       for (const car of convoy) {
