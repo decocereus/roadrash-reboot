@@ -164,7 +164,7 @@ Main-road traffic obeys the lights. On a red, and on an amber it can stop for at
 | --- | --- | --: | --- | --- | --- |
 | Breakwater Run | `harbour-cross` | 560 | offset 0 | one lane each way, both arms | zebra |
 | Breakwater Run | `plaza-cross` | 2,000 | offset 900 | one lane each way, both arms | zebra |
-| Breakwater Run | `pier-lights` | 3,650 | offset 540 | none | zebra |
+| Breakwater Run | `pier-lights` | 3,650 | offset 0 | none | zebra |
 | Breakwater Run | `market-cross` | 6,000 | offset 540 | one lane each way, right arm | zebra |
 | Breakwater Run | `pier-crossing` | 7,850 | offset 300 | none | zebra |
 
@@ -388,10 +388,19 @@ No crest on Breakwater Run launches below 160 km/h. The hill's fall into the doc
 
 | Starts at (m) | Median meeting, tier 1 | Median meeting, tier 3 | Where |
 | --: | --: | --: | --- |
-| 3,900 | 7,248 m at 172 s | 7,263 m at 178 s | Where the docks open to three lanes |
-| 4,650 | 7,887 m at 189 s | 7,957 m at 197 s | The quay, into the Crane Kink |
+| 1,750 | 2,553 m at 64 s | 2,557 m at 61 s | The seawall climb, after the Lighthouse Kink |
+| 3,650 | 6,732 m at 160 s | 6,818 m at 165 s | Along the battery |
 
-A truck runs in the inner same-way lane. The first starts at the mouth of the Arcades and has left them about a minute before the pack arrives, and both reach the pack in the docks, where three lanes leave a way round. Every meeting in eight seeds of a full pilot field fell between 6,665 and 8,517 m. A start at 3,750 m put the first truck at `market-cross`'s red as the pack arrived. The pilots rode 12 of 89 ramps at tier 1 and 8 of 85 at tier 3.
+A truck runs in the inner same-way lane. The first starts as the squeeze opens into the plaza and meets the pack on the seawall climb, where the plaza's three lanes have just closed to two. The second starts on the pier, past `pier-lights`, and has left the pier before the pack arrives, so it meets them on the battery, after the hilltop and its `market-cross`. In 30 seeds of a full pilot field the leader met the first truck between 2,285 and 2,948 m (10th to 90th percentile) and the second between 6,109 and 7,584 m.
+
+| Truck | Tier | Ramp rides | Soft | Hard | Crashes |
+| --: | --: | --: | --: | --: | --- |
+| 1,750 | 1 | 43 | 35 | 6 | 2: one traffic, one landing |
+| 1,750 | 3 | 24 | 19 | 3 | 2: one traffic, one prop |
+| 3,650 | 1 | 71 | 46 | 21 | 4: three landing, one traffic |
+| 3,650 | 3 | 18 | 14 | 3 | 1: landing |
+
+The second truck's landing crashes all come down at 7,500 to 7,515 m, in the 48° right onto the quay, from riders who meet it late, after it has passed the battery crest. A start at 3,750 m had six of them at tier 1; 3,550 m had none in that bend but moved the median meeting to 6,027 m, out of the battery. A first truck at 2,000 m landed riders in the Lighthouse Kink and crashed 15 at tier 1 and 27 at tier 3, mostly into traffic.
 
 Traffic per km: 5.
 

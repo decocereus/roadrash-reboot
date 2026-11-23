@@ -4,7 +4,7 @@ import type { TrackPlan } from "../track.ts";
 
 export const breakwaterRun: TrackPlan = {
   bazaars: [{ from: 1300, to: 1740 }],
-  carriers: [2000, 3750],
+  carriers: [1750, 3650],
   chevrons: chevronRuns["breakwater-run"],
   crossings: [
     {
@@ -33,7 +33,7 @@ export const breakwaterRun: TrackPlan = {
     },
     {
       id: "pier-lights",
-      lights: { offsetTicks: 540 },
+      lights: { offsetTicks: 0 },
       road: null,
       s: 3650,
       walk: "zebra",
