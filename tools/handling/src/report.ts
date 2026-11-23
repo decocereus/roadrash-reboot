@@ -1,6 +1,5 @@
 import process from "node:process";
 
-import type { StagedRide } from "./keyboard.ts";
 import type { Coverage, FromTheGrid, Probe } from "./probe.ts";
 import type { Steering } from "./steering.ts";
 
@@ -85,15 +84,4 @@ export const printCourse = (course: Measured): void => {
     );
   }
   say();
-};
-
-export const printStaged = (rides: readonly StagedRide[]): void => {
-  say(
-    "Three seconds at 190 km/h on a Madrid stretch, from the lane the grid uses:"
-  );
-  for (const each of rides) {
-    say(
-      `  ${each.course} at ${each.at} m, ${each.bike}: centred bars ${fixed(each.centred.widest, 2)} m wide, ${fixed(each.centred.offRoadSeconds, 2)} s off road; reacting rider ${fixed(each.reacting.widest, 2)} m wide, ${fixed(each.reacting.offRoadSeconds, 2)} s off road, ${each.presses} key presses`
-    );
-  }
 };

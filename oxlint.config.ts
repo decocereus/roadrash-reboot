@@ -81,7 +81,6 @@ export const deterministicFiles = [
   "packages/track/src/crossings.ts",
   "packages/track/src/districts.ts",
   "packages/track/src/hazards.ts",
-  "packages/track/src/madrid-sources.ts",
   "packages/track/src/math-atan.ts",
   "packages/track/src/math-kernels.ts",
   "packages/track/src/math-reduction.ts",
@@ -92,17 +91,8 @@ export const deterministicFiles = [
   "packages/track/src/road.ts",
   "packages/track/src/roads.ts",
   "packages/track/src/stalls.ts",
-  "packages/track/src/stretches.ts",
   "packages/track/src/track.ts",
   "packages/track/src/tracks/breakwater-run.ts",
-  "packages/track/src/tracks/madrid-gran-via-blocks-1.ts",
-  "packages/track/src/tracks/madrid-gran-via-blocks-2.ts",
-  "packages/track/src/tracks/madrid-gran-via-blocks-3.ts",
-  "packages/track/src/tracks/madrid-gran-via-scenery.ts",
-  "packages/track/src/tracks/madrid-gran-via.ts",
-  "packages/track/src/tracks/madrid-hook-blocks-1.ts",
-  "packages/track/src/tracks/madrid-hook-scenery.ts",
-  "packages/track/src/tracks/madrid-hook.ts",
   "packages/track/src/tracks/ridge-road.ts",
   "packages/track/src/tracks/slag-row.ts",
   "packages/track/src/walk-sites.ts",
@@ -123,8 +113,6 @@ export const deterministicFiles = [
 ];
 
 export const codecFiles = [
-  "packages/track/src/madrid-schema.ts",
-  "packages/track/src/madrid-corridor.ts",
   "packages/career/src/save.ts",
   "packages/career/src/save-schema.ts",
   "packages/career/src/save-values.ts",
@@ -401,8 +389,6 @@ const entriesLoopFiles = [
 const effectFiles = [
   "tools/art/*.ts",
   "tools/art/src/**/*.ts",
-  "tools/madrid/*.ts",
-  "tools/madrid/src/**/*.ts",
   "tools/perf/*.ts",
   "tools/perf/src/**/*.ts",
   "tools/road-test/*.ts",
@@ -438,7 +424,6 @@ const effectFiles = [
 
 const libraryFiles = [
   "tools/art/src/**/*.ts",
-  "tools/madrid/src/**/*.ts",
   "tools/perf/src/**/*.ts",
   "tools/road-test/src/**/*.ts",
   "tools/rooms/src/**/*.ts",

@@ -1,6 +1,6 @@
 import { cos, sin } from "./math.ts";
 
-export interface TrackStart {
+interface TrackStart {
   readonly x: number;
   readonly z: number;
   readonly heading: number;

@@ -1,9 +1,4 @@
-export type RegionId =
-  | "casa-de-campo"
-  | "madrid-centro"
-  | "salt-coast"
-  | "lowtown"
-  | "stonepeak";
+export type RegionId = "salt-coast" | "lowtown" | "stonepeak";
 
 interface PropMix {
   readonly tree: number;
@@ -60,14 +55,6 @@ const WORN_BENDS = {
 } as const satisfies HazardHabit;
 
 export const regions = {
-  "casa-de-campo": {
-    footfall: NO_FOOTFALL,
-    hazardHabit: OILY_BENDS,
-    hazardMix: { oil: 0.6, pothole: 0.2, rock: 0.2 },
-    id: "casa-de-campo",
-    name: "Casa de Campo",
-    propMix: { chevron: 1, pole: 0, rock: 0, tree: 0 },
-  },
   lowtown: {
     footfall: CITY_FOOTFALL,
     hazardHabit: OILY_BENDS,
@@ -75,14 +62,6 @@ export const regions = {
     id: "lowtown",
     name: "Lowtown",
     propMix: { chevron: 1.5, pole: 1.5, rock: 0.25, tree: 0.3 },
-  },
-  "madrid-centro": {
-    footfall: CITY_FOOTFALL,
-    hazardHabit: OILY_BENDS,
-    hazardMix: { oil: 0.6, pothole: 0.2, rock: 0.2 },
-    id: "madrid-centro",
-    name: "Madrid centro",
-    propMix: { chevron: 1, pole: 1, rock: 0, tree: 0 },
   },
   "salt-coast": {
     footfall: BUSY_FOOTFALL,

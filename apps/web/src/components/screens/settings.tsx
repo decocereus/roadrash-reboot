@@ -253,14 +253,6 @@ export const SettingsPanel = ({
           >
             Privacy
           </a>
-          <a
-            className="text-paper border-paper/40 hover:text-neon-yellow border-b-2 pb-0.5 text-lg font-bold uppercase"
-            href="/credits"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            Credits
-          </a>
           {onBack && <TextButton onClick={onBack}>Back</TextButton>}
         </TextLinks>
       </Panel>

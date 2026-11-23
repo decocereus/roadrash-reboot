@@ -20,7 +20,6 @@ tools/blender/out/
 !.claude/settings.json
 apps/web/.impeccable/
 apps/web/assets/
-tools/madrid/.cache/
 
 __pycache__/
 *.pyc

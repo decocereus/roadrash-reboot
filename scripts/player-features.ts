@@ -439,7 +439,6 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/city.ts",
       "apps/web/src/game/clearance.ts",
       "apps/web/src/game/ground.ts",
-      "apps/web/src/game/greybox.ts",
       "apps/web/src/game/roadside.ts",
       "apps/web/src/game/looks.ts",
       "apps/web/src/game/facade-texture.ts",
@@ -458,7 +457,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/city.ts",
     ],
     summary:
-      "The road, terrain, sky, city blocks, signs and roadside props drawn from the compiled track, in the look of each region, built in chunks around the player, and the clearance that hides a prop while the chase camera passes it. A plan that carries its own scenery gets a greybox instead: world-space ground under its grass or paved cover, grey blocks, flat water, grass patches and simple trees. The ring of mountains on the horizon stands behind open country and is left out of a city, whether that city is the kit's or a paved greybox.",
+      "The road, terrain, sky, city blocks, signs and roadside props drawn from the compiled track, in the look of each region, built in chunks around the player, and the clearance that hides a prop while the chase camera passes it. The ring of mountains on the horizon stands behind open country and is left out of a city.",
     title: "Roads, cities and scenery on screen",
     verify: ["roadside-clearance.md"],
   },
