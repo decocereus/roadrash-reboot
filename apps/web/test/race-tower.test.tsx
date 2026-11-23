@@ -15,6 +15,7 @@ import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
 import { firstQuickPick, planFor, quickEntry } from "../src/career/flow.ts";
+import { ROW_EM } from "../src/components/screens/hud-layout.ts";
 import { RaceTower } from "../src/components/screens/race-tower.tsx";
 import { undressed } from "../src/game/figure-wardrobe.ts";
 import type { Dressing } from "../src/game/figure-wardrobe.ts";
@@ -267,6 +268,26 @@ describe("the race tower", () => {
     const built = Math.min(...windows.map((window) => window.bytes));
     const unchanged = windows.every((window) => window.same);
     expect({ built, unchanged }).toStrictEqual({ built: 0, unchanged: true });
+  });
+
+  it("slides a row to its new place by its top, so no compositor animation runs over the race", () => {
+    const rows = rowsOf(createTower(), rideFor(soloPlan, 30));
+    const markup = markupOf(rows);
+    const rowStyles = [...markup.matchAll(/<li class="[^"]*" style="([^"]*)"/gu)].map(
+      (match) => match[1]
+    );
+    const motion = [...markup.matchAll(/class="([^"]*)"/gu)]
+      .flatMap((match) => match[1]?.split(" ") ?? [])
+      .filter(
+        (name) =>
+          name.startsWith("transition") ||
+          name.startsWith("animate-") ||
+          name.startsWith("will-change")
+      );
+    expect(rowStyles).toStrictEqual(
+      rows.map((_, slot) => `height:${ROW_EM}em;top:${slot * ROW_EM}em`)
+    );
+    expect(new Set(motion)).toStrictEqual(new Set(["transition-[top]"]));
   });
 
   it("hands React the same rows while nothing it shows has changed", () => {
