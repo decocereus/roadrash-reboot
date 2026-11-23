@@ -14,10 +14,12 @@ import {
 import type { BikeSpec, RaceState, RiderState } from "./state.ts";
 
 export const HARD_LANDING = -11;
+const CRASHING_LANDING = -19;
 export const LANDING_SLIP = 0.6;
 const JUDGED_FLIGHT_TICKS = 15;
 const LANDING_LOSS_PER_IMPACT = 0.008;
 const MOST_LANDING_LOSS = 0.1;
+const HARD_LOSS_PER_IMPACT = 0.02;
 const WOBBLE_PER_IMPACT = 1 / 12;
 const WOBBLE_TURNS = 20;
 const WOBBLE_LEAN = 0.35;
@@ -111,7 +113,7 @@ const land = (
   rider.bumpedBy = -1;
   rider.bumpedWalker = -1;
   if (
-    impact < HARD_LANDING ||
+    impact < CRASHING_LANDING ||
     (judged && (rider.offRoad || slip > LANDING_SLIP))
   ) {
     throwRider(
@@ -125,9 +127,16 @@ const land = (
     );
     return;
   }
+  const pastHard = Math.max(0, HARD_LANDING - impact);
   rider.speed *=
-    1 - Math.min(MOST_LANDING_LOSS, -impact * LANDING_LOSS_PER_IMPACT);
-  rider.wobble = clamp(-impact * WOBBLE_PER_IMPACT + slip, 0, 1);
+    1 -
+    Math.min(MOST_LANDING_LOSS, -impact * LANDING_LOSS_PER_IMPACT) -
+    pastHard * HARD_LOSS_PER_IMPACT;
+  rider.wobble = clamp(
+    -impact * WOBBLE_PER_IMPACT + slip,
+    0,
+    1 + pastHard * WOBBLE_PER_IMPACT
+  );
   state.events.push({
     airSeconds,
     impact,

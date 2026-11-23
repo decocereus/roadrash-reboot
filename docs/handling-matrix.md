@@ -30,7 +30,7 @@ These belong to the riding model, not to a bike, and stay with their current own
 - `SETTLE_SHARE`, `BEND_HOLD_SHARE`, `brakeGrip` and `driveGrip` in `state.ts`, which set how fast the bars settle and how turning shares grip with the brakes and the throttle
 - `SLOW_LEAN` and `FULL_LEAN_SPEED` in `rider-flight.ts`, which fade the drawn lean at low speed
 - `TAKEOFF_SPEED`, `SLIP_RECOVERY`, `SLIP_PUSH` and the slide thresholds in `rider-drive.ts`
-- `HARD_LANDING` and `LANDING_SLIP` in `rider-flight.ts`
+- `HARD_LANDING`, `CRASHING_LANDING`, `HARD_LOSS_PER_IMPACT` and `LANDING_SLIP` in `rider-flight.ts`
 - the torque curve, `POWER_NORM`, the shift points and the tuck in `engine.ts`
 - each weapon's steering factor in `weapons.ts`
 
