@@ -1,12 +1,26 @@
+import { clothoids } from "@racer/track/alignment";
+import { roadHalfWidthAt } from "@racer/track/districts";
 import { trackFor } from "@racer/track/roads";
+import { compileTrack, curvatureAt } from "@racer/track/track";
+import type { Track } from "@racer/track/track";
+import { breakwaterRun } from "@racer/track/tracks/breakwater-run";
 import { describe, expect, it } from "vitest";
 
-import { streetBike } from "./bikes.ts";
-import { carrierAt, frontOf, lipOf } from "./carrier.ts";
+import { bikes, streetBike } from "./bikes.ts";
+import type { BikeId } from "./bikes.ts";
+import { carrierAt, frontOf, lipOf, toeOf } from "./carrier.ts";
 import { difficulties, tiers } from "./difficulty.ts";
 import { alone, frameOf, player, truckRoad } from "./race-fixtures.ts";
 import { createRace, defaultSetup, neutralInput, stepRace } from "./race.ts";
-import { PLAYER_RIDER, TICK_RATE } from "./state.ts";
+import { HARD_LANDING } from "./rider-flight.ts";
+import {
+  PLAYER_RIDER,
+  TICK_RATE,
+  clamp,
+  curvePushOf,
+  lateralSpeedLimit,
+  steerFor,
+} from "./state.ts";
 import type { RaceEvent, RiderInput } from "./state.ts";
 
 const TRUCK_AT = 1000;
@@ -54,9 +68,10 @@ const pilotMeets = (
   holdPace: boolean,
   skill: number,
   seed: number,
-  carAhead?: { readonly s: number; readonly speed: number }
+  carAhead?: { readonly s: number; readonly speed: number },
+  road = truckRoad
 ): PilotRun => {
-  const setup = defaultSetup(truckRoad, seed);
+  const setup = defaultSetup(road, seed);
   const state = createRace({
     ...setup,
     player: { ...setup.player, bike: streetBike, controller: "pilot", skill },
@@ -77,10 +92,10 @@ const pilotMeets = (
       halfLength: 2.2,
       halfWidth: 0.92,
       height: 1.45,
-      home: carAhead.speed < 0 ? truckRoad.oncomingLanes[0] : truck.x,
+      home: carAhead.speed < 0 ? road.oncomingLanes[0] : truck.x,
       s: carAhead.s,
       speed: carAhead.speed,
-      x: carAhead.speed < 0 ? truckRoad.oncomingLanes[0] : truck.x,
+      x: carAhead.speed < 0 ? road.oncomingLanes[0] : truck.x,
     });
   }
   rider.s = truck.s - RIG_HALF_LENGTH - 200;
@@ -95,7 +110,7 @@ const pilotMeets = (
     if (holdPace && rider.mode === "riding") {
       rider.speed = kmh / 3.6;
     }
-    stepRace(state, truckRoad, frameOf(state));
+    stepRace(state, road, frameOf(state));
     events.push(...state.events);
     rampTaken ||= rider.onCarrier >= 0;
     if (launchKmh === 0 && rider.airborne) {
@@ -308,5 +323,210 @@ describe("a pilot and a truck", () => {
     expect(tries(1)).toBe(0);
     expect(tries(0.5)).toBeGreaterThan(0);
     expect(tries(0.5)).toBeLessThan(seeds.length);
+  });
+});
+
+const withoutRoadside = (road: Track): Track => ({
+  ...road,
+  crossings: [],
+  hazards: [],
+  solidProps: [],
+  stalls: [],
+  walkSites: [],
+});
+
+const roadOf = (pieces: Parameters<typeof clothoids>[0]): Track =>
+  withoutRoadside(
+    compileTrack({
+      ...breakwaterRun,
+      bazaars: [],
+      carriers: [TRUCK_AT],
+      chevrons: [],
+      crossings: [],
+      crowds: [],
+      districts: [
+        { from: 0, lanesEachWay: 1, shoulderWidth: 0.4, vergeWidth: 7 },
+      ],
+      hazardsPerKilometre: 0,
+      pieces: clothoids(pieces),
+      trafficPerKilometre: 1,
+    })
+  );
+
+const bentRoad = (radius: number, grade: number): Track =>
+  roadOf([
+    [200, 1 / radius, grade],
+    [2800, 1 / radius, grade],
+    [200, 0, 0],
+    [800, 0, 0],
+  ]);
+
+const climbOutOfDip = roadOf([
+  [1200, 0, 0],
+  [60, 0, 0.1],
+  [1800, 0, 0.1],
+  [200, 0, 0],
+  [800, 0, 0],
+]);
+
+interface TruckJump {
+  readonly road: Track;
+  readonly truckAt: number;
+  readonly bike: BikeId;
+  readonly kmh: number;
+  readonly offset: number;
+}
+
+const jumpHoldingTheLine = ({
+  road,
+  truckAt,
+  bike,
+  kmh,
+  offset,
+}: TruckJump) => {
+  const spec = bikes[bike];
+  const state = alone(road, spec);
+  const rider = player(state);
+  const truck = carrierAt(truckAt, road.sameWayLanes[0] ?? 0, 0, 120);
+  state.cars.length = 0;
+  state.cars.push(truck);
+  rider.s = toeOf(truck) - 1;
+  rider.x = truck.x + offset;
+  rider.speed = kmh / 3.6;
+  const line = rider.x;
+  const lock = lateralSpeedLimit(spec, rider.speed);
+  rider.lateralSpeed = clamp(
+    curvePushOf(spec, curvatureAt(road, rider.s), rider.speed),
+    -lock,
+    lock
+  );
+  const events: RaceEvent[] = [];
+  const headings: { across: number; heading: number; travel: number }[] = [];
+  let flown = false;
+  let ridden = 0;
+  for (let tick = 0; tick < 20 * TICK_RATE && ridden < TICK_RATE; tick += 1) {
+    if (!flown && rider.mode === "riding") {
+      rider.speed = kmh / 3.6;
+    }
+    const bend = curvatureAt(road, rider.s);
+    const push = curvePushOf(spec, bend, rider.speed);
+    const wanted = push + (line - rider.x) * 1.5;
+    const steer = clamp(steerFor(spec, bend, rider.speed, wanted), -1, 1);
+    stepRace(
+      state,
+      road,
+      frameOf(state, [PLAYER_RIDER, { ...holding, steer }])
+    );
+    events.push(...state.events);
+    flown ||= rider.airborne;
+    if (rider.airborne) {
+      headings.push({
+        across: rider.lateralSpeed - push,
+        heading: rider.heading,
+        travel: Math.atan((rider.lateralSpeed - push) / rider.speed),
+      });
+    }
+    ridden += flown && !rider.airborne ? 1 : 0;
+    if (rider.mode !== "riding") {
+      break;
+    }
+  }
+  const landing = events.find((event) => event.kind === "land");
+  return { events, headings, landing, rider };
+};
+
+const bendJumps = [
+  ["halden-wren-400", 180, 200],
+  ["halden-wren-400", 180, -200],
+  ["ostra-sesta-600", 160, 200],
+  ["ostra-sesta-600", 160, -200],
+  ["ostra-nera-1000", 220, 500],
+  ["ostra-nera-1000", 220, -500],
+] as const;
+
+const gradedBendJumps = [
+  [300, -0.15],
+  [-300, 0.15],
+] as const;
+
+describe("a truck jump on a bend or a hill", () => {
+  it.each(bendJumps)(
+    "%s at %i km/h on a %i m bend, holding its line over the truck, lands along the road and rides on",
+    (bike, kmh, radius) => {
+      const road = bentRoad(radius, 0);
+      const { events, landing, rider } = jumpHoldingTheLine({
+        bike,
+        kmh,
+        offset: 0,
+        road,
+        truckAt: TRUCK_AT,
+      });
+      expect(landing?.kind).toBe("land");
+      if (landing?.kind !== "land") {
+        return;
+      }
+      expect(Math.abs(landing.x)).toBeLessThan(
+        roadHalfWidthAt(road, landing.s)
+      );
+      expect(landing.impact).toBeGreaterThan(HARD_LANDING);
+      expect(crashed(events)).toBeFalsy();
+      expect(rider.mode).toBe("riding");
+    }
+  );
+
+  it.each(gradedBendJumps)(
+    "a Sesta at 160 km/h on a %i m bend graded %d lands off the truck no harder than on the flat",
+    (radius, grade) => {
+      const { events, landing } = jumpHoldingTheLine({
+        bike: "ostra-sesta-600",
+        kmh: 160,
+        offset: 1.15,
+        road: bentRoad(radius, grade),
+        truckAt: TRUCK_AT,
+      });
+      expect(landing?.kind === "land" && landing.impact).toBeCloseTo(
+        -10.971,
+        2
+      );
+      expect(crashed(events)).toBeFalsy();
+    }
+  );
+
+  it("a bike carried off the road by a bend under its flight points where it is going, and still crashes landing off the road", () => {
+    const road = withoutRoadside(compileTrack(breakwaterRun));
+    const { events, headings, rider } = jumpHoldingTheLine({
+      bike: "ostra-sesta-600",
+      kmh: 160,
+      offset: 0,
+      road,
+      truckAt: 3900,
+    });
+    const last = headings.at(-1);
+    expect(Math.abs(last?.across ?? 0)).toBeGreaterThan(5);
+    expect(last?.heading).toBeCloseTo(last?.travel ?? 0, 6);
+    expect(
+      events
+        .filter((event) => event.kind === "crash")
+        .map((event) => event.kind === "crash" && event.cause)
+    ).toStrictEqual(["landing"]);
+    expect(rider.offRoad).toBeTruthy();
+  });
+
+  it.each([200, -200])(
+    "a pilot at 160 km/h takes a truck on a %i m bend, lands along the road and rides on",
+    (radius) => {
+      const run = pilotMeets(160, true, 1, 1, undefined, bentRoad(radius, 0));
+      expect(run.rampTaken).toBeTruthy();
+      expect(run.landedAt).toBeGreaterThan(0);
+      expect(run.passed).toBeTruthy();
+      expect(crashed(run.events)).toBeFalsy();
+    }
+  );
+
+  it("a pilot at 135 km/h goes round a truck climbing out of a dip, where the rising road would bring the decks up under it", () => {
+    const run = pilotMeets(135, true, 1, 1, undefined, climbOutOfDip);
+    expect(run.rampTaken).toBeFalsy();
+    expect(run.passed).toBeTruthy();
+    expect(crashed(run.events)).toBeFalsy();
   });
 });
