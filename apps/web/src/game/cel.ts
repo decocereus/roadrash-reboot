@@ -171,6 +171,7 @@ export interface Shading {
   ) => THREE.MeshBasicMaterial;
   glowPaint: () => THREE.MeshBasicMaterial;
   aim: (camera: THREE.Camera) => void;
+  lit: () => number;
   dispose: () => void;
 }
 
@@ -248,6 +249,22 @@ export const figureFloorOf = (ink: THREE.ColorRepresentation): number => {
   );
 };
 
+const lightWhileAlive = <Entry extends { readonly material: THREE.Material }>(
+  list: Entry[],
+  entry: Entry
+): void => {
+  list.push(entry);
+  const retire = (): void => {
+    entry.material.removeEventListener("dispose", retire);
+    const at = list.indexOf(entry);
+    const last = list.pop();
+    if (last && at < list.length) {
+      list[at] = last;
+    }
+  };
+  entry.material.addEventListener("dispose", retire);
+};
+
 export const createShading = (look: Look): Shading => {
   const ramp = createRamp();
   const key = new THREE.Vector3();
@@ -307,7 +324,7 @@ export const createShading = (look: Look): Shading => {
   ): THREE.MeshBasicMaterial => {
     const material = new THREE.MeshBasicMaterial(parameters);
     material.color.copy(base).multiplyScalar(glowNow);
-    glows.push({ base, material });
+    lightWhileAlive(glows, { base, material });
     return material;
   };
 
@@ -372,7 +389,7 @@ export const createShading = (look: Look): Shading => {
       const material = build({ color: colour, ...parameters }, rim, false);
       if (parameters.emissiveMap) {
         material.emissiveIntensity = emissiveIntensity * glowNow;
-        emissives.push({ base: emissiveIntensity, material });
+        lightWhileAlive(emissives, { base: emissiveIntensity, material });
       }
       return material;
     },
@@ -391,6 +408,7 @@ export const createShading = (look: Look): Shading => {
       return glowing(new THREE.Color("#ffffff"), { vertexColors: true });
     },
     key,
+    lit: () => glows.length + emissives.length,
     look,
     paint(atlas) {
       return build({ map: atlas, vertexColors: true }, 1, true);
