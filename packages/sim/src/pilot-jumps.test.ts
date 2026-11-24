@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { streetBike } from "./bikes.ts";
 import { lipAt, toeOf } from "./carrier.ts";
 import { difficulties } from "./difficulty.ts";
+import { spawnRock } from "./hazards.ts";
 import { KMH, frameOf, player } from "./race-fixtures.ts";
 import { createRace, defaultSetup, stepRace } from "./race.ts";
 import { clamp, curvePushOf, lateralSpeedLimit, TICK_RATE } from "./state.ts";
@@ -13,7 +14,7 @@ import type { RaceEvent } from "./state.ts";
 const track = trackFor("ridge-road");
 const TRUCK_START = 4500;
 
-const approach = (short: number) => {
+const approach = (short: number, rivalCount = 0) => {
   const setup = defaultSetup(track, 21);
   const state = createRace({
     ...setup,
@@ -25,7 +26,7 @@ const approach = (short: number) => {
       skill: 1,
     },
     police: { ...setup.police, count: 0 },
-    rivals: [],
+    rivals: setup.rivals.slice(0, rivalCount),
   });
   const truck = state.cars.find((car) => car.carrier && car.s === TRUCK_START);
   const kept = state.cars.find((car) => !car.carrier);
@@ -97,6 +98,41 @@ describe("a pilot committed to a truck jump keeps the approach its forecast judg
     expect(rode.committed).toBeTruthy();
     expect(rode.brakedCommitted).toBeFalsy();
     expect(rode.droppedShort).toBeTruthy();
+    expect(rode.events.find((event) => event.kind === "crash")).toBeUndefined();
+  });
+
+  it("keeps braking for a rock that lands in its approach after it committed, and rides on", () => {
+    const run = approach(100);
+    const rode = ride(run, (tick) => {
+      if (tick === 1) {
+        spawnRock(run.state, track, {
+          command: null,
+          id: "late-rock",
+          s: run.rider.s + 60,
+          x: run.rider.x,
+        });
+      }
+    });
+    expect(rode.committed).toBeTruthy();
+    expect(rode.events.find((event) => event.kind === "crash")).toBeUndefined();
+  });
+
+  it("keeps braking for riders stopped in its approach after it committed, and rides on", () => {
+    const run = approach(100, 2);
+    const rode = ride(run, (tick) => {
+      if (tick === 1) {
+        const others = run.state.riders.filter((each) => each !== run.rider);
+        for (const [index, other] of others.entries()) {
+          Object.assign(other, {
+            profile: { ...other.profile, aggression: 0 },
+            s: run.rider.s + 85,
+            speed: 0,
+            x: index === 0 ? 1.8 : -1.8,
+          });
+        }
+      }
+    });
+    expect(rode.committed).toBeTruthy();
     expect(rode.events.find((event) => event.kind === "crash")).toBeUndefined();
   });
 });
