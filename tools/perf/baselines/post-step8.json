@@ -3459,14 +3459,6 @@
     },
     {
       "environment": "node-linux-x64",
-      "metric": "room.checkpoint.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "gate-2026-11-24T12-09-51-028Z-9f67ba9-b64e086",
-      "value": 0.39317662203571235
-    },
-    {
-      "environment": "node-linux-x64",
       "metric": "timing.stamp.trimmedMean",
       "scenario": "pack-riding-v1",
       "side": "B",
@@ -3496,14 +3488,6 @@
       "side": "B",
       "source": "gate-2026-11-24T12-09-51-028Z-9f67ba9-b64e086",
       "value": 3.754612717777668
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.checkpoint.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "gate-2026-11-24T12-09-51-028Z-9f67ba9-b64e086",
-      "value": 0.3100031836877015
     },
     {
       "environment": "node-linux-x64",
@@ -3539,14 +3523,6 @@
     },
     {
       "environment": "node-linux-x64",
-      "metric": "room.checkpoint.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "gate-2026-11-24T14-10-58-121Z-9f67ba9-b64e086",
-      "value": 0.48696240779928857
-    },
-    {
-      "environment": "node-linux-x64",
       "metric": "timing.stamp.trimmedMean",
       "scenario": "pack-riding-v1",
       "side": "B",
@@ -3576,14 +3552,6 @@
       "side": "B",
       "source": "gate-2026-11-24T14-10-58-121Z-9f67ba9-b64e086",
       "value": 4.756150329651759
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.checkpoint.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "gate-2026-11-24T14-10-58-121Z-9f67ba9-b64e086",
-      "value": 0.3318871720065503
     },
     {
       "environment": "node-linux-x64",
@@ -3619,14 +3587,6 @@
     },
     {
       "environment": "node-linux-x64",
-      "metric": "room.checkpoint.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "gate-2026-11-24T14-43-56-918Z-9f67ba9-b64e086",
-      "value": 0.49724695143814196
-    },
-    {
-      "environment": "node-linux-x64",
       "metric": "timing.stamp.trimmedMean",
       "scenario": "pack-riding-v1",
       "side": "B",
@@ -3656,14 +3616,6 @@
       "side": "B",
       "source": "gate-2026-11-24T14-43-56-918Z-9f67ba9-b64e086",
       "value": 3.8276733697145957
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.checkpoint.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "gate-2026-11-24T14-43-56-918Z-9f67ba9-b64e086",
-      "value": 0.3076300143994784
     },
     {
       "environment": "node-linux-x64",
@@ -3699,14 +3651,6 @@
     },
     {
       "environment": "node-linux-x64",
-      "metric": "room.checkpoint.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "gate-2026-11-24T15-04-25-556Z-9f67ba9-b64e086",
-      "value": 0.4383286399407536
-    },
-    {
-      "environment": "node-linux-x64",
       "metric": "timing.stamp.trimmedMean",
       "scenario": "pack-riding-v1",
       "side": "B",
@@ -3736,14 +3680,6 @@
       "side": "B",
       "source": "gate-2026-11-24T15-04-25-556Z-9f67ba9-b64e086",
       "value": 3.506251422371603
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.checkpoint.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "gate-2026-11-24T15-04-25-556Z-9f67ba9-b64e086",
-      "value": 0.2812117149543295
     },
     {
       "environment": "node-linux-x64",
@@ -3779,14 +3715,6 @@
     },
     {
       "environment": "node-linux-x64",
-      "metric": "room.checkpoint.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "gate-2026-11-24T15-42-06-851Z-9f67ba9-b64e086",
-      "value": 0.5303527505715749
-    },
-    {
-      "environment": "node-linux-x64",
       "metric": "timing.stamp.trimmedMean",
       "scenario": "pack-riding-v1",
       "side": "B",
@@ -3816,14 +3744,6 @@
       "side": "B",
       "source": "gate-2026-11-24T15-42-06-851Z-9f67ba9-b64e086",
       "value": 3.850888292861001
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.checkpoint.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "gate-2026-11-24T15-42-06-851Z-9f67ba9-b64e086",
-      "value": 0.3045363297324615
     },
     {
       "environment": "node-linux-x64",
@@ -3859,14 +3779,6 @@
     },
     {
       "environment": "node-linux-x64",
-      "metric": "room.checkpoint.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "gate-2026-11-24T15-52-55-015Z-9f67ba9-b64e086",
-      "value": 0.5174171653700308
-    },
-    {
-      "environment": "node-linux-x64",
       "metric": "timing.stamp.trimmedMean",
       "scenario": "pack-riding-v1",
       "side": "B",
@@ -3898,14 +3810,6 @@
       "value": 3.8924499808136095
     },
     {
-      "environment": "node-linux-x64",
-      "metric": "room.checkpoint.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "gate-2026-11-24T15-52-55-015Z-9f67ba9-b64e086",
-      "value": 0.31878889574878955
-    },
-    {
       "environment": "node-darwin-arm64",
       "metric": "room.tick.p95",
       "scenario": "reference-v1",
@@ -3928,14 +3832,6 @@
       "side": "B",
       "source": "gate-2026-11-24T15-40-56-592Z-9f67ba9-396357f",
       "value": 0.9726409581025923
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.checkpoint.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "gate-2026-11-24T15-40-56-592Z-9f67ba9-396357f",
-      "value": 0.21082069217313648
     },
     {
       "environment": "node-darwin-arm64",
@@ -3963,14 +3859,6 @@
     },
     {
       "environment": "node-darwin-arm64",
-      "metric": "room.checkpoint.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "gate-2026-11-24T15-40-56-592Z-9f67ba9-396357f",
-      "value": 0.15600223901988444
-    },
-    {
-      "environment": "node-darwin-arm64",
       "metric": "room.tick.p95",
       "scenario": "reference-v1",
       "side": "B",
@@ -3992,14 +3880,6 @@
       "side": "B",
       "source": "gate-2026-11-24T15-51-56-913Z-9f67ba9-396357f",
       "value": 0.9843730450255274
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.checkpoint.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "gate-2026-11-24T15-51-56-913Z-9f67ba9-396357f",
-      "value": 0.21433019296914196
     },
     {
       "environment": "node-darwin-arm64",
@@ -4027,14 +3907,6 @@
     },
     {
       "environment": "node-darwin-arm64",
-      "metric": "room.checkpoint.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "gate-2026-11-24T15-51-56-913Z-9f67ba9-396357f",
-      "value": 0.1565298594743929
-    },
-    {
-      "environment": "node-darwin-arm64",
       "metric": "room.tick.p95",
       "scenario": "reference-v1",
       "side": "B",
@@ -4056,14 +3928,6 @@
       "side": "B",
       "source": "gate-2026-11-24T16-00-31-933Z-9f67ba9-396357f",
       "value": 0.9738630073995365
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.checkpoint.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "gate-2026-11-24T16-00-31-933Z-9f67ba9-396357f",
-      "value": 0.2093747988740392
     },
     {
       "environment": "node-darwin-arm64",
@@ -4091,14 +3955,6 @@
     },
     {
       "environment": "node-darwin-arm64",
-      "metric": "room.checkpoint.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "gate-2026-11-24T16-00-31-933Z-9f67ba9-396357f",
-      "value": 0.14758349429925735
-    },
-    {
-      "environment": "node-darwin-arm64",
       "metric": "room.tick.p95",
       "scenario": "reference-v1",
       "side": "B",
@@ -4123,14 +3979,6 @@
     },
     {
       "environment": "node-darwin-arm64",
-      "metric": "room.checkpoint.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "gate-2026-11-24T16-08-38-267Z-9f67ba9-396357f",
-      "value": 0.17679763998357909
-    },
-    {
-      "environment": "node-darwin-arm64",
       "metric": "room.tick.p95",
       "scenario": "pack-riding-v1",
       "side": "B",
@@ -4152,14 +4000,6 @@
       "side": "B",
       "source": "gate-2026-11-24T16-08-38-267Z-9f67ba9-396357f",
       "value": 1.79704016515177
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.checkpoint.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "gate-2026-11-24T16-08-38-267Z-9f67ba9-396357f",
-      "value": 0.15629179572359597
     },
     {
       "environment": "node-darwin-arm64",
@@ -4352,6 +4192,550 @@
       "side": "B",
       "source": "gate-2026-11-24T16-32-57-940Z-9f67ba9-ee46bca",
       "value": 56545.690515806986
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T12-09-51-028Z-9f67ba9-b64e086",
+      "value": 0.21749441149200394
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T12-09-51-028Z-9f67ba9-b64e086",
+      "value": 0.26656622807317043
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T14-10-58-121Z-9f67ba9-b64e086",
+      "value": 0.24117256260426154
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T14-10-58-121Z-9f67ba9-b64e086",
+      "value": 0.3073144212483319
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T14-43-56-918Z-9f67ba9-b64e086",
+      "value": 0.2300119483357612
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T14-43-56-918Z-9f67ba9-b64e086",
+      "value": 0.27206356509722024
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T15-04-25-556Z-9f67ba9-b64e086",
+      "value": 0.21630258382488488
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T15-04-25-556Z-9f67ba9-b64e086",
+      "value": 0.2590473730084335
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T15-42-06-851Z-9f67ba9-b64e086",
+      "value": 0.23807990713738494
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T15-42-06-851Z-9f67ba9-b64e086",
+      "value": 0.26446650533459753
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T15-52-55-015Z-9f67ba9-b64e086",
+      "value": 0.24478570859758306
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T15-52-55-015Z-9f67ba9-b64e086",
+      "value": 0.2790718856009047
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.tick.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T16-20-22-863Z-9f67ba9-b629db7",
+      "value": 0.3165355559281751
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.confirm.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T16-20-22-863Z-9f67ba9-b629db7",
+      "value": 0.31752697068338326
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.rollback.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T16-20-22-863Z-9f67ba9-b629db7",
+      "value": 2.1689631278296893
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T16-20-22-863Z-9f67ba9-b629db7",
+      "value": 0.23618332121268906
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.tick.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T16-20-22-863Z-9f67ba9-b629db7",
+      "value": 0.5245155103958007
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.confirm.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T16-20-22-863Z-9f67ba9-b629db7",
+      "value": 0.5206363513929767
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.rollback.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T16-20-22-863Z-9f67ba9-b629db7",
+      "value": 3.8256001312874393
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T16-20-22-863Z-9f67ba9-b629db7",
+      "value": 0.28003723396513
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.tick.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-01-26-439Z-9f67ba9-bb9fc22",
+      "value": 0.31351683274442255
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.confirm.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-01-26-439Z-9f67ba9-bb9fc22",
+      "value": 0.3126203792242488
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.rollback.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-01-26-439Z-9f67ba9-bb9fc22",
+      "value": 2.1326797468194885
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-01-26-439Z-9f67ba9-bb9fc22",
+      "value": 0.1723687379936139
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.tick.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-01-26-439Z-9f67ba9-bb9fc22",
+      "value": 0.5243018820704053
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.confirm.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-01-26-439Z-9f67ba9-bb9fc22",
+      "value": 0.5241905991146457
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.rollback.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-01-26-439Z-9f67ba9-bb9fc22",
+      "value": 3.7723175114399647
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-01-26-439Z-9f67ba9-bb9fc22",
+      "value": 0.23820504874007503
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.tick.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-10-10-818Z-9f67ba9-beea984",
+      "value": 0.23502747607897428
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.confirm.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-10-10-818Z-9f67ba9-beea984",
+      "value": 0.23540452348916174
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.rollback.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-10-10-818Z-9f67ba9-beea984",
+      "value": 1.6009395347945903
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-10-10-818Z-9f67ba9-beea984",
+      "value": 0.1938300191743342
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.tick.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-10-10-818Z-9f67ba9-beea984",
+      "value": 0.3733162596706309
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.confirm.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-10-10-818Z-9f67ba9-beea984",
+      "value": 0.3717854535549225
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.rollback.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-10-10-818Z-9f67ba9-beea984",
+      "value": 2.983068852081608
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-10-10-818Z-9f67ba9-beea984",
+      "value": 0.2416218362085699
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.tick.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-29-33-162Z-9f67ba9-800adb8",
+      "value": 0.3167075984473891
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.confirm.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-29-33-162Z-9f67ba9-800adb8",
+      "value": 0.3139844926125524
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.rollback.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-29-33-162Z-9f67ba9-800adb8",
+      "value": 2.1723740354137613
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-29-33-162Z-9f67ba9-800adb8",
+      "value": 0.23216176795734256
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.tick.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-29-33-162Z-9f67ba9-800adb8",
+      "value": 0.5266282322362004
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.confirm.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-29-33-162Z-9f67ba9-800adb8",
+      "value": 0.520888754435399
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.rollback.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-29-33-162Z-9f67ba9-800adb8",
+      "value": 3.9070856200485014
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-29-33-162Z-9f67ba9-800adb8",
+      "value": 0.28457612657521497
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.tick.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-48-50-322Z-9f67ba9-0bdbc4f",
+      "value": 0.31529707118693884
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.confirm.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-48-50-322Z-9f67ba9-0bdbc4f",
+      "value": 0.314135042670228
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.rollback.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-48-50-322Z-9f67ba9-0bdbc4f",
+      "value": 2.1603620784516666
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-48-50-322Z-9f67ba9-0bdbc4f",
+      "value": 0.2376955156201594
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.tick.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-48-50-322Z-9f67ba9-0bdbc4f",
+      "value": 0.5271638817252974
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.confirm.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-48-50-322Z-9f67ba9-0bdbc4f",
+      "value": 0.522907397597802
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.rollback.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-48-50-322Z-9f67ba9-0bdbc4f",
+      "value": 3.7707196547335315
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-48-50-322Z-9f67ba9-0bdbc4f",
+      "value": 0.27910687949377977
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.tick.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-57-53-730Z-9f67ba9-0bdbc4f",
+      "value": 0.29803956878046867
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.confirm.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-57-53-730Z-9f67ba9-0bdbc4f",
+      "value": 0.29489942485060866
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.rollback.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-57-53-730Z-9f67ba9-0bdbc4f",
+      "value": 1.983071063747079
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-57-53-730Z-9f67ba9-0bdbc4f",
+      "value": 0.20717275016840866
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.tick.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-57-53-730Z-9f67ba9-0bdbc4f",
+      "value": 0.48796766378701845
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.confirm.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-57-53-730Z-9f67ba9-0bdbc4f",
+      "value": 0.4879340488349003
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.rollback.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-57-53-730Z-9f67ba9-0bdbc4f",
+      "value": 3.410689113846763
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T17-57-53-730Z-9f67ba9-0bdbc4f",
+      "value": 0.2507545339538314
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T15-40-56-592Z-9f67ba9-396357f",
+      "value": 0.10759832300071116
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T15-40-56-592Z-9f67ba9-396357f",
+      "value": 0.13971853575863852
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T15-51-56-913Z-9f67ba9-396357f",
+      "value": 0.10619820449088206
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T15-51-56-913Z-9f67ba9-396357f",
+      "value": 0.1397490601707476
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T16-00-31-933Z-9f67ba9-396357f",
+      "value": 0.09883572476900862
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T16-00-31-933Z-9f67ba9-396357f",
+      "value": 0.13028567825891874
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T16-08-38-267Z-9f67ba9-396357f",
+      "value": 0.10190371842442257
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.checkpoint.p50",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T16-08-38-267Z-9f67ba9-396357f",
+      "value": 0.13365047459479634
     }
   ],
   "revisions": {
@@ -6508,6 +6892,192 @@
       "sides": {
         "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
         "B": "ee46bca20626b7a0e3b653bd596ce91330630331"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, lane scale reference-v1 0.777, pack-riding-v1 0.778",
+        "cpu": "Intel(R) Xeon(R) 6975P-C",
+        "cpus": "4",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "harnessDigest": "3deb1420a585daf6de807b7ed5653d621181dc06f5bcac4f8212f9955b83b05f",
+        "memoryBytes": "16464302080",
+        "node": "v26.13.0",
+        "platform": "linux",
+        "sideASourceDigest": "2ac62db5392df03101fc1b75691db3a4455047aa8828430b650e81244155d206",
+        "sideBSourceDigest": "4291ccae572dfeac600dddb9849d47d7ea09eb30f5d0bebced0a3e2598134b29",
+        "v8": "14.6.202.34-node.40",
+        "wallMs": "{\"build\":3767,\"materialize\":6552,\"node\":354952,\"total\":365546}",
+        "machine": "GitHub-hosted runner, Intel(R) Xeon(R) 6975P-C",
+        "os": "Ubuntu 24.04, runner image ubuntu-24.04",
+        "ci": "GitHub Actions run 45435856558 attempt 1 (perf), pull_request event on PR #234",
+        "checkout": "the pull request merge of 8c2b3fb3 into main",
+        "command": "node tools/perf/gate.ts, the perf job's ordinary run",
+        "artifact": "perf-results 14940967492",
+        "why": "a perf-job run of PR #234 at 8c2b3fb3, which pools the same seeds; the Linux room timing rows take 1.15 x the worst run in room.node-linux-x64.json.gz"
+      },
+      "id": "gate-2026-11-24T16-20-22-863Z-9f67ba9-b629db7",
+      "lanes": ["node"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "b629db7a80842a39bbe16c38aeddffd738e06853"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, lane scale reference-v1 0.773, pack-riding-v1 0.773",
+        "cpu": "Intel(R) Xeon(R) 6975P-C",
+        "cpus": "4",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "harnessDigest": "5209b2e40927bd4a3ae0be565459afb22857060afeb56a12b49e1a9f5b878790",
+        "memoryBytes": "16464302080",
+        "node": "v26.13.0",
+        "platform": "linux",
+        "sideASourceDigest": "dc3715932a28e793cced81f1b3ed4c0a39df219cd27f9900ab6371bd93faebb1",
+        "sideBSourceDigest": "d0a2fb04256bde4807307d1ab729352d2895b0e21b86c418a310865c70cd8b90",
+        "v8": "14.6.202.34-node.40",
+        "wallMs": "{\"build\":3627,\"materialize\":6197,\"node\":352040,\"total\":362120}",
+        "machine": "GitHub-hosted runner, Intel(R) Xeon(R) 6975P-C",
+        "os": "Ubuntu 24.04, runner image ubuntu-24.04",
+        "ci": "GitHub Actions run 45443740233 attempt 1 (perf), pull_request event on PR #234",
+        "checkout": "the pull request merge of ba899f50 into main",
+        "command": "node tools/perf/gate.ts, the perf job's ordinary run",
+        "artifact": "perf-results 14944498055",
+        "why": "a perf-job run of PR #234 at ba899f50, which pools the same seeds; its checkpoints are about 27% faster than the other 6975P-C runs' on every sample; the Linux room timing rows take 1.15 x the worst run in room.node-linux-x64.json.gz"
+      },
+      "id": "gate-2026-11-24T17-01-26-439Z-9f67ba9-bb9fc22",
+      "lanes": ["node"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "bb9fc22a6db2204185b81884a8bd8eac182f6536"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, lane scale reference-v1 0.796, pack-riding-v1 0.798",
+        "cpu": "AMD EPYC 9V45 96-Core Processor",
+        "cpus": "4",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "harnessDigest": "5209b2e40927bd4a3ae0be565459afb22857060afeb56a12b49e1a9f5b878790",
+        "memoryBytes": "16760344576",
+        "node": "v26.13.0",
+        "platform": "linux",
+        "sideASourceDigest": "dc3715932a28e793cced81f1b3ed4c0a39df219cd27f9900ab6371bd93faebb1",
+        "sideBSourceDigest": "d0a2fb04256bde4807307d1ab729352d2895b0e21b86c418a310865c70cd8b90",
+        "v8": "14.6.202.34-node.40",
+        "wallMs": "{\"build\":3426,\"materialize\":7959,\"node\":300166,\"total\":311870}",
+        "machine": "GitHub-hosted runner, AMD EPYC 9V45 96-Core Processor",
+        "os": "Ubuntu 24.04, runner image ubuntu-24.04",
+        "ci": "GitHub Actions run 45445422415 attempt 1 (perf), push event on main",
+        "checkout": "main at beea984d",
+        "command": "node tools/perf/gate.ts, the perf job's ordinary run",
+        "artifact": "perf-results 14945668553",
+        "why": "the perf-job run on main after #234 merged; the Linux room timing rows take 1.15 x the worst run in room.node-linux-x64.json.gz"
+      },
+      "id": "gate-2026-11-24T17-10-10-818Z-9f67ba9-beea984",
+      "lanes": ["node"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "beea984d43be5bb4bcfd465667ffeab019ee2ceb"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, lane scale reference-v1 0.780, pack-riding-v1 0.779",
+        "cpu": "Intel(R) Xeon(R) 6975P-C",
+        "cpus": "4",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "harnessDigest": "5209b2e40927bd4a3ae0be565459afb22857060afeb56a12b49e1a9f5b878790",
+        "memoryBytes": "16464302080",
+        "node": "v26.13.0",
+        "platform": "linux",
+        "sideASourceDigest": "dc3715932a28e793cced81f1b3ed4c0a39df219cd27f9900ab6371bd93faebb1",
+        "sideBSourceDigest": "f5ee166d5c4be5c48fed0f1583209d2944ddefab5d4a4da4ca196121295a6505",
+        "v8": "14.6.202.34-node.40",
+        "wallMs": "{\"build\":3740,\"materialize\":7651,\"node\":358097,\"total\":369726}",
+        "machine": "GitHub-hosted runner, Intel(R) Xeon(R) 6975P-C",
+        "os": "Ubuntu 24.04, runner image ubuntu-24.04",
+        "ci": "GitHub Actions run 45449059503 attempt 1 (perf), pull_request event on PR #236",
+        "checkout": "the pull request merge of 24eb2a9e into main",
+        "command": "node tools/perf/gate.ts, the perf job's ordinary run",
+        "artifact": "perf-results 14948536701",
+        "why": "a perf-job run of PR #236, which changes no Linux timing; the Linux room timing rows take 1.15 x the worst run in room.node-linux-x64.json.gz"
+      },
+      "id": "gate-2026-11-24T17-29-33-162Z-9f67ba9-800adb8",
+      "lanes": ["node"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "800adb845da6e61560e588c2bf0cfe0f2359c1fe"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, lane scale reference-v1 0.775, pack-riding-v1 0.775",
+        "cpu": "Intel(R) Xeon(R) 6975P-C",
+        "cpus": "4",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "harnessDigest": "5209b2e40927bd4a3ae0be565459afb22857060afeb56a12b49e1a9f5b878790",
+        "memoryBytes": "16464297984",
+        "node": "v26.13.0",
+        "platform": "linux",
+        "sideASourceDigest": "dc3715932a28e793cced81f1b3ed4c0a39df219cd27f9900ab6371bd93faebb1",
+        "sideBSourceDigest": "f5ee166d5c4be5c48fed0f1583209d2944ddefab5d4a4da4ca196121295a6505",
+        "v8": "14.6.202.34-node.40",
+        "wallMs": "{\"build\":3874,\"materialize\":8502,\"node\":354761,\"total\":367424}",
+        "machine": "GitHub-hosted runner, Intel(R) Xeon(R) 6975P-C",
+        "os": "Ubuntu 24.04, runner image ubuntu-24.04",
+        "ci": "GitHub Actions run 45452561700 attempt 1 (perf), push event on main",
+        "checkout": "main at 0bdbc4f7",
+        "command": "node tools/perf/gate.ts, the perf job's ordinary run",
+        "artifact": "perf-results 14948714840",
+        "why": "the perf-job run on main after #236 merged, which failed room.checkpoint.p95 at 0.625 ms against 0.610 ms; the Linux room timing rows take 1.15 x the worst run in room.node-linux-x64.json.gz"
+      },
+      "id": "gate-2026-11-24T17-48-50-322Z-9f67ba9-0bdbc4f",
+      "lanes": ["node"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "0bdbc4f7120c2e85194c418f0b867b602f656c1b"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, lane scale reference-v1 0.912, pack-riding-v1 0.922",
+        "cpu": "AMD EPYC 9V74 80-Core Processor",
+        "cpus": "4",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "harnessDigest": "5209b2e40927bd4a3ae0be565459afb22857060afeb56a12b49e1a9f5b878790",
+        "memoryBytes": "16760344576",
+        "node": "v26.13.0",
+        "platform": "linux",
+        "sideASourceDigest": "dc3715932a28e793cced81f1b3ed4c0a39df219cd27f9900ab6371bd93faebb1",
+        "sideBSourceDigest": "f5ee166d5c4be5c48fed0f1583209d2944ddefab5d4a4da4ca196121295a6505",
+        "v8": "14.6.202.34-node.40",
+        "wallMs": "{\"build\":4169,\"materialize\":9128,\"node\":391292,\"total\":404916}",
+        "machine": "GitHub-hosted runner, AMD EPYC 9V74 80-Core Processor",
+        "os": "Ubuntu 24.04, runner image ubuntu-24.04",
+        "ci": "GitHub Actions run 45452561700 attempt 2 (perf), push event on main",
+        "checkout": "main at 0bdbc4f7",
+        "command": "node tools/perf/gate.ts, the perf job's ordinary run",
+        "artifact": "perf-results 14951311026",
+        "why": "the rerun of the perf job on main at 0bdbc4f7; the Linux room timing rows take 1.15 x the worst run in room.node-linux-x64.json.gz"
+      },
+      "id": "gate-2026-11-24T17-57-53-730Z-9f67ba9-0bdbc4f",
+      "lanes": ["node"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "0bdbc4f7120c2e85194c418f0b867b602f656c1b"
       }
     }
   ],
