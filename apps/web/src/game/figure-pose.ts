@@ -14,7 +14,7 @@ import {
   writeLocal,
 } from "./figure-ik.ts";
 import type { Chain, Grip, Joint, Limb } from "./figure-ik.ts";
-import { posed, read } from "./figure-rig.ts";
+import { boneNamed, posed, read } from "./figure-rig.ts";
 import type { Rig } from "./figure-rig.ts";
 
 export type RiderPose =
@@ -230,14 +230,6 @@ export const kneeOut = (lean: number, speed: number): number =>
 export const kneeScrapes = (lean: number, speed: number): boolean =>
   speed >= KNEE_FULL_SPEED && Math.abs(lean) >= KNEE_SCRAPE;
 
-const boneNamed = (rig: Rig, name: string): THREE.Bone => {
-  const bone = rig.skeleton.getBoneByName(name);
-  if (!bone) {
-    throw new Error(`The rider model has no ${name} bone.`);
-  }
-  return bone;
-};
-
 const chainOf = (rig: Rig, ends: readonly string[]): Chain => {
   const joints = new Map<THREE.Bone, Joint>();
   const jointOf = (bone: THREE.Bone): Joint => {
@@ -259,7 +251,7 @@ const chainOf = (rig: Rig, ends: readonly string[]): Chain => {
     return joint;
   };
   for (const end of ends) {
-    jointOf(boneNamed(rig, end));
+    jointOf(boneNamed(rig.skeleton, end));
   }
   const top = [...joints.keys()].find((bone) => !joints.get(bone)?.parent);
   if (!top?.parent) {
@@ -289,7 +281,7 @@ const gripOf = (limb: Limb, stretch: number): Grip => ({
 export const planterOf = (rig: Rig, seated: readonly number[]): Planter => {
   const chain = chainOf(rig, ["hand_l", "hand_r", "foot_l", "foot_r"]);
   const jointNamed = (name: string): Joint => {
-    const index = rig.bones.indexOf(boneNamed(rig, name));
+    const index = rig.bones.indexOf(boneNamed(rig.skeleton, name));
     const joint = chain.joints.find((each) => each.index === index);
     if (!joint) {
       throw new Error(`The rider model's ${name} bone holds no grip.`);

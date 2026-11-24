@@ -22,7 +22,6 @@ import { gaitOf } from "../src/game/gait.ts";
 import { lookOf } from "../src/game/looks.ts";
 import { createRiderFigure } from "../src/game/rider-figure.ts";
 import type { RiderFigure } from "../src/game/rider-figure.ts";
-import { parseMoves } from "../src/game/rider-moves.ts";
 import type { RiderMoves } from "../src/game/rider-moves.ts";
 import { createStrider } from "../src/game/strider.ts";
 import type { Strider } from "../src/game/strider.ts";
@@ -59,7 +58,10 @@ const ROAD_STEP = 0.01;
 const shading = createShading(lookOf("salt-coast"));
 
 const movesOf = async (): Promise<RiderMoves> => {
-  const { value } = await parseMoves(artFile(modelUrls.moves), modelUrls.moves);
+  const { value } = await assetParsers.moves(
+    artFile(modelUrls.moves),
+    modelUrls.moves
+  );
   return value;
 };
 
@@ -452,7 +454,7 @@ describe("riders on foot", () => {
 
   it("refuses a moves file without one of its loops", async () => {
     const bytes = renamed(artFile(modelUrls.moves), "jog", "goj");
-    await expect(parseMoves(bytes, modelUrls.moves)).rejects.toThrow(
+    await expect(assetParsers.moves(bytes, modelUrls.moves)).rejects.toThrow(
       "have no jog loop"
     );
   });

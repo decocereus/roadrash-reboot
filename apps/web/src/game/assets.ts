@@ -11,7 +11,7 @@ import type { BikeModelId } from "./bike-models.ts";
 import { isMesh, isSkinnedMesh } from "./meshes.ts";
 import { coloured, isSlot } from "./model-slots.ts";
 import type { Primitive, Slot } from "./model-slots.ts";
-import { parseMoves } from "./rider-moves.ts";
+import { movesOf } from "./rider-moves.ts";
 import type { RiderMoves } from "./rider-moves.ts";
 import { walkerBodies, walkerClipLoops } from "./walker-clips.ts";
 import type {
@@ -358,6 +358,9 @@ const decoded = <Value>(
 const parsed = async (bytes: ArrayBuffer): Promise<GLTF> =>
   await loader.parseAsync(bytes, "");
 
+const moves: Parse<RiderMoves> = async (bytes, url) =>
+  movesOf(await parsed(bytes), url);
+
 const rider: Parse<RiderAsset> = async (bytes, url) => {
   const [gltf] = await Promise.all([parsed(bytes), MeshoptSimplifier.ready]);
   const refused = refuser(gltf.scene, `rider model ${url}`);
@@ -610,7 +613,7 @@ const walkers: Parse<WalkerAsset> = async (bytes, url) => {
 
 export const assetParsers: AssetParsers = {
   bike,
-  moves: parseMoves,
+  moves,
   parts,
   rider,
   walkers,

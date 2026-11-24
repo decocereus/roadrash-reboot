@@ -1,8 +1,7 @@
 import type * as THREE from "three";
-import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 
-import type { Parse } from "./assets.ts";
+import type { Decoded } from "./assets.ts";
 
 const moveNames = ["idle", "walk", "jog", "sprint"] as const;
 export type MoveName = (typeof moveNames)[number];
@@ -21,8 +20,6 @@ export interface RiderMoves {
   readonly stand: Move;
   readonly moves: Readonly<Record<MoveName, Move>>;
 }
-
-const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 
 const TURN = ".quaternion";
 const TRAVEL = "pelvis.position";
@@ -57,8 +54,7 @@ const moveOf = (
   return { frames, travel: Float32Array.from(travelled.values), turns };
 };
 
-export const parseMoves: Parse<RiderMoves> = async (bytes, url) => {
-  const gltf = await loader.parseAsync(bytes, "");
+export const movesOf = (gltf: GLTF, url: string): Decoded<RiderMoves> => {
   const refused = (why: string) => new Error(`The rider moves ${url} ${why}`);
   const clipOf = (name: string) => {
     const clip = gltf.animations.find((each) => each.name === name);

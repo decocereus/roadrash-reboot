@@ -38,6 +38,17 @@ export interface Rig {
   readonly bones: readonly (THREE.Bone | undefined)[];
 }
 
+export const boneNamed = (
+  skeleton: THREE.Skeleton,
+  name: string
+): THREE.Bone => {
+  const bone = skeleton.getBoneByName(name);
+  if (!bone) {
+    throw new Error(`The rider model has no ${name} bone.`);
+  }
+  return bone;
+};
+
 export const posed = ({ bones, root }: Rig, pose: readonly number[]) => {
   for (let index = 0; index < bones.length; index += 1) {
     bones[index]?.quaternion.fromArray(pose, index * 4);

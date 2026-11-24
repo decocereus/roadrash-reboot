@@ -572,11 +572,7 @@ Source files:
 - `apps/web/src/game/rider-drift.ts`
 - `apps/web/src/game/rider-fight.ts`
 - `apps/web/src/game/rider-figure.ts`
-- `apps/web/src/game/rider-figure.ts`
-- `apps/web/src/game/rider-figure.ts`
 - `apps/web/src/game/rider-moves.ts`
-- `apps/web/src/game/rider-views.ts`
-- `apps/web/src/game/rider-views.ts`
 - `apps/web/src/game/rider-views.ts`
 - `apps/web/src/game/strider.ts`
 
@@ -889,8 +885,6 @@ Booting the game module with a dynamic import, downloading and decoding the nine
 Source files:
 
 - `apps/web/src/asset-load.ts`
-- `apps/web/src/asset-load.ts`
-- `apps/web/src/asset-load.ts`
 - `apps/web/src/asset-runtime.ts`
 - `apps/web/src/assets/font-readiness-failed.ts`
 - `apps/web/src/assets/load.ts`
@@ -899,23 +893,15 @@ Source files:
 - `apps/web/src/assets/model-response-rejected.ts`
 - `apps/web/src/assets/model-urls.ts`
 - `apps/web/src/game/assets.ts`
-- `apps/web/src/game/assets.ts`
-- `apps/web/src/game/assets.ts`
 - `apps/web/src/game/model-slots.ts`
 
 Test files:
 
 - `apps/web/test/asset-load.test.ts`
-- `apps/web/test/asset-load.test.ts`
-- `apps/web/test/asset-load.test.ts`
 - `apps/web/test/asset-summary.ts`
-- `apps/web/test/celebrity-load.test.ts`
-- `apps/web/test/celebrity-load.test.ts`
 - `apps/web/test/celebrity-load.test.ts`
 - `apps/web/test/model-slots.test.ts`
 - `apps/web/test/node-images.ts`
-- `apps/web/test/pinned-assets.ts`
-- `apps/web/test/pinned-assets.ts`
 - `apps/web/test/pinned-assets.ts`
 
 ### Game art store
@@ -1411,8 +1397,6 @@ Test files:
 - `tools/oxlint/test/no-distance-hide.test.ts`
 - `tools/oxlint/test/no-entries-loop.test.ts`
 - `tools/oxlint/test/no-hot-allocation.test.ts`
-- `tools/oxlint/test/no-hot-allocation.test.ts`
-- `tools/oxlint/test/no-hot-allocation.test.ts`
 - `tools/oxlint/test/no-page-move.test.ts`
 - `tools/oxlint/test/no-top-level-await.test.ts`
 - `tools/oxlint/test/numeric-draw-sort.test.ts`
@@ -1456,8 +1440,6 @@ Source files:
 - `scripts/git-files.ts`
 - `scripts/node-error.ts`
 - `scripts/platform-features.ts`
-- `scripts/player-features.ts`
-- `scripts/player-features.ts`
 - `scripts/player-features.ts`
 - `scripts/postcss-tokenize.d.ts`
 - `scripts/renderer-imports.ts`
