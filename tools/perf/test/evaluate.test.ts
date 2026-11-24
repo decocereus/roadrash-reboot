@@ -7,6 +7,7 @@ import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem";
 import * as Effect from "effect/Effect";
 import { afterEach, describe, expect, it } from "vitest";
 
+import { judge, requiredRows } from "../src/budgets.ts";
 import type { Budgets } from "../src/budgets.ts";
 import { accountBuild, glbNames } from "../src/build.ts";
 import type { BuildRecord } from "../src/build.ts";
@@ -103,6 +104,9 @@ const fonts = (files: readonly string[]) =>
 const failing = (lines: readonly string[]) =>
   lines.filter((line) => line.startsWith("FAIL"));
 
+const rowName = (metric: string, scenario: string | null) =>
+  `node ${scenario ?? "-"} ${metric} [`;
+
 describe("perf gate red cases", { timeout: 30_000 }, () => {
   afterEach(() => {
     for (const dir of made.splice(0)) {
@@ -191,6 +195,46 @@ describe("perf gate red cases", { timeout: 30_000 }, () => {
     );
     expect(failing(evaluation.lines)).toStrictEqual([]);
     expect(evaluation.ok).toBeTruthy();
+  });
+
+  it("refuses a run with no side A before judging any row that side A scales", () => {
+    const steadyRun = evaluateGate(
+      samplesOf("steady", steadyLanes(steady), build),
+      budgets
+    );
+    const unmeasured = steadyRun.observations.map((each) =>
+      each.lane === "node" && each.scenario === "reference-v1"
+        ? { ...each, paired: null, runs: { ...each.runs, a: [] } }
+        : each
+    );
+    const { evidence, verdicts } = judge(
+      budgets.limits,
+      unmeasured,
+      requiredRows(["node"], [steadyRun.environment], [])
+    );
+    const judged = (metric: string, scenario: string | null) =>
+      verdicts.some((verdict) =>
+        verdict.text.includes(rowName(metric, scenario))
+      );
+    expect(evidence.length).toBeGreaterThan(0);
+    expect(
+      evidence.every(
+        (line) => line.startsWith("FAIL") && line.includes("SideAMissing")
+      )
+    ).toBeTruthy();
+    for (const [metric, scenario] of [
+      ["sim.tick.p95", "reference-v1"],
+      ["sim.tick.p99", "reference-v1"],
+      ["room.tick.p95", "reference-v1"],
+      ["lobby.tick.p95", null],
+      ["roadLife.tick.p95", null],
+    ] as const) {
+      expect(
+        evidence.some((line) => line.includes(rowName(metric, scenario)))
+      ).toBeTruthy();
+      expect(judged(metric, scenario)).toBeFalsy();
+    }
+    expect(judged("sim.tick.p95", "pack-riding-v1")).toBeTruthy();
   });
 
   it("fails a thinner or thrown pack window and judges none of its timings", () => {
@@ -385,7 +429,7 @@ describe("perf gate red cases", { timeout: 30_000 }, () => {
     );
     const failed = evaluateGate(slowerSim, budgets);
     expect(
-      failing(failed.lines).map((line) => line.split(" observed=")[0])
+      failing(failed.lines).map((line) => line.split(" observed")[0])
     ).toStrictEqual(
       ["sim.ticksPerSecond", "sim.tick.p95", "sim.tick.p99"].flatMap((metric) =>
         scenarios.map(
@@ -395,7 +439,7 @@ describe("perf gate red cases", { timeout: 30_000 }, () => {
     );
     expect(
       failed.lines.find((line) => line.includes("reference-v1 sim.tick.p95"))
-    ).toContain("A/B=1.3000 (<= 1.15)");
+    ).toContain("observed A/B=1.3000 limit <= 1.15");
     const entry = throughEntry(slowerSim, budgets);
     expect(entry.status).toBe(1);
     expect(entry.stdout).toContain("scale=1.600");

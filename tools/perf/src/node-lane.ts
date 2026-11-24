@@ -445,7 +445,7 @@ const trimmedMeanOf = (durations: readonly number[]): number => {
   );
 };
 
-export const stampMetric = {
+const stampMetric = {
   metric: "timing.stamp.trimmedMean",
   of: (run: SnapshotRun) => run.stamp,
   per: trimmedMeanOf,
@@ -476,7 +476,7 @@ const snapshotMetrics = [
 
 type SnapshotMetric = (typeof snapshotMetrics)[number];
 
-export const snapshotTiming = (
+const snapshotTiming = (
   { metric, per, perRun }: SnapshotMetric,
   scenario: string,
   environment: string,
