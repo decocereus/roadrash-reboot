@@ -138,6 +138,18 @@ def wheel(name, radius, width, z, style):
     return finish(name,bm,angle=40)
 
 
+def risers(style):
+    """The bar clamps and the rearset hangers, kept out of the bevel. A clamp's lower end faces the road, so it has no cap."""
+    bm=bmesh.new()
+    for s in (-1,1):
+        clamp=grip(style)[0][1]+.002
+        rings=tube(bm,[(s*.105,clamp-.02,fork_z(clamp-.02)),(s*.105,clamp+.02,fork_z(clamp+.02))],[.037],"dark",n=6,cap=False)
+        bm.faces.new(rings[-1]).material_index=MI["dark"]
+        rest=peg(style)
+        tube(bm,[(s*.13,.40,.12),(s*.13,rest[0][1]+.012,rest[0][2]-.012)],[(.006,.022)],"dark",n=4,cap=False)
+    return finish("risers",bm,angle=35)
+
+
 def mechanics(style):
     bm=bmesh.new()
     for s in (-1,1):
@@ -145,7 +157,6 @@ def mechanics(style):
         tube(bm,[(s*.105,.55,-.584),(s*.105,.97,-.412)],[.031],"gold" if style!="oni" else "metal",n=12)
         bar=grip(style);clamp=bar[0][1]+.002
         tube(bm,[(s*.105,clamp,fork_z(clamp)),(s*.19,clamp,(fork_z(clamp)+bar[0][2])/2),mirror(bar[0],s)],[.013],"dark",n=8)
-        tube(bm,[(s*.105,clamp-.02,fork_z(clamp-.02)),(s*.105,clamp+.02,fork_z(clamp+.02))],[.037],"dark",n=10)
         tube(bm,[mirror(p,s) for p in bar],[.021],"seat",n=10)
         tube(bm,[(s*.25,bar[0][1]-.025,bar[0][2]-.035),(s*.36,bar[1][1]-.04,bar[1][2]-.035)],[.006],"metal",n=6)
         for y in (.70,.94):
@@ -155,7 +166,6 @@ def mechanics(style):
         tube(bm,[(s*.09,.78,-.38),(s*.16,.52,-.06),(s*.115,.66,.30),(s*.09,.78,-.38)],
              [.021],"accent" if style=="oni" else "metal",n=6,cap=False)
         rest=peg(style)
-        tube(bm,[(s*.13,.40,.12),(s*.13,rest[0][1]+.012,rest[0][2]-.012)],[(.006,.022)],"dark",n=4)
         tube(bm,[mirror(p,s) for p in rest],[PEG_RADIUS],"metal",n=8)
         box(bm,(s*.14,.30,-.60),(.055,.105,.07),"gold")
     lathe(bm,(0,.41,.05),[(0,-.155),(.115,-.155),(.118,-.14),(.118,.14),(.115,.155),(0,.155)],"dark",steps=20)

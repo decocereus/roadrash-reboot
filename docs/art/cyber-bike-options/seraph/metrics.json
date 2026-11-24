@@ -6,13 +6,13 @@
   "accent": "22E5FF",
   "number": "01",
   "description": "Low split nose, widely spaced horizontal lamps, a short wraparound screen and stacked wings.",
-  "triangles": 14048,
+  "triangles": 13792,
   "parts": {
-    "bike_body": 8684,
+    "bike_body": 8428,
     "wheel_f": 2897,
     "wheel_r": 2467
   },
-  "glbBytes": 445284,
+  "glbBytes": 438084,
   "textures": 0,
   "wheelbaseMetres": 1.38
 }

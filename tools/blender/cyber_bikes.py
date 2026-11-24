@@ -9,7 +9,7 @@ import bmesh
 from mathutils import Vector
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from common import B, join, fit_points
-from cyber_parts import SEAT, STATIONS, PEG_RADIUS, grip, peg, colours, linear, mechanics, wheel, fender, labels
+from cyber_parts import SEAT, STATIONS, PEG_RADIUS, grip, peg, colours, linear, mechanics, risers, wheel, fender, labels
 from cyber_bodywork import upper, fairings, aero, tank_tail
 
 ROOT=Path(__file__).resolve().parents[2]
@@ -132,7 +132,7 @@ def build(design):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     scene=bpy.context.scene;scene.unit_settings.system='METRIC';scene.unit_settings.scale_length=1
     bpy.context.preferences.filepaths.save_version=0
-    parts=[upper(design['id']),fairings(design['id']),aero(design['id']),tank_tail(design['id']),mechanics(design['id']),fender(design['id'])]
+    parts=[upper(design['id']),fairings(design['id']),aero(design['id']),tank_tail(design['id']),mechanics(design['id']),risers(design['id']),fender(design['id'])]
     for part in parts:
         for modifier in part.modifiers:
             if modifier.type=='BEVEL':modifier.segments=1

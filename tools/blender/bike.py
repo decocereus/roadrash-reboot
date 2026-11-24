@@ -15,6 +15,7 @@ SEAT = [
 HIP_Z = 0.26
 GRIP = grip_at(SEAT, HIP_Z, 0.60, 0.045)
 PEG = peg_at(SEAT, HIP_Z, 0.08, -0.525, PEG_RADIUS, 0.19, 0.3)
+RISER_TOP = 1.0
 
 
 def wheel(name, R, w, rimR, z, rear):
@@ -178,7 +179,7 @@ def chassis():
         tube(bm, [(s * 0.105, 0.56, -0.581), (s * 0.105, 0.97, -0.413)], [0.03], "gold", n=12)
         box(bm, (s * 0.135, 0.25, -0.615), (0.04, 0.085, 0.05), "dark", rot=rx(-22))
         inner = GRIP[0]
-        tube(bm, [(s * 0.105, 0.972, -0.412), (s * 0.105, 1.0, -0.405), (s * 0.19, inner[1] + 0.03, (inner[2] - 0.405) / 2), mirror(inner, s)], [0.012], "dark", n=8)
+        tube(bm, [(s * 0.105, RISER_TOP, -0.405), (s * 0.19, inner[1] + 0.03, (inner[2] - 0.405) / 2), mirror(inner, s)], [0.012], "dark", n=8)
         tube(bm, [mirror(p, s) for p in GRIP], [0.018], "seat", n=10)
         tube(bm, [(s * 0.24, inner[1] - 0.003, inner[2] - 0.035), (s * 0.36, GRIP[1][1] - 0.025, GRIP[1][2] - 0.035)], [(0.006, 0.011)], "metal", n=4)
         tube(bm, [(s * 0.2, 0.93, -0.6), (s * 0.3, 1.03, -0.66), (s * 0.34, 1.06, -0.66)], [0.008], "dark", n=6)
@@ -198,9 +199,17 @@ def chassis():
     return out
 
 
+def risers():
+    """The bar risers, kept out of the bevel: the bar's own end caps them."""
+    bm = bmesh.new()
+    for s in (-1, 1):
+        tube(bm, [(s * 0.105, 0.972, -0.412), (s * 0.105, RISER_TOP, -0.405)], [0.012], "dark", n=8, cap=False)
+    return [finish("risers", bm)]
+
+
 def build():
     bpy.ops.wm.read_factory_settings(use_empty=True)
-    body = join("bike_body", fairing() + tank_seat_tail() + chassis())
+    body = join("bike_body", fairing() + tank_seat_tail() + chassis() + risers())
     wf = wheel("wheel_f", 0.293, 0.115, 0.215, -0.69, False)
     wr = wheel("wheel_r", 0.306, 0.16, 0.215, 0.69, True)
     for o in (body, wf, wr):
