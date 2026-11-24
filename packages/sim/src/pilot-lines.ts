@@ -1,7 +1,7 @@
 import { openLanesAt, roadHalfWidthAt } from "@racer/track/districts";
 import type { Track } from "@racer/track/track";
 
-import { ridingOver } from "./carrier.ts";
+import { jumpClears } from "./carrier.ts";
 import {
   measureDeceleration,
   planForecast,
@@ -26,7 +26,12 @@ import {
   weigh,
 } from "./pilot-forecast.ts";
 import type { Outlook, Toll } from "./pilot-forecast.ts";
-import { BIKE_HALF_LENGTH, BIKE_HALF_WIDTH, slotOf } from "./state.ts";
+import {
+  BIKE_HALF_LENGTH,
+  BIKE_HALF_WIDTH,
+  LANE_REACH,
+  slotOf,
+} from "./state.ts";
 import type {
   CrossCar,
   Pedestrian,
@@ -42,7 +47,6 @@ const ONCOMING_ENTRY_SECONDS = 8;
 const START_TICKS = 600;
 const START_ONCOMING_ENTRY_SECONDS = 12;
 const CENTRE_SEAM_BIAS = 0.6;
-export const LANE_REACH = 1.7;
 const SPLITTING_SPEED = 8;
 const RIDER_FOLLOW_SECONDS = 1.2;
 const CROSSING_SECONDS = 1.5;
@@ -238,7 +242,7 @@ const gatherInReach = (
   const { cars } = state;
   for (let index = 0; index < cars.length; index += 1) {
     const car = cars[index];
-    if (car && rider.speed > car.speed && !ridingOver(rider, index)) {
+    if (car && rider.speed > car.speed && !jumpClears(cars, rider, index)) {
       const seconds = secondsUntilContact(
         rider,
         car.s,
@@ -446,7 +450,7 @@ const offLaneLines = (
   const walkerCount = pedestrians.length;
   for (let index = 0; index < carCount; index += 1) {
     const car = cars[index];
-    if (car && passable(rider, car) && !ridingOver(rider, index)) {
+    if (car && passable(rider, car) && !jumpClears(cars, rider, index)) {
       const pass = car.halfWidth + BIKE_HALF_WIDTH + PASS_MARGIN;
       offLane[count] = car.x + pass;
       offLane[count + 1] = car.x - pass;

@@ -33,6 +33,7 @@ export default defineConfig({
             "tools/{art,perf,verify,road-test,rooms}/test/**/*.test.ts",
           ],
           name: "node",
+          setupFiles: ["tools/perf/test/bench-queue-env.ts"],
         },
       },
       {

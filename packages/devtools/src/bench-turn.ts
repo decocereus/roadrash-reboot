@@ -40,6 +40,7 @@ const IMPLICIT_LANE = "bench";
 const IMPLICIT_MINUTES = 120;
 const BENCH_PID = "RUSHLINE_BENCH_PID";
 const BOOKING_SETTING = "RUSHLINE_BOOKING";
+export const benchTurnSettings = [BENCH_PID, BOOKING_SETTING] as const;
 const QUEUE_PATIENCE_MS = 3_600_000;
 const QUEUE_POLL_MS = 5000;
 

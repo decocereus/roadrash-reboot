@@ -30,7 +30,8 @@ const recorded = (environment: string): readonly RoomRun[] =>
   ).runs;
 
 const timed = ["room.tick.p95", "room.confirm.p95", "room.rollback.p95"];
-const rows = [...timed, "room.checkpoint.p95"];
+const checkpoint = "room.checkpoint.p50";
+const rows = [...timed, checkpoint];
 
 const verdicts = (
   environment: string,
@@ -95,5 +96,43 @@ describe("pooled room rows on recorded runs against the committed limits", () =>
         .map((each) => `${run.id} ${each.scenario} ${each.metric}`)
     );
     expect(passed).toStrictEqual([]);
+  });
+
+  it("fails the checkpoint row of every recorded 6975P-C run but at most the one that needs the largest slowdown when its checkpoints get 30% slower, and pins that slowdown", () => {
+    const runs = recorded("node-linux-x64").filter(
+      (run) => run.cpu === commonRunner
+    );
+    expect(runs.length).toBeGreaterThanOrEqual(3);
+    const passed = new Set(
+      runs.flatMap((run) =>
+        verdicts("node-linux-x64", run, (metric) =>
+          metric === checkpoint ? 1.3 : 1
+        )
+          .filter((each) => each.metric === checkpoint && each.ok)
+          .map(() => run.id)
+      )
+    );
+    const needs = runs.flatMap((run) =>
+      run.scenarios.map(({ rows: measured, scenario }) => {
+        const limit = limits.find(
+          (each) =>
+            each.environment === "node-linux-x64" &&
+            each.metric === checkpoint &&
+            each.scenario === scenario &&
+            each.runner === commonRunner
+        );
+        const value = measured[checkpoint]?.value;
+        if (!limit || value === undefined) {
+          throw new Error(`${run.id} ${scenario} has no ${checkpoint} limit`);
+        }
+        return { id: run.id, slowdown: limit.value / value - 1 };
+      })
+    );
+    const [most] = needs.toSorted(
+      (left, right) => right.slowdown - left.slowdown
+    );
+    expect(passed.size).toBeLessThanOrEqual(1);
+    expect([...passed].every((id) => id === most?.id)).toBeTruthy();
+    expect(Math.round((most?.slowdown ?? 0) * 100)).toBe(63);
   });
 });

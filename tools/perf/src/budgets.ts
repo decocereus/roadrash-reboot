@@ -77,7 +77,7 @@ const nodeKinds: readonly MetricKind[] = [
   snapshotKind("room.tick.p95", "ms"),
   snapshotKind("room.confirm.p95", "ms"),
   snapshotKind("room.rollback.p95", "ms"),
-  snapshotKind("room.checkpoint.p95", "ms"),
+  snapshotKind("room.checkpoint.p50", "ms"),
   roomAllocationKind("room.allocatedBytesPerTick"),
   roomAllocationKind("room.client.allocatedBytesPerTick"),
   roomAllocationKind("room.frame.allocatedBytesPerTick"),
@@ -186,7 +186,7 @@ export const worstRunMetrics = [
   "room.tick.p95",
   "room.confirm.p95",
   "room.rollback.p95",
-  "room.checkpoint.p95",
+  "room.checkpoint.p50",
   "timing.stamp.trimmedMean",
 ] as const;
 

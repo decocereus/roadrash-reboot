@@ -2,6 +2,10 @@
   "baseline": {
     "raw": [
       {
+        "file": "tools/perf/baselines/allocation.node-darwin-arm64.json.gz",
+        "sha256": "a56ebc38fc38a459eb1a306c1ace6539d707d7bb4a5de8b1ea5ea1d2d4759017"
+      },
+      {
         "file": "tools/perf/baselines/allocation.node-linux-x64.json.gz",
         "sha256": "2a2fe2775cefcc7369190c0e7eb7b7d44a0456c7f221815a3699d5b832e8e6dc"
       },
@@ -87,23 +91,23 @@
       },
       {
         "file": "tools/perf/baselines/room.node-darwin-arm64.json.gz",
-        "sha256": "76b86c1d02645845387ec7fe373ca1882fb90708593174c341222ff51a232944"
+        "sha256": "d3f9d02ee99a23de336669b31dd24e9c33c1f2d2a12c20f721ae0469ddcaf11d"
       },
       {
         "file": "tools/perf/baselines/room.node-linux-x64.json.gz",
-        "sha256": "3dca2e9838147def69215b366559e312d9dfa0ef7362bf96cc89162bec8b2968"
+        "sha256": "af931f62cc5ed2e6367c54304e562959372f1b6836d58c62c7c3c7cf468691a9"
       },
       {
         "file": "tools/perf/baselines/shadow.mac.gpu-helium-metal.json.gz",
-        "sha256": "a1105af98c536e5e7b2bfd7586ddf8fb78f29df588d4acea0acf282b203878ab"
+        "sha256": "b41ad25ac2706de269fd3e09ec2f97c12b5ee91939a78897056c792d7dfdf216"
       },
       {
         "file": "tools/perf/baselines/shadow.vimaan.gpu-chromium-intel.json.gz",
-        "sha256": "0e7144a6780d25383704c49fc083a3a7bbda940dd0ec480bc39f76dbced4036e"
+        "sha256": "78709b3043196f96f7a75234f1a4c447d1cad5a8525beaefe985bbb8f1f20b4d"
       },
       {
         "file": "tools/perf/baselines/shadow.vimaan.gpu-chromium-nvidia.json.gz",
-        "sha256": "5356b292b5d405e866552a5c672cd7b532e04ce2ad5fc00b1dc4b20d9384be89"
+        "sha256": "03826a78f02d438a120fb7568db70b7bd2b7c2d19075bbd969ba865869c7a3d2"
       },
       {
         "file": "tools/perf/baselines/stamp.node-darwin-arm64.json.gz",
@@ -132,7 +136,7 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "9a9d6f0e7a0b73a806da1def6f0c85cfc78c34d3f9a4c16821026485ceb7953e"
+    "summarySha256": "ab416d7508b174ab2f65ba923f1afde924614953db8e7059a3ba3c49cc84632d"
   },
   "limits": [
     {
@@ -1217,14 +1221,14 @@
     },
     {
       "derivation": "1.15 x the worst run recorded on this runner CPU, which has at least 3",
-      "value": 0.5992915046206336,
-      "baseline": 0.5211230474962032,
+      "value": 0.6028191889818425,
+      "baseline": 0.5241905991146457,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "room.confirm.p95",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "gate-2026-11-24T14-43-56-918Z-9f67ba9-b64e086",
+      "source": "gate-2026-11-24T17-01-26-439Z-9f67ba9-bb9fc22",
       "unit": "ms",
       "runner": "Intel(R) Xeon(R) 6975P-C"
     },
@@ -1254,14 +1258,14 @@
     },
     {
       "derivation": "1.15 x the worst run recorded on this runner CPU, which has at least 3",
-      "value": 0.36221054784794937,
-      "baseline": 0.31496569378082556,
+      "value": 0.3651560162858907,
+      "baseline": 0.31752697068338326,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "room.confirm.p95",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "gate-2026-11-24T15-52-55-015Z-9f67ba9-b64e086",
+      "source": "gate-2026-11-24T16-20-22-863Z-9f67ba9-b629db7",
       "unit": "ms",
       "runner": "Intel(R) Xeon(R) 6975P-C"
     },
@@ -1339,14 +1343,14 @@
     },
     {
       "derivation": "1.15 x the worst run recorded on this runner CPU, which has at least 3",
-      "value": 4.476317477935651,
-      "baseline": 3.8924499808136095,
+      "value": 4.4931484630557765,
+      "baseline": 3.9070856200485014,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "room.rollback.p95",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "gate-2026-11-24T15-52-55-015Z-9f67ba9-b64e086",
+      "source": "gate-2026-11-24T17-29-33-162Z-9f67ba9-800adb8",
       "unit": "ms",
       "runner": "Intel(R) Xeon(R) 6975P-C"
     },
@@ -1450,27 +1454,27 @@
     },
     {
       "derivation": "1.15 x the worst run recorded on this runner CPU, which has at least 3",
-      "value": 0.3638227279625349,
-      "baseline": 0.31636758953263905,
+      "value": 0.36421373821449743,
+      "baseline": 0.3167075984473891,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "room.tick.p95",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "gate-2026-11-24T12-09-51-028Z-9f67ba9-b64e086",
+      "source": "gate-2026-11-24T17-29-33-162Z-9f67ba9-800adb8",
       "unit": "ms",
       "runner": "Intel(R) Xeon(R) 6975P-C"
     },
     {
-      "derivation": "1.1 x baseline median, uncalibrated",
-      "value": 65299.45557404326,
-      "baseline": 59363.14143094842,
+      "derivation": "1.1 x baseline median of five runs, uncalibrated",
+      "value": 62125.08618968386,
+      "baseline": 56477.35108153078,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "sim.allocatedBytesPerTick",
       "paired": 1.1,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "source": "gate-2026-11-24T16-21-13-271Z-9f67ba9-ee46bca",
       "unit": "B"
     },
     {
@@ -1486,15 +1490,15 @@
       "unit": "B"
     },
     {
-      "derivation": "1.1 x baseline median, uncalibrated",
-      "value": 49484.772046589016,
-      "baseline": 44986.15640599002,
+      "derivation": "1.1 x baseline median of five runs, uncalibrated",
+      "value": 43709.19001663894,
+      "baseline": 39735.627287853575,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "sim.allocatedBytesPerTick",
       "paired": 1.1,
       "scenario": "reference-v1",
-      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "source": "gate-2026-11-24T16-21-13-271Z-9f67ba9-ee46bca",
       "unit": "B"
     },
     {
@@ -2351,36 +2355,36 @@
     },
     {
       "derivation": "1.15 x the worst run recorded on any runner CPU",
-      "value": 0.6099056631573111,
-      "baseline": 0.5303527505715749,
+      "value": 0.2815035648872205,
+      "baseline": 0.24478570859758306,
       "direction": "max",
       "environment": "node-linux-x64",
-      "metric": "room.checkpoint.p95",
+      "metric": "room.checkpoint.p50",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "gate-2026-11-24T15-42-06-851Z-9f67ba9-b64e086",
+      "source": "gate-2026-11-24T15-52-55-015Z-9f67ba9-b64e086",
       "unit": "ms"
     },
     {
       "derivation": "1.15 x the worst run recorded on this runner CPU, which has at least 3",
-      "value": 0.6099056631573111,
-      "baseline": 0.5303527505715749,
+      "value": 0.2815035648872205,
+      "baseline": 0.24478570859758306,
       "direction": "max",
       "environment": "node-linux-x64",
-      "metric": "room.checkpoint.p95",
+      "metric": "room.checkpoint.p50",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "gate-2026-11-24T15-42-06-851Z-9f67ba9-b64e086",
+      "source": "gate-2026-11-24T15-52-55-015Z-9f67ba9-b64e086",
       "unit": "ms",
       "runner": "Intel(R) Xeon(R) 6975P-C"
     },
     {
       "derivation": "1.15 x the worst run recorded on any runner CPU",
-      "value": 0.38167024780753284,
-      "baseline": 0.3318871720065503,
+      "value": 0.3534115844355817,
+      "baseline": 0.3073144212483319,
       "direction": "max",
       "environment": "node-linux-x64",
-      "metric": "room.checkpoint.p95",
+      "metric": "room.checkpoint.p50",
       "paired": null,
       "scenario": "pack-riding-v1",
       "source": "gate-2026-11-24T14-10-58-121Z-9f67ba9-b64e086",
@@ -2388,36 +2392,36 @@
     },
     {
       "derivation": "1.15 x the worst run recorded on this runner CPU, which has at least 3",
-      "value": 0.36660723011110796,
-      "baseline": 0.31878889574878955,
+      "value": 0.3272625455614972,
+      "baseline": 0.28457612657521497,
       "direction": "max",
       "environment": "node-linux-x64",
-      "metric": "room.checkpoint.p95",
+      "metric": "room.checkpoint.p50",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "gate-2026-11-24T15-52-55-015Z-9f67ba9-b64e086",
+      "source": "gate-2026-11-24T17-29-33-162Z-9f67ba9-800adb8",
       "unit": "ms",
       "runner": "Intel(R) Xeon(R) 6975P-C"
     },
     {
       "derivation": "1.15 x the worst run recorded on any runner CPU",
-      "value": 0.24647972191451323,
-      "baseline": 0.21433019296914196,
+      "value": 0.12373807145081783,
+      "baseline": 0.10759832300071116,
       "direction": "max",
       "environment": "node-darwin-arm64",
-      "metric": "room.checkpoint.p95",
+      "metric": "room.checkpoint.p50",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "gate-2026-11-24T15-51-56-913Z-9f67ba9-396357f",
+      "source": "gate-2026-11-24T15-40-56-592Z-9f67ba9-396357f",
       "unit": "ms"
     },
     {
       "derivation": "1.15 x the worst run recorded on any runner CPU",
-      "value": 0.18000933839555183,
-      "baseline": 0.1565298594743929,
+      "value": 0.16071141919635973,
+      "baseline": 0.1397490601707476,
       "direction": "max",
       "environment": "node-darwin-arm64",
-      "metric": "room.checkpoint.p95",
+      "metric": "room.checkpoint.p50",
       "paired": null,
       "scenario": "pack-riding-v1",
       "source": "gate-2026-11-24T15-51-56-913Z-9f67ba9-396357f",
