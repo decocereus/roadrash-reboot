@@ -366,14 +366,22 @@ export const planterOf = (
   };
   const reachingArms = [arms.left, arms.right];
   const onChain = (points: readonly ChestPoint[]) =>
-    points.flatMap((pulls) => {
+    points.flatMap(({ give, pulls }) => {
       const held = pulls.flatMap(({ at, bone, weight }) => {
         const joint = chain.joints.find((each) => each.index === bone);
         return joint ? [{ at, joint, weight }] : [];
       });
       const total = held.reduce((sum, { weight }) => sum + weight, 0);
       return total > 0
-        ? [held.map((pull) => ({ ...pull, weight: pull.weight / total }))]
+        ? [
+            {
+              give,
+              pulls: held.map((pull) => ({
+                ...pull,
+                weight: pull.weight / total,
+              })),
+            },
+          ]
         : [];
     });
   const parts = {
@@ -383,7 +391,7 @@ export const planterOf = (
   const { chest } = parts;
   const chestPointAt = (point: (typeof chest)[number]) => {
     chestAt.set(0, 0, 0);
-    for (const { at, joint, weight } of point) {
+    for (const { at, joint, weight } of point.pulls) {
       pulled.copy(at).applyQuaternion(joint.turn).add(joint.at);
       chestAt.addScaledVector(pulled, weight);
     }
@@ -408,7 +416,7 @@ export const planterOf = (
       chestPointAt(point);
       const floor =
         deck.heightAt(chestAt.x + seat.x, chestAt.z + seat.z) - seat.y;
-      const gap = chestAt.y - floor - CHEST_CLEAR;
+      const gap = chestAt.y - floor - CHEST_CLEAR + point.give;
       const lever = torso.at.z - chestAt.z;
       if (lever > SHORTEST_LEVER) {
         const turn = Math.atan2(gap, lever);
@@ -531,7 +539,8 @@ export const planterOf = (
           sink,
           deck.heightAt(chestAt.x + seat.x, chestAt.z + seat.z) -
             seat.y -
-            chestAt.y
+            chestAt.y -
+            point.give
         );
       }
       return sink;

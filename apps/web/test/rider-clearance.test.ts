@@ -11,6 +11,7 @@ import type { BikeFit } from "../src/game/bike-fit.ts";
 import { bikeModelIds } from "../src/game/bike-models.ts";
 import type { BikeModelId } from "../src/game/bike-models.ts";
 import { createShading } from "../src/game/cel.ts";
+import { BARE_FRONT, clothOf } from "../src/game/figure-chest.ts";
 import { paletteOf } from "../src/game/figure-rig.ts";
 import { lookOf } from "../src/game/looks.ts";
 import { createRiderFigure } from "../src/game/rider-figure.ts";
@@ -26,6 +27,7 @@ const SETTLE_STEPS = 8;
 const RIDING_SPEED = 30;
 const FLAT = 1e-6;
 const SCREEN_ROWS = 1080;
+const BARE_DIGITS = 4;
 const SEEN_PIXELS = 2;
 
 const torso: ReadonlySet<string> = new Set([
@@ -281,7 +283,13 @@ const ridden = async (url: string, model: BikeModelId) => {
     });
     return { over, where };
   };
-  return { deepest, figure, fit: bike.fit, lowest };
+  return {
+    cloth: clothOf(bodyOf(figure.root)),
+    deepest,
+    figure,
+    fit: bike.fit,
+    lowest,
+  };
 };
 
 const riderUrls = [
@@ -309,16 +317,16 @@ describe("rider clearance against the bike's own triangles", () => {
   it.each(pairs)(
     "%s on the %s keeps the upper body out of the bike in every riding pose",
     async (url, model) => {
-      const { deepest, fit, figure } = await ridden(url, model);
+      const { cloth, deepest, fit, figure } = await ridden(url, model);
       const armSink = hiddenArmSink(fit);
       const sunk = riding.flatMap(([name, stance]) =>
         (
           [
-            [torso, SINK],
-            [arms, armSink],
+            [torso, (at: number) => SINK + cloth.giveAt(at)],
+            [arms, () => armSink],
           ] as const
         ).flatMap(([bones, allowed]) => {
-          const { over, where } = deepest(stance, bones, () => allowed);
+          const { over, where } = deepest(stance, bones, allowed);
           return over > 0 ? [`${name}: ${where}`] : [];
         })
       );
@@ -338,4 +346,17 @@ describe("rider clearance against the bike's own triangles", () => {
       expect(floating).toStrictEqual([]);
     }
   );
+
+  it("takes the bare-body depth from the slimmest shipped rider", async () => {
+    const ratios = await Promise.all(
+      riderUrls.map(async (url) => {
+        const { value } = await assetParsers.rider(artFile(url), url);
+        const figure = createRiderFigure(value, shading, paletteOf(0));
+        const { frontRatio } = clothOf(bodyOf(figure.root));
+        figure.dispose();
+        return frontRatio;
+      })
+    );
+    expect(BARE_FRONT).toBeCloseTo(Math.min(...ratios), BARE_DIGITS);
+  });
 });

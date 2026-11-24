@@ -12,7 +12,7 @@ import type { BikePosture } from "./bike-posture.ts";
 import type { Shading } from "./cel.ts";
 import { disposeTree } from "./dispose.ts";
 import { reachOfPoses } from "./figure-bounds.ts";
-import { chestBones, chestOf, forearmBones } from "./figure-chest.ts";
+import { chestBones, chestOf, clothOf, forearmBones } from "./figure-chest.ts";
 import type { ChestPoint } from "./figure-chest.ts";
 import { contactsOf as measureContacts } from "./figure-contacts.ts";
 import type { Contacts } from "./figure-contacts.ts";
@@ -207,8 +207,8 @@ export const createRiderFigure = (
   const lifts = { left: riseOffset(-1), right: riseOffset(1) };
   const lift = new THREE.Vector3();
   const bodyPoints = bodyPointsByAsset.get(asset) ?? {
-    chest: chestOf(rig, body, chestBones),
-    forearms: chestOf(rig, body, forearmBones),
+    chest: chestOf(rig, body, chestBones, clothOf(body).giveAt),
+    forearms: chestOf(rig, body, forearmBones, () => 0),
   };
   bodyPointsByAsset.set(asset, bodyPoints);
   const planter = planterOf(rig, seated, bodyPoints);
