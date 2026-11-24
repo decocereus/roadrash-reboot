@@ -59,7 +59,7 @@ const DOCTOR_CHECKS = [
 ];
 
 const USAGE = `Usage:
-  node tools/perf/gpu.ts --a <rv run> --b <rv run> [--baseline-ref <rev>] [--budgets <file>] [--out <dir>]
+  node tools/perf/gpu.ts --a <rv run> --b <rv run> [--baseline-ref <rev>] [--budgets <file>] [--out <dir>] [--hour <0..1>]
 Start both runs first with this checkout's rv: with the working directory in a /tmp clone at the baseline revision for A, and in this checkout for B.`;
 
 interface GpuOptions {
@@ -67,6 +67,7 @@ interface GpuOptions {
   readonly ref: string | undefined;
   readonly budgets: string;
   readonly out: string;
+  readonly hour: number | null;
 }
 
 const usage = (message: string) =>
@@ -84,6 +85,7 @@ const readGpuOptions = (args: readonly string[]) =>
           b: { type: "string" },
           "baseline-ref": { type: "string" },
           budgets: { default: DEFAULT_BUDGETS, type: "string" },
+          hour: { type: "string" },
           out: { default: DEFAULT_OUT, type: "string" },
         },
       }),
@@ -93,8 +95,13 @@ const readGpuOptions = (args: readonly string[]) =>
       if (a === undefined || b === undefined || a === b) {
         return Effect.fail(usage("Pass two different rv runs to --a and --b."));
       }
+      const hour = values.hour === undefined ? null : Number(values.hour);
+      if (hour !== null && !(hour >= 0 && hour <= 1)) {
+        return Effect.fail(usage("Pass --hour a number from 0 to 1."));
+      }
       return Effect.succeed({
         budgets: values.budgets,
+        hour,
         out: values.out,
         ref: values["baseline-ref"],
         runs: { A: a, B: b },
@@ -197,10 +204,8 @@ const collect = ({ window }: Scenario, side: SideName) => `(() => {
   };
 })()`;
 
-const racePath = (scenario: Scenario): string =>
-  scenario.bench === "reference"
-    ? "/?stress=reference&rung=0"
-    : "/?stress&rung=0";
+const racePath = (scenario: Scenario, hour: number | null): string =>
+  `${scenario.bench === "reference" ? "/?stress=reference&rung=0" : "/?stress&rung=0"}${hour === null ? "" : `&hour=${hour}`}`;
 
 const reached = (tick: number): string =>
   `globalThis.__rushlineBench.info().lastTick >= ${tick}`;
@@ -310,7 +315,8 @@ const sampleOnce = Effect.fnUntraced(function* sampleOnce(
   dir: string,
   run: string,
   where: Pick<GpuSample, "pair" | "position" | "side">,
-  scenario: Scenario
+  scenario: Scenario,
+  hour: number | null
 ) {
   const fs = yield* FileSystem.FileSystem;
   const errorsBefore = yield* consoleErrors(run);
@@ -318,7 +324,7 @@ const sampleOnce = Effect.fnUntraced(function* sampleOnce(
     "open",
     "--run",
     run,
-    racePath(scenario),
+    racePath(scenario, hour),
     "--until",
     READY,
     "--timeout",
@@ -366,13 +372,16 @@ const sampleOnce = Effect.fnUntraced(function* sampleOnce(
   return sample;
 });
 
-const warm = Effect.fnUntraced(function* warm(run: string) {
+const warm = Effect.fnUntraced(function* warm(
+  run: string,
+  hour: number | null
+) {
   for (const scenario of scenarios) {
     yield* rv([
       "open",
       "--run",
       run,
-      racePath(scenario),
+      racePath(scenario, hour),
       "--until",
       READY,
       "--timeout",
@@ -483,8 +492,8 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
     return { code: 1, lines: [pages.line, `evidence ${dir}`] };
   }
   const { page } = pages;
-  yield* warm(options.runs.A);
-  yield* warm(options.runs.B);
+  yield* warm(options.runs.A, options.hour);
+  yield* warm(options.runs.B, options.hour);
   const samples: GpuSample[] = [];
   for (let pair = 0; pair < GPU_PAIRS; pair += 1) {
     for (const [index, scenario] of scenarios.entries()) {
@@ -495,7 +504,8 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
           dir,
           options.runs[side],
           { pair, position, side },
-          scenario
+          scenario,
+          options.hour
         );
         samples.push(sample);
         yield* fs.writeFileString(
@@ -545,6 +555,7 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
         },
         environment,
         files,
+        hour: options.hour,
         lines,
         observations: evaluation.observations,
         ok,

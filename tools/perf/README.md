@@ -190,7 +190,7 @@ rm -rf /tmp/rushline-perf-gpu-a
 
 On vimaan, put the clone in `/var/tmp/rushline-perf-gpu-a`. `/tmp` there is a 3.8 GB tmpfs in RAM, and A's `node_modules` alone is 1.8 GB, which `/tmp` cannot hardlink from the pnpm store on the other filesystem.
 
-Without `--baseline-ref`, A must serve the revision named in `tools/perf/budgets.json`. The lane refuses runs that serve another revision or another checkout. It also requires every `rv doctor` check except console errors, because `/kit` logs a hydration error on load (a `<div>` inside a `<p>`). Instead, the lane counts console errors during each race and fails on any.
+`--hour <0..1>` adds `&hour=` to every race the lane opens, so a campaign can pin the race clock, such as `--hour 1` for the darkest point; a revision without the time of day ignores it, and `result.json` records it. Without `--baseline-ref`, A must serve the revision named in `tools/perf/budgets.json`. The lane refuses runs that serve another revision or another checkout. It also requires every `rv doctor` check except console errors, because `/kit` logs a hydration error on load (a `<div>` inside a `<p>`). Instead, the lane counts console errors during each race and fails on any.
 
 For each side, the lane:
 
