@@ -12,9 +12,14 @@ import { disposeTree } from "./dispose.ts";
 import { freeze, placeOnGround, whiteInstances } from "./ground.ts";
 import { paintPrimitives } from "./model-slots.ts";
 import type { Palette, Primitive } from "./model-slots.ts";
+import { castersFirst } from "./shadow-reach.ts";
+import type { CasterCounts, ShadowReach } from "./shadow-reach.ts";
 import { uploadSpan } from "./uploads.ts";
 
 const BOXY_HEIGHT = 1.8;
+const HIDDEN = 0;
+const CASTS = 1;
+const SHOWN = 2;
 const WHITE: Palette = new Map([["body", "#ffffff"]]);
 const SIDE_STRIPE: Palette = new Map([["accent", "#ff00ff"]]);
 
@@ -27,6 +32,7 @@ interface FleetPart {
   readonly mesh: THREE.InstancedMesh;
   readonly cars: readonly FleetMember[];
   readonly slotCar: Int32Array | null;
+  readonly casters: CasterCounts;
 }
 
 export interface Fleet {
@@ -38,7 +44,7 @@ export interface Fleet {
     pose: Readonly<CrossCarPose>
   ) => void;
   hideCrossCar: (index: number) => void;
-  commit: (centre: number) => void;
+  commit: (centre: number, shadows: ShadowReach) => void;
   dispose: () => void;
 }
 
@@ -164,6 +170,7 @@ export const createFleet = (
       group.add(mesh);
       parts.push({
         cars: roster,
+        casters: castersFirst(mesh),
         mesh,
         slotCar: painted ? new Int32Array(members.length).fill(-1) : null,
       });
@@ -191,6 +198,11 @@ export const createFleet = (
   const spot: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
   const placed: THREE.Matrix4[] = bodies.map(() => new THREE.Matrix4());
   const placedAt = new Float64Array(bodies.length).fill(Number.NaN);
+  const reachOfBody = Float64Array.from(bodies, (car) =>
+    Math.hypot(car.halfLength, car.halfWidth, car.height)
+  );
+  const state = new Uint8Array(bodies.length);
+  const centreOf = new THREE.Vector3();
   let road: Track | null = null;
 
   const fitInto = (index: number): void => {
@@ -237,20 +249,14 @@ export const createFleet = (
   };
 
   return {
-    commit(centre) {
+    commit(centre, shadows) {
       const from = centre - reach.behind;
       const to = centre + reach.ahead;
-      for (const part of parts) {
-        let slot = 0;
-        let firstRecoloured = part.cars.length;
-        let lastRecoloured = -1;
-        for (const member of part.cars) {
-          const { index } = member;
-          const matrix = placed[index];
-          const s = along[ownerOf(index)] ?? Number.NEGATIVE_INFINITY;
-          if (!matrix || s < from || s > to) {
-            continue;
-          }
+      for (let index = 0; index < bodies.length; index += 1) {
+        const matrix = placed[index];
+        const s = along[ownerOf(index)] ?? Number.NEGATIVE_INFINITY;
+        state[index] = HIDDEN;
+        if (matrix && s >= from && s <= to) {
           if (
             road &&
             (index < cars.length || index >= firstDeckCar) &&
@@ -259,14 +265,36 @@ export const createFleet = (
             placeCar(road, index, s);
             placedAt[index] = s;
           }
-          part.mesh.setMatrixAt(slot, matrix);
-          if (recolour(part, slot, member)) {
-            firstRecoloured = Math.min(firstRecoloured, slot);
-            lastRecoloured = slot;
+          state[index] = shadows.reaches(
+            centreOf.setFromMatrixPosition(matrix),
+            reachOfBody[index] ?? 0
+          )
+            ? CASTS
+            : SHOWN;
+        }
+      }
+      for (const part of parts) {
+        let slot = 0;
+        let firstRecoloured = part.cars.length;
+        let lastRecoloured = -1;
+        for (const wanted of [CASTS, SHOWN]) {
+          for (const member of part.cars) {
+            const matrix = placed[member.index];
+            if (matrix && state[member.index] === wanted) {
+              part.mesh.setMatrixAt(slot, matrix);
+              if (recolour(part, slot, member)) {
+                firstRecoloured = Math.min(firstRecoloured, slot);
+                lastRecoloured = slot;
+              }
+              slot += 1;
+            }
           }
-          slot += 1;
+          if (wanted === CASTS) {
+            part.casters.casting = slot;
+          }
         }
         part.mesh.count = slot;
+        part.casters.drawn = slot;
         uploadSpan(part.mesh.instanceMatrix, 0, slot);
         if (part.mesh.instanceColor) {
           uploadSpan(

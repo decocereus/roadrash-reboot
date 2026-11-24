@@ -22,6 +22,7 @@
         "test/rider-shade.ts",
         "test/renderer-lifecycle.ts",
         "test/session-transcript.ts",
+        "test/shadow-casters.ts",
         "test/replay-bundle.ts"
       ],
       "ignoreDependencies": ["cloudflare"],
