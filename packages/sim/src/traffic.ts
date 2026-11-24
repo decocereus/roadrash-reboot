@@ -165,6 +165,39 @@ const convoysOf = (
   });
 };
 
+const overlapOf = (
+  convoy: readonly TrafficCar[],
+  carriers: readonly TrafficCar[]
+): number =>
+  Math.max(
+    0,
+    ...convoy.flatMap((car) =>
+      carriers
+        .filter((carrier) => inJumpZone(car, car.s, car.x, carrier))
+        .map((carrier) => car.s + car.halfLength - jumpZoneFrom(carrier))
+    )
+  );
+
+const moveConvoysBehindCarriers = (
+  convoys: readonly TrafficCar[],
+  carriers: readonly TrafficCar[],
+  track: Track
+): void => {
+  for (let first = 0; first < convoys.length; first += CONVOY_CARS) {
+    const convoy = convoys.slice(first, first + CONVOY_CARS);
+    for (
+      let back = overlapOf(convoy, carriers);
+      back > 0;
+      back = overlapOf(convoy, carriers)
+    ) {
+      for (const car of convoy) {
+        car.s -= back;
+      }
+      seatCars(convoy, track);
+    }
+  }
+};
+
 const clearOfConvoys = (
   car: TrafficCar,
   convoys: readonly TrafficCar[]
@@ -270,6 +303,7 @@ export const createTraffic = (
     patience
   );
   seatCars(convoys, track);
+  moveConvoysBehindCarriers(convoys, carriers, track);
   const kept = cars.filter((car) => clearOfConvoys(car, convoys));
   moveOutOfCarriers(kept, carriers, convoys, track);
   return [...kept, ...convoys, ...carriers];
