@@ -238,7 +238,7 @@ const fastest = Math.max(
   ...Object.values(bikes).map((bike) => topSpeedOf(bike, true))
 );
 
-export const JUMP_ROOM = fastest * flightSeconds(fastest);
+const JUMP_ROOM = fastest * flightSeconds(fastest);
 
 export const jumpZoneFrom = (carrier: TrafficCar): number =>
   toeOf(carrier) - JUMP_ROOM;
