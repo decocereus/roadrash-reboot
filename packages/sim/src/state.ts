@@ -556,6 +556,19 @@ export const approach = (
   return Math.max(target, value - step);
 };
 
+export const holdingSpeed = (
+  bike: BikeSpec,
+  bend: number,
+  grip: number
+): number => {
+  const push = bend / bike.curvePush;
+  const held = bike.lateralSpeedPerSpeed * grip;
+  return (
+    (held + Math.sqrt(held * held + 4 * push * bike.lateralSpeed * grip)) /
+    (2 * push)
+  );
+};
+
 export const lateralSpeedLimit = (
   bike: BikeSpec,
   speed: number,

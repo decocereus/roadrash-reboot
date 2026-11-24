@@ -3,7 +3,8 @@ import { curvatureAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
 import { ridingOver } from "./carrier.ts";
-import { OIL_SLIP, ROCK_BUMP, rockUpsetShare } from "./hazards.ts";
+import { OIL_SLIP, ROCK_BUMP } from "./hazards.ts";
+import type { BikeBump } from "./hazards.ts";
 import { WALKER_BUMP } from "./pedestrians.ts";
 import {
   deceleration,
@@ -26,8 +27,8 @@ import {
   walkerInSight,
 } from "./pilot-crossers.ts";
 import { FORECAST_SECONDS, FORECAST_TICKS } from "./pilot-history.ts";
+import { bumpLandingSpeed } from "./pilot-landing.ts";
 import { SLIP_PUSH, SLIP_RECOVERY } from "./rider-drive.ts";
-import { LANDING_SLIP } from "./rider-flight.ts";
 import {
   BIKE_HALF_LENGTH,
   BIKE_HALF_WIDTH,
@@ -39,7 +40,6 @@ import {
   TICK_SECONDS,
 } from "./state.ts";
 import type {
-  BikeSpec,
   CarBox,
   CrossCar,
   Hazard,
@@ -59,8 +59,6 @@ const ROCK_COST_PER_SPEED = 2;
 const ROCK_FAST = 55.6;
 const CONTACT_MARGIN = 0.1;
 const CRASH_COST = 10;
-const ROCK_LANDING_SHARE = 0.85;
-const LANDING_SEARCH_STEPS = 8;
 export const SLIPPING = 0.2;
 export const SLIPPING_STEER = 0.45;
 const OIL_BEND_PUSH = 1.2;
@@ -105,7 +103,7 @@ interface Obstruction {
   cost: number;
   crossing: boolean;
   through: number;
-  upset: number;
+  bump: BikeBump | null;
   oil: boolean;
   curvature: number;
   metres: number;
@@ -158,6 +156,7 @@ export const createOutlook = (): Outlook => ({
 const createObstruction = (): Obstruction => ({
   ahead: 0,
   along: 0,
+  bump: null,
   cost: 0,
   crossing: false,
   curvature: 0,
@@ -171,7 +170,6 @@ const createObstruction = (): Obstruction => ({
   struck: false,
   through: Number.POSITIVE_INFINITY,
   traffic: false,
-  upset: 0,
   x: 0,
 });
 
@@ -354,7 +352,7 @@ const obstructWithCar = (
     obstruction.start = start;
     obstruction.through = Number.POSITIVE_INFINITY;
     obstruction.traffic = true;
-    obstruction.upset = 0;
+    obstruction.bump = null;
     obstruction.x = car.x;
   }
 };
@@ -383,7 +381,7 @@ const obstructWithCrosser = (
   obstruction.start = metres / pace;
   obstruction.through = Number.POSITIVE_INFINITY;
   obstruction.traffic = false;
-  obstruction.upset = 0;
+  obstruction.bump = null;
   obstruction.x = crosser.x;
   return obstruction;
 };
@@ -406,9 +404,7 @@ export const gatherObstructions = (
       obstruction.cost = hazardCost(hazard, rider.speed);
       obstruction.crossing = false;
       obstruction.curvature =
-        hazard.kind === "oil"
-          ? oilBendOf(track, hazard, rider.speed)
-          : curvatureAt(track, hazard.s);
+        hazard.kind === "oil" ? oilBendOf(track, hazard, rider.speed) : 0;
       obstruction.drift = 0;
       obstruction.end =
         (hazard.s + hazard.halfLength + BIKE_HALF_LENGTH - rider.s) / pace;
@@ -420,7 +416,7 @@ export const gatherObstructions = (
       obstruction.through =
         hazard.kind === "rock" ? ROCK_THROUGH_SPEED : Number.POSITIVE_INFINITY;
       obstruction.traffic = false;
-      obstruction.upset = hazard.kind === "rock" ? ROCK_BUMP.upset : 0;
+      obstruction.bump = hazard.kind === "rock" ? ROCK_BUMP : null;
       obstruction.x = hazard.x;
     }
   }
@@ -444,60 +440,32 @@ export const gatherObstructions = (
     if (walkerInSight(track, rider, pedestrian)) {
       const obstruction = obstructWithCrosser(outlook, rider, pedestrian);
       obstruction.cost = WALKER_BUMP.upset * rockCost(rider.speed);
-      obstruction.curvature = curvatureAt(track, pedestrian.s);
       obstruction.reach += CONTACT_MARGIN;
-      obstruction.upset = WALKER_BUMP.upset;
+      obstruction.bump = WALKER_BUMP;
     }
   }
 };
 
-const throwsOnRock = (
-  bike: BikeSpec,
-  lateralSpeed: number,
-  curvature: number,
-  speed: number,
-  upset: number
-): boolean =>
-  Math.abs(lateralSpeed + curvePushOf(bike, curvature, speed)) /
-    Math.max(1, lateralSpeedLimit(bike, speed)) +
-    upset * rockUpsetShare(speed) >
-  LANDING_SLIP * ROCK_LANDING_SHARE;
-
-const rockLandingSpeed = (
-  bike: BikeSpec,
-  lateralSpeed: number,
-  curvature: number,
-  speed: number,
-  upset: number
-): number => {
-  if (!throwsOnRock(bike, lateralSpeed, curvature, speed, upset)) {
-    return speed;
-  }
-  let low = 0;
-  let high = speed;
-  for (let step = 0; step < LANDING_SEARCH_STEPS; step += 1) {
-    const middle = (low + high) / 2;
-    if (throwsOnRock(bike, lateralSpeed, curvature, middle, upset)) {
-      high = middle;
-    } else {
-      low = middle;
-    }
-  }
-  return low;
-};
-
-const landOnRock = (
+const landOnBump = (
   toll: Toll,
+  track: Track,
   rider: RiderState,
   obstruction: Obstruction,
-  lateralSpeed: number
+  x: number,
+  seconds: number,
+  drift: number
 ): void => {
-  const landing = rockLandingSpeed(
-    rider.bike,
-    lateralSpeed,
-    obstruction.curvature,
-    rider.speed,
-    obstruction.upset
+  if (!obstruction.bump) {
+    return;
+  }
+  const landing = bumpLandingSpeed(
+    track,
+    rider,
+    rider.s + obstruction.metres,
+    x,
+    drift,
+    obstruction.bump,
+    obstruction.x + obstruction.drift * seconds
   );
   if (
     rider.speed * rider.speed - landing * landing >
@@ -565,6 +533,7 @@ const giveWay = (
 
 const tally = (
   outlook: Outlook,
+  track: Track,
   rider: RiderState,
   x: number,
   seconds: number,
@@ -597,9 +566,9 @@ const tally = (
       if (obstruction.crossing) {
         giveWay(outlook, rider, obstruction, x);
       }
-      if (obstruction.upset > 0) {
+      if (obstruction.bump) {
         toll.through = Math.min(toll.through, obstruction.through);
-        landOnRock(toll, rider, obstruction, lateralSpeed);
+        landOnBump(toll, track, rider, obstruction, x, seconds, lateralSpeed);
       }
       if (obstruction.oil) {
         outlook.touchedOil = true;
@@ -633,6 +602,7 @@ const forecast = (
   }
   tally(
     outlook,
+    track,
     rider,
     x,
     0,
@@ -693,6 +663,7 @@ const forecast = (
     slip = Math.max(0, slip - SLIP_RECOVERY * TICK_SECONDS);
     tally(
       outlook,
+      track,
       rider,
       x,
       tick * TICK_SECONDS,
