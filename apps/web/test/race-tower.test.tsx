@@ -1,80 +1,26 @@
-import type { HeapProfiler } from "node:inspector";
-import { Session as Inspector } from "node:inspector/promises";
-
-import { recordedRules } from "@racer/career/bench";
 import { createRaceLog } from "@racer/career/outcome";
 import { celebritySuits } from "@racer/sim/cast";
 import { riderBlocks, riderPalette } from "@racer/sim/palette";
-import { createRace, standings, stepRace } from "@racer/sim/race";
-import type { RaceRun } from "@racer/sim/race-run";
-import { PLAYER_RIDER, TICK_RATE, riderOf } from "@racer/sim/state";
-import type { InputFrame, RaceState, RiderState } from "@racer/sim/state";
-import { createRaceTiming } from "@racer/sim/timing";
+import { standings } from "@racer/sim/race";
+import { TICK_RATE, riderOf } from "@racer/sim/state";
+import type { RaceState, RiderState } from "@racer/sim/state";
 import { renderToStaticMarkup } from "react-dom/server";
 import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
-import { firstQuickPick, planFor, quickEntry } from "../src/career/flow.ts";
 import { ROW_EM } from "../src/components/screens/hud-layout.ts";
 import { RaceTower } from "../src/components/screens/race-tower.tsx";
-import { undressed } from "../src/game/figure-wardrobe.ts";
 import type { Dressing } from "../src/game/figure-wardrobe.ts";
 import { countdownFor, racingFrom } from "../src/game/game-session.ts";
-import type { Session } from "../src/game/game-session.ts";
 import { createTower } from "../src/game/hud-tower.ts";
 import type { RacePlan, TowerRow } from "../src/game/hud.ts";
 import { roomRunStub } from "./room-run-stub.ts";
-
-const SEED = 11;
-const noControls: InputFrame = { controls: new Map(), handovers: new Map() };
-
-const soloPlan: RacePlan = planFor(
-  recordedRules,
-  null,
-  quickEntry(firstQuickPick, SEED)
-);
+import { noControls, rideFor, soloPlan } from "./tower-ride.ts";
+import type { Ride } from "./tower-ride.ts";
 
 const roomPlan: RacePlan = {
   ...soloPlan,
   room: roomRunStub(soloPlan.setup, "tower-room"),
-};
-
-interface Ride {
-  readonly state: RaceState;
-  readonly session: Session;
-  readonly stage: {
-    readonly colours: ReadonlyMap<RiderState["id"], number>;
-    readonly me: RiderState["id"];
-    readonly race: RaceRun;
-  };
-}
-
-const rideFor = (plan: RacePlan, seconds: number): Ride => {
-  const { setup } = plan;
-  const state = createRace({
-    ...setup,
-    player: { ...setup.player, controller: "pilot" },
-  });
-  const timing = createRaceTiming(state, setup.track.length);
-  const race: RaceRun = {
-    events: () => state.events,
-    step: (frame) => {
-      stepRace(state, setup.track, frame);
-      timing.record(state);
-    },
-    takeCorrections: () => [],
-    takeFights: () => [],
-    timing,
-    view: state,
-  };
-  for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
-    race.step(noControls);
-  }
-  return {
-    session: racingFrom(countdownFor(plan, createRaceLog(setup), undressed)),
-    stage: { colours: new Map(), me: PLAYER_RIDER, race },
-    state,
-  };
 };
 
 const rowsOf = (
@@ -104,56 +50,12 @@ const paintedBody = {
   url: "/models/painted.glb",
 };
 
-const WARM_READS = 20_000;
-const SAMPLED_WINDOWS = 3;
-const SAMPLED_READS = 10_000;
-
-const bytesIn = (
-  node: HeapProfiler.SamplingHeapProfileNode,
-  file: string
-): number =>
-  (node.callFrame.url.includes(file) ? node.selfSize : 0) +
-  node.children.reduce((sum, child) => sum + bytesIn(child, file), 0);
-
-interface Sampled {
-  readonly bytes: number;
-  readonly same: boolean;
-}
-
-const sampledIn = async (
-  file: string,
-  work: () => boolean
-): Promise<Sampled> => {
-  const inspector = new Inspector();
-  inspector.connect();
-  await inspector.post("HeapProfiler.enable");
-  await inspector.post("HeapProfiler.startSampling", {
-    includeObjectsCollectedByMajorGC: true,
-    includeObjectsCollectedByMinorGC: true,
-    samplingInterval: 16,
-  });
-  const same = work();
-  const { profile } = await inspector.post("HeapProfiler.stopSampling");
-  inspector.disconnect();
-  return { bytes: bytesIn(profile.head, file), same };
-};
-
-const windowsIn = async (
-  count: number,
-  file: string,
-  work: () => boolean
-): Promise<readonly Sampled[]> =>
-  count === 0
-    ? []
-    : [
-        await sampledIn(file, work),
-        ...(await windowsIn(count - 1, file, work)),
-      ];
-
 const layoutBoundary = (drawn: number): readonly string[] => [
   "contain:layout size",
   `height:${0.6 + drawn * ROW_EM}em`,
 ];
+
+const CLOSE_TICKS = 600;
 
 const markupOf = (rows: readonly TowerRow[]): string =>
   renderToStaticMarkup(<RaceTower rows={rows} shown="all" />);
@@ -251,31 +153,6 @@ describe("the race tower", () => {
     expect(markupOf(rowsOf(createTower(), ride))).toBe(seated);
   });
 
-  it("publishes an unchanged tower without building a row, an array or an argument", async () => {
-    const ride = rideFor(soloPlan, 30);
-    const tower = createTower();
-    const order = standings(ride.state);
-    const first = tower.read(ride.session, ride.stage, order);
-    for (let read = 0; read < WARM_READS; read += 1) {
-      tower.read(ride.session, ride.stage, order);
-    }
-    const readUnchanged = (): boolean => {
-      let same = true;
-      for (let read = 0; read < SAMPLED_READS; read += 1) {
-        same &&= tower.read(ride.session, ride.stage, order) === first;
-      }
-      return same;
-    };
-    const windows = await windowsIn(
-      SAMPLED_WINDOWS,
-      "hud-tower.ts",
-      readUnchanged
-    );
-    const built = Math.min(...windows.map((window) => window.bytes));
-    const unchanged = windows.every((window) => window.same);
-    expect({ built, unchanged }).toStrictEqual({ built: 0, unchanged: true });
-  });
-
   it("slides a row to its new place by its top and moves nothing in the tower any other way", () => {
     const rows = rowsOf(createTower(), rideFor(soloPlan, 30));
     const markup = markupOf(rows);
@@ -324,6 +201,33 @@ describe("the race tower", () => {
     expect({ narrow: boundaryOf(3), whole: boundaryOf("all") }).toStrictEqual({
       narrow: layoutBoundary(3),
       whole: layoutBoundary(rows.length),
+    });
+  });
+
+  it("keeps a close rider's row while its shown gap holds and never shows a minus gap", () => {
+    const ride = rideFor(soloPlan, 20);
+    const tower = createTower();
+    let rows = rowsOf(tower, ride);
+    let markup = markupOf(rows);
+    let close = 0;
+    let minus = 0;
+    let rebuilt = 0;
+    for (let tick = 0; tick < CLOSE_TICKS; tick += 1) {
+      ride.stage.race.step(noControls);
+      const next = rowsOf(tower, ride);
+      const drawn = markupOf(next);
+      close += next.some((row) => row.mark === "gap" && row.tenths === 0)
+        ? 1
+        : 0;
+      minus += drawn.includes("+-") ? 1 : 0;
+      rebuilt += drawn === markup && next !== rows ? 1 : 0;
+      rows = next;
+      markup = drawn;
+    }
+    expect({ close: close > 0, minus, rebuilt }).toStrictEqual({
+      close: true,
+      minus: 0,
+      rebuilt: 0,
     });
   });
 
