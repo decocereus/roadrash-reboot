@@ -102,6 +102,10 @@
         "sha256": "4f57a4f3763f5a136641e64b11e000f07ff364fdd77acd106470f5d55fcca012"
       },
       {
+        "file": "tools/perf/baselines/time-of-day.mac.gpu-helium-metal.json.gz",
+        "sha256": "7650f0bfb6c21fdce04660094bc9e1a8cde7cef1f523381246685bf700566935"
+      },
+      {
         "file": "tools/perf/baselines/time-of-day.vimaan.gpu-chromium-intel.json.gz",
         "sha256": "162c2ffc6c87a654dc477d550436c6924ffa2872a24312c369e1acb77b4caefe"
       },
@@ -124,7 +128,7 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "110007765f6f77b31dda0d11040e779e518381294c3dd39c2a4f9cf658c3afeb"
+    "summarySha256": "83ce17e4de354090b84d801ec63b6a8c146b8019f9b7c4ed50a50fe60f524146"
   },
   "limits": [
     {
@@ -2394,6 +2398,30 @@
       "source": "gpu-2026-11-24T00-52-14-073Z-c6be25b-97caafa",
       "unit": "ms",
       "value": 0.6000003814697266
+    },
+    {
+      "baseline": 0.10000002384185791,
+      "derivation": "2 x the worst B window of the first campaign that draws the time of day",
+      "direction": "max",
+      "environment": "gpu-helium-metal",
+      "metric": "world.cpu.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-24T08-17-21-321Z-c6be25b-a1b16b0",
+      "unit": "ms",
+      "value": 0.20000004768371582
+    },
+    {
+      "baseline": 0.10000002384185791,
+      "derivation": "2 x the worst B window of the first campaign that draws the time of day",
+      "direction": "max",
+      "environment": "gpu-helium-metal",
+      "metric": "world.cpu.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-24T08-17-21-321Z-c6be25b-a1b16b0",
+      "unit": "ms",
+      "value": 0.20000004768371582
     }
   ],
   "nodeProfiles": {
