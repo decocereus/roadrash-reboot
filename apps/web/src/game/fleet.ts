@@ -20,6 +20,7 @@ const BOXY_HEIGHT = 1.8;
 const HIDDEN = 0;
 const CASTS = 1;
 const SHOWN = 2;
+const CASTERS_FIRST = [CASTS, SHOWN] as const;
 const WHITE: Palette = new Map([["body", "#ffffff"]]);
 const SIDE_STRIPE: Palette = new Map([["accent", "#ff00ff"]]);
 
@@ -277,7 +278,7 @@ export const createFleet = (
         let slot = 0;
         let firstRecoloured = part.cars.length;
         let lastRecoloured = -1;
-        for (const wanted of [CASTS, SHOWN]) {
+        for (const wanted of CASTERS_FIRST) {
           for (const member of part.cars) {
             const matrix = placed[member.index];
             if (matrix && state[member.index] === wanted) {
