@@ -52,23 +52,25 @@ export const roomObservations = (
     value: median(measured),
   });
   const seeds = new Set(runs.flatMap((run) => run.seeds)).size;
-  const perRun = (of: (run: RoomRun) => readonly number[]) =>
-    runs.map((run) => p95Of(of(run)) / scale);
-  const pooled = (metric: string, of: (run: RoomRun) => readonly number[]) => ({
+  const pooled = (
+    metric: string,
+    statistic: (values: readonly number[]) => number,
+    of: (run: RoomRun) => readonly number[]
+  ) => ({
     ...observed(
       metric,
       `runs=${runs.length} seeds=${seeds} pooled scale=${scale.toFixed(3)}`,
-      perRun(of)
+      runs.map((run) => statistic(of(run)) / scale)
     ),
-    value: p95Of(runs.flatMap(of)) / scale,
+    value: statistic(runs.flatMap(of)) / scale,
   });
   const allocated = (metric: string, of: (run: RoomRun) => number) =>
     observed(metric, `runs=${runs.length}`, runs.map(of));
   return [
-    pooled("room.tick.p95", (run) => run.tick),
-    pooled("room.confirm.p95", (run) => run.confirm),
-    pooled("room.rollback.p95", (run) => run.rollback),
-    pooled("room.checkpoint.p95", (run) => run.checkpoint),
+    pooled("room.tick.p95", p95Of, (run) => run.tick),
+    pooled("room.confirm.p95", p95Of, (run) => run.confirm),
+    pooled("room.rollback.p95", p95Of, (run) => run.rollback),
+    pooled("room.checkpoint.p50", median, (run) => run.checkpoint),
     allocated("room.allocatedBytesPerTick", (run) => run.allocated.server),
     allocated(
       "room.client.allocatedBytesPerTick",
