@@ -67,8 +67,8 @@ Bike paint is the primary identifier; the jacket is the second. These twelve ent
 
 | Index | Rider | Bike | Jacket | Helmet |
 | --: | --- | --- | --- | --- |
-| 0 | Player (default) | `#C82F2F` | `#23262C` | `#F2C230` |
-| 1 | Juno Kade | `#15171B` | `#15171B` | `#15171B`, gold stripe `#D4A63A` |
+| 0 | Player (default) | `#C82F2F` | `#343D50` | `#F2C230` |
+| 1 | Juno Kade | `#15171B` | `#343D50` | `#15171B`, gold stripe `#D4A63A` |
 | 2 | Ruth Ann Bixby | `#26A6A0` | `#A8743E` | `#EDE4D0`, brim |
 | 3 | Dee Santangelo | `#2F9A4E` | `#D7263D` | `#F2EEE6`, stickers |
 | 4 | Ines Marchetti | `#F2ECDF` | `#F2ECDF` | `#FFFFFF`, veil |
@@ -78,7 +78,7 @@ Bike paint is the primary identifier; the jacket is the second. These twelve ent
 | 8 | Coach Dale Hutto | `#E0A21B` | `#1E5AA8` | `#F2EEE6`, visor |
 | 9 | Moose Kowalczyk | `#C2521F` | `#5B4632` | `#2B2E33` |
 | 10 | Gus Abernathy | `#6B6B3A` | `#C8E03A` | `#F2C230`, hard-hat shape |
-| 11 | Police | `#F4F6F8` with `#2F6BFF` panels | `#141C33` | `#F4F6F8` |
+| 11 | Police | `#F4F6F8` with `#2F6BFF` panels | `#333C56` | `#F4F6F8` |
 
 The player can repaint their bike in the Garage from eight swatches that avoid the rivals' hues at close range: `#C82F2F`, `#F26B1D`, `#F2C230`, `#3FA34D`, `#2C8ED6`, `#5A4FCF`, `#B14FC9`, `#E9E6DF`.
 
@@ -142,7 +142,7 @@ A new celebrity adds its own exact GLB row and raises `assets.texture.total` by 
 
 Heads are 15% larger than life and hands 20% larger, so a raised fist or weapon reads at distance. Shoulders are squared and the back is one clean plane, because the player looks at backs all race. Every rival has one feature that breaks the helmet-and-shoulders outline: the cast list in `game-design.md` names it for each.
 
-The player's rider is the plainest in the field on purpose: charcoal jacket, yellow helmet, no attachment. The yellow helmet is the one constant anchor in the frame.
+The player's rider is the plainest in the field on purpose: slate jacket, yellow helmet, no attachment. The yellow helmet is the one constant anchor in the frame.
 
 ### Bike silhouettes by class
 

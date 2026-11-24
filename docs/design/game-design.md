@@ -575,7 +575,7 @@ The owner approved the names and bios on November 2, 2026. The bios are `celebri
 
 | Rival | Age | Home | Skill | Aggression | Starts with | Bike paint | Jacket |
 | --- | --: | --- | --: | --: | --- | --- | --- |
-| Juno Kade | 34 | Stonepeak | 0.99 | 0.25 | Nothing, ever | `#15171B` black, gold stripe `#D4A63A` | `#15171B` |
+| Juno Kade | 34 | Stonepeak | 0.99 | 0.25 | Nothing, ever | `#15171B` black, gold stripe `#D4A63A` | `#343D50` dark slate |
 | Ruth Ann Bixby | 38 | Cinder Junction | 0.95 | 0.45 | Nothing | `#26A6A0` teal | `#A8743E` suede |
 | Dee Santangelo | 20 | Lowtown | 0.93 | 0.50 | Chain | `#2F9A4E` basil green | `#D7263D` red |
 | Ines Marchetti | 29 | Saltmouth | 0.91 | 0.75 | Nothing (club from tier 3) | `#F2ECDF` ivory | `#F2ECDF` ivory |
@@ -585,14 +585,14 @@ The owner approved the names and bios on November 2, 2026. The bios are `celebri
 | Coach Dale Hutto | 55 | Stonepeak | 0.86 | 0.55 | Pool cue from tier 2 | `#E0A21B` gold | `#1E5AA8` polo blue |
 | Moose Kowalczyk | 41 | Lowtown | 0.84 | 0.85 | Club | `#C2521F` rust | `#5B4632` brown vest |
 | Gus Abernathy | 66 | Kettle | 0.82 | 0.65 | Stop sign from tier 2 | `#6B6B3A` olive | `#C8E03A` hi-vis |
-| Sister Agnes Mulcahy | 61 | Lowtown | 0.89 | 0.20 | Nothing | `#BFC4C9` convent grey | `#1A1A1F` black habit |
+| Sister Agnes Mulcahy | 61 | Lowtown | 0.89 | 0.20 | Nothing | `#BFC4C9` convent grey | `#3B3B4F` slate habit |
 | Hollis Thorne | 33 | Stonepeak | 0.88 | 0.45 | Nothing | `#7A1F3D` rescue maroon | `#F26B1D` high-vis orange |
 | Wanda Pruitt | 49 | Cinder Junction | 0.87 | 0.30 | Nothing | `#5FB7E6` studio blue | `#E9E3D6` cream blazer |
 | Benny Okafor | 27 | Saltmouth | 0.85 | 0.40 | Nothing | `#F27D16` tangerine | `#1D7A8C` sequin teal |
 | Orrin Blackwell | 31 | Kettle | 0.83 | 0.55 | Nothing (club from tier 3) | `#6B4A2B` bark brown | `#8C9A5B` field khaki |
 | Dr Felix Aurand | 44 | Lowtown | 0.80 | 0.70 | Club | `#6AD6B5` mint | `#2B5F8F` scrubs blue |
 
-The player's default is bike `#C82F2F` red and jacket `#23262C` charcoal. Police are bike `#F4F6F8` white with `#2F6BFF` blue panels and jacket `#141C33`.
+The player's default is bike `#C82F2F` red and jacket `#343D50` slate. Police are bike `#F4F6F8` white with `#2F6BFF` blue panels and jacket `#333C56`. The darkest jackets were lifted to OKLab lightness 0.36 on November 24, 2026, so a rider in a building's shadow keeps a readable suit ([art-direction.md](art-direction.md#budget-and-build)).
 
 Home roads among the ordinary sixteen: Breakwater Run (Tristan, Ines, Benny, Ruth Ann, Mags, Wanda), Slag Row (Moose, Dee, Agnes, Felix), Ridge Road (Juno, Coach, Hollis, Lyle, Gus, Orrin). At tier 1, where Juno does not race, Ridge Road's home riders are Coach, Hollis, and Ruth Ann (section 4).
 
@@ -786,7 +786,7 @@ Visual: lanky and bent, white beard, hi-vis vest over a red flannel shirt, a hel
 
 Sister Agnes runs the Lowtown soup kitchen and rides because the diocese van was repossessed and the bike was donated. Every dollar she wins goes to the roof fund, and she keeps the ledger in her jacket.
 
-Visual: small and very upright, elbows in. Black habit cut short over grey leathers, a plain white helmet with a black band, and a wooden rosary wound round the left mirror.
+Visual: small and very upright, elbows in. Dark slate habit cut short over grey leathers, a plain white helmet with a black band, and a wooden rosary wound round the left mirror.
 
 - Taunt: "I'll pray for you. From ahead. The reception's better up there."
 - Grudge taunt: "You struck a nun last time. I've forgiven you. The roof fund hasn't."
