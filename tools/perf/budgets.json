@@ -102,8 +102,12 @@
         "sha256": "4f57a4f3763f5a136641e64b11e000f07ff364fdd77acd106470f5d55fcca012"
       },
       {
-        "file": "tools/perf/baselines/uhd630.vimaan.gpu-chromium-intel.json.gz",
-        "sha256": "fbd6ed619b13e9b5b48d776e6d974ae2aaeed0473c7c659b50613b4129874939"
+        "file": "tools/perf/baselines/time-of-day.vimaan.gpu-chromium-intel.json.gz",
+        "sha256": "162c2ffc6c87a654dc477d550436c6924ffa2872a24312c369e1acb77b4caefe"
+      },
+      {
+        "file": "tools/perf/baselines/time-of-day.vimaan.gpu-chromium-nvidia.json.gz",
+        "sha256": "3568f25ff943f06682d6d428692c5c12101ff6e8aeb4cc21177c7791386dfb15"
       },
       {
         "file": "tools/perf/baselines/timing.node-darwin-arm64.json.gz",
@@ -112,11 +116,15 @@
       {
         "file": "tools/perf/baselines/timing.node-linux-x64.json.gz",
         "sha256": "b1503143e31f4ad753b64b88ad6acbe35fe84ebb760f05218420a4423ea51064"
+      },
+      {
+        "file": "tools/perf/baselines/uhd630.vimaan.gpu-chromium-intel.json.gz",
+        "sha256": "fbd6ed619b13e9b5b48d776e6d974ae2aaeed0473c7c659b50613b4129874939"
       }
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "db46b6dd71f4e96b752b4007ceae9b04fbd9ba2f6671596a79c2ab089f3e85a1"
+    "summarySha256": "110007765f6f77b31dda0d11040e779e518381294c3dd39c2a4f9cf658c3afeb"
   },
   "limits": [
     {
@@ -2338,6 +2346,54 @@
       "source": "gate-2026-11-19T16-03-05-306Z-9f67ba9-38eaebb",
       "unit": "ms",
       "value": 0.0006318468
+    },
+    {
+      "baseline": 0.20000004768371582,
+      "derivation": "2 x the worst B window of the first campaign that draws the time of day",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "world.cpu.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-24T00-25-31-611Z-c6be25b-97caafa",
+      "unit": "ms",
+      "value": 0.40000009536743164
+    },
+    {
+      "baseline": 0.20000004768371582,
+      "derivation": "2 x the worst B window of the first campaign that draws the time of day",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "world.cpu.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-24T00-25-31-611Z-c6be25b-97caafa",
+      "unit": "ms",
+      "value": 0.40000009536743164
+    },
+    {
+      "baseline": 0.40000009536743164,
+      "derivation": "2 x the worst B window of the first campaign that draws the time of day",
+      "direction": "max",
+      "environment": "gpu-chromium-intel",
+      "metric": "world.cpu.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-24T00-52-14-073Z-c6be25b-97caafa",
+      "unit": "ms",
+      "value": 0.8000001907348633
+    },
+    {
+      "baseline": 0.3000001907348633,
+      "derivation": "2 x the worst B window of the first campaign that draws the time of day",
+      "direction": "max",
+      "environment": "gpu-chromium-intel",
+      "metric": "world.cpu.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-24T00-52-14-073Z-c6be25b-97caafa",
+      "unit": "ms",
+      "value": 0.6000003814697266
     }
   ],
   "nodeProfiles": {

@@ -20,6 +20,7 @@ const { limits } = Schema.decodeUnknownSync(Schema.fromJsonString(budgetsFile))(
 );
 
 const METAL = browserHosts["macos-metal"].perfEnvironment;
+const NVIDIA = browserHosts["linux-nvidia"].perfEnvironment;
 const SLOT = 1000 / 60;
 const MAIN_CALLS = 130;
 const DRAWN_CALLS = 350;
@@ -47,6 +48,7 @@ interface Playback {
   readonly interval: (index: number) => number;
   readonly extraCalls: (index: number) => number;
   readonly riders: (index: number) => number;
+  readonly world: (index: number) => number;
   readonly longTasks: GpuSample["capture"]["longTasks"];
   readonly discardedAt: number;
   readonly viewport: GpuSample["capture"]["viewport"];
@@ -76,6 +78,7 @@ const steady: Playback = {
   ),
   riders: () => 0.2,
   viewport: { dpr: 2, height: 790, width: 1504 },
+  world: () => 0.05,
 };
 
 const frameOf = (scenario: Scenario, playback: Playback, index: number) => ({
@@ -100,7 +103,7 @@ const frameOf = (scenario: Scenario, playback: Playback, index: number) => ({
     playback.riders(index),
     0.5,
     0.1,
-    0.4,
+    playback.world(index),
     0.3,
     0.6,
     0.4,
@@ -507,6 +510,38 @@ describe("gpu frame lane", () => {
       failing(evaluation.lines).map((line) => line.split(" observed=")[0])
     ).toStrictEqual([
       "FAIL gpu pack-riding-v1 riders.cpu.p95 [gpu-helium-metal]",
+    ]);
+    expect(evaluation.ok).toBeFalsy();
+  });
+
+  it("fails a B window whose world, the clock and the scenery around the player, takes longer than the committed budget", () => {
+    const budget = limits.find(
+      (each) =>
+        each.environment === NVIDIA &&
+        each.metric === "world.cpu.p95" &&
+        each.scenario === packRiding?.id
+    );
+    if (!budget) {
+      throw new Error("budgets.json has no pack-riding world budget.");
+    }
+    const slow = budget.value * 2;
+    const evaluation = evaluateGpu(
+      campaign((scenario, side, pair) =>
+        isPack(scenario) && side === "B" && pair === 0
+          ? { ...steady, world: (index) => (index % 10 === 0 ? slow : 0.05) }
+          : steady
+      ),
+      steadyBar,
+      limits,
+      NVIDIA,
+      null
+    );
+    expect(
+      failing(evaluation.lines)
+        .filter((line) => line.includes("cpu.p95"))
+        .map((line) => line.split(" observed=")[0])
+    ).toStrictEqual([
+      "FAIL gpu pack-riding-v1 world.cpu.p95 [gpu-chromium-nvidia]",
     ]);
     expect(evaluation.ok).toBeFalsy();
   });

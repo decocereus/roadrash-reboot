@@ -290,12 +290,20 @@ const shares = {
   "frame.interval.p99": 0.99,
 } as const;
 
+const partMetrics = {
+  "riders.cpu.p95": "riders",
+  "world.cpu.p95": "world",
+} as const;
+
+const isPartMetric = (metric: string): metric is keyof typeof partMetrics =>
+  Object.hasOwn(partMetrics, metric);
+
 const judgedPerWindow: ReadonlySet<string> = new Set([
   "frame.interval.p50",
   "frame.interval.p95",
   "frame.interval.p99",
   "frame.missedFraction",
-  "riders.cpu.p95",
+  ...Object.keys(partMetrics),
 ]);
 
 const isCount = (metric: string): metric is keyof typeof frameReaders =>
@@ -314,8 +322,8 @@ const valueOf = (metric: string, samples: readonly GpuSample[]): number => {
   if (metric === "main.longTask.blockingMs") {
     return total(samples.map(blockingOf));
   }
-  if (metric === "riders.cpu.p95") {
-    return quantile(partTimesOf(samples, "riders"), 0.95);
+  if (isPartMetric(metric)) {
+    return quantile(partTimesOf(samples, partMetrics[metric]), 0.95);
   }
   const share =
     metric === "frame.interval.p50" ||

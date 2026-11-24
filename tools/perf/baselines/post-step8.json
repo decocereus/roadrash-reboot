@@ -3632,6 +3632,38 @@
       "side": "B",
       "source": "gate-2026-11-19T16-03-05-306Z-9f67ba9-38eaebb",
       "value": 0.00042264
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "world.cpu.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-24T00-25-31-611Z-c6be25b-97caafa",
+      "value": 0.20000004768371582
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "world.cpu.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-24T00-25-31-611Z-c6be25b-97caafa",
+      "value": 0.20000004768371582
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "world.cpu.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-24T00-52-14-073Z-c6be25b-97caafa",
+      "value": 0.40000009536743164
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "world.cpu.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-24T00-52-14-073Z-c6be25b-97caafa",
+      "value": 0.3000001907348633
     }
   ],
   "revisions": {
@@ -5054,6 +5086,48 @@
       "sides": {
         "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
         "B": "38eaebbb79ce416ea6a86a21a6e08e90fbeac9af"
+      }
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "facts": {
+        "machine": "vimaan, Intel Core i7-9750H, NVIDIA GeForce GTX 1650 Ti with Max-Q Design 4 GiB, 8 GiB of RAM",
+        "os": "Linux 7.2.8-9-omarchy, NVIDIA driver 615.78.08, Hyprland 0.56.2, Chromium 155.0.8059.84",
+        "display": "Built-in panel eDP-1 at 1920x1080, 60.056 Hz, driven by the Hyprland session rv started",
+        "frameRate": "game setting 60 (rushline.settings.v1)",
+        "browser": "/usr/lib/chromium/chromium, windowed through Xwayland with PRIME offload, rv slots 0 and 2, --ozone-platform=x11 --use-gl=angle --use-angle=gl --enable-gpu --ignore-gpu-blocklist --force-device-scale-factor=2 --disable-features=BackForwardCache; the sandbox stays on",
+        "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce GTX 1650 Ti with Max-Q Design/PCIe/SSE2, OpenGL 4.5.0)",
+        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview",
+        "page": "1512x773 CSS at device pixel ratio 2",
+        "sideA": "#226 at c6be25bc, served from its worktree under B's rv; B is #227, the time of day, at 97caafa1",
+        "why": "first campaign that draws the time of day; it sets the world.cpu.p95 rows, twice the worst B window"
+      },
+      "id": "gpu-2026-11-24T00-25-31-611Z-c6be25b-97caafa",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "c6be25bc6b008206614dbe4d5de2a674e3e14f54",
+        "B": "97caafa1d6b0a1df331e4d5cfc0312a38fdab758"
+      }
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "facts": {
+        "machine": "vimaan, Intel Core i7-9750H, Intel UHD Graphics 630 (CFL GT2), 8 GiB of RAM",
+        "os": "Linux 7.2.8-9-omarchy, Mesa 26.2.5, Hyprland 0.56.2, Chromium 155.0.8059.84",
+        "display": "Built-in panel eDP-1 at 1920x1080, 60.056 Hz, driven by the Hyprland session rv started; requestAnimationFrame measured 60 Hz on both sides",
+        "frameRate": "game setting 60 (rushline.settings.v1), so every vsync is drawn",
+        "browser": "/usr/lib/chromium/chromium, windowed through Xwayland on the Intel GPU, rv slots 0 and 1, RUSHLINE_BROWSER_HOST=linux-intel; the sandbox stays on",
+        "renderer": "ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)",
+        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview; doctor build is current on both sides",
+        "page": "1919x992 CSS at device pixel ratio 1, the lean preset, cpu x1, network off",
+        "sideA": "#226 at c6be25bc, served from its worktree under B's rv; B is #227, the time of day, at 97caafa1",
+        "why": "first campaign that draws the time of day; it sets the world.cpu.p95 rows, twice the worst B window"
+      },
+      "id": "gpu-2026-11-24T00-52-14-073Z-c6be25b-97caafa",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "c6be25bc6b008206614dbe4d5de2a674e3e14f54",
+        "B": "97caafa1d6b0a1df331e4d5cfc0312a38fdab758"
       }
     }
   ],

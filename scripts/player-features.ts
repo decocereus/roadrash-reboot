@@ -452,7 +452,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/test/roadside-clearance.test.ts",
       "apps/web/test/road-districts.test.ts",
     ],
-    perf: sceneCounts,
+    perf: [...sceneCounts, "world.cpu.p95"],
     start: [
       "apps/web/src/game/world.ts",
       "apps/web/src/game/looks.ts",
