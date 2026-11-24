@@ -253,14 +253,14 @@ const timedWindow = (scenario: Scenario, pooled: readonly number[]) => {
     rollback: [],
     tick: [],
   };
-  const bench = prepareWarmed(scenario, benchSeed);
-  timeSeed(bench, timings);
-  for (const seed of pooled) {
-    timeSeed(prepareWarmed(scenario, seed), timings);
-  }
+  const rooms = [benchSeed, ...pooled].map((seed) => {
+    const prepared = prepareWarmed(scenario, seed);
+    timeSeed(prepared, timings);
+    return prepared;
+  });
   return {
-    checkpoint: bench.checkpoint,
-    checkpointBytes: bench.checkpointBytes,
+    checkpoint: rooms.flatMap((room) => room.checkpoint),
+    checkpointBytes: rooms.flatMap((room) => room.checkpointBytes),
     ...timings,
   };
 };
