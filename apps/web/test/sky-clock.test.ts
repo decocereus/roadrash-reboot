@@ -13,7 +13,7 @@ import {
 const hexOf = (colour: THREE.Color): string => `#${colour.getHexString()}`;
 
 describe("the race clock", () => {
-  it("runs from evening at the green light to night at the road's median finish, then holds", () => {
+  it("runs from evening at the green light to the road's night tick, then holds", () => {
     const { nightTick } = lookOf("salt-coast");
     expect(hourOf(nightTick, 0)).toBe(0);
     expect(hourOf(nightTick, nightTick / 2)).toBe(0.5);

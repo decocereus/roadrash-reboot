@@ -317,19 +317,19 @@ const looks = {
       { ...night, at: 0.5 },
       { ...deepNight, at: 0.85 },
     ],
-    nightTick: 13_300,
+    nightTick: 11_300,
   },
   "salt-coast": {
     ...cityDusk,
     ...evening,
     later: sunDown,
-    nightTick: 14_000,
+    nightTick: 11_500,
   },
   stonepeak: {
     ...ridgeTop,
     ...evening,
     later: sunDown,
-    nightTick: 15_300,
+    nightTick: 11_100,
   },
 } as const satisfies Record<RegionId, Look>;
 
