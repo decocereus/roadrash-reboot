@@ -61,14 +61,26 @@ const riding: readonly (readonly [string, Partial<Stance>])[] = [
 
 type Triangle = readonly [THREE.Vector3, THREE.Vector3, THREE.Vector3];
 
+type Axis = 0 | 1 | 2;
+
+const AXES = [0, 1, 2] as const satisfies readonly Axis[];
+
+const ACROSS = [
+  [1, 2],
+  [2, 0],
+  [0, 1],
+] as const satisfies readonly (readonly [Axis, Axis])[];
+
 interface Crossing {
-  readonly y: number;
-  readonly facesUp: boolean;
+  readonly at: number;
+  readonly facesOn: boolean;
 }
+
+type Crossings = (point: THREE.Vector3) => Crossing[];
 
 const cellOf = (value: number) => Math.floor(value / CELL);
 
-const keyOf = (x: number, z: number) => `${x},${z}`;
+const keyOf = (p: number, q: number) => `${p},${q}`;
 
 const trianglesOf = (bike: BikeModel): Triangle[] => {
   const triangles: Triangle[] = [];
@@ -89,65 +101,94 @@ const trianglesOf = (bike: BikeModel): Triangle[] => {
   return triangles;
 };
 
-const crossingOf = (
-  [a, b, c]: Triangle,
-  x: number,
-  z: number
-): Crossing | null => {
-  const area = (b.x - a.x) * (c.z - a.z) - (c.x - a.x) * (b.z - a.z);
-  if (Math.abs(area) < FLAT) {
-    return null;
-  }
-  const u = ((x - a.x) * (c.z - a.z) - (c.x - a.x) * (z - a.z)) / area;
-  const v = ((b.x - a.x) * (z - a.z) - (x - a.x) * (b.z - a.z)) / area;
-  if (u < 0 || v < 0 || u + v > 1) {
-    return null;
-  }
-  return { facesUp: area < 0, y: a.y + u * (b.y - a.y) + v * (c.y - a.y) };
-};
-
-const verticalCrossings = (bike: BikeModel) => {
+const crossingsAlong = (
+  triangles: readonly Triangle[],
+  axis: Axis
+): Crossings => {
+  const [p, q] = ACROSS[axis];
   const cells = new Map<string, Triangle[]>();
-  for (const triangle of trianglesOf(bike)) {
-    const xs = triangle.map((corner) => corner.x);
-    const zs = triangle.map((corner) => corner.z);
+  for (const triangle of triangles) {
+    const ps = triangle.map((corner) => corner.getComponent(p));
+    const qs = triangle.map((corner) => corner.getComponent(q));
     for (
-      let x = cellOf(Math.min(...xs));
-      x <= cellOf(Math.max(...xs));
-      x += 1
+      let pCell = cellOf(Math.min(...ps));
+      pCell <= cellOf(Math.max(...ps));
+      pCell += 1
     ) {
       for (
-        let z = cellOf(Math.min(...zs));
-        z <= cellOf(Math.max(...zs));
-        z += 1
+        let qCell = cellOf(Math.min(...qs));
+        qCell <= cellOf(Math.max(...qs));
+        qCell += 1
       ) {
-        const key = keyOf(x, z);
+        const key = keyOf(pCell, qCell);
         const list = cells.get(key) ?? [];
         list.push(triangle);
         cells.set(key, list);
       }
     }
   }
-  return (x: number, z: number): Crossing[] =>
-    (cells.get(keyOf(cellOf(x), cellOf(z))) ?? []).flatMap((triangle) => {
-      const crossing = crossingOf(triangle, x, z);
-      return crossing ? [crossing] : [];
-    });
+  return (point) => {
+    const pAt = point.getComponent(p);
+    const qAt = point.getComponent(q);
+    return (cells.get(keyOf(cellOf(pAt), cellOf(qAt))) ?? []).flatMap(
+      ([a, b, c]) => {
+        const ap = a.getComponent(p);
+        const aq = a.getComponent(q);
+        const bp = b.getComponent(p) - ap;
+        const bq = b.getComponent(q) - aq;
+        const cp = c.getComponent(p) - ap;
+        const cq = c.getComponent(q) - aq;
+        const area = bp * cq - cp * bq;
+        if (Math.abs(area) < FLAT) {
+          return [];
+        }
+        const u = ((pAt - ap) * cq - cp * (qAt - aq)) / area;
+        const v = (bp * (qAt - aq) - (pAt - ap) * bq) / area;
+        if (u < 0 || v < 0 || u + v > 1) {
+          return [];
+        }
+        const aAt = a.getComponent(axis);
+        return [
+          {
+            at:
+              aAt +
+              u * (b.getComponent(axis) - aAt) +
+              v * (c.getComponent(axis) - aAt),
+            facesOn: area > 0,
+          },
+        ];
+      }
+    );
+  };
+};
+
+const nearest = (crossings: readonly Crossing[], at: number) => {
+  let ahead: Crossing | null = null;
+  let behind: Crossing | null = null;
+  for (const crossing of crossings) {
+    if (crossing.at >= at) {
+      if (ahead === null || crossing.at < ahead.at) {
+        ahead = crossing;
+      }
+    } else if (behind === null || crossing.at > behind.at) {
+      behind = crossing;
+    }
+  }
+  return { ahead, behind };
 };
 
 const heightAbove = (crossings: readonly Crossing[], y: number): number => {
-  let above: Crossing | null = null;
-  let below = -Infinity;
-  for (const crossing of crossings) {
-    if (crossing.y >= y) {
-      if (above === null || crossing.y < above.y) {
-        above = crossing;
-      }
-    } else {
-      below = Math.max(below, crossing.y);
-    }
-  }
-  return above !== null && above.facesUp ? y - above.y : y - below;
+  const { ahead, behind } = nearest(crossings, y);
+  return ahead !== null && ahead.facesOn
+    ? y - ahead.at
+    : y - (behind?.at ?? -Infinity);
+};
+
+const wayOut = (crossings: readonly Crossing[], at: number): number => {
+  const { ahead, behind } = nearest(crossings, at);
+  const forward = ahead !== null && ahead.facesOn ? ahead.at - at : 0;
+  const back = behind !== null && !behind.facesOn ? at - behind.at : 0;
+  return Math.min(forward, back);
 };
 
 const shading = createShading(lookOf("salt-coast"));
@@ -158,13 +199,31 @@ const bikeOf = async (model: BikeModelId): Promise<BikeModel> => {
   return value;
 };
 
+const millimetres = (metres: number) => `${(metres * 1000).toFixed(1)} mm`;
+
+const placeOf = (bone: string, vertex: THREE.Vector3) =>
+  `${bone} at ${vertex
+    .toArray()
+    .map((coordinate) => coordinate.toFixed(2))
+    .join(" ")}`;
+
 const ridden = async (url: string, model: BikeModelId) => {
   const bike = await bikeOf(model);
   const { value } = await assetParsers.rider(artFile(url), url);
   const figure = createRiderFigure(value, shading, paletteOf(0));
   figure.mount(new THREE.Object3D(), bike.fit, 0);
-  const crossings = verticalCrossings(bike);
-  const lowest = (stance: Partial<Stance>, bones: ReadonlySet<string>) => {
+  const triangles = trianglesOf(bike);
+  const along = [
+    crossingsAlong(triangles, 0),
+    crossingsAlong(triangles, 1),
+    crossingsAlong(triangles, 2),
+  ] as const;
+  const vertex = new THREE.Vector3();
+  const eachPoint = (
+    stance: Partial<Stance>,
+    bones: ReadonlySet<string>,
+    visit: (bone: string, at: number, point: THREE.Vector3) => void
+  ) => {
     for (let step = 0; step < SETTLE_STEPS; step += 1) {
       figure.animate(seatedStance(stance), SETTLED);
     }
@@ -173,9 +232,6 @@ const ridden = async (url: string, model: BikeModelId) => {
     const position = body.geometry.getAttribute("position");
     const skinIndex = body.geometry.getAttribute("skinIndex");
     const skinWeight = body.geometry.getAttribute("skinWeight");
-    const vertex = new THREE.Vector3();
-    let gap = Infinity;
-    let where = "";
     for (let at = 0; at < position.count; at += 1) {
       let owner = 0;
       for (let slot = 1; slot < 4; slot += 1) {
@@ -186,22 +242,46 @@ const ridden = async (url: string, model: BikeModelId) => {
         }
       }
       const bone = body.skeleton.bones[skinIndex.getComponent(at, owner)];
-      if (!(bone && bones.has(bone.name))) {
-        continue;
-      }
-      body.getVertexPosition(at, vertex).applyMatrix4(body.matrixWorld);
-      const height = heightAbove(crossings(vertex.x, vertex.z), vertex.y);
-      if (height < gap) {
-        gap = height;
-        where = `${bone.name} at ${vertex
-          .toArray()
-          .map((coordinate) => coordinate.toFixed(2))
-          .join(" ")}`;
+      if (bone && bones.has(bone.name)) {
+        body.getVertexPosition(at, vertex).applyMatrix4(body.matrixWorld);
+        visit(bone.name, at, vertex);
       }
     }
+  };
+  const lowest = (stance: Partial<Stance>, bones: ReadonlySet<string>) => {
+    let gap = Infinity;
+    let where = "";
+    eachPoint(stance, bones, (bone, _at, point) => {
+      const height = heightAbove(along[1](point), point.y);
+      if (height < gap) {
+        gap = height;
+        where = placeOf(bone, point);
+      }
+    });
     return { gap, where };
   };
-  return { figure, fit: bike.fit, lowest };
+  const deepest = (
+    stance: Partial<Stance>,
+    bones: ReadonlySet<string>,
+    allowed: (at: number) => number
+  ) => {
+    let over = 0;
+    let where = "";
+    eachPoint(stance, bones, (bone, at, point) => {
+      const depth = Math.min(
+        ...AXES.map((axis) =>
+          wayOut(along[axis](point), point.getComponent(axis))
+        )
+      );
+      const allowance = allowed(at);
+      if (depth - allowance > over) {
+        over = depth - allowance;
+        where = `${placeOf(bone, point)} ${millimetres(depth)} in with ${millimetres(allowance)} allowed`;
+      }
+    });
+    return { over, where };
+  };
+  return { deepest, figure, fit: bike.fit, lowest };
 };
 
 const riderUrls = [
@@ -212,8 +292,6 @@ const riderUrls = [
 const pairs = riderUrls.flatMap((url) =>
   bikeModelIds.map((model) => [url, model] as const)
 );
-
-const millimetres = (metres: number) => `${(metres * 1000).toFixed(0)} mm`;
 
 const hiddenArmSink = ({ hand_l: grip }: BikeFit): number => {
   const across =
@@ -231,7 +309,7 @@ describe("rider clearance against the bike's own triangles", () => {
   it.each(pairs)(
     "%s on the %s keeps the upper body out of the bike in every riding pose",
     async (url, model) => {
-      const { fit, figure, lowest } = await ridden(url, model);
+      const { deepest, fit, figure } = await ridden(url, model);
       const armSink = hiddenArmSink(fit);
       const sunk = riding.flatMap(([name, stance]) =>
         (
@@ -240,10 +318,8 @@ describe("rider clearance against the bike's own triangles", () => {
             [arms, armSink],
           ] as const
         ).flatMap(([bones, allowed]) => {
-          const { gap, where } = lowest(stance, bones);
-          return gap < -allowed
-            ? [`${name}: ${where} ${millimetres(gap)}`]
-            : [];
+          const { over, where } = deepest(stance, bones, () => allowed);
+          return over > 0 ? [`${name}: ${where}`] : [];
         })
       );
       figure.dispose();
