@@ -11,6 +11,8 @@ import type { BikeModelId } from "./bike-models.ts";
 import { isMesh, isSkinnedMesh } from "./meshes.ts";
 import { coloured, isSlot } from "./model-slots.ts";
 import type { Primitive, Slot } from "./model-slots.ts";
+import { movesOf } from "./rider-moves.ts";
+import type { RiderMoves } from "./rider-moves.ts";
 import { walkerBodies, walkerClipLoops } from "./walker-clips.ts";
 import type {
   WalkerClip,
@@ -19,7 +21,7 @@ import type {
 } from "./walker-clips.ts";
 import { POSE_TEXELS_PER_BONE } from "./walker-skin.ts";
 
-const POSE_NAMES = [
+export const POSE_FRAMES = [
   "rest",
   "seated",
   "punch_l",
@@ -30,8 +32,8 @@ const POSE_NAMES = [
   "windup_r",
   "swing_l",
   "swing_r",
-  "run_a",
-  "run_b",
+  null,
+  null,
   "lift",
   "lying",
   "tumble_a",
@@ -40,7 +42,7 @@ const POSE_NAMES = [
   "stand",
 ] as const;
 
-export type PoseName = (typeof POSE_NAMES)[number];
+export type PoseName = Exclude<(typeof POSE_FRAMES)[number], null>;
 
 export interface RiderAsset {
   readonly scene: THREE.Object3D;
@@ -73,6 +75,7 @@ export interface Assets {
   readonly truck: readonly Primitive[];
   readonly van: readonly Primitive[];
   readonly figures: readonly RiderAsset[];
+  readonly moves: RiderMoves;
   readonly stalls: ModelParts;
   readonly walkers: WalkerAsset;
 }
@@ -227,9 +230,9 @@ const samplePoses = (clip: THREE.AnimationClip) => {
   const poses = new Map<PoseName, number[]>();
   const pelvis = new Map<PoseName, THREE.Vector3>();
   const moved = clip.tracks.find((track) => track.name === "pelvis.position");
-  for (let frame = 0; frame < POSE_NAMES.length; frame += 1) {
-    const name = POSE_NAMES[frame];
-    if (name === undefined) {
+  for (let frame = 0; frame < POSE_FRAMES.length; frame += 1) {
+    const name = POSE_FRAMES[frame];
+    if (!name) {
       continue;
     }
     const pose: number[] = [];
@@ -275,6 +278,7 @@ export interface AssetParsers {
   readonly whole: Parse<readonly Primitive[]>;
   readonly rider: Parse<RiderAsset>;
   readonly walkers: Parse<WalkerAsset>;
+  readonly moves: Parse<RiderMoves>;
 }
 
 export type LoadCelebrity = (
@@ -353,6 +357,9 @@ const decoded = <Value>(
 
 const parsed = async (bytes: ArrayBuffer): Promise<GLTF> =>
   await loader.parseAsync(bytes, "");
+
+const moves: Parse<RiderMoves> = async (bytes, url) =>
+  movesOf(await parsed(bytes), url);
 
 const rider: Parse<RiderAsset> = async (bytes, url) => {
   const [gltf] = await Promise.all([parsed(bytes), MeshoptSimplifier.ready]);
@@ -606,6 +613,7 @@ const walkers: Parse<WalkerAsset> = async (bytes, url) => {
 
 export const assetParsers: AssetParsers = {
   bike,
+  moves,
   parts,
   rider,
   walkers,

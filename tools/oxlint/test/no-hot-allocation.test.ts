@@ -5,6 +5,14 @@ import { noHotAllocationRule } from "../rushline/rules/no-hot-allocation.ts";
 import { runRule } from "./cases.ts";
 
 const hotBodies = {
+  "apps/web/src/game/bar-cast.ts": [
+    ["createCast", "walkOn"],
+    ["createCast", "update"],
+  ],
+  "apps/web/src/game/bar-walker.ts": [
+    ["createWalker", "onFoot"],
+    ["createWalker", "update"],
+  ],
   "apps/web/src/game/bench-profile.ts": [["createBenchProfile", "record"]],
   "apps/web/src/game/figure-ik.ts": [
     ["placeChain"],
@@ -18,6 +26,7 @@ const hotBodies = {
   ],
   "apps/web/src/game/figure-pose.ts": [["planterOf", "plant"]],
   "apps/web/src/game/fixed-tick.ts": [["createFixedTick", "advance"]],
+  "apps/web/src/game/foot-lock.ts": [["reach"], ["createFootLock", "hold"]],
   "apps/web/src/game/frame-loop.ts": [
     ["installFrameLoop", "setAnimationLoop()"],
   ],
@@ -28,7 +37,16 @@ const hotBodies = {
   ],
   "apps/web/src/game/input.ts": [["createControls", "read"]],
   "apps/web/src/game/presets.ts": [["bindQuality", "noteDisplay"]],
-  "apps/web/src/game/rider-figure.ts": [["createRiderFigure", "mount"]],
+  "apps/web/src/game/rider-figure.ts": [
+    ["createRiderFigure", "mount"],
+    ["createRiderFigure", "onFoot"],
+  ],
+  "apps/web/src/game/strider.ts": [
+    ["sampled"],
+    ["mixInto"],
+    ["createStrider", "advance"],
+    ["createStrider", "step"],
+  ],
   "packages/sim/src/bench-workload.ts": [["observeWorkload"], ["racersAhead"]],
   "packages/sim/src/pilot-corners.ts": [["planForecast"]],
   "packages/sim/src/pilot-forecast.ts": [["carsAhead"]],
@@ -85,8 +103,33 @@ const built = (kind: string, line = 2) => ({
 const step = (body: string) =>
   `export const stepRace = (state: State, inputs: Input[]) => {\n${body}\n};`;
 
+const inStrider = {
+  filename: "apps/web/src/game/strider.ts",
+  options: [
+    {
+      bodies: { "apps/web/src/game/strider.ts": [["createStrider", "step"]] },
+    },
+  ],
+};
+
 runRule("rushline/no-hot-allocation", noHotAllocationRule, {
   invalid: [
+    {
+      code: "export const createStrider = (gait: Gait, footing: Footing) => ({\n  step(pace: number) {\n    const [shown, time] = pace > 0 ? [gait.walk, 1] : [gait.idle, 0];\n    footing.shown = shown;\n    footing.time = time;\n  },\n});",
+      errors: [
+        {
+          data: { body: "createStrider > step", kind: "an array literal" },
+          line: 3,
+          messageId: "allocation",
+        },
+        {
+          data: { body: "createStrider > step", kind: "an array literal" },
+          line: 3,
+          messageId: "allocation",
+        },
+      ],
+      ...inStrider,
+    },
     {
       code: step("  state.last = { tick: state.tick };"),
       errors: [built("an object literal")],

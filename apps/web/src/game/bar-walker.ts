@@ -11,19 +11,17 @@ import type { Tag, TagLayer } from "./bar-tags.ts";
 import type { BikeFit } from "./bike-fit.ts";
 import type { Shading } from "./cel.ts";
 import { bodyFor } from "./figure-rig.ts";
+import { gaitOf } from "./gait.ts";
 import { blockPaletteOf } from "./rider-blocks.ts";
 import { createRiderFigure } from "./rider-figure.ts";
 import type { RiderFigure, Stance } from "./rider-figure.ts";
+import { createStrider, MOVING_PACE } from "./strider.ts";
 
 const STOOL_SEAT = 1;
 const TAG_LIFT = 1;
 const SEATED_TAG_LIFT = 1.02;
 const BIKE_TAG_LIFT = 0.9;
-const RUN_HZ = 2.6;
-const MOVING_PACE = 0.45;
-const BOB = 0.05;
 const BAR_RIDE_SPEED = 14;
-const FULL_TURN = Math.PI * 2;
 const BREATH_RATE = 0.7;
 const PUNCH = { back: 0.22, hold: 0.13, out: 0.07 } as const;
 const SHOVE_SECONDS = SHOVE.ticks * LOBBY_TICK;
@@ -34,7 +32,6 @@ export interface WalkerView {
   heading: number;
   lean: number;
   pace: number;
-  stride: number;
   mounted: boolean;
 }
 
@@ -84,11 +81,9 @@ const createWalker = (
   slot: number,
   parent: THREE.Object3D
 ): BarWalker => {
-  const figure = createRiderFigure(
-    bodyFor(assets, slot),
-    shading,
-    blockPaletteOf(blocks)
-  );
+  const body = bodyFor(assets, slot);
+  const figure = createRiderFigure(body, shading, blockPaletteOf(blocks));
+  const strider = createStrider(gaitOf(body, assets.moves), body.bones.length);
   parent.add(figure.root);
   const heldFor = (
     base: "stand" | "seated",
@@ -97,7 +92,6 @@ const createWalker = (
     breath: figure.bakePose(base, [...turns, ...breathTurns]),
     still: figure.bakePose(base, turns),
   });
-  const idle = heldFor("stand", poseTurns.relaxed);
   const seated = heldFor("seated", []);
   const shoving = figure.bakePose("stand", poseTurns.shove);
   const poses = new Map<LobbyPose, Held>(
@@ -149,21 +143,15 @@ const createWalker = (
     seconds: number
   ): void => {
     figure.root.rotation.set(0, view.heading, 0);
+    figure.root.position.set(view.x, figure.standHeight, view.z);
+    const held = pose && view.pace <= MOVING_PACE ? poses.get(pose) : null;
     if (shoveLeft > 0) {
-      figure.root.position.set(view.x, figure.standHeight, view.z);
       figure.holdPose(shoving, shoving, 0, seconds);
-    } else if (view.pace > MOVING_PACE) {
-      stance.pose = "run";
-      stance.reach = 0;
-      stance.lean = 0;
-      stance.speed = 0;
-      stance.time = view.stride;
-      const bob = Math.abs(Math.sin(view.stride * FULL_TURN * RUN_HZ)) * BOB;
-      figure.root.position.set(view.x, figure.standHeight + bob, view.z);
-      figure.animate(stance, seconds);
+    } else if (held) {
+      hold(held, time, seconds);
     } else {
-      figure.root.position.set(view.x, figure.standHeight, view.z);
-      hold(pose ? (poses.get(pose) ?? idle) : idle, time, seconds);
+      strider.step(view.pace, seconds);
+      figure.onFoot(strider, "none", seconds);
     }
     head.copy(figure.root.position);
     head.y += TAG_LIFT;

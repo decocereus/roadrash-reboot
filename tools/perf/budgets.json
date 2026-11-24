@@ -120,7 +120,7 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "696979c1dae6b6a1865b8cfc04c1b21c5ef0709ad1eacb5a29ca36dc4278bc9a"
+    "summarySha256": "19edad72ac4f4da6b0140d3b076ec33040c2727fcaa019a943e54a8822a60330"
   },
   "limits": [
     {
@@ -257,6 +257,18 @@
     },
     {
       "derivation": "exact baseline",
+      "value": 41132,
+      "baseline": 41132,
+      "direction": "max",
+      "environment": "build",
+      "metric": "assets.glb.rider_moves",
+      "paired": null,
+      "scenario": null,
+      "source": "baseline-2026-11-23T10-29-05-736Z-68344ba-68344ba",
+      "unit": "B"
+    },
+    {
+      "derivation": "exact baseline",
       "value": 261240,
       "baseline": 261240,
       "direction": "max",
@@ -316,15 +328,15 @@
       "unit": "B"
     },
     {
-      "derivation": "measured 3562296 B: the four bikes' fit points, seat, both grips and both pegs, that every rider is seated by add 1016 B",
-      "value": 3562296,
-      "baseline": 3561280,
+      "derivation": "measured 3603428 B: the four bikes' fit points, seat, both grips and both pegs, that every rider is seated by add 1016 B",
+      "value": 3603428,
+      "baseline": 3602412,
       "direction": "max",
       "environment": "build",
       "metric": "assets.glb.total",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-05T08-54-54-799Z-d743540-d743540",
+      "source": "baseline-2026-11-23T10-29-05-736Z-68344ba-68344ba",
       "unit": "B"
     },
     {
@@ -412,27 +424,27 @@
       "unit": "B"
     },
     {
-      "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 242215,
-      "baseline": 237465,
+      "derivation": "baseline + max(4096, ceil(0.02 x baseline)); the on-foot gait, gait.ts, strider.ts, foot-lock.ts and rider-moves.ts, adds 3971 B gzip over main 7eac830",
+      "value": 247237,
+      "baseline": 242389,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.incremental.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-08T23-11-30-469Z-b1c4332-b1c4332",
+      "source": "baseline-2026-11-24T09-25-12-732Z-4f4f6aa-4f4f6aa",
       "unit": "B"
     },
     {
-      "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 849060,
-      "baseline": 832411,
+      "derivation": "baseline + max(4096, ceil(0.02 x baseline)); the on-foot gait adds 9821 B raw over main 7eac830",
+      "value": 861643,
+      "baseline": 844748,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.incremental.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-08T23-11-30-469Z-b1c4332-b1c4332",
+      "source": "baseline-2026-11-24T09-25-12-732Z-4f4f6aa-4f4f6aa",
       "unit": "B"
     },
     {

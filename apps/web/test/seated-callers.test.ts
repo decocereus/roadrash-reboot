@@ -126,7 +126,6 @@ describe("every caller seats its riders on the bike's grips and pegs", () => {
             lean: 0,
             mounted: true,
             pace: 0,
-            stride: 0,
             x: 0,
             z: 0,
           },

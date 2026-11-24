@@ -3,6 +3,7 @@ import * as THREE from "three";
 import type { Assets, ModelParts, WalkerAsset } from "../src/game/assets.ts";
 import { decoParts, stallParts } from "../src/game/bazaar.ts";
 import type { Primitive, Slot } from "../src/game/model-slots.ts";
+import type { Move, RiderMoves } from "../src/game/rider-moves.ts";
 import { walkerBodies } from "../src/game/walker-clips.ts";
 
 const clip = { frames: 1, start: 0 };
@@ -29,6 +30,19 @@ export const fakeWalkerAsset = (): WalkerAsset => ({
     THREE.RGBAFormat,
     THREE.FloatType
   ),
+});
+
+const still = (): Move => ({
+  frames: 1,
+  travel: new Float32Array(3),
+  turns: new Float32Array(0),
+});
+
+export const fakeRiderMoves = (): RiderMoves => ({
+  bones: [],
+  moves: { idle: still(), jog: still(), sprint: still(), walk: still() },
+  scene: new THREE.Object3D(),
+  stand: still(),
 });
 
 const fakePrimitive = (slot: Slot): Primitive => {
