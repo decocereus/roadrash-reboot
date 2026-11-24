@@ -27,7 +27,7 @@ export const benchPlan = (bench: Bench): RacePlan => ({
   bikeId: benchRaces[bench].bikeId,
   mode: "quick",
   rules: recordedRules,
-  setup: benchSetup(bench),
+  setup: benchSetup(bench, benchRaces[bench].seed),
 });
 
 const rideRoad = (

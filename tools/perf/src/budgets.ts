@@ -77,7 +77,7 @@ const nodeKinds: readonly MetricKind[] = [
   snapshotKind("room.tick.p95", "ms"),
   snapshotKind("room.confirm.p95", "ms"),
   snapshotKind("room.rollback.p95", "ms"),
-  snapshotKind("room.checkpoint.p95", "ms"),
+  snapshotKind("room.checkpoint.p50", "ms"),
   roomAllocationKind("room.allocatedBytesPerTick"),
   roomAllocationKind("room.client.allocatedBytesPerTick"),
   roomAllocationKind("room.frame.allocatedBytesPerTick"),
@@ -172,6 +172,7 @@ const limitRow = Schema.Struct({
   environment: Schema.String,
   metric: Schema.String,
   paired: Schema.NullOr(Schema.Number),
+  runner: Schema.optionalKey(Schema.String),
   scenario: Schema.NullOr(Schema.String),
   source: Schema.String,
   unit: Schema.String,
@@ -179,6 +180,25 @@ const limitRow = Schema.Struct({
 });
 
 export type Limit = typeof limitRow.Type;
+
+export const worstRunMetrics = [
+  "room.tick.p95",
+  "room.confirm.p95",
+  "room.rollback.p95",
+  "room.checkpoint.p50",
+  "timing.stamp.trimmedMean",
+] as const;
+
+export const worstRun = {
+  everyRunner: "1.15 x the worst run recorded on any runner CPU",
+  floor: 3,
+  headroom: 1.15,
+  ownRunner:
+    "1.15 x the worst run recorded on this runner CPU, which has at least 3",
+} as const;
+
+const runnerKeyed = (metric: string): boolean =>
+  worstRunMetrics.some((each) => each === metric);
 
 export const budgetsFile = Schema.Struct({
   baseline: Schema.Struct({
@@ -263,12 +283,23 @@ const keyOf = (
 export const budgetProblems = (budgets: Budgets): string[] => {
   const problems: string[] = [];
   const seen = new Map<string, Limit>();
+  const runners = new Set<string>();
   for (const limit of budgets.limits) {
     const key = keyOf(limit.metric, limit.scenario, limit.environment);
-    if (seen.has(key)) {
-      problems.push(`duplicate limit ${key}`);
+    if (limit.runner === undefined) {
+      if (seen.has(key)) {
+        problems.push(`duplicate limit ${key}`);
+      }
+      seen.set(key, limit);
+    } else if (!runnerKeyed(limit.metric)) {
+      problems.push(
+        `limit ${key} names runner ${limit.runner}, which only ${worstRunMetrics.join(", ")} may`
+      );
+    } else if (runners.has(`${key}|${limit.runner}`)) {
+      problems.push(`duplicate limit ${key} for runner ${limit.runner}`);
+    } else {
+      runners.add(`${key}|${limit.runner}`);
     }
-    seen.set(key, limit);
   }
   const required = requiredRows(
     ["node", "build", "gpu"],
@@ -327,18 +358,38 @@ const shown = (value: number): string =>
 
 const warnsOnly: ReadonlySet<string> = new Set(["render.triangles.max"]);
 
+const limitSet = (rowLimits: readonly Limit[], runner: string | null) => {
+  const own = rowLimits.find(
+    (each) => runner !== null && each.runner === runner
+  );
+  const everyRunner = rowLimits.find((each) => each.runner === undefined);
+  if (own) {
+    return { limit: own, text: ` limits=${runner}` };
+  }
+  return {
+    limit: everyRunner,
+    text: rowLimits.some((each) => each.runner !== undefined)
+      ? ` limits=every runner CPU, as ${runner ?? "an unnamed CPU"} has fewer than ${worstRun.floor} recorded runs`
+      : "",
+  };
+};
+
 export const judge = (
   limits: readonly Limit[],
   observations: readonly Observation[],
-  required: ReturnType<typeof requiredRows>
+  required: ReturnType<typeof requiredRows>,
+  runner: string | null
 ): Verdict[] =>
   required.map(({ environment, kind, scenario }) => {
     const where = `${kind.lane} ${scenario ?? "-"} ${kind.metric} [${environment}]`;
-    const limit = limits.find(
-      (each) =>
-        each.metric === kind.metric &&
-        each.scenario === scenario &&
-        each.environment === environment
+    const { limit, text: set } = limitSet(
+      limits.filter(
+        (each) =>
+          each.metric === kind.metric &&
+          each.scenario === scenario &&
+          each.environment === environment
+      ),
+      runner
     );
     const observed = observations.find(
       (each) =>
@@ -378,7 +429,7 @@ export const judge = (
     const mark = within ? "ok  " : missed;
     return {
       ok,
-      text: `${mark} ${where} observed=${shown(observed.value)} ${kind.unit} limit ${sign} ${shown(limit.value)} ${kind.unit}${delta}${pairedText}${observed.note === "" ? "" : ` ${observed.note}`}`,
+      text: `${mark} ${where} observed=${shown(observed.value)} ${kind.unit} limit ${sign} ${shown(limit.value)} ${kind.unit}${delta}${pairedText}${observed.note === "" ? "" : ` ${observed.note}`}${set}`,
     };
   });
 

@@ -637,7 +637,8 @@ const overLimit = (metric: string) => {
         value: 2,
       },
     ],
-    [{ environment: ENVIRONMENT, kind, scenario: SCENARIO }]
+    [{ environment: ENVIRONMENT, kind, scenario: SCENARIO }],
+    null
   );
   return verdict;
 };
