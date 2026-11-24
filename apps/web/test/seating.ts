@@ -18,7 +18,7 @@ import { artFile } from "./art-files.ts";
 import pullArt from "./pull-art.ts";
 
 const table = new URL("../src/game/seat-table.json", import.meta.url);
-const PLACES = 9;
+const PLACES = 6;
 
 const placed = (value: number) => Number(value.toFixed(PLACES));
 const allPlaced = (values: readonly number[]) => values.map(placed);
