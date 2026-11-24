@@ -3872,6 +3872,86 @@
       "side": "B",
       "source": "baseline-2026-11-24T09-25-12-732Z-4f4f6aa-4f4f6aa",
       "value": 844748
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T10-06-53-519Z-9f67ba9-ee46bca",
+      "value": 39337.797004991684
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T10-06-53-519Z-9f67ba9-ee46bca",
+      "value": 56612.472545757075
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T10-24-32-013Z-9f67ba9-ee46bca",
+      "value": 39915.14143094842
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T10-24-32-013Z-9f67ba9-ee46bca",
+      "value": 56373.29783693844
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T11-13-50-152Z-9f67ba9-ee46bca",
+      "value": 40832.73211314476
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T11-13-50-152Z-9f67ba9-ee46bca",
+      "value": 55400.665557404325
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T16-21-13-271Z-9f67ba9-ee46bca",
+      "value": 39735.627287853575
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T16-21-13-271Z-9f67ba9-ee46bca",
+      "value": 56477.35108153078
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T16-32-57-940Z-9f67ba9-ee46bca",
+      "value": 39490.02329450915
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-24T16-32-57-940Z-9f67ba9-ee46bca",
+      "value": 56545.690515806986
     }
   ],
   "revisions": {
@@ -5731,6 +5811,146 @@
       "sides": {
         "A": "4f4f6aacfc18dc9f6d211fa747f7dcd8d01f5fec",
         "B": "4f4f6aacfc18dc9f6d211fa747f7dcd8d01f5fec"
+      }
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "facts": {
+        "arch": "arm64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, lane scale reference-v1 1.0080, pack-riding-v1 1.0070",
+        "cpu": "Apple M4 Pro",
+        "cpus": "12",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "harnessDigest": "1f7ef1d1a48b26670a8b3b7a25d4942a5e08d9aaf77a493d617d0b211a5c85b4",
+        "memoryBytes": "25769803776",
+        "node": "v26.13.1",
+        "platform": "darwin",
+        "sideASourceDigest": "46cff0a4dbe7ba0ba78037681aa8404c305a9d81b80263da1f5e6978575db742",
+        "sideBSourceDigest": "7609daff9ef37172e6a5c98f5dceffa74a8488a75f2174c9a69461e8ce49d48d",
+        "v8": "14.6.202.34-node.40",
+        "wallMs": "{\"build\":0,\"materialize\":13428,\"node\":197635,\"total\":211302}",
+        "machine": "Mac16,8",
+        "quiet": "Other agents' work kept running and no other perf run was live; one-minute load 13.48 at the start and 2.83 at the end. Allocation is sampled, not timed.",
+        "command": "node tools/perf/gate.ts --lanes node",
+        "why": "local run 1 of five at main ee46bca under the steady-state warm-up, each with a verdict from the gate's load check; the Mac sim.allocatedBytesPerTick limits take the median of the five"
+      },
+      "id": "gate-2026-11-24T10-06-53-519Z-9f67ba9-ee46bca",
+      "lanes": ["node"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "ee46bca20626b7a0e3b653bd596ce91330630331"
+      }
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "facts": {
+        "arch": "arm64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, lane scale reference-v1 1.0130, pack-riding-v1 1.0220",
+        "cpu": "Apple M4 Pro",
+        "cpus": "12",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "harnessDigest": "1f7ef1d1a48b26670a8b3b7a25d4942a5e08d9aaf77a493d617d0b211a5c85b4",
+        "memoryBytes": "25769803776",
+        "node": "v26.13.1",
+        "platform": "darwin",
+        "sideASourceDigest": "46cff0a4dbe7ba0ba78037681aa8404c305a9d81b80263da1f5e6978575db742",
+        "sideBSourceDigest": "7609daff9ef37172e6a5c98f5dceffa74a8488a75f2174c9a69461e8ce49d48d",
+        "v8": "14.6.202.34-node.40",
+        "wallMs": "{\"build\":0,\"materialize\":14393,\"node\":204462,\"total\":219061}",
+        "machine": "Mac16,8",
+        "quiet": "Other agents' work kept running and no other perf run was live; one-minute load 1.95 at the start and 4.72 at the end. Allocation is sampled, not timed.",
+        "command": "node tools/perf/gate.ts --lanes node",
+        "why": "local run 2 of five at main ee46bca under the steady-state warm-up, each with a verdict from the gate's load check; the Mac sim.allocatedBytesPerTick limits take the median of the five"
+      },
+      "id": "gate-2026-11-24T10-24-32-013Z-9f67ba9-ee46bca",
+      "lanes": ["node"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "ee46bca20626b7a0e3b653bd596ce91330630331"
+      }
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "facts": {
+        "arch": "arm64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, lane scale reference-v1 1.0640, pack-riding-v1 1.1190",
+        "cpu": "Apple M4 Pro",
+        "cpus": "12",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "harnessDigest": "1f7ef1d1a48b26670a8b3b7a25d4942a5e08d9aaf77a493d617d0b211a5c85b4",
+        "memoryBytes": "25769803776",
+        "node": "v26.13.1",
+        "platform": "darwin",
+        "sideASourceDigest": "46cff0a4dbe7ba0ba78037681aa8404c305a9d81b80263da1f5e6978575db742",
+        "sideBSourceDigest": "7609daff9ef37172e6a5c98f5dceffa74a8488a75f2174c9a69461e8ce49d48d",
+        "v8": "14.6.202.34-node.40",
+        "wallMs": "{\"build\":0,\"materialize\":14422,\"node\":229970,\"total\":244599}",
+        "machine": "Mac16,8",
+        "quiet": "Other agents' work kept running and no other perf run was live; one-minute load 3.50 at the start and 7.42 at the end. Allocation is sampled, not timed.",
+        "command": "node tools/perf/gate.ts --lanes node",
+        "why": "local run 3 of five at main ee46bca under the steady-state warm-up, each with a verdict from the gate's load check; the Mac sim.allocatedBytesPerTick limits take the median of the five"
+      },
+      "id": "gate-2026-11-24T11-13-50-152Z-9f67ba9-ee46bca",
+      "lanes": ["node"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "ee46bca20626b7a0e3b653bd596ce91330630331"
+      }
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "facts": {
+        "arch": "arm64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, lane scale reference-v1 1.0020, pack-riding-v1 1.0180",
+        "cpu": "Apple M4 Pro",
+        "cpus": "12",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "harnessDigest": "1f7ef1d1a48b26670a8b3b7a25d4942a5e08d9aaf77a493d617d0b211a5c85b4",
+        "memoryBytes": "25769803776",
+        "node": "v26.13.1",
+        "platform": "darwin",
+        "sideASourceDigest": "46cff0a4dbe7ba0ba78037681aa8404c305a9d81b80263da1f5e6978575db742",
+        "sideBSourceDigest": "7609daff9ef37172e6a5c98f5dceffa74a8488a75f2174c9a69461e8ce49d48d",
+        "v8": "14.6.202.34-node.40",
+        "wallMs": "{\"build\":0,\"materialize\":15797,\"node\":203203,\"total\":219203}",
+        "machine": "Mac16,8",
+        "quiet": "Other agents' work kept running and no other perf run was live; one-minute load 3.98 at the start and 4.30 at the end. Allocation is sampled, not timed.",
+        "command": "node tools/perf/gate.ts --lanes node",
+        "why": "local run 4 of five at main ee46bca under the steady-state warm-up, each with a verdict from the gate's load check; the Mac sim.allocatedBytesPerTick limits take the median of the five"
+      },
+      "id": "gate-2026-11-24T16-21-13-271Z-9f67ba9-ee46bca",
+      "lanes": ["node"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "ee46bca20626b7a0e3b653bd596ce91330630331"
+      }
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "facts": {
+        "arch": "arm64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, lane scale reference-v1 1.0000, pack-riding-v1 1.0080",
+        "cpu": "Apple M4 Pro",
+        "cpus": "12",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "harnessDigest": "1f7ef1d1a48b26670a8b3b7a25d4942a5e08d9aaf77a493d617d0b211a5c85b4",
+        "memoryBytes": "25769803776",
+        "node": "v26.13.1",
+        "platform": "darwin",
+        "sideASourceDigest": "46cff0a4dbe7ba0ba78037681aa8404c305a9d81b80263da1f5e6978575db742",
+        "sideBSourceDigest": "7609daff9ef37172e6a5c98f5dceffa74a8488a75f2174c9a69461e8ce49d48d",
+        "v8": "14.6.202.34-node.40",
+        "wallMs": "{\"build\":0,\"materialize\":14474,\"node\":197581,\"total\":212290}",
+        "machine": "Mac16,8",
+        "quiet": "Other agents' work kept running and no other perf run was live; one-minute load 3.28 at the start and 4.09 at the end. Allocation is sampled, not timed.",
+        "command": "node tools/perf/gate.ts --lanes node",
+        "why": "local run 5 of five at main ee46bca under the steady-state warm-up, each with a verdict from the gate's load check; the Mac sim.allocatedBytesPerTick limits take the median of the five"
+      },
+      "id": "gate-2026-11-24T16-32-57-940Z-9f67ba9-ee46bca",
+      "lanes": ["node"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "ee46bca20626b7a0e3b653bd596ce91330630331"
       }
     }
   ],
