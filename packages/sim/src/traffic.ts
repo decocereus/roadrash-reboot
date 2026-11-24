@@ -3,7 +3,7 @@ import type { LaneCentres } from "@racer/track/districts";
 import type { Random } from "@racer/track/random";
 import type { Track } from "@racer/track/track";
 
-import { CLEAR_OF_TRAFFIC, carrierAt, clearOfCarrier } from "./carrier.ts";
+import { carrierAt, inJumpZone, jumpZoneFrom, jumpZoneTo } from "./carrier.ts";
 import { trafficPaints } from "./palette.ts";
 import { blocksCars } from "./pedestrians.ts";
 import { isSignalled, mainLightOf, signalPhaseAt } from "./signals.ts";
@@ -47,7 +47,7 @@ const LEAST_PATIENCE_TICKS = 90;
 const MOST_PATIENCE_TICKS = 180;
 const CONVOY_CARS = 6;
 const CONVOY_GAP = 14;
-const CONVOY_CRUISE = 15;
+export const CONVOY_CRUISE = 15;
 const CONVOY_JITTER = 400;
 const directions = [1, -1] as const;
 
@@ -182,9 +182,7 @@ const freeFor = (
 ): boolean => {
   const x = seatOf(car.home, track, s);
   return (
-    carriers.every((carrier) =>
-      clearOfCarrier({ ...car, s, x }, carrier.s, carrier.x)
-    ) &&
+    carriers.every((carrier) => !inJumpZone(car, s, x, carrier)) &&
     clearOfConvoys({ ...car, s }, convoys) &&
     cars.every(
       (other) =>
@@ -202,13 +200,17 @@ const moveOutOfCarriers = (
   track: Track
 ): void => {
   for (const car of cars) {
-    const carrier = carriers.find(
-      (each) => !clearOfCarrier(car, each.s, each.x)
+    const carrier = carriers.find((each) =>
+      inJumpZone(car, car.s, car.x, each)
     );
     if (carrier) {
-      let s = carrier.s + CLEAR_OF_TRAFFIC + 1;
+      const ahead = car.cruiseSpeed >= carrier.cruiseSpeed;
+      const step = ahead ? CAR_GAP : -CAR_GAP;
+      let s = ahead
+        ? jumpZoneTo(carrier) + car.halfLength
+        : jumpZoneFrom(carrier) - car.halfLength;
       while (!freeFor(car, s, cars, carriers, convoys, track)) {
-        s += CAR_GAP;
+        s += step;
       }
       car.s = s;
       seatCar(car, track);

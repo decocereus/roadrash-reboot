@@ -9,9 +9,9 @@ import { describe, expect, it } from "vitest";
 
 import { bikes, streetBike } from "./bikes.ts";
 import type { BikeId } from "./bikes.ts";
-import { carrierAt, frontOf, lipOf, toeOf } from "./carrier.ts";
+import { carrierAt, frontOf, inJumpZone, lipOf, toeOf } from "./carrier.ts";
 import { difficulties, tiers } from "./difficulty.ts";
-import { alone, frameOf, player, truckRoad } from "./race-fixtures.ts";
+import { KMH, alone, frameOf, player, truckRoad } from "./race-fixtures.ts";
 import { createRace, defaultSetup, neutralInput, stepRace } from "./race.ts";
 import { HARD_LANDING } from "./rider-flight.ts";
 import {
@@ -23,6 +23,7 @@ import {
   steerFor,
 } from "./state.ts";
 import type { RaceEvent, RiderInput } from "./state.ts";
+import { CONVOY_CRUISE } from "./traffic.ts";
 
 const TRUCK_AT = 1000;
 const RIG_HALF_LENGTH = 14.35;
@@ -208,29 +209,30 @@ describe("the moving carrier jump", () => {
 });
 
 describe("trucks on the roads", () => {
-  it("move the cars in their way ahead of them, so every road keeps its traffic", () => {
+  it("move every car out of a truck's jump zone, so every road keeps its traffic and nothing waits where riders take off or land", () => {
     const races = roadIds.flatMap((roadId) => {
       const track = trackFor(roadId);
       const bare = compileTrack({ ...roads[roadId], carriers: [] });
-      const [lane] = track.sameWayLanes;
       return tiers.flatMap((tier) =>
         [1, 2, 3, 4, 5, 6, 7, 8].map((seed) => {
           const { conditions } = difficulties[tier];
-          const cars = createRace({
+          const all = createRace({
             ...defaultSetup(track, seed),
             conditions,
-          }).cars.filter((car) => !car.carrier);
+          }).cars;
+          const trucks = all.filter((car) => car.carrier);
+          const cars = all.filter(
+            (car) => !car.carrier && car.cruiseSpeed !== CONVOY_CRUISE
+          );
           const without = createRace({
             ...defaultSetup(bare, seed),
             conditions,
-          }).cars;
+          }).cars.filter((car) => car.cruiseSpeed !== CONVOY_CRUISE);
+          const inZone = (car: (typeof all)[number]) =>
+            trucks.some((truck) => inJumpZone(car, car.s, car.x, truck));
           return {
-            inTheWay: without.filter((car) =>
-              track.carrierStarts.some(
-                (start) =>
-                  Math.abs(car.s - start) <= 30 && Math.abs(car.x - lane) <= 1
-              )
-            ).length,
+            inTheWay: without.filter(inZone).length,
+            inZone: cars.filter(inZone).length,
             kept: cars.length === without.length,
             overlaps: cars.filter((car, index) =>
               cars.some(
@@ -246,7 +248,52 @@ describe("trucks on the roads", () => {
     });
     expect(races.filter(({ kept }) => !kept)).toStrictEqual([]);
     expect(races.reduce((sum, { overlaps }) => sum + overlaps, 0)).toBe(0);
+    expect(races.reduce((sum, { inZone }) => sum + inZone, 0)).toBe(0);
     expect(races.some(({ inTheWay }) => inTheWay > 0)).toBeTruthy();
+  });
+
+  it("a skill-one pilot that meets Ridge Road's 4,500 m truck at 220 km/h on tier 1, seed 21, launches at speed and lands clean", () => {
+    const track = trackFor("ridge-road");
+    const setup = defaultSetup(track, 21);
+    const state = createRace({
+      ...setup,
+      conditions: difficulties[1].conditions,
+      player: {
+        ...setup.player,
+        bike: streetBike,
+        controller: "pilot",
+        skill: 1,
+      },
+      police: { ...setup.police, count: 0 },
+      rivals: [],
+    });
+    const truck = state.cars.find((car) => car.carrier && car.s === 4500);
+    if (truck === undefined) {
+      throw new Error("Ridge Road has a truck starting at 4,500 m");
+    }
+    const rider = player(state);
+    rider.s = toeOf(truck) - 30;
+    rider.x = truck.x;
+    rider.speed = 220 / KMH;
+    const lock = lateralSpeedLimit(streetBike, rider.speed);
+    rider.lateralSpeed = clamp(
+      curvePushOf(streetBike, curvatureAt(track, rider.s), rider.speed),
+      -lock,
+      lock
+    );
+    let launchSpeed = 0;
+    const events: RaceEvent[] = [];
+    for (let tick = 0; tick < 5 * TICK_RATE; tick += 1) {
+      const onDeck = rider.onCarrier >= 0;
+      stepRace(state, track, frameOf(state));
+      if (onDeck && rider.airborne) {
+        launchSpeed = rider.speed;
+      }
+      events.push(...state.events.filter((event) => event.rider === rider.id));
+    }
+    expect(launchSpeed).toBeGreaterThan(55);
+    expect(events.filter((event) => event.kind === "crash")).toStrictEqual([]);
+    expect(events.some((event) => event.kind === "land")).toBeTruthy();
   });
 
   it.each(tiers)(

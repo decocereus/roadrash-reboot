@@ -1,11 +1,18 @@
 import { curvatureAt, slopeAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
+import { bikes } from "./bikes.ts";
+import { topSpeedOf } from "./engine.ts";
 import { glancesOff } from "./rider-collisions.ts";
 import { throwRider } from "./rider-crash.ts";
 import { forwardRateAt } from "./rider-flight.ts";
 import type { Flight } from "./rider-flight.ts";
-import { BIKE_HALF_LENGTH, BIKE_HALF_WIDTH, TICK_SECONDS } from "./state.ts";
+import {
+  BIKE_HALF_LENGTH,
+  BIKE_HALF_WIDTH,
+  GRAVITY,
+  TICK_SECONDS,
+} from "./state.ts";
 import type { CarBox, RaceState, RiderState, TrafficCar } from "./state.ts";
 
 const RIG_HALF_LENGTH = 14.35;
@@ -20,7 +27,6 @@ const DECK_STEP = 0.1;
 const CARRIER_SPEED = 20;
 const CARRIER_HALF_WIDTH = 1.25;
 const CARRIER_HEIGHT = 4.22;
-export const CLEAR_OF_TRAFFIC = 30;
 const PASS_MARGIN = 0.15;
 const SAME_LINE = 0.05;
 
@@ -223,8 +229,29 @@ export const carrierAt = (
   x,
 });
 
-export const clearOfCarrier = (
+const flightSeconds = (speed: number): number => {
+  const climb = climbOffLip(speed, CARRIER_SPEED);
+  return (climb + Math.sqrt(climb * climb + 2 * GRAVITY * RAMP_RISE)) / GRAVITY;
+};
+
+const fastest = Math.max(
+  ...Object.values(bikes).map((bike) => topSpeedOf(bike, true))
+);
+
+export const JUMP_ROOM = fastest * flightSeconds(fastest);
+
+export const jumpZoneFrom = (carrier: TrafficCar): number =>
+  toeOf(carrier) - JUMP_ROOM;
+
+export const jumpZoneTo = (carrier: TrafficCar): number =>
+  lipOf(carrier) + JUMP_ROOM;
+
+export const inJumpZone = (
   car: TrafficCar,
   s: number,
-  x: number
-): boolean => Math.abs(car.s - s) > CLEAR_OF_TRAFFIC || Math.abs(car.x - x) > 1;
+  x: number,
+  carrier: TrafficCar
+): boolean =>
+  Math.abs(x - carrier.x) <= 1 &&
+  s + car.halfLength > jumpZoneFrom(carrier) &&
+  s - car.halfLength < jumpZoneTo(carrier);
