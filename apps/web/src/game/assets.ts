@@ -5,11 +5,9 @@ import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 
-import { deckOf } from "./bike-deck.ts";
-import { BIKE_TURN, fitOf, isFitNode } from "./bike-fit.ts";
+import { fitOf, isFitNode } from "./bike-fit.ts";
 import type { BikeFit } from "./bike-fit.ts";
 import type { BikeModelId } from "./bike-models.ts";
-import { bikePostures } from "./bike-posture.ts";
 import { isMesh, isSkinnedMesh } from "./meshes.ts";
 import { coloured, isSlot } from "./model-slots.ts";
 import type { Primitive, Slot } from "./model-slots.ts";
@@ -53,6 +51,7 @@ export interface RiderAsset {
   readonly bones: readonly string[];
   readonly poses: ReadonlyMap<PoseName, number[]>;
   readonly standHeight: number;
+  readonly url: string;
 }
 
 export interface WalkerAsset {
@@ -395,6 +394,7 @@ const rider: Parse<RiderAsset> = async (bytes, url) => {
     primitives,
     scene: gltf.scene,
     standHeight: stand.y,
+    url,
   });
 };
 
@@ -428,15 +428,7 @@ const bike =
       refused
     );
     const primitives = [...byName.values()].flat();
-    const fit = fitOf(
-      gltf.scene,
-      bikePostures[model],
-      deckOf(
-        primitives.map(({ geometry }) => geometry),
-        BIKE_TURN
-      ),
-      refused
-    );
+    const fit = fitOf(gltf.scene, model, refused);
     return decoded(gltf.scene, primitives, {
       fit,
       parts: byName,

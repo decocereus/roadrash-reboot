@@ -1,6 +1,5 @@
 import * as THREE from "three";
 
-import { bareDeck } from "./bike-deck.ts";
 import type { BikeDeck } from "./bike-deck.ts";
 import { contactNames } from "./bike-fit.ts";
 import type { BikeFit, ContactName } from "./bike-fit.ts";
@@ -224,11 +223,17 @@ export interface Planter {
     lean: number,
     speed: number
   ) => void;
-  readonly settle: (pose: number[], lift: THREE.Vector3, lie: boolean) => void;
+  readonly settle: (
+    pose: number[],
+    lift: THREE.Vector3,
+    lie: boolean,
+    deck: BikeDeck
+  ) => void;
   readonly sinkOf: (
     pose: readonly number[],
     lift: THREE.Vector3,
-    part: BodyPart
+    part: BodyPart,
+    deck: BikeDeck
   ) => number;
   readonly reachShortOf: (
     pose: readonly number[],
@@ -333,7 +338,7 @@ export type BodyPart = "chest" | "forearms";
 export const planterOf = (
   rig: Rig,
   seated: readonly number[],
-  bodyPoints: Readonly<Record<BodyPart, readonly ChestPoint[]>>
+  bodyPointsOf: () => Readonly<Record<BodyPart, readonly ChestPoint[]>>
 ): Planter => {
   const chain = chainOf(rig, ["hand_l", "hand_r", "foot_l", "foot_r", "head"]);
   const jointNamed = (name: string): Joint => {
@@ -388,12 +393,19 @@ export const planterOf = (
           ]
         : [];
     });
-  const parts = {
-    chest: onChain(bodyPoints.chest),
-    forearms: onChain(bodyPoints.forearms),
+  type ChainPoint = ReturnType<typeof onChain>[number];
+  let parts: Readonly<Record<BodyPart, readonly ChainPoint[]>> | null = null;
+  const partsOf = () => {
+    if (!parts) {
+      const bodyPoints = bodyPointsOf();
+      parts = {
+        chest: onChain(bodyPoints.chest),
+        forearms: onChain(bodyPoints.forearms),
+      };
+    }
+    return parts;
   };
-  const { chest } = parts;
-  const chestPointAt = (point: (typeof chest)[number]) => {
+  const chestPointAt = (point: ChainPoint) => {
     chestAt.set(0, 0, 0);
     for (const { at, joint, weight } of point.pulls) {
       pulled.copy(at).applyQuaternion(joint.turn).add(joint.at);
@@ -401,7 +413,6 @@ export const planterOf = (
     }
     return chestAt;
   };
-  let deck: BikeDeck = bareDeck;
   const seat = new THREE.Vector3();
   const placedAt = (pose: readonly number[], lift: THREE.Vector3) => {
     placeChain(chain, pose, lift);
@@ -413,10 +424,10 @@ export const planterOf = (
       reachFor(arm);
     }
   };
-  const tipFor = (lie: boolean): number => {
+  const tipFor = (lie: boolean, deck: BikeDeck): number => {
     let back = 0;
     let down = Infinity;
-    for (const point of chest) {
+    for (const point of partsOf().chest) {
       chestPointAt(point);
       const floor =
         deck.heightAt(chestAt.x + seat.x, chestAt.z + seat.z) - seat.y;
@@ -519,13 +530,12 @@ export const planterOf = (
       for (const grip of every) {
         grip.at.z += slide;
       }
-      ({ deck } = fit);
       seat.copy(hip);
     },
-    settle(pose, lift, lie) {
+    settle(pose, lift, lie, deck) {
       for (let pass = 0; pass < SETTLE_PASSES; pass += 1) {
         placedAt(pose, lift);
-        const tip = tipFor(lie);
+        const tip = tipFor(lie, deck);
         if (Math.abs(tip) < SETTLED_TIP) {
           return;
         }
@@ -534,10 +544,10 @@ export const planterOf = (
         writeLocal(chain, pose, torso);
       }
     },
-    sinkOf(pose, lift, part) {
+    sinkOf(pose, lift, part, deck) {
       placedAt(pose, lift);
       let sink = -Infinity;
-      for (const point of parts[part]) {
+      for (const point of partsOf()[part]) {
         chestPointAt(point);
         sink = Math.max(
           sink,

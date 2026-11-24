@@ -101,6 +101,7 @@ const paintedBody = {
   scene: new THREE.Object3D(),
   seat: new THREE.Vector3(),
   standHeight: 0,
+  url: "/models/painted.glb",
 };
 
 const WARM_READS = 20_000;

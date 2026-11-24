@@ -89,5 +89,3 @@ export const deckOf = (
   }
   return deckFrom(heights);
 };
-
-export const bareDeck: BikeDeck = deckFrom(new Float32Array(0));

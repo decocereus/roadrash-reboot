@@ -174,6 +174,7 @@ const fakeRider = (): RiderAsset => ({
   primitives: [],
   scene: new THREE.Object3D(),
   standHeight: 0,
+  url: "/models/rider_a.glb",
 });
 
 const parsingOf = (

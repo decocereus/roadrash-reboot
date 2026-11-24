@@ -31,6 +31,7 @@ const fakeRider = (): RiderAsset => ({
   primitives: [],
   scene: new THREE.Object3D(),
   standHeight: 0,
+  url: kylie,
 });
 
 const readyFonts: Fonts = { load: async () => await Promise.resolve([]) };

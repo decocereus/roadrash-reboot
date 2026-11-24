@@ -50,6 +50,7 @@ const checks: readonly Check[] = [
     stage: "static",
   },
   { command: ["pnpm", "check:art"], name: "art", stage: "static" },
+  { command: ["pnpm", "check:seating"], name: "seat table", stage: "static" },
   {
     command: ["pnpm", "check:renderer-imports"],
     name: "renderer imports",

@@ -1,15 +1,18 @@
 import * as THREE from "three";
 
+import type { BikeDeck } from "./bike-deck.ts";
 import type { BikeFit } from "./bike-fit.ts";
+import type { BikePosture } from "./bike-posture.ts";
 import {
   flinchTurns,
   HANG_SHIFT,
   hangTurns,
   KNEE_FULL_SPEED,
   kneeOut,
+  restTurns,
   tuckTurns,
 } from "./figure-pose.ts";
-import type { Planter, Riding, Turn } from "./figure-pose.ts";
+import type { Planter, Riding, Sided, Turn } from "./figure-pose.ts";
 
 const SHARE_STEPS = 6;
 const SLIDE_PASSES = 4;
@@ -47,12 +50,36 @@ const blended = (
   return pose;
 };
 
+type Turned = readonly number[];
+
+interface Hung {
+  readonly share: number;
+  readonly spine: Turned;
+}
+
+export interface SeatFit {
+  readonly rest: Turned;
+  readonly elbowsIn: number;
+  readonly tuck: Turned;
+  readonly hang: Sided<Hung>;
+  readonly tuckedHang: Sided<Hung>;
+  readonly slide: readonly number[];
+}
+
 export interface Seating {
   readonly riding: Riding;
   readonly tuckSlide: THREE.Vector3;
 }
 
 type Bake = (base: readonly number[], turns: readonly Turn[]) => number[];
+
+export interface Seated {
+  readonly seated: readonly number[];
+  readonly kicked: Sided<number[]>;
+  readonly risen: Sided<number[]>;
+  readonly spine: number;
+  readonly bake: Bake;
+}
 
 const hung = (side: number) => new THREE.Vector3(side * HANG_SHIFT, 0, 0);
 
@@ -73,30 +100,100 @@ const largestClear = (clearAt: (share: number) => boolean): number => {
   return clear;
 };
 
-export const seatingOn = (
-  fit: BikeFit,
-  postured: Riding,
-  seated: readonly number[],
-  planter: Planter,
-  bake: Bake
+const spineOf = (pose: readonly number[], spine: number): Turned =>
+  pose.slice(spine * QUATERNION, (spine + 1) * QUATERNION);
+
+const withSpine = (pose: number[], spine: number, turned: Turned) => {
+  pose.splice(spine * QUATERNION, QUATERNION, ...turned);
+  return pose;
+};
+
+export const postureFit = (
+  posture: BikePosture,
+  { bake, seated, spine }: Seated
+): SeatFit => {
+  const rest = bake(seated, restTurns(posture));
+  const tucked = bake(seated, tuckTurns(posture));
+  const hangOf = (from: readonly number[], side: number): Hung => ({
+    share: 1,
+    spine: spineOf(bake(from, hangTurns(side)), spine),
+  });
+  return {
+    elbowsIn: 1,
+    hang: { left: hangOf(rest, -1), right: hangOf(rest, 1) },
+    rest: spineOf(rest, spine),
+    slide: [posture.tuckSlide.x, posture.tuckSlide.y, posture.tuckSlide.z],
+    tuck: spineOf(tucked, spine),
+    tuckedHang: { left: hangOf(tucked, -1), right: hangOf(tucked, 1) },
+  };
+};
+
+export const seatingFrom = (
+  fit: SeatFit,
+  posture: BikePosture,
+  { bake, kicked, risen, seated, spine }: Seated
 ): Seating => {
+  const rest = withSpine(bake(seated, restTurns(posture)), spine, fit.rest);
+  const tucked = withSpine(
+    bake(seated, tuckTurns(posture, fit.elbowsIn)),
+    spine,
+    fit.tuck
+  );
+  const hangFrom = (from: readonly number[], side: number, hang: Hung) =>
+    withSpine(
+      bake(from, scaled(hangTurns(side), hang.share)),
+      spine,
+      hang.spine
+    );
+  return {
+    riding: {
+      flinch: {
+        left: bake(rest, flinchTurns(-1)),
+        right: bake(rest, flinchTurns(1)),
+      },
+      hang: {
+        left: hangFrom(rest, -1, fit.hang.left),
+        right: hangFrom(rest, 1, fit.hang.right),
+      },
+      kicked,
+      risen,
+      seated: rest,
+      tucked,
+      tuckedHang: {
+        left: hangFrom(tucked, -1, fit.tuckedHang.left),
+        right: hangFrom(tucked, 1, fit.tuckedHang.right),
+      },
+    },
+    tuckSlide: new THREE.Vector3().fromArray(fit.slide),
+  };
+};
+
+export const seatFitOn = (
+  fit: BikeFit,
+  deck: BikeDeck,
+  planter: Planter,
+  { bake, seated, spine }: Seated
+): SeatFit => {
+  const { posture } = fit;
   const settled = (
     pose: readonly number[],
     at: THREE.Vector3,
     lie: boolean
   ) => {
     const copy = [...pose];
-    planter.settle(copy, at, lie);
+    planter.settle(copy, at, lie, deck);
     return copy;
   };
-  const slide = fit.posture.tuckSlide.clone();
+  const restPose = bake(seated, restTurns(posture));
+  const tuckPose = bake(seated, tuckTurns(posture));
+  const slide = posture.tuckSlide.clone();
   const tuckedHangs = [-1, 1].map(
-    (side) => [bake(postured.tucked, hangTurns(side)), hung(side)] as const
+    (side) => [bake(tuckPose, hangTurns(side)), hung(side)] as const
   );
   for (let pass = 0; pass < SLIDE_PASSES; pass += 1) {
     const short =
       Math.max(
-        planter.reachShortOf(postured.tucked, slide),
+        planter.reachShortOf(tuckPose, slide),
         ...tuckedHangs.map(([pose, shift]) =>
           planter.reachShortOf(pose, shift.clone().add(slide))
         )
@@ -120,17 +217,21 @@ export const seatingOn = (
   };
   const armsClearIn = (pose: readonly number[], check: SeatCheck) => {
     const { lift, planted } = plantedIn(pose, check);
-    return planter.sinkOf(planted, lift, "forearms") <= -FOREARM_ROOM;
+    return planter.sinkOf(planted, lift, "forearms", deck) <= -FOREARM_ROOM;
   };
   const clearIn = (pose: readonly number[], check: SeatCheck) => {
     const { lift, planted } = plantedIn(pose, check);
     return (
       planter.reachShortOf(planted, lift) <= 0 &&
-      planter.sinkOf(planted, lift, "chest") <= 0 &&
-      planter.sinkOf(planted, lift, "forearms") <= -FOREARM_ROOM
+      planter.sinkOf(planted, lift, "chest", deck) <= 0 &&
+      planter.sinkOf(planted, lift, "forearms", deck) <= -FOREARM_ROOM
     );
   };
-  const hangingFrom = (from: readonly number[], side: number, tuck: 0 | 1) => {
+  const hangingFrom = (
+    from: readonly number[],
+    side: number,
+    tuck: 0 | 1
+  ): Hung => {
     const at = hung(side).addScaledVector(slide, tuck);
     const checks = seatChecks.filter(
       (check) => check.tuck === tuck && Math.sign(check.lean) === side
@@ -143,15 +244,14 @@ export const seatingOn = (
       );
     const whole = hangBy(1);
     if (clearAt(whole)) {
-      return whole;
+      return { share: 1, spine: spineOf(whole, spine) };
     }
     const share = largestClear((part) => clearAt(hangBy(part)));
-    return settled(hangBy(share), at, false);
+    return { share, spine: spineOf(settled(hangBy(share), at, false), spine) };
   };
-  const rest = settled(postured.seated, origin, false);
-  const fullTuck = settled(postured.tucked, slide, true);
+  const rest = settled(restPose, origin, false);
   const tuckedWith = (elbowsIn: number) =>
-    settled(bake(seated, tuckTurns(fit.posture, elbowsIn)), slide, true);
+    settled(bake(seated, tuckTurns(posture, elbowsIn)), slide, true);
   const tuckChecks = seatChecks.filter(
     (check) => check.lean === 0 && check.tuck > 0
   );
@@ -159,28 +259,23 @@ export const seatingOn = (
     tuckChecks.every((check) =>
       armsClearIn(blended(rest, pose, check.tuck), check)
     );
-  const tucked = clearOf(fullTuck)
-    ? fullTuck
-    : tuckedWith(largestClear((elbowsIn) => clearOf(tuckedWith(elbowsIn))));
+  const fullTuck = settled(tuckPose, slide, true);
+  const elbowsIn = clearOf(fullTuck)
+    ? 1
+    : largestClear((share) => clearOf(tuckedWith(share)));
+  const tucked = elbowsIn === 1 ? fullTuck : tuckedWith(elbowsIn);
   return {
-    riding: {
-      flinch: {
-        left: bake(rest, flinchTurns(-1)),
-        right: bake(rest, flinchTurns(1)),
-      },
-      hang: {
-        left: hangingFrom(rest, -1, 0),
-        right: hangingFrom(rest, 1, 0),
-      },
-      kicked: postured.kicked,
-      risen: postured.risen,
-      seated: rest,
-      tucked,
-      tuckedHang: {
-        left: hangingFrom(tucked, -1, 1),
-        right: hangingFrom(tucked, 1, 1),
-      },
+    elbowsIn,
+    hang: {
+      left: hangingFrom(rest, -1, 0),
+      right: hangingFrom(rest, 1, 0),
     },
-    tuckSlide: slide,
+    rest: spineOf(rest, spine),
+    slide: [slide.x, slide.y, slide.z],
+    tuck: spineOf(tucked, spine),
+    tuckedHang: {
+      left: hangingFrom(tucked, -1, 1),
+      right: hangingFrom(tucked, 1, 1),
+    },
   };
 };

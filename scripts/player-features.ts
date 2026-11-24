@@ -479,6 +479,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/bike-deck.ts",
       "apps/web/src/game/figure-chest.ts",
       "apps/web/src/game/figure-seating.ts",
+      "apps/web/test/seating.ts",
       "apps/web/test/actor-tables.test.ts",
       "apps/web/test/bike-contact.ts",
       "apps/web/test/bike-posture.test.ts",
