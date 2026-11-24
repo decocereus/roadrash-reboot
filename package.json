@@ -34,7 +34,7 @@
     "perf": "node tools/perf/gate.ts",
     "perf:gpu": "node tools/perf/gpu.ts",
     "replay:engines": "node tools/replay/engines.ts",
-    "replay:record": "node apps/web/test/pilot-replay-record.ts",
+    "replay:record": "sh -c 'node apps/web/test/pilot-replay-record.ts \"$@\" && oxfmt apps/web/test/pilot-replay-baseline.json' replay:record",
     "road:test": "node tools/road-test/road-test.ts",
     "rooms:compare": "node tools/rooms/compare.ts",
     "rooms:fights": "node tools/rooms/fights.ts",
