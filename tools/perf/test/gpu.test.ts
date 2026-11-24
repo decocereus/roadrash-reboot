@@ -5,8 +5,7 @@ import { browserHosts } from "@racer/devtools/browser-host";
 import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 
-import { budgetsFile, judge, metricKinds } from "../src/budgets.ts";
-import type { Limit } from "../src/budgets.ts";
+import { budgetsFile } from "../src/budgets.ts";
 import { BAR_BENCH } from "../src/gpu-bar.ts";
 import type { BarSample } from "../src/gpu-bar.ts";
 import { evaluateGpu, FRAME_RATE, GPU_PAIRS } from "../src/gpu-frames.ts";
@@ -23,6 +22,7 @@ const METAL = browserHosts["macos-metal"].perfEnvironment;
 const SLOT = 1000 / 60;
 const MAIN_CALLS = 130;
 const DRAWN_CALLS = 350;
+const SHADOW_TRIANGLES = 300_000;
 const START_MS = 5000;
 const RACE = 1;
 const PARTS = [
@@ -47,6 +47,7 @@ interface Playback {
   readonly interval: (index: number) => number;
   readonly extraCalls: (index: number) => number;
   readonly riders: (index: number) => number;
+  readonly shadowTriangles: (index: number) => number;
   readonly longTasks: GpuSample["capture"]["longTasks"];
   readonly discardedAt: number;
   readonly viewport: GpuSample["capture"]["viewport"];
@@ -75,6 +76,7 @@ const steady: Playback = {
     () => 30
   ),
   riders: () => 0.2,
+  shadowTriangles: () => SHADOW_TRIANGLES,
   viewport: { dpr: 2, height: 790, width: 1504 },
 };
 
@@ -121,7 +123,21 @@ const frameOf = (scenario: Scenario, playback: Playback, index: number) => ({
   textures: 30,
   tick: scenario.window.from + index,
   ticks: 1,
-  triangles: [0, 0, 0, 0, 0, 0, 0, 1_000_000, 700_000, 600_000, 1, 13, 1],
+  triangles: [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1_000_000,
+    playback.shadowTriangles(index),
+    600_000,
+    1,
+    13,
+    1,
+  ],
 });
 
 const sampleOf = (
@@ -481,6 +497,40 @@ describe("gpu frame lane", () => {
     expect(evaluation.ok).toBeFalsy();
   });
 
+  it("fails a B window whose shadow pass draws more triangles than the committed budget", () => {
+    const budget = limits.find(
+      (each) =>
+        each.environment === METAL &&
+        each.metric === "render.shadowTriangles.max" &&
+        each.scenario === packRiding?.id
+    );
+    if (!budget) {
+      throw new Error(
+        "budgets.json has no pack-riding shadow triangle budget."
+      );
+    }
+    const over = budget.value + 1;
+    const evaluation = evaluateGpu(
+      campaign((scenario, side) =>
+        isPack(scenario) && side === "B"
+          ? {
+              ...steady,
+              shadowTriangles: (index) =>
+                index === 9 ? over : SHADOW_TRIANGLES,
+            }
+          : steady
+      ),
+      steadyBar,
+      limits,
+      METAL,
+      null
+    );
+    expect(failing(evaluation.lines)).toStrictEqual([
+      `FAIL gpu pack-riding-v1 render.shadowTriangles.max [gpu-helium-metal] observed=${over} triangles limit <= ${budget.value} triangles A=${SHADOW_TRIANGLES.toPrecision(5)}`,
+    ]);
+    expect(evaluation.ok).toBeFalsy();
+  });
+
   it("fails a B window whose riders take longer than the committed budget", () => {
     const budget = limits.find(
       (each) =>
@@ -600,59 +650,5 @@ describe("gpu frame lane", () => {
     expect(
       new Set(evaluation.observations.map((each) => each.environment))
     ).toStrictEqual(new Set([nvidia]));
-  });
-});
-
-const ENVIRONMENT = "gpu-chromium-intel";
-const SCENARIO = "pack-riding-v1";
-
-const overLimit = (metric: string) => {
-  const kind = metricKinds.find((each) => each.metric === metric);
-  if (!kind) {
-    throw new Error(`No kind named ${metric}.`);
-  }
-  const limit: Limit = {
-    baseline: 1,
-    derivation: "test",
-    direction: kind.direction,
-    environment: ENVIRONMENT,
-    metric,
-    paired: kind.paired,
-    scenario: SCENARIO,
-    source: "test",
-    unit: kind.unit,
-    value: 1,
-  };
-  const [verdict] = judge(
-    [limit],
-    [
-      {
-        environment: ENVIRONMENT,
-        lane: "gpu",
-        metric,
-        note: "",
-        paired: 1,
-        runs: { a: [1], b: [2] },
-        scenario: SCENARIO,
-        value: 2,
-      },
-    ],
-    [{ environment: ENVIRONMENT, kind, scenario: SCENARIO }],
-    null
-  );
-  return verdict;
-};
-
-describe("budget verdicts", () => {
-  it("warns on triangles over their limit without failing", () => {
-    const verdict = overLimit("render.triangles.max");
-    expect(verdict?.ok).toBeTruthy();
-    expect(verdict?.text).toMatch(/^WARN /u);
-  });
-
-  it("fails frame time over its limit", () => {
-    const verdict = overLimit("frame.interval.p95");
-    expect(verdict?.ok).toBeFalsy();
-    expect(verdict?.text).toMatch(/^FAIL /u);
   });
 });

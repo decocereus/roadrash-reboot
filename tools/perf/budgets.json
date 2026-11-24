@@ -94,6 +94,18 @@
         "sha256": "3dca2e9838147def69215b366559e312d9dfa0ef7362bf96cc89162bec8b2968"
       },
       {
+        "file": "tools/perf/baselines/shadow.mac.gpu-helium-metal.json.gz",
+        "sha256": "a1105af98c536e5e7b2bfd7586ddf8fb78f29df588d4acea0acf282b203878ab"
+      },
+      {
+        "file": "tools/perf/baselines/shadow.vimaan.gpu-chromium-intel.json.gz",
+        "sha256": "0e7144a6780d25383704c49fc083a3a7bbda940dd0ec480bc39f76dbced4036e"
+      },
+      {
+        "file": "tools/perf/baselines/shadow.vimaan.gpu-chromium-nvidia.json.gz",
+        "sha256": "5356b292b5d405e866552a5c672cd7b532e04ce2ad5fc00b1dc4b20d9384be89"
+      },
+      {
         "file": "tools/perf/baselines/stamp.node-darwin-arm64.json.gz",
         "sha256": "7d39b24a3964e20d23ba78f48160faf61f3e60d97d6a66203a6eec05361ea064"
       },
@@ -120,7 +132,7 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "c6c3af42f30acedbdbce4862ddd5928701a271727c4bc3fbdc67c7d2642b0f28"
+    "summarySha256": "9a9d6f0e7a0b73a806da1def6f0c85cfc78c34d3f9a4c16821026485ceb7953e"
   },
   "limits": [
     {
@@ -2562,6 +2574,78 @@
       "unit": "ms",
       "value": 0.0004797983902790138,
       "runner": "AMD EPYC 7763 64-Core Processor"
+    },
+    {
+      "baseline": 685322,
+      "derivation": "ceil(1.05 x baseline maximum over side B's windows)",
+      "direction": "max",
+      "environment": "gpu-helium-metal",
+      "metric": "render.shadowTriangles.max",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-24T19-33-56-920Z-beea984-de0c4e1",
+      "unit": "triangles",
+      "value": 719589
+    },
+    {
+      "baseline": 500794,
+      "derivation": "ceil(1.05 x baseline maximum over side B's windows)",
+      "direction": "max",
+      "environment": "gpu-helium-metal",
+      "metric": "render.shadowTriangles.max",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-24T19-33-56-920Z-beea984-de0c4e1",
+      "unit": "triangles",
+      "value": 525834
+    },
+    {
+      "baseline": 685322,
+      "derivation": "ceil(1.05 x baseline maximum over side B's windows)",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.shadowTriangles.max",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-24T19-38-40-778Z-beea984-de0c4e1",
+      "unit": "triangles",
+      "value": 719589
+    },
+    {
+      "baseline": 500794,
+      "derivation": "ceil(1.05 x baseline maximum over side B's windows)",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.shadowTriangles.max",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-24T19-38-40-778Z-beea984-de0c4e1",
+      "unit": "triangles",
+      "value": 525834
+    },
+    {
+      "baseline": 438372,
+      "derivation": "ceil(1.05 x baseline maximum over side B's windows)",
+      "direction": "max",
+      "environment": "gpu-chromium-intel",
+      "metric": "render.shadowTriangles.max",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-24T20-11-38-121Z-beea984-de0c4e1",
+      "unit": "triangles",
+      "value": 460291
+    },
+    {
+      "baseline": 307020,
+      "derivation": "ceil(1.05 x baseline maximum over side B's windows)",
+      "direction": "max",
+      "environment": "gpu-chromium-intel",
+      "metric": "render.shadowTriangles.max",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-24T20-11-38-121Z-beea984-de0c4e1",
+      "unit": "triangles",
+      "value": 322371
     }
   ],
   "nodeProfiles": {

@@ -4272,6 +4272,54 @@
       "side": "B",
       "source": "gate-2026-11-23T10-33-08-339Z-9f67ba9-40682ab",
       "value": 0.0004172159915469685
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.shadowTriangles.max",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-24T19-33-56-920Z-beea984-de0c4e1",
+      "value": 685322
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.shadowTriangles.max",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-24T19-33-56-920Z-beea984-de0c4e1",
+      "value": 500794
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.shadowTriangles.max",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-24T19-38-40-778Z-beea984-de0c4e1",
+      "value": 685322
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.shadowTriangles.max",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-24T19-38-40-778Z-beea984-de0c4e1",
+      "value": 500794
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "render.shadowTriangles.max",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-24T20-11-38-121Z-beea984-de0c4e1",
+      "value": 438372
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "render.shadowTriangles.max",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-24T20-11-38-121Z-beea984-de0c4e1",
+      "value": 307020
     }
   ],
   "revisions": {
@@ -6288,6 +6336,74 @@
       "sides": {
         "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
         "B": "40682abf61c26a7bdbac33b2b8c884e57632f636"
+      }
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "facts": {
+        "machine": "this Mac, Apple M4 Pro",
+        "display": "External 1920x1080 display at 144 Hz; requestAnimationFrame measured 145 Hz on both sides. The page was 1504x790 CSS at device pixel ratio 1",
+        "frameRate": "game setting 60 (rushline.settings.v1)",
+        "browser": "Helium, windowed, rv slots 0 and 1, muted",
+        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview",
+        "page": "1504x790 CSS at device pixel ratio 1",
+        "pairs": "5 alternating pairs per scenario after one warm-up per scenario and side; the idle side parked on /kit",
+        "wallMs": "1373257",
+        "quiet": "Mac booking maps-232 held the bench queue; no perf job was running at the start",
+        "side": "side A was a worktree at beea984d under B's rv; side B was #237's head de0c4e1a",
+        "pin": "render.shadowTriangles.max only: every frame row also passed and keeps its existing source"
+      },
+      "id": "gpu-2026-11-24T19-33-56-920Z-beea984-de0c4e1",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "beea984d43be5bb4bcfd465667ffeab019ee2ceb",
+        "B": "de0c4e1ab7aab733fb6ed5b3efa366a60233cf15"
+      }
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "facts": {
+        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview",
+        "frameRate": "game setting 60 (rushline.settings.v1), so every vsync is drawn",
+        "order": "[\"reference-v1 pair0 A\", \"reference-v1 pair0 B\", \"pack-riding-v1 pair0 B\", \"pack-riding-v1 pair0 A\", \"reference-v1 pair1 B\", \"reference-v1 pair1 A\", \"pack-riding-v1 pair1 A\", \"pack-riding-v1 pair1 B\", \"reference-v1 pair2 A\", \"reference-v1 pair2 B\", \"pack-riding-v1 pair2 B\", \"pack-riding-v1 pair2 A\", \"reference-v1 pair3 B\", \"reference-v1 pair3 A\", \"pack-riding-v1 pair3 A\", \"pack-riding-v1 pair3 B\", \"reference-v1 pair4 A\", \"reference-v1 pair4 B\", \"pack-riding-v1 pair4 B\", \"pack-riding-v1 pair4 A\"]",
+        "pairs": "5 alternating pairs per scenario after one warm-up per scenario and side; the idle side parked on /kit",
+        "quiet": "vimaan booking maps-30 held the bench queue for the whole campaign; no other booking ran",
+        "side": "side A was a clone of beea984d in /var/tmp under B's rv; side B was #237's head de0c4e1a",
+        "pin": "render.shadowTriangles.max only: the shadow-part triangle count is the same in every side B window of a scenario, so the pin does not depend on frame timing",
+        "machine": "vimaan, Intel Core i7-9750H, NVIDIA GeForce GTX 1650 Ti with Max-Q Design 4 GiB, 8 GiB of RAM",
+        "browser": "/usr/lib/chromium/chromium, windowed through Xwayland with PRIME offload; the sandbox stays on",
+        "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce GTX 1650 Ti with Max-Q Design/PCIe/SSE2, OpenGL 4.5.0)",
+        "page": "1512x773 CSS at device pixel ratio 2, ?stress&rung=0 and ?stress=reference&rung=0",
+        "wallMs": "1558459"
+      },
+      "id": "gpu-2026-11-24T19-38-40-778Z-beea984-de0c4e1",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "beea984d43be5bb4bcfd465667ffeab019ee2ceb",
+        "B": "de0c4e1ab7aab733fb6ed5b3efa366a60233cf15"
+      }
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "facts": {
+        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview",
+        "frameRate": "game setting 60 (rushline.settings.v1), so every vsync is drawn",
+        "order": "[\"reference-v1 pair0 A\", \"reference-v1 pair0 B\", \"pack-riding-v1 pair0 B\", \"pack-riding-v1 pair0 A\", \"reference-v1 pair1 B\", \"reference-v1 pair1 A\", \"pack-riding-v1 pair1 A\", \"pack-riding-v1 pair1 B\", \"reference-v1 pair2 A\", \"reference-v1 pair2 B\", \"pack-riding-v1 pair2 B\", \"pack-riding-v1 pair2 A\", \"reference-v1 pair3 B\", \"reference-v1 pair3 A\", \"pack-riding-v1 pair3 A\", \"pack-riding-v1 pair3 B\", \"reference-v1 pair4 A\", \"reference-v1 pair4 B\", \"pack-riding-v1 pair4 B\", \"pack-riding-v1 pair4 A\"]",
+        "pairs": "5 alternating pairs per scenario after one warm-up per scenario and side; the idle side parked on /kit",
+        "quiet": "vimaan booking maps-30 held the bench queue for the whole campaign; no other booking ran",
+        "side": "side A was a clone of beea984d in /var/tmp under B's rv; side B was #237's head de0c4e1a",
+        "pin": "render.shadowTriangles.max only: the shadow-part triangle count is the same in every side B window of a scenario, so the pin does not depend on frame timing",
+        "machine": "vimaan, Intel Core i7-9750H, Intel UHD Graphics 630 (CFL GT2), 8 GiB of RAM",
+        "browser": "/usr/lib/chromium/chromium, windowed through Xwayland on the Intel GPU, RUSHLINE_BROWSER_HOST=linux-intel; the sandbox stays on",
+        "renderer": "ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)",
+        "page": "1919x992 CSS at device pixel ratio 1, the lean preset",
+        "wallMs": "1601642"
+      },
+      "id": "gpu-2026-11-24T20-11-38-121Z-beea984-de0c4e1",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "beea984d43be5bb4bcfd465667ffeab019ee2ceb",
+        "B": "de0c4e1ab7aab733fb6ed5b3efa366a60233cf15"
       }
     }
   ],

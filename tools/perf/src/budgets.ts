@@ -134,6 +134,7 @@ const gpuKinds: readonly MetricKind[] = [
   gpuKind("main.longTask.blockingMs", "ms", null),
   gpuKind("render.calls.max", "calls", null),
   gpuKind("render.triangles.max", "triangles", null),
+  gpuKind("render.shadowTriangles.max", "triangles", null),
   gpuKind("render.programs.max", "programs", null),
   gpuKind("render.textures.max", "textures", null),
   ...barMetrics.map(({ metric, unit }): MetricKind => ({
