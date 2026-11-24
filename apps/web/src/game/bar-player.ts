@@ -24,6 +24,7 @@ import type { Bikes } from "./actors.ts";
 import type { BarAction } from "./bar-input.ts";
 import type { BarSpeech } from "./bar-speech.ts";
 import type { BarWalker, WalkerStance, WalkerView } from "./bar-walker.ts";
+import type { BikeFit } from "./bike-fit.ts";
 import type { Puffs } from "./puffs.ts";
 
 const GREET_FIRST = 1.4;
@@ -44,6 +45,7 @@ export interface BarCompany {
 export interface PlayerSlot {
   readonly walker: BarWalker;
   readonly bike: THREE.Object3D;
+  readonly fit: BikeFit;
   readonly bikeIndex: number;
 }
 

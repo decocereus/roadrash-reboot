@@ -5,9 +5,12 @@ import * as THREE from "three";
 import { clone as cloneRig } from "three/addons/utils/SkeletonUtils.js";
 
 import type { PoseName, RiderAsset } from "./assets.ts";
+import type { BikeFit } from "./bike-fit.ts";
 import type { Shading } from "./cel.ts";
 import { disposeTree } from "./dispose.ts";
 import { reachOfPoses } from "./figure-bounds.ts";
+import { contactsOf as measureContacts } from "./figure-contacts.ts";
+import type { Contacts } from "./figure-contacts.ts";
 import { cycleFor, strikeName, striking } from "./figure-cycle.ts";
 import type { Cycle } from "./figure-cycle.ts";
 import {
@@ -50,8 +53,8 @@ const HOLD_RATE = 9;
 
 export interface RiderFigure {
   readonly root: THREE.Group;
-  readonly seat: THREE.Vector3;
   readonly standHeight: number;
+  mount: (bike: THREE.Object3D, fit: BikeFit, sag: number) => void;
   dispose: () => void;
   animate: (stance: Stance, seconds: number) => void;
   rest: () => void;
@@ -120,6 +123,7 @@ const farBodyOf = (
 };
 
 const reachByAsset = new WeakMap<RiderAsset, THREE.Sphere>();
+const contactsByAsset = new WeakMap<RiderAsset, Contacts>();
 
 export const createRiderFigure = (
   asset: RiderAsset,
@@ -208,6 +212,8 @@ export const createRiderFigure = (
   const turn = new THREE.Quaternion();
   const cycle: Cycle = { blend: 0, from: "seated", to: "seated" };
   let resting = false;
+  let seatedOn: BikeFit | null = null;
+  const hip = new THREE.Vector3();
 
   const hands = [
     skeleton.getBoneByName("hand_l"),
@@ -255,6 +261,20 @@ export const createRiderFigure = (
     }
   };
   composeBones(false);
+
+  const contactsOf = (): Contacts => {
+    const known = contactsByAsset.get(asset);
+    if (known) {
+      return known;
+    }
+    composeBones(true);
+    posed(rig, seated);
+    const measured = measureContacts(body, root);
+    posed(rig, written);
+    composeBones(false);
+    contactsByAsset.set(asset, measured);
+    return measured;
+  };
 
   const apply = () => {
     let offset = -4;
@@ -389,7 +409,8 @@ export const createRiderFigure = (
       lift.x +=
         Math.sign(stance.lean) *
         HANG_SHIFT *
-        kneeOut(stance.lean, stance.speed);
+        kneeOut(stance.lean, stance.speed) *
+        (1 - stance.rise);
       const target = aim(stance);
       if (!target) {
         return;
@@ -507,6 +528,17 @@ export const createRiderFigure = (
       far = staysFar(far, pixelsTall);
       body.geometry = far ? farBody : near;
     },
+    mount(bike, fit, sag) {
+      if (fit !== seatedOn) {
+        planter.seatOn(fit, contactsOf(), hip);
+        seatedOn = fit;
+      }
+      root.quaternion.copy(bike.quaternion);
+      root.position
+        .set(hip.x, hip.y - sag, hip.z)
+        .applyQuaternion(bike.quaternion)
+        .add(bike.position);
+    },
     rest() {
       if (!resting) {
         model.removeFromParent();
@@ -514,7 +546,6 @@ export const createRiderFigure = (
       }
     },
     root,
-    seat: asset.seat,
     standHeight: asset.standHeight,
   };
 };
