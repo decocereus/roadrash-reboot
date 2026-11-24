@@ -11,6 +11,7 @@ const SKY_RADIUS = 4000;
 const STAR_SHARE = 0.0015;
 const MOON_BEARING = new THREE.Vector3(0.35, 0, -0.92).normalize();
 const MOON_ELEVATION = 0.2;
+const SKY_LAST = 1;
 const CLOUD_PUFFS = [
   [-150, -10, 50],
   [-90, -48, 62],
@@ -91,7 +92,7 @@ const VERTEX = `
 varying vec2 vUv;
 void main() {
   vUv = uv;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  gl_Position = (projectionMatrix * modelViewMatrix * vec4(position, 1.0)).xyww;
 }`;
 
 const FRAGMENT = `
@@ -189,7 +190,7 @@ export const buildSky = (random: Random, hour: LiveHour): Sky => {
       vertexShader: VERTEX,
     })
   );
-  mesh.renderOrder = -2;
+  mesh.renderOrder = SKY_LAST;
   const bearing = new THREE.Vector3();
   return {
     mesh: onFxLayer(mesh),
