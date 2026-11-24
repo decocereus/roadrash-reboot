@@ -490,6 +490,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/test/rider-poses.test.ts",
       "apps/web/test/seated-callers.test.ts",
       "apps/web/test/seated-contacts.ts",
+      "apps/web/test/turned-from.test.ts",
       "apps/web/test/rider-shade.ts",
       "apps/web/test/shade-flats.ts",
       "apps/web/src/game/rider-*.ts",

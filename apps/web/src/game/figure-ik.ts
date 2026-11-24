@@ -7,6 +7,7 @@ export const turnInWorld = (bone: THREE.Object3D, turn: THREE.Quaternion) => {
   const parent = new THREE.Quaternion();
   bone.parent?.getWorldQuaternion(parent);
   bone.quaternion.copy(parent.invert().multiply(turn.clone().multiply(world)));
+  bone.updateMatrix();
   bone.updateMatrixWorld(true);
 };
 

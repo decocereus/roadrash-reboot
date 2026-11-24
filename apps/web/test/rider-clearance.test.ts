@@ -13,6 +13,7 @@ import type { BikeModelId } from "../src/game/bike-models.ts";
 import { createShading } from "../src/game/cel.ts";
 import { BARE_FRONT, clothOf } from "../src/game/figure-chest.ts";
 import { paletteOf } from "../src/game/figure-rig.ts";
+import { SEAT_CHECK_SPEED, seatChecks } from "../src/game/figure-seating.ts";
 import { lookOf } from "../src/game/looks.ts";
 import { createRiderFigure } from "../src/game/rider-figure.ts";
 import type { Stance } from "../src/game/rider-figure.ts";
@@ -24,7 +25,6 @@ const SINK = 0.005;
 const RESTING = 0.02;
 const SETTLED = 1;
 const SETTLE_STEPS = 8;
-const RIDING_SPEED = 30;
 const FLAT = 1e-6;
 const SCREEN_ROWS = 1080;
 const BARE_DIGITS = 4;
@@ -49,17 +49,10 @@ const arms: ReadonlySet<string> = new Set([
 
 const chest: ReadonlySet<string> = new Set(["spine_02", "spine_03"]);
 
-const riding: readonly (readonly [string, Partial<Stance>])[] = [
-  ["rest", {}],
-  ["a quarter tuck", { tuck: 0.25 }],
-  ["half a tuck", { tuck: 0.5 }],
-  ["three quarters of a tuck", { tuck: 0.75 }],
-  ["tuck", { tuck: 1 }],
-  ["lean left", { lean: -1, speed: RIDING_SPEED }],
-  ["lean right", { lean: 1, speed: RIDING_SPEED }],
-  ["tucked lean left", { lean: -1, speed: RIDING_SPEED, tuck: 1 }],
-  ["tucked lean right", { lean: 1, speed: RIDING_SPEED, tuck: 1 }],
-];
+const riding = seatChecks.map(
+  ({ lean, name, tuck }) =>
+    [name, { lean, speed: SEAT_CHECK_SPEED, tuck }] as const
+);
 
 type Triangle = readonly [THREE.Vector3, THREE.Vector3, THREE.Vector3];
 

@@ -552,7 +552,7 @@ The riders, bikes and traffic cars drawn from the race each frame: placement on 
 - Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/design/art-direction.md#riders-and-bikes](design/art-direction.md#riders-and-bikes), [docs/design/art-direction.md#budget-and-build](design/art-direction.md#budget-and-build)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`, `riders.cpu.p95`
-- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/fleet.ts`, `apps/web/src/game/cross-car-pose.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/src/game/bike-fit.ts`, `apps/web/src/game/bike-posture.ts`, `apps/web/src/game/bike-deck.ts`, `apps/web/src/game/figure-chest.ts`, `apps/web/src/game/figure-seating.ts`, `apps/web/test/actor-tables.test.ts`, `apps/web/test/bike-contact.ts`, `apps/web/test/bike-posture.test.ts`, `apps/web/test/figure-wear.test.ts`, `apps/web/test/figure-shadow.test.ts`, `apps/web/test/planted-hands.test.ts`, `apps/web/test/rider-clearance.test.ts`, `apps/web/test/rider-gait.test.ts`, `apps/web/test/rider-poses.test.ts`, `apps/web/test/seated-callers.test.ts`, `apps/web/test/seated-contacts.ts`, `apps/web/test/rider-shade.ts`, `apps/web/test/shade-flats.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`, `apps/web/src/game/gait.ts`, `apps/web/src/game/strider.ts`, `apps/web/src/game/foot-lock.ts`
+- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/fleet.ts`, `apps/web/src/game/cross-car-pose.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/src/game/bike-fit.ts`, `apps/web/src/game/bike-posture.ts`, `apps/web/src/game/bike-deck.ts`, `apps/web/src/game/figure-chest.ts`, `apps/web/src/game/figure-seating.ts`, `apps/web/test/actor-tables.test.ts`, `apps/web/test/bike-contact.ts`, `apps/web/test/bike-posture.test.ts`, `apps/web/test/figure-wear.test.ts`, `apps/web/test/figure-shadow.test.ts`, `apps/web/test/planted-hands.test.ts`, `apps/web/test/rider-clearance.test.ts`, `apps/web/test/rider-gait.test.ts`, `apps/web/test/rider-poses.test.ts`, `apps/web/test/seated-callers.test.ts`, `apps/web/test/seated-contacts.ts`, `apps/web/test/turned-from.test.ts`, `apps/web/test/rider-shade.ts`, `apps/web/test/shade-flats.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`, `apps/web/src/game/gait.ts`, `apps/web/src/game/strider.ts`, `apps/web/src/game/foot-lock.ts`
 
 Source files:
 
@@ -601,6 +601,7 @@ Test files:
 - `apps/web/test/seated-callers.test.ts`
 - `apps/web/test/seated-contacts.ts`
 - `apps/web/test/shade-flats.ts`
+- `apps/web/test/turned-from.test.ts`
 
 ### Frame rate and quality
 

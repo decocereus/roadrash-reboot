@@ -128,6 +128,10 @@ export const turnedFrom = (
   turns: readonly Turn[]
 ): number[] => {
   posed(rig, base);
+  for (const bone of rig.bones) {
+    bone?.updateMatrix();
+  }
+  rig.root.updateMatrixWorld(true);
   for (const { axis, bone: name, degrees } of turns) {
     const bone = rig.skeleton.getBoneByName(name);
     if (bone) {
@@ -241,7 +245,7 @@ const FOOT_SIDE = 0.28;
 const FOOT_DROP = 0.26;
 const FOOT_FORWARD = 0.1;
 const KNEE_START_SPEED = 50 / KMH;
-const KNEE_FULL_SPEED = 75 / KMH;
+export const KNEE_FULL_SPEED = 75 / KMH;
 const KNEE_OUT_FROM = 0.25;
 const KNEE_OUT_FULL = 0.85;
 const KNEE_SWING = THREE.MathUtils.degToRad(55);
