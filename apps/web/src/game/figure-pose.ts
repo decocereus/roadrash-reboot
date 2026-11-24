@@ -131,15 +131,22 @@ export const turnedFrom = (
     bone?.updateMatrix();
   }
   rig.root.updateMatrixWorld(true);
+  const facing = rig.root.getWorldQuaternion(new THREE.Quaternion());
+  const unfacing = facing.clone().invert();
   for (const { axis, bone: name, degrees } of turns) {
     const bone = rig.skeleton.getBoneByName(name);
     if (bone) {
       turnInWorld(
         bone,
-        new THREE.Quaternion().setFromAxisAngle(
-          axis,
-          THREE.MathUtils.degToRad(degrees)
-        )
+        facing
+          .clone()
+          .multiply(
+            new THREE.Quaternion().setFromAxisAngle(
+              axis,
+              THREE.MathUtils.degToRad(degrees)
+            )
+          )
+          .multiply(unfacing)
       );
     }
   }

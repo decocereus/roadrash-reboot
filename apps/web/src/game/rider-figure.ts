@@ -161,13 +161,13 @@ const seatTable: Readonly<
   Record<string, Readonly<Record<BikeModelId, SeatFit>> | undefined>
 > = seatJson;
 
-const seatingsOf = (of: (model: BikeModelId) => Seating) =>
+const perModel = <Each>(of: (model: BikeModelId) => Each) =>
   ({
     classic: of("classic"),
     ghost: of("ghost"),
     oni: of("oni"),
     seraph: of("seraph"),
-  }) satisfies Record<BikeModelId, Seating>;
+  }) satisfies Record<BikeModelId, Each>;
 
 const tableFit: SeatFits = (url, model) => {
   const fit = seatTable[url]?.[model];
@@ -262,7 +262,7 @@ export const createRiderFigure = (
   };
   const seatings =
     seatingsByAsset.get(asset) ??
-    seatingsOf((bike) =>
+    perModel((bike) =>
       seatingFrom(
         fits(asset.url, bike, seatedRig),
         bikePostures[bike],
@@ -270,6 +270,10 @@ export const createRiderFigure = (
       )
     );
   seatingsByAsset.set(asset, seatings);
+  const rests = perModel((bike) => bake(seated, restTurns(bikePostures[bike])));
+  posed(rig, seated);
+  const contacts = contactsByAsset.get(asset) ?? measureContacts(body, root);
+  contactsByAsset.set(asset, contacts);
   let { riding, tuckSlide } = seatings[firstModel];
   const current = [...seated];
   const wanted = [...current];
@@ -340,19 +344,6 @@ export const createRiderFigure = (
     posed(rig, written);
     composeBones(false);
     return result;
-  };
-
-  const contactsOf = (): Contacts => {
-    const known = contactsByAsset.get(asset);
-    if (known) {
-      return known;
-    }
-    const measured = composed(() => {
-      posed(rig, seated);
-      return measureContacts(body, root);
-    });
-    contactsByAsset.set(asset, measured);
-    return measured;
   };
 
   const apply = () => {
@@ -482,9 +473,7 @@ export const createRiderFigure = (
   };
 
   const plantOn = (fit: BikeFit) => {
-    const contacts = contactsOf();
-    const rest = composed(() => bake(seated, restTurns(fit.posture)));
-    planter.seatOn(fit, contacts, rest, hip);
+    planter.seatOn(fit, contacts, rests[fit.model], hip);
   };
 
   const seatOn = (fit: BikeFit) => {
