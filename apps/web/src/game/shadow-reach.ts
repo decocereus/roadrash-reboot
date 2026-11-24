@@ -27,7 +27,7 @@ export const shadowReachOf = (light: THREE.DirectionalLight): ShadowReach => ({
 });
 
 export const castersFirst = (mesh: THREE.InstancedMesh): CasterCounts => {
-  const counts: CasterCounts = { casting: 0, drawn: 0 };
+  const counts: CasterCounts = { casting: mesh.count, drawn: mesh.count };
   mesh.onBeforeShadow = () => {
     mesh.count = counts.casting;
   };

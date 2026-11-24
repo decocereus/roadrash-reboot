@@ -12,7 +12,7 @@ const HEIGHT = 540;
 const NUDGE = 2;
 const SEED = 31;
 const SETTLE_FRAMES = 3;
-const RIDE_FRAMES = 12_000;
+const RIDE_FRAMES = 40_000;
 const MIN_COMPARED = 300;
 const WALKER_REACH = 2.21;
 const SPOTS = [560, 1850, 3500] as const;
@@ -39,6 +39,7 @@ interface Ledger {
   drawn: number;
   casting: number;
   missedCasters: number;
+  missedWhere: string[];
 }
 
 interface Spot {
@@ -195,6 +196,18 @@ const createWatches = (ledger: Ledger) => {
     });
   };
 
+  const corner = new THREE.Vector3();
+  const vertexInBox = (seen: Watch): boolean => {
+    const position = seen.mesh.geometry.getAttribute("position");
+    for (let vertex = 0; vertex < position.count; vertex += 1) {
+      corner.fromBufferAttribute(position, vertex).applyMatrix4(matrix);
+      if (box.containsPoint(corner)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   const missedIn = (seen: Watch): number => {
     const { geometry } = seen.mesh;
     geometry.computeBoundingSphere();
@@ -202,7 +215,10 @@ const createWatches = (ledger: Ledger) => {
     let missed = 0;
     for (let index = seen.casting; index < seen.before; index += 1) {
       seen.mesh.getMatrixAt(index, matrix);
-      if (box.intersectsSphere(sphere.copy(bounds).applyMatrix4(matrix))) {
+      if (
+        box.intersectsSphere(sphere.copy(bounds).applyMatrix4(matrix)) &&
+        vertexInBox(seen)
+      ) {
         missed += 1;
       }
     }
@@ -212,7 +228,13 @@ const createWatches = (ledger: Ledger) => {
   const tally = (seen: Watch, drawnWith: THREE.Matrix4, frame: number) => {
     ledger.drawn += seen.before;
     ledger.casting += seen.casting;
-    ledger.missedCasters += missedIn(seen);
+    const missed = missedIn(seen);
+    ledger.missedCasters += missed;
+    if (missed > 0) {
+      ledger.missedWhere.push(
+        `${seen.walker ? "walkers" : "fleet"} ${missed} of ${seen.before - seen.casting} at frame ${frame}`
+      );
+    }
     if (seen.classifiedWith) {
       ledger.compared += 1;
       if (!seen.classifiedWith.equals(drawnWith)) {
@@ -398,7 +420,11 @@ const verdict = (ledger: Ledger, ride: Ride, notes: readonly string[]) => {
   if (failed) {
     throw new Error(
       `Shadow casters out of step: ${JSON.stringify({
-        ledger: { ...ledger, lateCamera: ledger.lateCamera.slice(0, 5) },
+        ledger: {
+          ...ledger,
+          lateCamera: ledger.lateCamera.slice(0, 5),
+          missedWhere: ledger.missedWhere.slice(0, 8),
+        },
         notes,
         ride,
       })}`
@@ -416,6 +442,7 @@ export const run = async () => {
     drawn: 0,
     lateCamera: [],
     missedCasters: 0,
+    missedWhere: [],
     unrestored: 0,
   };
   const watches = createWatches(ledger);
