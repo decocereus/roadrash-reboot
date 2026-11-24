@@ -25,7 +25,7 @@ const plan = planFor(
 
 interface Watch {
   readonly mesh: THREE.InstancedMesh;
-  readonly walker: boolean;
+  readonly kind: "walkers" | "bikes" | "fleet";
   classifiedWith: THREE.Matrix4 | null;
   before: number;
   casting: number;
@@ -40,6 +40,7 @@ interface Ledger {
   casting: number;
   missedCasters: number;
   missedWhere: string[];
+  bikes: { casting: number; drawn: number };
 }
 
 interface Spot {
@@ -143,6 +144,13 @@ const straddles = (
   );
 };
 
+const kindOf = (mesh: THREE.InstancedMesh): Watch["kind"] => {
+  if (mesh.geometry.hasAttribute("walkerFrame")) {
+    return "walkers";
+  }
+  return mesh.geometry.hasAttribute("livery") ? "bikes" : "fleet";
+};
+
 const createWatches = (ledger: Ledger) => {
   const watches = new Map<THREE.InstancedMesh, Watch>();
   let sun: THREE.DirectionalLight | null = null;
@@ -156,8 +164,8 @@ const createWatches = (ledger: Ledger) => {
       casting: 0,
       classifiedWith: null,
       everyInstance: false,
+      kind: kindOf(mesh),
       mesh,
-      walker: mesh.geometry.hasAttribute("walkerFrame"),
     };
     watches.set(mesh, seen);
     const upload = mesh.instanceMatrix.addUpdateRange.bind(mesh.instanceMatrix);
@@ -228,19 +236,21 @@ const createWatches = (ledger: Ledger) => {
   const tally = (seen: Watch, drawnWith: THREE.Matrix4, frame: number) => {
     ledger.drawn += seen.before;
     ledger.casting += seen.casting;
+    if (seen.kind === "bikes") {
+      ledger.bikes.drawn += seen.before;
+      ledger.bikes.casting += seen.casting;
+    }
     const missed = missedIn(seen);
     ledger.missedCasters += missed;
     if (missed > 0) {
       ledger.missedWhere.push(
-        `${seen.walker ? "walkers" : "fleet"} ${missed} of ${seen.before - seen.casting} at frame ${frame}`
+        `${seen.kind} ${missed} of ${seen.before - seen.casting} at frame ${frame}`
       );
     }
     if (seen.classifiedWith) {
       ledger.compared += 1;
       if (!seen.classifiedWith.equals(drawnWith)) {
-        ledger.lateCamera.push(
-          `${seen.walker ? "walkers" : "fleet"} at frame ${frame}`
-        );
+        ledger.lateCamera.push(`${seen.kind} at frame ${frame}`);
       }
     }
   };
@@ -275,7 +285,11 @@ const createWatches = (ledger: Ledger) => {
     const at = new THREE.Vector3();
     let straddling = 0;
     for (const seen of watches.values()) {
-      for (let index = 0; seen.walker && index < seen.mesh.count; index += 1) {
+      for (
+        let index = 0;
+        seen.kind === "walkers" && index < seen.mesh.count;
+        index += 1
+      ) {
         seen.mesh.getMatrixAt(index, matrix);
         at.setFromMatrixPosition(matrix);
         const onScreen = view.intersectsSphere(sphere.set(at, 1));
@@ -416,7 +430,9 @@ const verdict = (ledger: Ledger, ride: Ride, notes: readonly string[]) => {
     ledger.lateCamera.length > 0 ||
     ledger.unrestored > 0 ||
     ledger.missedCasters > 0 ||
-    ledger.casting >= ledger.drawn;
+    ledger.casting >= ledger.drawn ||
+    ledger.bikes.casting === 0 ||
+    ledger.bikes.casting >= ledger.bikes.drawn;
   if (failed) {
     throw new Error(
       `Shadow casters out of step: ${JSON.stringify({
@@ -437,6 +453,7 @@ export const run = async () => {
   const notes: string[] = [];
   const heard: string[] = [];
   const ledger: Ledger = {
+    bikes: { casting: 0, drawn: 0 },
     casting: 0,
     compared: 0,
     drawn: 0,
