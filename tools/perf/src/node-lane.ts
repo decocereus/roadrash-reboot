@@ -18,7 +18,7 @@ import {
 } from "./node.ts";
 import type { ChildRecord } from "./node.ts";
 import { median, quantile } from "./result.ts";
-import { validateWorkload, WINDOW_TICKS } from "./scenarios.ts";
+import { roomSeedCount, validateWorkload, WINDOW_TICKS } from "./scenarios.ts";
 import type { Scenario } from "./scenarios.ts";
 import type { Side, SideName } from "./sides.ts";
 
@@ -112,7 +112,8 @@ export const runChild = Effect.fnUntraced(function* runChild(
   task: ChildRecord["task"],
   scenario: { readonly id: string },
   dir: string,
-  label: string
+  label: string,
+  childArgs: readonly string[] = []
 ) {
   const fs = yield* FileSystem.FileSystem;
   const processes = yield* ToolProcesses;
@@ -126,6 +127,7 @@ export const runChild = Effect.fnUntraced(function* runChild(
       SYNCHRONOUS_COMPILE,
       path.join(side.root, script),
       ...taskArgs,
+      ...childArgs,
       "--scenario",
       scenario.id,
       "--out",
@@ -235,7 +237,8 @@ const roomRun = Effect.fnUntraced(function* roomRun(
     "room",
     scenario,
     dir,
-    `room-${run}-B`
+    `room-${run}-B`,
+    ["--part", String(run)]
   );
   const { room } = sample.record;
   if (!room) {
@@ -551,18 +554,28 @@ const roomObservations = (
     scenario: scenario.id,
     value: median(measured),
   });
+  const perRun = (of: (run: RoomRun) => readonly number[]) =>
+    runs.map((run) => p95Of(of(run)) / scale);
   const timed = (metric: string, of: (run: RoomRun) => readonly number[]) =>
     observed(
       metric,
       `runs=${runs.length} scale=${scale.toFixed(3)}`,
-      runs.map((run) => p95Of(of(run)) / scale)
+      perRun(of)
     );
+  const pooled = (metric: string, of: (run: RoomRun) => readonly number[]) => ({
+    ...observed(
+      metric,
+      `runs=${runs.length} seeds=${roomSeedCount} pooled scale=${scale.toFixed(3)}`,
+      perRun(of)
+    ),
+    value: p95Of(runs.flatMap(of)) / scale,
+  });
   const allocated = (metric: string, of: (run: RoomRun) => number) =>
     observed(metric, `runs=${runs.length}`, runs.map(of));
   return [
-    timed("room.tick.p95", (run) => run.tick),
-    timed("room.confirm.p95", (run) => run.confirm),
-    timed("room.rollback.p95", (run) => run.rollback),
+    pooled("room.tick.p95", (run) => run.tick),
+    pooled("room.confirm.p95", (run) => run.confirm),
+    pooled("room.rollback.p95", (run) => run.rollback),
     timed("room.checkpoint.p95", (run) => run.checkpoint),
     allocated("room.allocatedBytesPerTick", (run) => run.allocated.server),
     allocated(

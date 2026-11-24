@@ -4,6 +4,7 @@ import { performance } from "node:perf_hooks";
 import { parseArgs } from "node:util";
 import { serialize } from "node:v8";
 
+import { benchRaces } from "@racer/career/bench";
 import { UsageError } from "@racer/devtools/usage-error";
 import type { RaceManifest } from "@racer/rooms/manifest";
 import { rosterOf, seatFor, seatMemoryOf } from "@racer/rooms/race-seat";
@@ -40,6 +41,7 @@ import { MeasurementFailed } from "./measurement-failed.ts";
 import { runtimeOf } from "./node.ts";
 import {
   benchStart,
+  pooledRoomSeeds,
   scenarioHash,
   scenarios,
   WINDOW_TICKS,
@@ -68,8 +70,8 @@ const controlAt = (tick: number, seat: number): Control => {
   });
 };
 
-const prepareRoom = (scenario: Scenario) => {
-  const bench = benchStart(scenario.bench);
+const prepareRoom = (scenario: Scenario, seed: number) => {
+  const bench = benchStart(scenario.bench, seed);
   const humans = firstRacers(bench, SEATS);
   const setup = roomSetup(bench, humans);
   const pilotFromTick = ticksOf(launchRoomConfig.raceLimitSeconds);
@@ -207,19 +209,21 @@ const prepareRoom = (scenario: Scenario) => {
 
 type Prepared = ReturnType<typeof prepareRoom>;
 
-const prepareWarmed = (scenario: Scenario): Prepared => {
-  const prepared = prepareRoom(scenario);
+const prepareWarmed = (scenario: Scenario, seed: number): Prepared => {
+  const prepared = prepareRoom(scenario, seed);
   prepared.warm();
   return prepared;
 };
 
-const timedWindow = (scenario: Scenario) => {
-  prepareWarmed(scenario);
-  const prepared = prepareWarmed(scenario);
-  const tick: number[] = [];
-  const confirm: number[] = [];
-  const rollback: number[] = [];
-  const resimulated: number[] = [];
+interface WindowTimings {
+  readonly tick: number[];
+  readonly confirm: number[];
+  readonly rollback: number[];
+  readonly resimulated: number[];
+}
+
+const timeSeed = (prepared: Prepared, timings: WindowTimings): void => {
+  const { confirm, resimulated, rollback, tick } = timings;
   for (let index = 0; index < WINDOW_TICKS; index += 1) {
     prepared.predict();
     const atStep = performance.now();
@@ -238,13 +242,26 @@ const timedWindow = (scenario: Scenario) => {
     }
     prepared.checkpointDue();
   }
+};
+
+const timedWindow = (scenario: Scenario, pooled: readonly number[]) => {
+  const benchSeed = benchRaces[scenario.bench].seed;
+  prepareWarmed(scenario, benchSeed);
+  const timings: WindowTimings = {
+    confirm: [],
+    resimulated: [],
+    rollback: [],
+    tick: [],
+  };
+  const bench = prepareWarmed(scenario, benchSeed);
+  timeSeed(bench, timings);
+  for (const seed of pooled) {
+    timeSeed(prepareWarmed(scenario, seed), timings);
+  }
   return {
-    checkpoint: prepared.checkpoint,
-    checkpointBytes: prepared.checkpointBytes,
-    confirm,
-    resimulated,
-    rollback,
-    tick,
+    checkpoint: bench.checkpoint,
+    checkpointBytes: bench.checkpointBytes,
+    ...timings,
   };
 };
 
@@ -343,7 +360,10 @@ const frameTally = createRaceTally(true);
 const frameWork = (): void => {
   const left = createTickFrame();
   const right = createTickFrame();
-  const riders = firstRacers(benchStart("reference"), SEATS);
+  const riders = firstRacers(
+    benchStart("reference", benchRaces.reference.seed),
+    SEATS
+  );
   for (let index = 0; index < WINDOW_TICKS * FRAME_REPEATS; index += 1) {
     clearFrame(left, index);
     clearFrame(right, index);
@@ -364,11 +384,16 @@ const allocationWindow = Effect.fnUntraced(function* allocationWindow(
   scenario: Scenario
 ) {
   const serverBytes = yield* leastSampled(() =>
-    serverWork(prepareWarmed(scenario))
+    serverWork(prepareWarmed(scenario, benchRaces[scenario.bench].seed))
   );
-  const packets = recordedPackets(prepareWarmed(scenario));
+  const packets = recordedPackets(
+    prepareWarmed(scenario, benchRaces[scenario.bench].seed)
+  );
   const clientBytes = yield* leastSampled(() =>
-    clientWork(prepareWarmed(scenario), packets)
+    clientWork(
+      prepareWarmed(scenario, benchRaces[scenario.bench].seed),
+      packets
+    )
   );
   const frameBytes = yield* sampled(frameWork);
   return {
@@ -378,7 +403,8 @@ const allocationWindow = Effect.fnUntraced(function* allocationWindow(
   };
 });
 
-const usage = "Usage: node tools/perf/room.ts --scenario <id> --out <file>";
+const usage =
+  "Usage: node tools/perf/room.ts --scenario <id> --part <0|1|2> --out <file>";
 
 const readOptions = (args: readonly string[]) =>
   Effect.try({
@@ -386,7 +412,11 @@ const readOptions = (args: readonly string[]) =>
     try: () =>
       parseArgs({
         args: [...args],
-        options: { out: { type: "string" }, scenario: { type: "string" } },
+        options: {
+          out: { type: "string" },
+          part: { type: "string" },
+          scenario: { type: "string" },
+        },
       }).values,
   });
 
@@ -396,13 +426,16 @@ export const roomChild = Effect.fn("node.room")(function* roomChild(
   const fs = yield* FileSystem.FileSystem;
   const values = yield* readOptions(args);
   const scenario = scenarios.find((each) => each.id === values.scenario);
-  if (!scenario || values.out === undefined) {
+  const pooled = pooledRoomSeeds.find(
+    (_, part) => String(part) === values.part
+  );
+  if (!scenario || !pooled || values.out === undefined) {
     return yield* new UsageError({ message: usage });
   }
   const record = {
     room: {
       allocated: yield* allocationWindow(scenario),
-      ...timedWindow(scenario),
+      ...timedWindow(scenario, pooled),
     },
     runtime: runtimeOf(),
     scenario: scenario.id,

@@ -1,6 +1,7 @@
 import { performance } from "node:perf_hooks";
 import { parseArgs } from "node:util";
 
+import { benchRaces } from "@racer/career/bench";
 import { UsageError } from "@racer/devtools/usage-error";
 import { observeWorkload, workloadColumns } from "@racer/sim/bench-workload";
 import { createRace, stepRace } from "@racer/sim/race";
@@ -31,7 +32,7 @@ import type { Scenario } from "./scenarios.ts";
 const TABLES_PER_STAMP_SAMPLE = 16;
 
 const prepareSnapshots = (scenario: Scenario) => {
-  const setup = benchStart(scenario.bench);
+  const setup = benchStart(scenario.bench, benchRaces[scenario.bench].seed);
   const run = benchRun(scenario.bench);
   const spare = createRace(setup);
   while (run.view.tick < scenario.window.from - 1) {
