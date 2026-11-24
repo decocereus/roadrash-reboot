@@ -15,7 +15,6 @@ import { assetParsers } from "../src/game/assets.ts";
 import type {
   AssetParsers,
   Assets,
-  BikeModel,
   Decoded,
   RiderAsset,
 } from "../src/game/assets.ts";
@@ -23,6 +22,7 @@ import type { Primitive } from "../src/game/model-slots.ts";
 import { artFile } from "./art-files.ts";
 import characterization from "./asset-characterization.json" with { type: "json" };
 import { summary } from "./asset-summary.ts";
+import { fakeBike } from "./fake-bike.ts";
 import { fakeRiderMoves, fakeWalkerAsset } from "./walker-asset.ts";
 
 const urls: ModelUrls = {
@@ -167,18 +167,6 @@ interface Parsing {
   readonly releases: Map<string, number>;
 }
 
-const nowhere = new THREE.Vector3();
-const fakeBike = (): BikeModel => ({
-  fit: {
-    foot_l: nowhere,
-    foot_r: nowhere,
-    hand_l: nowhere,
-    hand_r: nowhere,
-    seat: nowhere,
-  },
-  parts: new Map<string, readonly Primitive[]>(),
-});
-
 const fakeRider = (): RiderAsset => ({
   atlas: null,
   bones: [],
@@ -210,7 +198,7 @@ const parsingOf = (
   return {
     decodes,
     parsers: {
-      bike: async (_, url) => await decoded(url, fakeBike()),
+      bike: () => async (_, url) => await decoded(url, fakeBike()),
       moves: async (_, url) => await decoded(url, fakeRiderMoves()),
       parts: async (_, url) =>
         await decoded(url, new Map<string, readonly Primitive[]>()),

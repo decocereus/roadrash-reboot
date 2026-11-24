@@ -5,6 +5,8 @@ import type { Rig } from "./figure-rig.ts";
 const SPACING = 0.03;
 const INFLUENCES = 4;
 
+export const forearmBones = ["lowerarm_l", "lowerarm_r"] as const;
+
 export const chestBones = [
   "spine_01",
   "spine_02",
@@ -17,7 +19,7 @@ export const chestBones = [
   "upperarm_r",
 ] as const;
 
-export interface ChestPull {
+interface ChestPull {
   readonly bone: number;
   readonly at: THREE.Vector3;
   readonly weight: number;
@@ -25,13 +27,17 @@ export interface ChestPull {
 
 export type ChestPoint = readonly ChestPull[];
 
-export const chestOf = (rig: Rig, body: THREE.SkinnedMesh): ChestPoint[] => {
+export const chestOf = (
+  rig: Rig,
+  body: THREE.SkinnedMesh,
+  bones: readonly string[]
+): ChestPoint[] => {
   const { bindMatrix, geometry, skeleton } = body;
   const position = geometry.getAttribute("position");
   const boneOf = geometry.getAttribute("skinIndex");
   const weightOf = geometry.getAttribute("skinWeight");
   const chest = new Set<number>();
-  for (const name of chestBones) {
+  for (const name of bones) {
     const bone = skeleton.getBoneByName(name);
     if (!bone) {
       throw new Error(`The rider model has no ${name} bone.`);

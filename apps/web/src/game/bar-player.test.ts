@@ -7,8 +7,8 @@ import { describe, expect, it, vi } from "vitest";
 import { createBarPlayer } from "./bar-player.ts";
 import type { BarPlayer, PlayerSlot } from "./bar-player.ts";
 import type { BarWalker } from "./bar-walker.ts";
-import type { BikeFit } from "./bike-fit.ts";
 import { bareDeck } from "./bike-deck.ts";
+import type { BikeFit } from "./bike-fit.ts";
 import { bikePostures } from "./bike-posture.ts";
 
 const FRAME = 1 / 60;

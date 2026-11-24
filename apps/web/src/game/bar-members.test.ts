@@ -10,8 +10,8 @@ import { describe, expect, it, vi } from "vitest";
 import { createMembers } from "./bar-members.ts";
 import type { BarSpeech } from "./bar-speech.ts";
 import type { BarWalker } from "./bar-walker.ts";
-import type { BikeFit } from "./bike-fit.ts";
 import { bareDeck } from "./bike-deck.ts";
+import type { BikeFit } from "./bike-fit.ts";
 import { bikePostures } from "./bike-posture.ts";
 
 const seatedFit = (): BikeFit => ({

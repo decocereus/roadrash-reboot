@@ -91,9 +91,7 @@ describe("each bike's riding posture on the reference rider", () => {
     "sits the rider at the %s's own rest lean",
     async (model) => {
       const { lean } = await measured(model, {});
-      expect(Math.abs(lean - restLean[model])).toBeLessThanOrEqual(
-        LEAN_SLACK
-      );
+      expect(Math.abs(lean - restLean[model])).toBeLessThanOrEqual(LEAN_SLACK);
     }
   );
 

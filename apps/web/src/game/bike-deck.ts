@@ -13,11 +13,9 @@ export interface BikeDeck {
   readonly heightAt: (x: number, z: number) => number;
 }
 
-const corners = [
-  new THREE.Vector3(),
-  new THREE.Vector3(),
-  new THREE.Vector3(),
-] as const;
+const a = new THREE.Vector3();
+const b = new THREE.Vector3();
+const c = new THREE.Vector3();
 
 const deckFrom = (heights: Float32Array): BikeDeck => {
   const at = (column: number, row: number) =>
@@ -48,15 +46,11 @@ export const deckOf = (
     const index = geometry.getIndex();
     const count = index ? index.count : position.count;
     for (let at = 0; at < count; at += 3) {
-      for (let offset = 0; offset < corners.length; offset += 1) {
-        corners[offset]
-          .fromBufferAttribute(
-            position,
-            index ? index.getX(at + offset) : at + offset
-          )
-          .applyMatrix4(turn);
-      }
-      const [a, b, c] = corners;
+      const corner = (offset: number) =>
+        index ? index.getX(at + offset) : at + offset;
+      a.fromBufferAttribute(position, corner(0)).applyMatrix4(turn);
+      b.fromBufferAttribute(position, corner(1)).applyMatrix4(turn);
+      c.fromBufferAttribute(position, corner(2)).applyMatrix4(turn);
       const area = (b.x - a.x) * (c.z - a.z) - (c.x - a.x) * (b.z - a.z);
       if (Math.abs(area) < FLAT) {
         continue;

@@ -1,9 +1,9 @@
 import * as THREE from "three";
 
-import { contactNames } from "./bike-fit.ts";
-import type { BikeFit, ContactName } from "./bike-fit.ts";
 import { bareDeck } from "./bike-deck.ts";
 import type { BikeDeck } from "./bike-deck.ts";
+import { contactNames } from "./bike-fit.ts";
+import type { BikeFit, ContactName } from "./bike-fit.ts";
 import type { BikePosture } from "./bike-posture.ts";
 import type { ChestPoint } from "./figure-chest.ts";
 import type { Contacts } from "./figure-contacts.ts";
@@ -75,9 +75,14 @@ const TUCKED_ARMS: readonly Turn[] = [
 export const restTurns = ({ restPitch }: BikePosture): readonly Turn[] =>
   pitchedBy(restPitch);
 
-export const tuckTurns = ({ tuckPitch }: BikePosture): readonly Turn[] => [
+export const tuckTurns = (
+  { tuckPitch }: BikePosture,
+  elbowsIn = 1
+): readonly Turn[] => [
   ...pitchedBy(tuckPitch),
-  ...TUCKED_ARMS,
+  ...TUCKED_ARMS.map((turn) =>
+    turn.axis === ROLL ? { ...turn, degrees: turn.degrees * elbowsIn } : turn
+  ),
 ];
 
 export const hangTurns = (side: number): readonly Turn[] => [
@@ -216,7 +221,11 @@ export interface Planter {
     speed: number
   ) => void;
   readonly settle: (pose: number[], lift: THREE.Vector3, lie: boolean) => void;
-  readonly sinkOf: (pose: readonly number[], lift: THREE.Vector3) => number;
+  readonly sinkOf: (
+    pose: readonly number[],
+    lift: THREE.Vector3,
+    part: BodyPart
+  ) => number;
   readonly reachShortOf: (
     pose: readonly number[],
     lift: THREE.Vector3
@@ -315,10 +324,12 @@ const gripOf = (limb: Limb, stretch: number): Grip => ({
   reach: reachOf(limb) * stretch,
 });
 
+export type BodyPart = "chest" | "forearms";
+
 export const planterOf = (
   rig: Rig,
   seated: readonly number[],
-  chestPoints: readonly ChestPoint[]
+  bodyPoints: Readonly<Record<BodyPart, readonly ChestPoint[]>>
 ): Planter => {
   const chain = chainOf(rig, ["hand_l", "hand_r", "foot_l", "foot_r", "head"]);
   const jointNamed = (name: string): Joint => {
@@ -354,16 +365,22 @@ export const planterOf = (
     right: limbOf("thigh_r", "calf_r", "foot_r", null),
   };
   const reachingArms = [arms.left, arms.right];
-  const chest = chestPoints.flatMap((pulls) => {
-    const held = pulls.flatMap(({ at, bone, weight }) => {
-      const joint = chain.joints.find((each) => each.index === bone);
-      return joint ? [{ at, joint, weight }] : [];
+  const onChain = (points: readonly ChestPoint[]) =>
+    points.flatMap((pulls) => {
+      const held = pulls.flatMap(({ at, bone, weight }) => {
+        const joint = chain.joints.find((each) => each.index === bone);
+        return joint ? [{ at, joint, weight }] : [];
+      });
+      const total = held.reduce((sum, { weight }) => sum + weight, 0);
+      return total > 0
+        ? [held.map((pull) => ({ ...pull, weight: pull.weight / total }))]
+        : [];
     });
-    const total = held.reduce((sum, { weight }) => sum + weight, 0);
-    return total > 0
-      ? [held.map((pull) => ({ ...pull, weight: pull.weight / total }))]
-      : [];
-  });
+  const parts = {
+    chest: onChain(bodyPoints.chest),
+    forearms: onChain(bodyPoints.forearms),
+  };
+  const { chest } = parts;
   const chestPointAt = (point: (typeof chest)[number]) => {
     chestAt.set(0, 0, 0);
     for (const { at, joint, weight } of point) {
@@ -389,7 +406,8 @@ export const planterOf = (
     let down = Infinity;
     for (const point of chest) {
       chestPointAt(point);
-      const floor = deck.heightAt(chestAt.x + seat.x, chestAt.z + seat.z) - seat.y;
+      const floor =
+        deck.heightAt(chestAt.x + seat.x, chestAt.z + seat.z) - seat.y;
       const gap = chestAt.y - floor - CHEST_CLEAR;
       const lever = torso.at.z - chestAt.z;
       if (lever > SHORTEST_LEVER) {
@@ -504,14 +522,16 @@ export const planterOf = (
         writeLocal(chain, pose, torso);
       }
     },
-    sinkOf(pose, lift) {
+    sinkOf(pose, lift, part) {
       placedAt(pose, lift);
       let sink = -Infinity;
-      for (const point of chest) {
+      for (const point of parts[part]) {
         chestPointAt(point);
         sink = Math.max(
           sink,
-          deck.heightAt(chestAt.x + seat.x, chestAt.z + seat.z) - seat.y - chestAt.y
+          deck.heightAt(chestAt.x + seat.x, chestAt.z + seat.z) -
+            seat.y -
+            chestAt.y
         );
       }
       return sink;

@@ -77,7 +77,7 @@ const wardrobeOf = (answer: (url: string) => Promise<Response>) => {
       runtime.mountCelebrity,
       Promise.resolve({
         assetParsers: {
-          bike: onlyRiders,
+          bike: () => onlyRiders,
           moves: onlyRiders,
           parts: onlyRiders,
           rider,
