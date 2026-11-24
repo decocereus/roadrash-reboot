@@ -41,12 +41,13 @@ import { MeasurementFailed } from "./measurement-failed.ts";
 import { runtimeOf } from "./node.ts";
 import {
   benchStart,
-  pooledRoomSeeds,
+  roomPartSeeds,
+  roomParts,
   scenarioHash,
   scenarios,
   WINDOW_TICKS,
 } from "./scenarios.ts";
-import type { Scenario } from "./scenarios.ts";
+import type { RoomPart, Scenario } from "./scenarios.ts";
 
 const SEATS = 4;
 const LEAD_TICKS = 6;
@@ -244,16 +245,16 @@ const timeSeed = (prepared: Prepared, timings: WindowTimings): void => {
   }
 };
 
-const timedWindow = (scenario: Scenario, pooled: readonly number[]) => {
-  const benchSeed = benchRaces[scenario.bench].seed;
-  prepareWarmed(scenario, benchSeed);
+const timedWindow = (scenario: Scenario, part: RoomPart) => {
+  const seeds = roomPartSeeds(scenario.bench, part);
+  prepareWarmed(scenario, benchRaces[scenario.bench].seed);
   const timings: WindowTimings = {
     confirm: [],
     resimulated: [],
     rollback: [],
     tick: [],
   };
-  const rooms = [benchSeed, ...pooled].map((seed) => {
+  const rooms = seeds.map((seed) => {
     const prepared = prepareWarmed(scenario, seed);
     timeSeed(prepared, timings);
     return prepared;
@@ -261,6 +262,8 @@ const timedWindow = (scenario: Scenario, pooled: readonly number[]) => {
   return {
     checkpoint: rooms.flatMap((room) => room.checkpoint),
     checkpointBytes: rooms.flatMap((room) => room.checkpointBytes),
+    part,
+    seeds,
     ...timings,
   };
 };
@@ -426,16 +429,14 @@ export const roomChild = Effect.fn("node.room")(function* roomChild(
   const fs = yield* FileSystem.FileSystem;
   const values = yield* readOptions(args);
   const scenario = scenarios.find((each) => each.id === values.scenario);
-  const pooled = pooledRoomSeeds.find(
-    (_, part) => String(part) === values.part
-  );
-  if (!scenario || !pooled || values.out === undefined) {
+  const part = roomParts.find((each) => String(each) === values.part);
+  if (!scenario || part === undefined || values.out === undefined) {
     return yield* new UsageError({ message: usage });
   }
   const record = {
     room: {
       allocated: yield* allocationWindow(scenario),
-      ...timedWindow(scenario, pooled),
+      ...timedWindow(scenario, part),
     },
     runtime: runtimeOf(),
     scenario: scenario.id,

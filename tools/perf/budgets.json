@@ -87,11 +87,11 @@
       },
       {
         "file": "tools/perf/baselines/room.node-darwin-arm64.json.gz",
-        "sha256": "2ff3b6efbf264a0638fe2220d0c93400b77dd6d1e215393520cc68832a8a0f2a"
+        "sha256": "76b86c1d02645845387ec7fe373ca1882fb90708593174c341222ff51a232944"
       },
       {
         "file": "tools/perf/baselines/room.node-linux-x64.json.gz",
-        "sha256": "db2e56190bc1c9e50dd45e303a0c9e9d16a37e7bca2c16bd888457c75cf6e29a"
+        "sha256": "3dca2e9838147def69215b366559e312d9dfa0ef7362bf96cc89162bec8b2968"
       },
       {
         "file": "tools/perf/baselines/stamp.node-darwin-arm64.json.gz",
@@ -99,7 +99,7 @@
       },
       {
         "file": "tools/perf/baselines/stamp.node-linux-x64.json.gz",
-        "sha256": "a036115c1004555ab26cd7b0503b4bcf69b13b39615d2561b2513f155cb50f43"
+        "sha256": "17fa6cb3c28a6a1bd6a74005c5042ad68c1d426a5f538d58c0d5c7f0fc0ba585"
       },
       {
         "file": "tools/perf/baselines/tiers.node-darwin-arm64.json.gz",
@@ -120,7 +120,7 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "dcc1db81cd7d6fa20e11ebeeecf6bc9105a55e9628d4cbc55bbbe83b819e1376"
+    "summarySha256": "c6c3af42f30acedbdbce4862ddd5928701a271727c4bc3fbdc67c7d2642b0f28"
   },
   "limits": [
     {
@@ -1204,6 +1204,19 @@
       "unit": "ms"
     },
     {
+      "derivation": "1.15 x the worst run recorded on this runner CPU, which has at least 3",
+      "value": 0.5992915046206336,
+      "baseline": 0.5211230474962032,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "room.confirm.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gate-2026-11-24T14-43-56-918Z-9f67ba9-b64e086",
+      "unit": "ms",
+      "runner": "Intel(R) Xeon(R) 6975P-C"
+    },
+    {
       "derivation": "1.15 x the worst run recorded on any runner CPU",
       "value": 0.16442988375339798,
       "baseline": 0.14298250761165043,
@@ -1226,6 +1239,19 @@
       "scenario": "reference-v1",
       "source": "gate-2026-11-24T14-10-58-121Z-9f67ba9-b64e086",
       "unit": "ms"
+    },
+    {
+      "derivation": "1.15 x the worst run recorded on this runner CPU, which has at least 3",
+      "value": 0.36221054784794937,
+      "baseline": 0.31496569378082556,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "room.confirm.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gate-2026-11-24T15-52-55-015Z-9f67ba9-b64e086",
+      "unit": "ms",
+      "runner": "Intel(R) Xeon(R) 6975P-C"
     },
     {
       "derivation": "1.1 x baseline median, uncalibrated",
@@ -1300,6 +1326,19 @@
       "unit": "ms"
     },
     {
+      "derivation": "1.15 x the worst run recorded on this runner CPU, which has at least 3",
+      "value": 4.476317477935651,
+      "baseline": 3.8924499808136095,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "room.rollback.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gate-2026-11-24T15-52-55-015Z-9f67ba9-b64e086",
+      "unit": "ms",
+      "runner": "Intel(R) Xeon(R) 6975P-C"
+    },
+    {
       "derivation": "1.15 x the worst run recorded on any runner CPU",
       "value": 1.1488197731781256,
       "baseline": 0.9989737158070658,
@@ -1322,6 +1361,19 @@
       "scenario": "reference-v1",
       "source": "gate-2026-11-24T14-10-58-121Z-9f67ba9-b64e086",
       "unit": "ms"
+    },
+    {
+      "derivation": "1.15 x the worst run recorded on this runner CPU, which has at least 3",
+      "value": 2.503121186066975,
+      "baseline": 2.1766271183191086,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "room.rollback.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gate-2026-11-24T15-52-55-015Z-9f67ba9-b64e086",
+      "unit": "ms",
+      "runner": "Intel(R) Xeon(R) 6975P-C"
     },
     {
       "derivation": "1.15 x the worst run recorded on any runner CPU",
@@ -1348,6 +1400,19 @@
       "unit": "ms"
     },
     {
+      "derivation": "1.15 x the worst run recorded on this runner CPU, which has at least 3",
+      "value": 0.6079422984081708,
+      "baseline": 0.5286454768766703,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "room.tick.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gate-2026-11-24T14-43-56-918Z-9f67ba9-b64e086",
+      "unit": "ms",
+      "runner": "Intel(R) Xeon(R) 6975P-C"
+    },
+    {
       "derivation": "1.15 x the worst run recorded on any runner CPU",
       "value": 0.16557531577658133,
       "baseline": 0.14397853545789682,
@@ -1370,6 +1435,19 @@
       "scenario": "reference-v1",
       "source": "gate-2026-11-24T14-10-58-121Z-9f67ba9-b64e086",
       "unit": "ms"
+    },
+    {
+      "derivation": "1.15 x the worst run recorded on this runner CPU, which has at least 3",
+      "value": 0.3638227279625349,
+      "baseline": 0.31636758953263905,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "room.tick.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gate-2026-11-24T12-09-51-028Z-9f67ba9-b64e086",
+      "unit": "ms",
+      "runner": "Intel(R) Xeon(R) 6975P-C"
     },
     {
       "derivation": "1.1 x baseline median, uncalibrated",
@@ -2272,6 +2350,19 @@
       "unit": "ms"
     },
     {
+      "derivation": "1.15 x the worst run recorded on this runner CPU, which has at least 3",
+      "value": 0.6099056631573111,
+      "baseline": 0.5303527505715749,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gate-2026-11-24T15-42-06-851Z-9f67ba9-b64e086",
+      "unit": "ms",
+      "runner": "Intel(R) Xeon(R) 6975P-C"
+    },
+    {
       "derivation": "1.15 x the worst run recorded on any runner CPU",
       "value": 0.38167024780753284,
       "baseline": 0.3318871720065503,
@@ -2282,6 +2373,19 @@
       "scenario": "pack-riding-v1",
       "source": "gate-2026-11-24T14-10-58-121Z-9f67ba9-b64e086",
       "unit": "ms"
+    },
+    {
+      "derivation": "1.15 x the worst run recorded on this runner CPU, which has at least 3",
+      "value": 0.36660723011110796,
+      "baseline": 0.31878889574878955,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gate-2026-11-24T15-52-55-015Z-9f67ba9-b64e086",
+      "unit": "ms",
+      "runner": "Intel(R) Xeon(R) 6975P-C"
     },
     {
       "derivation": "1.15 x the worst run recorded on any runner CPU",
@@ -2344,6 +2448,58 @@
       "value": 0.0005246727806097898
     },
     {
+      "baseline": 0.00026416851755483824,
+      "derivation": "1.15 x the worst run recorded on this runner CPU, which has at least 3",
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "timing.stamp.trimmedMean",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gate-2026-11-24T15-42-06-851Z-9f67ba9-b64e086",
+      "unit": "ms",
+      "value": 0.00030379379518806395,
+      "runner": "Intel(R) Xeon(R) 6975P-C"
+    },
+    {
+      "baseline": 0.0002667888907132589,
+      "derivation": "1.15 x the worst run recorded on this runner CPU, which has at least 3",
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "timing.stamp.trimmedMean",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gate-2026-11-19T16-11-54-177Z-9f67ba9-e068da7",
+      "unit": "ms",
+      "value": 0.00030680722432024774,
+      "runner": "INTEL(R) XEON(R) PLATINUM 8573C"
+    },
+    {
+      "baseline": 0.000319745463720999,
+      "derivation": "1.15 x the worst run recorded on this runner CPU, which has at least 3",
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "timing.stamp.trimmedMean",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gate-2026-11-24T15-04-25-556Z-9f67ba9-b64e086",
+      "unit": "ms",
+      "value": 0.00036770728327914883,
+      "runner": "AMD EPYC 9V74 80-Core Processor"
+    },
+    {
+      "baseline": 0.0003269527607665447,
+      "derivation": "1.15 x the worst run recorded on this runner CPU, which has at least 3",
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "timing.stamp.trimmedMean",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gate-2026-11-23T10-33-08-339Z-9f67ba9-40682ab",
+      "unit": "ms",
+      "value": 0.0003759956748815264,
+      "runner": "AMD EPYC 7763 64-Core Processor"
+    },
+    {
       "baseline": 0.0005280807837320583,
       "derivation": "1.15 x the worst run recorded on any runner CPU",
       "direction": "max",
@@ -2354,6 +2510,58 @@
       "source": "gate-2026-11-24T14-10-58-121Z-9f67ba9-b64e086",
       "unit": "ms",
       "value": 0.000607292901291867
+    },
+    {
+      "baseline": 0.00034307065261315433,
+      "derivation": "1.15 x the worst run recorded on this runner CPU, which has at least 3",
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "timing.stamp.trimmedMean",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gate-2026-11-24T12-09-51-028Z-9f67ba9-b64e086",
+      "unit": "ms",
+      "value": 0.00039453125050512743,
+      "runner": "Intel(R) Xeon(R) 6975P-C"
+    },
+    {
+      "baseline": 0.00032428307966365666,
+      "derivation": "1.15 x the worst run recorded on this runner CPU, which has at least 3",
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "timing.stamp.trimmedMean",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gate-2026-11-19T17-13-30-706Z-9f67ba9-ac2ba02",
+      "unit": "ms",
+      "value": 0.00037292554161320516,
+      "runner": "INTEL(R) XEON(R) PLATINUM 8573C"
+    },
+    {
+      "baseline": 0.00040203817269323386,
+      "derivation": "1.15 x the worst run recorded on this runner CPU, which has at least 3",
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "timing.stamp.trimmedMean",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gate-2026-11-24T15-04-25-556Z-9f67ba9-b64e086",
+      "unit": "ms",
+      "value": 0.0004623438985972189,
+      "runner": "AMD EPYC 9V74 80-Core Processor"
+    },
+    {
+      "baseline": 0.0004172159915469685,
+      "derivation": "1.15 x the worst run recorded on this runner CPU, which has at least 3",
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "timing.stamp.trimmedMean",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gate-2026-11-23T10-33-08-339Z-9f67ba9-40682ab",
+      "unit": "ms",
+      "value": 0.0004797983902790138,
+      "runner": "AMD EPYC 7763 64-Core Processor"
     }
   ],
   "nodeProfiles": {

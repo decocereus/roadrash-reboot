@@ -483,7 +483,8 @@ export const evaluateGpu = (
   const verdicts = judge(
     limits,
     observations,
-    requiredRows(["gpu"], [], [environment])
+    requiredRows(["gpu"], [], [environment]),
+    null
   );
   const counts = results.map(({ counts: peaks, scenario }) => ({
     peaks,

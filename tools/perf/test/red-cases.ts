@@ -17,8 +17,13 @@ import type {
 import { CALIBRATION_ROUNDS, TIMED_WINDOWS } from "../src/node.ts";
 import type { ChildRecord } from "../src/node.ts";
 import { ROAD_LIFE } from "../src/road-life.ts";
-import { scenarioHash, scenarios, WINDOW_TICKS } from "../src/scenarios.ts";
-import type { Scenario, WorkloadRows } from "../src/scenarios.ts";
+import {
+  roomPartSeeds,
+  scenarioHash,
+  scenarios,
+  WINDOW_TICKS,
+} from "../src/scenarios.ts";
+import type { RoomPart, Scenario, WorkloadRows } from "../src/scenarios.ts";
 
 const runtime = {
   arch: "x",
@@ -174,17 +179,19 @@ export const syntheticLane = (
     );
     return { ...sample, record: { ...sample.record, snapshot } };
   };
-  const roomed = (run: number): RoomSample => {
+  const roomed = (part: RoomPart): RoomSample => {
     const room = {
       allocated: { client: 900, frame: 200, server: 900 },
       checkpoint: tickDurations(ROOM_CHECKPOINT_MS * slowdown.runner),
       checkpointBytes: [40_000],
       confirm: tickDurations(ROOM_CONFIRM_MS * slowdown.runner),
+      part,
       resimulated: [5],
       rollback: tickDurations(ROOM_ROLLBACK_MS * slowdown.runner),
+      seeds: roomPartSeeds(scenario.bench, part),
       tick: tickDurations(ROOM_TICK_MS * slowdown.runner),
     };
-    const sample = sampleOf(scenario, "B", "room", `room-${run}-B.json`, {
+    const sample = sampleOf(scenario, "B", "room", `room-${part}-B.json`, {
       room,
     });
     return { ...sample, record: { ...sample.record, room } };

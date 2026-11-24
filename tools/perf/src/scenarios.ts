@@ -27,18 +27,19 @@ import { digestOf } from "./result.ts";
 const VALIDATOR_VERSION = 1;
 export const WINDOW_TICKS = 601;
 
+export const roomParts = [0, 1, 2] as const;
+export type RoomPart = (typeof roomParts)[number];
+
 export const pooledRoomSeeds = [
   [1, 4, 7],
   [2, 5],
   [3, 6],
-] as const satisfies readonly [
-  readonly number[],
-  readonly number[],
-  readonly number[],
-];
+] as const satisfies Readonly<Record<RoomPart, readonly number[]>>;
 
-export const roomSeedCount =
-  1 + pooledRoomSeeds.reduce((total, part) => total + part.length, 0);
+export const roomPartSeeds = (bench: Bench, part: RoomPart): number[] => [
+  benchRaces[bench].seed,
+  ...pooledRoomSeeds[part],
+];
 const WARMUP_TICKS = 1800;
 export const SEARCH_TICKS = 7200;
 const SPEED_FLOOR = 20;

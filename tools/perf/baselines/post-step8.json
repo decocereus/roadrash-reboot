@@ -4224,6 +4224,54 @@
       "side": "B",
       "source": "gate-2026-11-24T16-08-38-267Z-9f67ba9-396357f",
       "value": 0.0001488407274003785
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "timing.stamp.trimmedMean",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-19T16-11-54-177Z-9f67ba9-e068da7",
+      "value": 0.0002667888907132589
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "timing.stamp.trimmedMean",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-19T16-11-54-177Z-9f67ba9-e068da7",
+      "value": 0.0003109212666762381
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "timing.stamp.trimmedMean",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-19T17-13-30-706Z-9f67ba9-ac2ba02",
+      "value": 0.00026595087156925355
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "timing.stamp.trimmedMean",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-19T17-13-30-706Z-9f67ba9-ac2ba02",
+      "value": 0.00032428307966365666
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "timing.stamp.trimmedMean",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-23T10-33-08-339Z-9f67ba9-40682ab",
+      "value": 0.0003269527607665447
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "timing.stamp.trimmedMean",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-23T10-33-08-339Z-9f67ba9-40682ab",
+      "value": 0.0004172159915469685
     }
   ],
   "revisions": {
@@ -6189,6 +6237,57 @@
       "sides": {
         "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
         "B": "396357ff51595a2f97fe934ef3f8d613dcda86af"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+        "platform": "linux",
+        "machine": "GitHub-hosted runner, INTEL(R) XEON(R) PLATINUM 8573C",
+        "ci": "GitHub Actions run 44563232840, perf-results artifact 14549818958",
+        "why": "a perf-job run kept in stamp.node-linux-x64.json.gz; it is the worst recorded run on INTEL(R) XEON(R) PLATINUM 8573C, which has at least 3, so that CPU's own timing.stamp.trimmedMean limits take 1.15 x its value"
+      },
+      "id": "gate-2026-11-19T16-11-54-177Z-9f67ba9-e068da7",
+      "lanes": ["node"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "e068da71c89671b9d06160a7954edb054cc8bc02"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+        "platform": "linux",
+        "machine": "GitHub-hosted runner, INTEL(R) XEON(R) PLATINUM 8573C",
+        "ci": "GitHub Actions run 44574737206, perf-results artifact 14556577336",
+        "why": "a perf-job run kept in stamp.node-linux-x64.json.gz; it is the worst recorded run on INTEL(R) XEON(R) PLATINUM 8573C, which has at least 3, so that CPU's own timing.stamp.trimmedMean limits take 1.15 x its value"
+      },
+      "id": "gate-2026-11-19T17-13-30-706Z-9f67ba9-ac2ba02",
+      "lanes": ["node"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "ac2ba026622aca50f6f0bf19a2ca540e7ae6caf4"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "cpu": "AMD EPYC 7763 64-Core Processor",
+        "platform": "linux",
+        "machine": "GitHub-hosted runner, AMD EPYC 7763 64-Core Processor",
+        "ci": "GitHub Actions run 45157042068, perf-results artifact 14810130585",
+        "why": "a perf-job run kept in stamp.node-linux-x64.json.gz; it is the worst recorded run on AMD EPYC 7763 64-Core Processor, which has at least 3, so that CPU's own timing.stamp.trimmedMean limits take 1.15 x its value"
+      },
+      "id": "gate-2026-11-23T10-33-08-339Z-9f67ba9-40682ab",
+      "lanes": ["node"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "40682abf61c26a7bdbac33b2b8c884e57632f636"
       }
     }
   ],

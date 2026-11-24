@@ -8,6 +8,7 @@ import { baselineSummary, summaryProblems } from "./baseline.ts";
 import { budgetProblems, budgetsFile } from "./budgets.ts";
 import { ConfigInvalid } from "./config-invalid.ts";
 import { sha256Of } from "./result.ts";
+import { readRecordings, worstRunProblems } from "./worst-run.ts";
 
 const decodeBudgets = Schema.decodeUnknownEffect(
   Schema.fromJsonString(budgetsFile)
@@ -82,9 +83,11 @@ export const checkApproved = Effect.fnUntraced(function* checkApproved(
           })
       )
     );
+  const recordings = yield* readRecordings(root, budgets);
   const problems = [
     ...hashes.filter((each) => each !== null),
     ...summaryProblems(summary, budgets),
+    ...worstRunProblems(budgets, summary, recordings),
   ];
   if (problems.length > 0) {
     return yield* new ConfigInvalid({
