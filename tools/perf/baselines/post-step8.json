@@ -3856,6 +3856,22 @@
       "side": "B",
       "source": "gate-2026-11-23T15-55-13-698Z-9f67ba9-ae99aa4",
       "value": 57087.28119800333
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.incremental.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-24T09-25-12-732Z-4f4f6aa-4f4f6aa",
+      "value": 242389
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.incremental.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-24T09-25-12-732Z-4f4f6aa-4f4f6aa",
+      "value": 844748
     }
   ],
   "revisions": {
@@ -5692,6 +5708,29 @@
       "sides": {
         "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
         "B": "ae99aa48d5b8130be171980bfc01faa9d47592fa"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 886989, \"bytes.route.root.gzip\": 371930, \"bytes.route.kit.raw\": 565291, \"bytes.route.kit.gzip\": 256189, \"bytes.game.raw\": 1731737, \"bytes.game.gzip\": 614319, \"bytes.game.incremental.raw\": 844748, \"bytes.game.incremental.gzip\": 242389, \"bytes.worker.raw\": 668363, \"bytes.worker.gzip\": 168337, \"bytes.client.raw\": 2026106, \"bytes.client.gzip\": 824663}",
+        "builtB": "{\"bytes.route.root.raw\": 886989, \"bytes.route.root.gzip\": 371930, \"bytes.route.kit.raw\": 565291, \"bytes.route.kit.gzip\": 256189, \"bytes.game.raw\": 1731737, \"bytes.game.gzip\": 614319, \"bytes.game.incremental.raw\": 844748, \"bytes.game.incremental.gzip\": 242389, \"bytes.worker.raw\": 668468, \"bytes.worker.gzip\": 168349, \"bytes.client.raw\": 2026106, \"bytes.client.gzip\": 824663}",
+        "harnessDigest": "1f7ef1d1a48b26670a8b3b7a25d4942a5e08d9aaf77a493d617d0b211a5c85b4",
+        "lockfileSha256": "77c8e6e3d12c228040bf14967c83c703ecf744fbf90d7ef9b77c41f64e29a992",
+        "machine": "Mac16,8",
+        "node": "v26.13.1",
+        "os": "macOS 26.7.3 (25G342)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "2aee74b9be5dec1aa6241ce03910e203425a9103a9e7974525cb5835d7f5563c",
+        "sideBSourceDigest": "2aee74b9be5dec1aa6241ce03910e203425a9103a9e7974525cb5835d7f5563c",
+        "why": "On-foot riders play the shared walk, jog and sprint loops through four new modules, gait.ts, strider.ts, foot-lock.ts and rider-moves.ts, which add 3,971 B gzip and 9,821 B raw to the game chunk loaded after the menus over main at 7eac830 (242,389 B against 238,418 B gzip). Minified and gzipped one by one they come to about 1.9, 1.0, 1.2 and 0.6 KB. The gzip row was 174 B over its limit, so both bytes.game.incremental rows re-pin on this run with the usual headroom."
+      },
+      "id": "baseline-2026-11-24T09-25-12-732Z-4f4f6aa-4f4f6aa",
+      "lanes": ["build"],
+      "sides": {
+        "A": "4f4f6aacfc18dc9f6d211fa747f7dcd8d01f5fec",
+        "B": "4f4f6aacfc18dc9f6d211fa747f7dcd8d01f5fec"
       }
     }
   ],
