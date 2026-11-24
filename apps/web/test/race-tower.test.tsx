@@ -54,6 +54,8 @@ const layoutBoundary = (drawn: number): readonly string[] => [
   `height:${0.6 + drawn * ROW_EM}em`,
 ];
 
+const CLOSE_TICKS = 600;
+
 const markupOf = (rows: readonly TowerRow[]): string =>
   renderToStaticMarkup(<RaceTower rows={rows} shown="all" />);
 
@@ -198,6 +200,33 @@ describe("the race tower", () => {
     expect({ narrow: boundaryOf(3), whole: boundaryOf("all") }).toStrictEqual({
       narrow: layoutBoundary(3),
       whole: layoutBoundary(rows.length),
+    });
+  });
+
+  it("keeps a close rider's row while its shown gap holds and never shows a minus gap", () => {
+    const ride = rideFor(soloPlan, 20);
+    const tower = createTower();
+    let rows = rowsOf(tower, ride);
+    let markup = markupOf(rows);
+    let close = 0;
+    let minus = 0;
+    let rebuilt = 0;
+    for (let tick = 0; tick < CLOSE_TICKS; tick += 1) {
+      ride.stage.race.step(noControls);
+      const next = rowsOf(tower, ride);
+      const drawn = markupOf(next);
+      close += next.some((row) => row.mark === "gap" && row.tenths === 0)
+        ? 1
+        : 0;
+      minus += drawn.includes("+-") ? 1 : 0;
+      rebuilt += drawn === markup && next !== rows ? 1 : 0;
+      rows = next;
+      markup = drawn;
+    }
+    expect({ close: close > 0, minus, rebuilt }).toStrictEqual({
+      close: true,
+      minus: 0,
+      rebuilt: 0,
     });
   });
 

@@ -20,10 +20,11 @@ interface Entry {
 const MS_PER_TENTH = 100;
 const HALF_TENTH_MS = MS_PER_TENTH / 2;
 
-const nearestTenth = (ms: number): number => {
+export const nearestTenth = (ms: number): number => {
   const shifted = ms + HALF_TENTH_MS;
-  const below = ((shifted % MS_PER_TENTH) + MS_PER_TENTH) % MS_PER_TENTH;
-  return (shifted - below) / MS_PER_TENTH;
+  const remainder = shifted % MS_PER_TENTH;
+  const tenths = (shifted - remainder) / MS_PER_TENTH;
+  return remainder < 0 ? tenths - 1 : tenths;
 };
 
 const noRows: readonly TowerRow[] = [];

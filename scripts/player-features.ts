@@ -380,6 +380,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/race-feedback.ts",
       "apps/web/src/hud-feed.ts",
       "apps/web/test/hud-cadence.test.ts",
+      "apps/web/test/hud-tower-rounding.test.ts",
       "apps/web/test/race-tower.test.tsx",
       "apps/web/test/tower-publish-heap.test.ts",
       "apps/web/test/tower-publish-heap.ts",
