@@ -124,7 +124,7 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "c6bd3b6164e6fb340e9be55232fd8445b46dffec9b90742c21620f5278d3e79c"
+    "summarySha256": "c4f368fdb91cabf73f317f5be5f5f55797454d42fc124b95ddfac5cc0b4146ea"
   },
   "limits": [
     {
@@ -428,27 +428,27 @@
       "unit": "B"
     },
     {
-      "derivation": "baseline + max(4096, ceil(0.02 x baseline)); the on-foot gait, gait.ts, strider.ts, foot-lock.ts and rider-moves.ts, adds 3971 B gzip over main 7eac830",
-      "value": 247237,
-      "baseline": 242389,
+      "derivation": "baseline + max(4096, ceil(0.02 x baseline)); the seated rider's pose code and baked seat table add 6192 B gzip over main deefebb1",
+      "value": 253765,
+      "baseline": 248789,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.incremental.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-24T09-25-12-732Z-4f4f6aa-4f4f6aa",
+      "source": "baseline-2026-11-24T20-00-53-824Z-890794a-890794a",
       "unit": "B"
     },
     {
-      "derivation": "baseline + max(4096, ceil(0.02 x baseline)); the on-foot gait adds 9821 B raw over main 7eac830",
-      "value": 861643,
-      "baseline": 844748,
+      "derivation": "baseline + max(4096, ceil(0.02 x baseline)); the seated rider's pose code and baked seat table add 20132 B raw over main deefebb1",
+      "value": 882870,
+      "baseline": 865558,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.incremental.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-24T09-25-12-732Z-4f4f6aa-4f4f6aa",
+      "source": "baseline-2026-11-24T20-00-53-824Z-890794a-890794a",
       "unit": "B"
     },
     {
