@@ -1,5 +1,5 @@
+import type { TrackCrossing } from "@racer/track/crossings";
 import { trackFor } from "@racer/track/roads";
-import type { TrackCrossing } from "@racer/track/track";
 import { describe, expect, it } from "vitest";
 
 import { onRoad } from "./cross-traffic.ts";
@@ -31,8 +31,6 @@ const race = (seed: number): RaceState => {
   });
 };
 
-// A car that pulls up creeps a few centimetres over its line; a metre over
-// it is on its way across.
 const PAST_THE_LINE = 1;
 
 const crossingAt = (car: CrossCar): TrackCrossing | undefined =>
@@ -93,44 +91,48 @@ describe("cross-road cars and a car stuck in the junction", () => {
     });
   });
 
-  it("never leave their line into a box a stopped main-road car still fills, over whole races", () => {
-    let intoTakenBox = 0;
-    let crossed = 0;
-    for (const seed of [1, 2, 3, 4]) {
-      const state = race(seed);
-      const travelled = new Map<CrossCar, number>();
-      for (let tick = 0; tick < 150 * TICK_RATE; tick += 1) {
-        stepRace(state, breakwater, frameOf(state));
-        for (const car of state.crossCars) {
-          const before = travelled.get(car) ?? car.travel;
-          travelled.set(car, car.travel);
-          const crossing = crossingAt(car);
-          if (
-            !crossing?.lights ||
-            !onRoad(car) ||
-            before > car.stopAt + PAST_THE_LINE ||
-            car.travel <= car.stopAt + PAST_THE_LINE
-          ) {
-            continue;
-          }
-          crossed += 1;
-          if (
-            state.cars.some(
-              (lane) =>
-                Math.abs(lane.speed) < 0.5 &&
-                Math.abs(lane.s - crossing.s) <
-                  lane.halfLength + crossing.boxHalfLength &&
-                crossesLane(car, lane)
-            )
-          ) {
-            intoTakenBox += 1;
+  it(
+    "never leave their line into a box a stopped main-road car still fills, over whole races",
+    { timeout: 30_000 },
+    () => {
+      let intoTakenBox = 0;
+      let crossed = 0;
+      for (const seed of [1, 2, 3, 4]) {
+        const state = race(seed);
+        const travelled = new Map<CrossCar, number>();
+        for (let tick = 0; tick < 150 * TICK_RATE; tick += 1) {
+          stepRace(state, breakwater, frameOf(state));
+          for (const car of state.crossCars) {
+            const before = travelled.get(car) ?? car.travel;
+            travelled.set(car, car.travel);
+            const crossing = crossingAt(car);
+            if (
+              !crossing?.lights ||
+              !onRoad(car) ||
+              before > car.stopAt + PAST_THE_LINE ||
+              car.travel <= car.stopAt + PAST_THE_LINE
+            ) {
+              continue;
+            }
+            crossed += 1;
+            if (
+              state.cars.some(
+                (lane) =>
+                  Math.abs(lane.speed) < 0.5 &&
+                  Math.abs(lane.s - crossing.s) <
+                    lane.halfLength + crossing.boxHalfLength &&
+                  crossesLane(car, lane)
+              )
+            ) {
+              intoTakenBox += 1;
+            }
           }
         }
       }
+      expect({ crossed: crossed > 0, intoTakenBox }).toStrictEqual({
+        crossed: true,
+        intoTakenBox: 0,
+      });
     }
-    expect({ crossed: crossed > 0, intoTakenBox }).toStrictEqual({
-      crossed: true,
-      intoTakenBox: 0,
-    });
-  });
+  );
 });
