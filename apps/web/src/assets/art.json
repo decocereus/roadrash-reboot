@@ -1,8 +1,8 @@
 {
-  "models/bike.glb": "3b18622d227e36598b9810bd0025e0b5.glb",
+  "models/bike.glb": "0b7dbea570116d8ab97bced8ddbe5990.glb",
   "models/car.glb": "1ef6f80eab60d8c13ca5d854af404c83.glb",
-  "models/ghost.glb": "b01263d60f1232788a2c3e30b26988c5.glb",
-  "models/oni.glb": "22be3fdb791ec1dd1cb2a5cd8db152bd.glb",
+  "models/ghost.glb": "2d2df3300b77780a80d0895786571d5f.glb",
+  "models/oni.glb": "64045d1e003408de56d6ec8d18ee3f53.glb",
   "models/pedestrians.glb": "e622f116d97218937bc9bce589a2aadf.glb",
   "models/rider_a.glb": "c72640ffa2fe627ffb0fac38c6f69cba.glb",
   "models/rider_altman.glb": "7a2e34153e0e88a15fa9d8bd754ede4e.glb",
@@ -14,7 +14,7 @@
   "models/rider_musk.glb": "f82b5bd719be1b13704e70f27795c0bb.glb",
   "models/rider_ranveer.glb": "4e033eca15e67b0e2710e79d3abc14cf.glb",
   "models/rider_ronaldo.glb": "77472a61c0c83eaf410dd614334cabd8.glb",
-  "models/seraph.glb": "1a42d7482ad49859091881c16d3e41bd.glb",
+  "models/seraph.glb": "a95ff30477401c7102adcad1fed55157.glb",
   "models/stalls.glb": "2e99d16dd66b8360b1b0a812f027b626.glb",
   "models/truck.glb": "de628443086ab47c25738a6f40d7371a.glb",
   "models/van.glb": "ba102e5d6275ac2337017b76874eaec8.glb"
