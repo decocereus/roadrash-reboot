@@ -11,7 +11,7 @@ import type { BikeFit } from "../src/game/bike-fit.ts";
 import { bikeModelIds } from "../src/game/bike-models.ts";
 import type { BikeModelId } from "../src/game/bike-models.ts";
 import { createShading } from "../src/game/cel.ts";
-import { BARE_FRONT, clothOf } from "../src/game/figure-chest.ts";
+import { bareCloth, clothOf } from "../src/game/figure-chest.ts";
 import { paletteOf } from "../src/game/figure-rig.ts";
 import { SEAT_CHECK_SPEED, seatChecks } from "../src/game/figure-seating.ts";
 import { lookOf } from "../src/game/looks.ts";
@@ -316,7 +316,7 @@ describe("rider clearance against the bike's own triangles", () => {
         (
           [
             [torso, (at: number) => SINK + cloth.giveAt(at)],
-            [arms, () => armSink],
+            [arms, (at: number) => armSink + cloth.giveAt(at)],
           ] as const
         ).flatMap(([bones, allowed]) => {
           const { over, where } = deepest(stance, bones, allowed);
@@ -340,16 +340,23 @@ describe("rider clearance against the bike's own triangles", () => {
     }
   );
 
-  it("takes the bare-body depth from the slimmest shipped rider", async () => {
+  it("takes each bare-body depth from the slimmest shipped rider", async () => {
     const ratios = await Promise.all(
       riderUrls.map(async (url) => {
         const { value } = await assetParsers.rider(artFile(url), url);
         const figure = createRiderFigure(value, shading, paletteOf(0));
-        const { frontRatio } = clothOf(bodyOf(figure.root));
+        const cloth = clothOf(bodyOf(figure.root));
         figure.dispose();
-        return frontRatio;
+        return cloth.ratios;
       })
     );
-    expect(BARE_FRONT).toBeCloseTo(Math.min(...ratios), BARE_DIGITS);
+    for (const part of ["front", "sleeve"] as const) {
+      for (const [band, bare] of bareCloth[part].entries()) {
+        const slimmest = Math.min(
+          ...ratios.map((ratio) => ratio[part][band] ?? Infinity)
+        );
+        expect(bare).toBeCloseTo(slimmest, BARE_DIGITS);
+      }
+    }
   });
 });

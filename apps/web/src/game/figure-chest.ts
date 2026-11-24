@@ -4,7 +4,6 @@ import type { Rig } from "./figure-rig.ts";
 
 const SPACING = 0.03;
 const INFLUENCES = 4;
-export const BARE_FRONT = 0.3146;
 
 export const forearmBones = ["lowerarm_l", "lowerarm_r"] as const;
 
@@ -54,16 +53,38 @@ const ownerOf = (
   return owner;
 };
 
+export const bareCloth = {
+  front: [0.3146],
+  sleeve: [0.2385, 0.161],
+} as const;
+
+type ClothPart = keyof typeof bareCloth;
+
 export interface Cloth {
-  readonly frontRatio: number;
+  readonly ratios: Readonly<Record<ClothPart, readonly number[]>>;
   readonly giveAt: (vertex: number) => number;
 }
 
+interface Wear {
+  readonly part: ClothPart;
+  readonly length: number;
+  readonly standoffOf: (bound: THREE.Vector3) => readonly [number, number];
+}
+
+const bandOf = (share: number, bands: number) =>
+  THREE.MathUtils.clamp(Math.floor(share * bands), 0, bands - 1);
+
 export const clothOf = (body: THREE.SkinnedMesh): Cloth => {
   const { bindMatrix, geometry, skeleton } = body;
+  const indexOf = (name: string) => {
+    const index = skeleton.bones.findIndex((bone) => bone.name === name);
+    if (index === -1) {
+      throw new Error(`The rider model has no ${name} bone.`);
+    }
+    return index;
+  };
   const bindAt = (name: string) => {
-    const bone = skeleton.getBoneByName(name);
-    const inverse = bone && skeleton.boneInverses[skeleton.bones.indexOf(bone)];
+    const inverse = skeleton.boneInverses[indexOf(name)];
     if (!inverse) {
       throw new Error(`The rider model has no ${name} bone.`);
     }
@@ -92,30 +113,61 @@ export const clothOf = (body: THREE.SkinnedMesh): Cloth => {
     }
     return onLine.copy(pelvis);
   };
-  const torso = new Set(
-    spineBones
-      .slice(0, -1)
-      .map((name) => skeleton.bones.findIndex((bone) => bone.name === name))
-  );
+  const front: Wear = {
+    length: pelvis.distanceTo(neck),
+    part: "front",
+    standoffOf: (bound) => [0, bound.sub(lineAt(bound.y)).dot(forward)],
+  };
+  const sleeveOf = (forearm: string, hand: string): Wear => {
+    const elbow = bindAt(forearm);
+    const axis = bindAt(hand).sub(elbow);
+    const length = axis.length();
+    axis.normalize();
+    return {
+      length,
+      part: "sleeve",
+      standoffOf: (bound) => {
+        const along = bound.sub(elbow).dot(axis);
+        return [
+          bandOf(along / length, bareCloth.sleeve.length),
+          bound.addScaledVector(axis, -along).length(),
+        ];
+      },
+    };
+  };
+  const wearOf = new Map<number, Wear>([
+    ...spineBones.slice(0, -1).map((name) => [indexOf(name), front] as const),
+    [indexOf("lowerarm_l"), sleeveOf("lowerarm_l", "hand_l")],
+    [indexOf("lowerarm_r"), sleeveOf("lowerarm_r", "hand_r")],
+  ]);
   const position = geometry.getAttribute("position");
   const boneOf = geometry.getAttribute("skinIndex");
   const weightOf = geometry.getAttribute("skinWeight");
   const standoffs = new Float32Array(position.count).fill(-Infinity);
+  const bares = new Float64Array(position.count);
+  const ratios = {
+    front: bareCloth.front.map(() => 0),
+    sleeve: bareCloth.sleeve.map(() => 0),
+  };
   const bound = new THREE.Vector3();
-  let deepest = 0;
   for (let vertex = 0; vertex < position.count; vertex += 1) {
-    if (torso.has(boneOf.getComponent(vertex, ownerOf(weightOf, vertex)))) {
+    const wear = wearOf.get(
+      boneOf.getComponent(vertex, ownerOf(weightOf, vertex))
+    );
+    if (wear) {
       bound.fromBufferAttribute(position, vertex).applyMatrix4(bindMatrix);
-      const standoff = bound.sub(lineAt(bound.y)).dot(forward);
+      const [band, standoff] = wear.standoffOf(bound);
+      const bare = bareCloth[wear.part][band] ?? 0;
+      const deepest = ratios[wear.part];
+      deepest[band] = Math.max(deepest[band] ?? 0, standoff / wear.length);
       standoffs[vertex] = standoff;
-      deepest = Math.max(deepest, standoff);
+      bares[vertex] = bare * wear.length;
     }
   }
-  const spine = pelvis.distanceTo(neck);
-  const bare = BARE_FRONT * spine;
   return {
-    frontRatio: deepest / spine,
-    giveAt: (vertex) => Math.max(0, (standoffs[vertex] ?? -Infinity) - bare),
+    giveAt: (vertex) =>
+      Math.max(0, (standoffs[vertex] ?? -Infinity) - (bares[vertex] ?? 0)),
+    ratios,
   };
 };
 

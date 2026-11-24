@@ -232,9 +232,14 @@ export const createRiderFigure = (
   const lifts = { left: riseOffset(-1), right: riseOffset(1) };
   const lift = new THREE.Vector3();
   const bodyPointsOf = () => {
-    const points = bodyPointsByAsset.get(asset) ?? {
-      chest: chestOf(rig, body, chestBones, clothOf(body).giveAt),
-      forearms: chestOf(rig, body, forearmBones, () => 0),
+    const held = bodyPointsByAsset.get(asset);
+    if (held) {
+      return held;
+    }
+    const { giveAt } = clothOf(body);
+    const points = {
+      chest: chestOf(rig, body, chestBones, giveAt),
+      forearms: chestOf(rig, body, forearmBones, giveAt),
     };
     bodyPointsByAsset.set(asset, points);
     return points;
