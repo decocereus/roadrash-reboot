@@ -3,6 +3,7 @@ import * as THREE from "three";
 
 import { createChaseCamera } from "../src/game/chase-camera.ts";
 import { createRenderer } from "../src/game/game.ts";
+import { isMesh } from "../src/game/meshes.ts";
 import { createPipeline } from "../src/game/post.ts";
 import { presets } from "../src/game/presets.ts";
 import { createWorld } from "../src/game/world.ts";
@@ -25,15 +26,15 @@ interface Frame {
   readonly apart: number;
 }
 
-const skyOf = (
-  scene: THREE.Scene
-): { readonly mesh: THREE.Mesh; readonly material: THREE.ShaderMaterial } => {
-  const found: { mesh: THREE.Mesh; material: THREE.ShaderMaterial }[] = [];
+interface DrawnSky {
+  readonly mesh: THREE.Mesh;
+  readonly material: THREE.ShaderMaterial;
+}
+
+const skyOf = (scene: THREE.Scene): DrawnSky => {
+  const found: DrawnSky[] = [];
   scene.traverse((node) => {
-    if (
-      node instanceof THREE.Mesh &&
-      node.material instanceof THREE.ShaderMaterial
-    ) {
+    if (isMesh(node) && node.material instanceof THREE.ShaderMaterial) {
       found.push({ material: node.material, mesh: node });
     }
   });
