@@ -2,6 +2,10 @@
   "baseline": {
     "raw": [
       {
+        "file": "tools/perf/baselines/allocation.node-darwin-arm64.json.gz",
+        "sha256": "a56ebc38fc38a459eb1a306c1ace6539d707d7bb4a5de8b1ea5ea1d2d4759017"
+      },
+      {
         "file": "tools/perf/baselines/allocation.node-linux-x64.json.gz",
         "sha256": "2a2fe2775cefcc7369190c0e7eb7b7d44a0456c7f221815a3699d5b832e8e6dc"
       },
@@ -120,7 +124,7 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "c6c3af42f30acedbdbce4862ddd5928701a271727c4bc3fbdc67c7d2642b0f28"
+    "summarySha256": "d6c30f209d18ec20dbd88132eb53fc56ad4a82204de9b84b77d0d6fe065121db"
   },
   "limits": [
     {
@@ -1450,15 +1454,15 @@
       "runner": "Intel(R) Xeon(R) 6975P-C"
     },
     {
-      "derivation": "1.1 x baseline median, uncalibrated",
-      "value": 65299.45557404326,
-      "baseline": 59363.14143094842,
+      "derivation": "1.1 x baseline median of five runs, uncalibrated",
+      "value": 62125.08618968386,
+      "baseline": 56477.35108153078,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "sim.allocatedBytesPerTick",
       "paired": 1.1,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "source": "gate-2026-11-24T16-21-13-271Z-9f67ba9-ee46bca",
       "unit": "B"
     },
     {
@@ -1474,15 +1478,15 @@
       "unit": "B"
     },
     {
-      "derivation": "1.1 x baseline median, uncalibrated",
-      "value": 49484.772046589016,
-      "baseline": 44986.15640599002,
+      "derivation": "1.1 x baseline median of five runs, uncalibrated",
+      "value": 43709.19001663894,
+      "baseline": 39735.627287853575,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "sim.allocatedBytesPerTick",
       "paired": 1.1,
       "scenario": "reference-v1",
-      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "source": "gate-2026-11-24T16-21-13-271Z-9f67ba9-ee46bca",
       "unit": "B"
     },
     {
