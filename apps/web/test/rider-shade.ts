@@ -9,25 +9,31 @@ import { createBikes } from "../src/game/actors.ts";
 import type { AcquiredAssets, RiderAsset } from "../src/game/assets.ts";
 import { bikeModelIds } from "../src/game/bike-models.ts";
 import type { BikeModelId } from "../src/game/bike-models.ts";
-import { createShading } from "../src/game/cel.ts";
+import { createShading, figureFloorOf } from "../src/game/cel.ts";
 import { bodyFor, paletteOf } from "../src/game/figure-rig.ts";
 import { assetParsers, createRenderer } from "../src/game/game.ts";
 import { lookOf } from "../src/game/looks.ts";
 import { createPipeline } from "../src/game/post.ts";
 import { createRiderFigure } from "../src/game/rider-figure.ts";
 import type { Stance } from "../src/game/rider-figure.ts";
+import {
+  BACKGROUND,
+  bandsOf,
+  flatsIn,
+  identityOf,
+  rimShareOf,
+  round,
+  worldShadeFailures,
+} from "./shade-flats.ts";
+import type { Bands, Identity } from "./shade-flats.ts";
 
 const PIXEL_RATIO = 2;
 const SETTLE_STEPS = 8;
-const CLUSTERS = 16;
-const ROUNDS = 16;
-const SAMPLE_LIMIT = 24_000;
-const BACKGROUND = "#3a3a3a";
-const BAND_STEP = 0.02;
 const SHEET_COLUMNS = 3;
-const HUE_FLOOR = 0.03;
-const INK_TOLERANCE = 3;
 const RIDER_BIKE_PAINT = 2;
+const SUN_DISTANCE = 8;
+const OCCLUDER_DISTANCE = 5;
+const OCCLUDER_SIZE = 40;
 
 const lookNames = ["dusk", "night"] as const;
 type LookName = (typeof lookNames)[number];
@@ -77,263 +83,6 @@ const stance: Stance = {
   weapon: "none",
 };
 
-type Lab = readonly [number, number, number];
-
-const linearOf = (byte: number): number => {
-  const value = byte / 255;
-  return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
-};
-
-const labOf = (red: number, green: number, blue: number): Lab => {
-  const r = linearOf(red);
-  const g = linearOf(green);
-  const b = linearOf(blue);
-  const l = Math.cbrt(0.412221471 * r + 0.536332536 * g + 0.051445993 * b);
-  const m = Math.cbrt(0.211903498 * r + 0.680699545 * g + 0.107396957 * b);
-  const s = Math.cbrt(0.088302462 * r + 0.281718838 * g + 0.629978701 * b);
-  return [
-    0.210454255 * l + 0.793617785 * m - 0.004072047 * s,
-    1.977998495 * l - 2.428592205 * m + 0.45059371 * s,
-    0.025904037 * l + 0.782771766 * m - 0.808675766 * s,
-  ];
-};
-
-const lchOf = (lab: Lab) => ({
-  c: Math.hypot(lab[1], lab[2]),
-  h: (THREE.MathUtils.radToDeg(Math.atan2(lab[2], lab[1])) + 360) % 360,
-  l: lab[0],
-});
-
-const hueGap = (from: number, to: number): number => {
-  const gap = Math.abs(from - to) % 360;
-  return gap > 180 ? 360 - gap : gap;
-};
-
-const distance = (a: Lab, b: Lab): number =>
-  Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
-
-const meanOf = (labs: readonly Lab[]): Lab => {
-  let l = 0;
-  let a = 0;
-  let b = 0;
-  for (const lab of labs) {
-    l += lab[0];
-    a += lab[1];
-    b += lab[2];
-  }
-  const count = Math.max(labs.length, 1);
-  return [l / count, a / count, b / count];
-};
-
-const round = (value: number, places = 3): number =>
-  Math.round(value * 10 ** places) / 10 ** places;
-
-interface Bands {
-  readonly valid: Uint8Array;
-  readonly lit: readonly Lab[];
-  readonly shadow: readonly Lab[];
-}
-
-const labAt = (pixels: Uint8Array, pixel: number): Lab =>
-  labOf(
-    pixels[pixel * 4] ?? 0,
-    pixels[pixel * 4 + 1] ?? 0,
-    pixels[pixel * 4 + 2] ?? 0
-  );
-
-const clearOfInk = (
-  lit: Uint8Array,
-  inked: Uint8Array,
-  pixel: number
-): boolean => {
-  let gap = 0;
-  for (let channel = 0; channel < 3; channel += 1) {
-    gap += Math.abs(
-      (lit[pixel * 4 + channel] ?? 0) - (inked[pixel * 4 + channel] ?? 0)
-    );
-  }
-  return gap <= INK_TOLERANCE;
-};
-
-const quantile = (values: readonly number[], at: number): number | null => {
-  const sorted = values.toSorted((a, b) => a - b);
-  const value = sorted[Math.floor((sorted.length - 1) * at)];
-  return value === undefined ? null : round(value, 1);
-};
-
-const backgroundLab = labOf(
-  Number.parseInt(BACKGROUND.slice(1, 3), 16),
-  Number.parseInt(BACKGROUND.slice(3, 5), 16),
-  Number.parseInt(BACKGROUND.slice(5, 7), 16)
-);
-
-const bandsOf = (
-  lit: Uint8Array,
-  inked: Uint8Array,
-  shadow: Uint8Array,
-  width: number,
-  height: number
-): Bands => {
-  const banded = new Uint8Array(width * height);
-  const litLabs: Lab[] = Array.from({ length: width * height });
-  const shadowLabs: Lab[] = Array.from({ length: width * height });
-  for (let pixel = 0; pixel < width * height; pixel += 1) {
-    const litLab = labAt(lit, pixel);
-    const shadowLab = labAt(shadow, pixel);
-    litLabs[pixel] = litLab;
-    shadowLabs[pixel] = shadowLab;
-    const onSubject =
-      clearOfInk(lit, inked, pixel) &&
-      distance(litLab, backgroundLab) > BAND_STEP &&
-      distance(shadowLab, backgroundLab) > BAND_STEP;
-    banded[pixel] = onSubject && litLab[0] - shadowLab[0] > BAND_STEP ? 1 : 0;
-  }
-  const valid = new Uint8Array(width * height);
-  for (let row = 1; row < height - 1; row += 1) {
-    for (let column = 1; column < width - 1; column += 1) {
-      const pixel = row * width + column;
-      valid[pixel] =
-        banded[pixel] === 1 &&
-        banded[pixel - 1] === 1 &&
-        banded[pixel + 1] === 1 &&
-        banded[pixel - width] === 1 &&
-        banded[pixel + width] === 1
-          ? 1
-          : 0;
-    }
-  }
-  return { lit: litLabs, shadow: shadowLabs, valid };
-};
-
-const nearestOf = (centres: readonly Lab[], lab: Lab): number => {
-  let best = 0;
-  let gap = Number.POSITIVE_INFINITY;
-  for (let index = 0; index < centres.length; index += 1) {
-    const centre = centres[index];
-    if (centre && distance(centre, lab) < gap) {
-      gap = distance(centre, lab);
-      best = index;
-    }
-  }
-  return best;
-};
-
-const centresOf = (sample: readonly Lab[]): Lab[] => {
-  const byLightness = sample.toSorted((a, b) => a[0] - b[0]);
-  const first = byLightness[Math.floor(byLightness.length / 2)];
-  if (!first) {
-    return [];
-  }
-  const centres: Lab[] = [first];
-  while (centres.length < CLUSTERS) {
-    let farthest = first;
-    let gap = -1;
-    for (const lab of sample) {
-      const nearest = distance(centres[nearestOf(centres, lab)] ?? first, lab);
-      if (nearest > gap) {
-        gap = nearest;
-        farthest = lab;
-      }
-    }
-    centres.push(farthest);
-  }
-  for (let roundIndex = 0; roundIndex < ROUNDS; roundIndex += 1) {
-    const members: Lab[][] = centres.map(() => []);
-    for (const lab of sample) {
-      members[nearestOf(centres, lab)]?.push(lab);
-    }
-    for (let index = 0; index < centres.length; index += 1) {
-      const group = members[index];
-      if (group && group.length > 0) {
-        centres[index] = meanOf(group);
-      }
-    }
-  }
-  return centres;
-};
-
-interface Identity {
-  readonly centres: readonly Lab[];
-  readonly flatOf: Int16Array;
-  readonly counted: number;
-}
-
-const identityOf = (reference: Bands): Identity => {
-  const sample: Lab[] = [];
-  let counted = 0;
-  for (const valid of reference.valid) {
-    counted += valid;
-  }
-  const stride = Math.max(1, Math.floor(counted / SAMPLE_LIMIT));
-  let seen = 0;
-  for (let pixel = 0; pixel < reference.valid.length; pixel += 1) {
-    const lab = reference.lit[pixel];
-    if (reference.valid[pixel] === 1 && lab) {
-      if (seen % stride === 0) {
-        sample.push(lab);
-      }
-      seen += 1;
-    }
-  }
-  const centres = centresOf(sample);
-  const flatOf = new Int16Array(reference.valid.length).fill(-1);
-  for (let pixel = 0; pixel < reference.valid.length; pixel += 1) {
-    const lab = reference.lit[pixel];
-    if (reference.valid[pixel] === 1 && lab) {
-      flatOf[pixel] = nearestOf(centres, lab);
-    }
-  }
-  return { centres, counted, flatOf };
-};
-
-const lchRounded = (lab: Lab) => {
-  const lch = lchOf(lab);
-  return {
-    c: round(lch.c),
-    h: round(lch.h, 1),
-    l: round(lch.l),
-    lab: lab.map((value) => round(value, 4)),
-  };
-};
-
-const flatsIn = (identity: Identity, bands: Bands) =>
-  identity.centres.map((_centre, flat) => {
-    const lit: Lab[] = [];
-    const shadow: Lab[] = [];
-    const gaps: number[] = [];
-    for (let pixel = 0; pixel < bands.valid.length; pixel += 1) {
-      const litLab = bands.lit[pixel];
-      const shadowLab = bands.shadow[pixel];
-      if (
-        identity.flatOf[pixel] === flat &&
-        bands.valid[pixel] === 1 &&
-        litLab &&
-        shadowLab
-      ) {
-        lit.push(litLab);
-        shadow.push(shadowLab);
-        const litLch = lchOf(litLab);
-        const shadowLch = lchOf(shadowLab);
-        if (litLch.c >= HUE_FLOOR && shadowLch.c >= HUE_FLOOR) {
-          gaps.push(hueGap(litLch.h, shadowLch.h));
-        }
-      }
-    }
-    const litMean = meanOf(lit);
-    const shadowMean = meanOf(shadow);
-    return {
-      drift: round(hueGap(lchOf(litMean).h, lchOf(shadowMean).h), 1),
-      lit: lchRounded(litMean),
-      pixelDrift: {
-        counted: gaps.length,
-        median: quantile(gaps, 0.5),
-        p90: quantile(gaps, 0.9),
-      },
-      pixels: lit.length,
-      shadow: lchRounded(shadowMean),
-    };
-  });
-
 const acquire = async (
   notes: string[]
 ): Promise<Pick<AcquiredAssets, "assets" | "release">> => {
@@ -373,13 +122,14 @@ const sheetCanvas = (
   return context;
 };
 
-type Subject = "riders" | "bikes";
+type Subject = "riders" | "bikes" | "palette";
 
 type Sitter =
   | {
       readonly kind: "rider";
       readonly name: string;
       readonly asset: RiderAsset;
+      readonly palette: number;
     }
   | {
       readonly kind: "bike";
@@ -399,7 +149,18 @@ const castOf = async (
   subject: Subject,
   assets: AcquiredAssets["assets"]
 ): Promise<{ sitters: Sitter[]; release: () => void }> => {
-  if (subject !== "riders") {
+  if (subject === "palette") {
+    return {
+      release: releaseEach([]),
+      sitters: riderPalette.map((_colours, palette): Sitter => ({
+        asset: bodyFor(assets, palette),
+        kind: "rider",
+        name: `generic palette ${palette}`,
+        palette,
+      })),
+    };
+  }
+  if (subject === "bikes") {
     return {
       release: releaseEach([]),
       sitters: riderPalette.flatMap((_colours, paint): Sitter[] => {
@@ -439,8 +200,9 @@ const castOf = async (
         asset: worn.value,
         kind: "rider",
         name: id,
+        palette: 0,
       })),
-      { asset: bodyFor(assets, 0), kind: "rider", name: "generic" },
+      { asset: bodyFor(assets, 0), kind: "rider", name: "generic", palette: 0 },
     ],
   };
 };
@@ -481,6 +243,9 @@ const frameFor = (view: View): Frame => {
 
 interface Shot {
   readonly bands: Bands;
+  readonly rimmed: Uint8Array;
+  readonly world: Uint8Array;
+  readonly floor: number;
   readonly picture: HTMLCanvasElement;
 }
 
@@ -505,7 +270,7 @@ const shoot = (
   );
   const figure =
     sitter.kind === "rider"
-      ? createRiderFigure(sitter.asset, shading, paletteOf(0))
+      ? createRiderFigure(sitter.asset, shading, paletteOf(sitter.palette))
       : null;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(BACKGROUND);
@@ -516,6 +281,13 @@ const shoot = (
     light.target,
     bikes.group
   );
+  const occluder = new THREE.Mesh(
+    new THREE.PlaneGeometry(OCCLUDER_SIZE, OCCLUDER_SIZE),
+    new THREE.MeshBasicMaterial({ shadowSide: THREE.DoubleSide })
+  );
+  occluder.castShadow = true;
+  occluder.position.copy(shading.key).multiplyScalar(OCCLUDER_DISTANCE);
+  occluder.lookAt(shading.key.clone().multiplyScalar(SUN_DISTANCE * 2));
   const gl = renderer.getContext();
   const read = () => {
     const pixels = new Uint8Array(width * height * 4);
@@ -559,8 +331,25 @@ const shoot = (
     light.intensity = 0;
     pipeline.render(scene, camera);
     const shadow = read();
-    return { bands: bandsOf(lit, inked, shadow, width, height), picture };
+    light.intensity = 1;
+    light.castShadow = true;
+    light.position.copy(shading.key).multiplyScalar(SUN_DISTANCE);
+    scene.add(occluder);
+    pipeline.render(scene, camera);
+    const rimmed = read();
+    shading.relight({ ...look, rim: "#000000" });
+    pipeline.render(scene, camera);
+    const world = read();
+    return {
+      bands: bandsOf(lit, inked, shadow, world, width, height),
+      floor: figureFloorOf(look.ink),
+      picture,
+      rimmed,
+      world,
+    };
   } finally {
+    occluder.geometry.dispose();
+    occluder.material.dispose();
     light.dispose();
     figure?.dispose();
     bikes.dispose();
@@ -588,12 +377,15 @@ export const run = async (view: View, subject: Subject = "riders") => {
           }[];
         }
       > = {};
+      const failures: string[] = [];
+      const rims: Record<string, number> = {};
       for (let row = 0; row < cast.sitters.length; row += 1) {
         const sitter = cast.sitters[row];
         if (!sitter) {
           continue;
         }
         let identity: Identity | null = null;
+        let figure: Identity | null = null;
         const perLook: Partial<Record<LookName, ReturnType<typeof flatsIn>>> =
           {};
         for (let column = 0; column < lookNames.length; column += 1) {
@@ -603,7 +395,20 @@ export const run = async (view: View, subject: Subject = "riders") => {
           }
           const shot = shoot(frame, assets, sitter, lookName);
           identity ??= identityOf(shot.bands);
+          figure ??= identityOf(shot.bands, shot.bands.subject);
           perLook[lookName] = flatsIn(identity, shot.bands);
+          const whole = flatsIn(figure, shot.bands, shot.bands.subject);
+          const rim = rimShareOf(shot.rimmed, shot.world, figure.counted);
+          rims[`${sitter.name} ${lookName}`] = rim;
+          failures.push(
+            ...worldShadeFailures(
+              `${sitter.name} ${lookName}`,
+              whole,
+              figure.counted,
+              shot.floor,
+              rim
+            )
+          );
           sheet.drawImage(
             shot.picture,
             column * frame.width,
@@ -632,9 +437,11 @@ export const run = async (view: View, subject: Subject = "riders") => {
         }
       }
       return {
+        failures,
         notes,
         programs: frame.renderer.info.programs?.length ?? 0,
         results,
+        rims,
         sheet: sheet.canvas.toDataURL("image/png"),
         subject,
         view,
@@ -647,4 +454,12 @@ export const run = async (view: View, subject: Subject = "riders") => {
     frame.renderer.dispose();
     release();
   }
+};
+
+export const check = async (view: View, subject: Subject = "riders") => {
+  const outcome = await run(view, subject);
+  if (outcome.failures.length > 0) {
+    throw new Error(outcome.failures.join("\n"));
+  }
+  return { rims: outcome.rims, subject, view };
 };

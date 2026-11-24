@@ -1,5 +1,6 @@
 import * as THREE from "three";
 
+import { FIGURE_FLOOR_OVER_INK } from "./looks.ts";
 import type { Look } from "./looks.ts";
 import { WALKER_OUTFITS } from "./walker-clips.ts";
 import { skinWalkers } from "./walker-skin.ts";
@@ -12,6 +13,7 @@ const FIGURE_LIGHT = [1.1, 0.97, 0.82] as const;
 const SHADE_CHROMA = 1.24;
 const FIGURE_DEPTH_FLOOR = 0.93;
 const LUMA = new THREE.Vector3(0.2126, 0.7152, 0.0722);
+const inkColour = new THREE.Color();
 const SUN_ANCHOR_HEIGHT = 2.2;
 const SHADOW_KERNEL =
   /shadow = \(\s*texture2DCompare[\s\S]*?\) \* \( 1\.0 \/ 17\.0 \);/u;
@@ -46,13 +48,15 @@ const CEL_UNIFORMS =
 
 const FIGURE_SHADE = `
 varying vec4 vSunAnchor;
-uniform float figureShade;uniform vec3 figureLight;uniform vec3 figureSun;uniform float figureDepth;uniform float figureChroma;
+uniform float figureShade;uniform vec3 figureLight;uniform vec3 figureSun;uniform float figureDepth;uniform float figureChroma;uniform float figureFloor;uniform vec3 skyDirection;
 const vec3 FIGURE_LUMA = vec3(0.2126, 0.7152, 0.0722);
 const vec2 SHADE_HUE = vec2(0.8660254, -0.5);
 const float SHADE_TURN = 0.17453293;
 const float SHADE_DIM = 0.8;
 const float FIGURE_RIM_EDGE = 0.62;
 const float FIGURE_RIM_FACING = -0.1;
+const float FIGURE_SKY_FACING = 0.25;
+const float FIGURE_SKY_RIM = 0.5;
 const mat3 LINEAR_TO_LMS = mat3(0.4122214708, 0.2119034982, 0.0883024619, 0.5363325363, 0.6806995451, 0.2817188376, 0.0514459929, 0.1073969566, 0.6299787005);
 const mat3 LMS_TO_LAB = mat3(0.2104542553, 1.9779984951, 0.0259040371, 0.7936177850, -2.4285922050, 0.7827717662, -0.0040720468, 0.4505937099, -0.8086757660);
 const mat3 LAB_TO_LMS = mat3(1.0, 1.0, 1.0, 0.3963377774, -0.1055613458, -0.0894841775, 0.2158037573, -0.0638541728, -1.2914855480);
@@ -67,7 +71,7 @@ vec3 figureShadeOf(vec3 lit, float dim) {
   vec2 hue = ab / max(length(ab), 1e-6);
   float turn = min(SHADE_TURN, acos(clamp(dot(hue, SHADE_HUE), -1.0, 1.0))) * sign(hue.x * SHADE_HUE.y - hue.y * SHADE_HUE.x);
   ab = vec2(ab.x * cos(turn) - ab.y * sin(turn), ab.x * sin(turn) + ab.y * cos(turn));
-  float lightness = lab.x * figureDepth * dim;
+  float lightness = max(lab.x * figureDepth * dim, min(lab.x * figureDepth, figureFloor));
   vec3 shade = figureLinearOf(vec3(lightness, ab));
   if (min(shade.r, min(shade.g, shade.b)) < 0.0) {
     float inside = 0.0;
@@ -116,7 +120,7 @@ const CEL_FRAGMENT = `
   float celRim = step(0.64, celFresnel) * step(0.25, dot(celNormal, rimDirection)) * rimStrength;
   #ifdef PAINTED
     if (figureShade > 0.5) {
-      celRim = step(FIGURE_RIM_EDGE, celFresnel) * step(FIGURE_RIM_FACING, dot(celNormal, keyDirection)) * figureSunlit;
+      celRim = step(FIGURE_RIM_EDGE, celFresnel) * mix(step(FIGURE_SKY_FACING, dot(celNormal, skyDirection)) * FIGURE_SKY_RIM, step(FIGURE_RIM_FACING, dot(celNormal, keyDirection)), figureSunlit);
     }
   #endif
   outgoingLight = mix(outgoingLight, rimColour, celRim);
@@ -135,7 +139,10 @@ interface CelOptions {
   readonly vertexColors?: boolean;
 }
 
-export type Tone = Pick<Look, "lit" | "rim" | "rimDirection" | "shadow">;
+export type Tone = Pick<
+  Look,
+  "ink" | "lit" | "rim" | "rimDirection" | "shadow"
+>;
 
 export interface Shading {
   readonly look: Look;
@@ -208,12 +215,38 @@ export const figureShadowOf = ({
   return { chroma: Math.min(depth * SHADE_CHROMA, 1), depth };
 };
 
+export const figureFloorOf = (ink: string): number => {
+  inkColour.set(ink);
+  const long = Math.cbrt(
+    0.4122214708 * inkColour.r +
+      0.5363325363 * inkColour.g +
+      0.0514459929 * inkColour.b
+  );
+  const middle = Math.cbrt(
+    0.2119034982 * inkColour.r +
+      0.6806995451 * inkColour.g +
+      0.1073969566 * inkColour.b
+  );
+  const short = Math.cbrt(
+    0.0883024619 * inkColour.r +
+      0.2817188376 * inkColour.g +
+      0.6299787005 * inkColour.b
+  );
+  return (
+    0.2104542553 * long +
+    0.793617785 * middle -
+    0.0040720468 * short +
+    FIGURE_FLOOR_OVER_INK
+  );
+};
+
 export const createShading = (look: Look): Shading => {
   const ramp = createRamp();
   const key = new THREE.Vector3(...look.keyDirection).normalize();
   const rimWorld = new THREE.Vector3();
   const rimDirection = { value: new THREE.Vector3(0, 0, 1) };
   const keyDirection = { value: new THREE.Vector3(0, 0, 1) };
+  const skyDirection = { value: new THREE.Vector3(0, 1, 0) };
   const rimColour = { value: new THREE.Color() };
   const toView = new THREE.Matrix3();
   const ambient = new THREE.Color();
@@ -222,6 +255,7 @@ export const createShading = (look: Look): Shading => {
   const figureSun = { value: new THREE.Vector3() };
   const figureDepth = { value: 1 };
   const figureChroma = { value: 1 };
+  const figureFloor = { value: 0 };
 
   const relight = (tone: Tone): void => {
     rimWorld.set(...tone.rimDirection).normalize();
@@ -238,6 +272,7 @@ export const createShading = (look: Look): Shading => {
     const shade = figureShadowOf(tone);
     figureDepth.value = shade.depth;
     figureChroma.value = shade.chroma;
+    figureFloor.value = figureFloorOf(tone.ink);
   };
   relight(look);
 
@@ -263,6 +298,8 @@ export const createShading = (look: Look): Shading => {
         shader.uniforms.figureSun = figureSun;
         shader.uniforms.figureDepth = figureDepth;
         shader.uniforms.figureChroma = figureChroma;
+        shader.uniforms.figureFloor = figureFloor;
+        shader.uniforms.skyDirection = skyDirection;
         shader.vertexShader = `attribute float gloss;varying float vGloss;varying vec4 vSunAnchor;\n${shader.vertexShader
           .replace(
             "#include <begin_vertex>",
@@ -292,6 +329,7 @@ export const createShading = (look: Look): Shading => {
       toView.setFromMatrix4(camera.matrixWorldInverse);
       rimDirection.value.copy(rimWorld).applyMatrix3(toView).normalize();
       keyDirection.value.copy(key).applyMatrix3(toView).normalize();
+      skyDirection.value.set(0, 1, 0).applyMatrix3(toView).normalize();
     },
     ambient,
     cel(colour, options = {}) {
