@@ -6,6 +6,8 @@ export const MAGENTA = "#ff2bd6";
 export const RED = "#ff2e3d";
 export const ORANGE = "#ff7a1a";
 
+export const FIGURE_FLOOR_OVER_INK = 0.05;
+
 export type Kit = "city" | "open";
 
 type Triple = readonly [number, number, number];
