@@ -206,7 +206,7 @@ const pathOf = (car: CrossCar): readonly [number, number] => {
     car.turnAt < Number.POSITIVE_INFINITY
       ? car.fromX + car.across * car.turnAt
       : car.fromX + car.across * car.endAt;
-  return [Math.min(from, to) - LANE_REACH, Math.max(from, to) + LANE_REACH];
+  return [Math.min(from, to), Math.max(from, to)];
 };
 
 const boxTaken = (
@@ -215,12 +215,14 @@ const boxTaken = (
   car: CrossCar
 ): boolean => {
   const [low, high] = pathOf(car);
-  return state.cars.some(
-    (other) =>
-      other.x > low &&
-      other.x < high &&
+  return state.cars.some((other) => {
+    const reach = car.bodyHalfLength + other.halfWidth;
+    return (
+      other.x > low - reach &&
+      other.x < high + reach &&
       Math.abs(other.s - crossing.s) < other.halfLength + crossing.boxHalfLength
-  );
+    );
+  });
 };
 
 const gapInTraffic = (
@@ -230,7 +232,7 @@ const gapInTraffic = (
 ): boolean => {
   const [low, high] = pathOf(car);
   for (const other of state.cars) {
-    if (other.x > low && other.x < high) {
+    if (other.x > low - LANE_REACH && other.x < high + LANE_REACH) {
       const toBox = (crossing.s - other.s) * Math.sign(other.cruiseSpeed);
       if (
         toBox > -BOX_MARGIN &&
