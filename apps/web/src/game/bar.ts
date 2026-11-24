@@ -286,7 +286,8 @@ const openRoom = (
     bikes.dispose();
   });
   const [heroBike] = bikes.roots;
-  if (!heroBike) {
+  const [heroFit] = bikes.fits;
+  if (!(heroBike && heroFit)) {
     throw new Error("The bar lost a bike.");
   }
   heroBike.position.set(PLINTH.x, PLINTH.height, PLINTH.z);
@@ -313,8 +314,8 @@ const openRoom = (
     shading,
     tags,
     speech,
-    heroBike,
-    garage.mount,
+    { bike: heroBike, fit: () => heroFit },
+    { bike: garage.mount, fit: garage.fit },
     pins.riders,
     true
   );
@@ -345,10 +346,11 @@ const openRoom = (
     const slot = members?.mine() ?? SOLO_SLOT;
     const bikeIndex = FIRST_WALKER_BIKE + slot;
     const bike = bikes.roots[bikeIndex];
-    if (!bike) {
+    const fit = bikes.fits[bikeIndex];
+    if (!(bike && fit)) {
       throw new Error(`The bar has no bike for slot ${String(slot)}.`);
     }
-    return { bike, bikeIndex, walker: walkers.at(slot) };
+    return { bike, bikeIndex, fit, walker: walkers.at(slot) };
   };
   yourSlot().walker.rename("YOU");
   const player = createBarPlayer({
@@ -604,6 +606,7 @@ const openRoom = (
       player.stance(),
       player.view,
       you.bike,
+      you.fit,
       clock,
       seconds,
       camera,

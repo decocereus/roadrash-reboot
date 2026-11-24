@@ -1,6 +1,5 @@
 import type { RaceRun } from "@racer/sim/race-run";
 import type { RiderView } from "@racer/sim/race-view";
-import { RUN_SPEED } from "@racer/sim/rider-recovery";
 import { clamp, riderOf, TICK_RATE } from "@racer/sim/state";
 import type { HazardEffect, RaceEvent, RiderId } from "@racer/sim/state";
 import type { Track } from "@racer/track/track";
@@ -9,6 +8,7 @@ import * as THREE from "three";
 import { createBikes, poseOnTrack, reachOf } from "./actors.ts";
 import type { Bikes, Reach } from "./actors.ts";
 import type { Assets } from "./assets.ts";
+import type { BikeFit } from "./bike-fit.ts";
 import { bikeModelFor } from "./bike-models.ts";
 import type { Shading } from "./cel.ts";
 import type { Subject } from "./chase-camera.ts";
@@ -20,6 +20,7 @@ import type { RiderPose } from "./figure-pose.ts";
 import { bodyFor, paletteOf, suitOf } from "./figure-rig.ts";
 import type { Dressing } from "./figure-wardrobe.ts";
 import type { Fleet } from "./fleet.ts";
+import { gaitOf } from "./gait.ts";
 import type { Palette } from "./model-slots.ts";
 import { createPuffs } from "./puffs.ts";
 import type { Puffs } from "./puffs.ts";
@@ -41,6 +42,8 @@ import {
 import type { RiderFight, StrikeFrame } from "./rider-fight.ts";
 import { createRiderFigure } from "./rider-figure.ts";
 import type { RiderFigure, Stance } from "./rider-figure.ts";
+import { createStrider } from "./strider.ts";
+import type { Strider } from "./strider.ts";
 import type { World } from "./world.ts";
 
 const WRAP_JUMP = 30;
@@ -48,7 +51,6 @@ const LYING_PITCH = -Math.PI / 2;
 const LYING_HEIGHT = 0.22;
 const RISE_SECONDS = 0.3;
 const LIFT_TICKS = 14;
-const RUN_HZ = 2.6;
 const WALKING = 0.3;
 const SAG_PER_IMPACT = 0.45;
 const MOST_SAG_KICK = 3.2;
@@ -75,6 +77,7 @@ interface Pose {
 
 interface RiderActor {
   readonly bike: THREE.Object3D;
+  readonly fit: BikeFit;
   readonly drift: RiderDrift;
   readonly drawn: DrawnPlace;
   readonly fight: RiderFight;
@@ -85,7 +88,8 @@ interface RiderActor {
   pitch: number;
   lift: number;
   yaw: number;
-  stride: number;
+  readonly strider: Strider;
+  footPace: number;
   sag: number;
   sagSpeed: number;
 }
@@ -266,14 +270,15 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
         puffs.dispose();
       });
       const views = riders.map((rider) => {
-        const figure = createRiderFigure(
-          dressing.get(rider.id)?.body ?? bodyFor(assets, rider.id),
-          shading,
-          worn(rider)
-        );
+        const body = dressing.get(rider.id)?.body ?? bodyFor(assets, rider.id);
+        const figure = createRiderFigure(body, shading, worn(rider));
         owners.push(() => {
           figure.dispose();
         });
+        const fit = riderOf(bikes.fits, rider.id);
+        if (!fit) {
+          throw new Error(`The race drew no bike for rider ${rider.id}.`);
+        }
         const view: RiderActor = {
           after: emptyPose(),
           before: emptyPose(),
@@ -282,11 +287,13 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
           drift: stillDrift(),
           fight: quietFight(),
           figure,
+          fit,
+          footPace: -1,
           lift: figure.standHeight,
           pitch: 0,
           sag: 0,
           sagSpeed: 0,
-          stride: 0,
+          strider: createStrider(gaitOf(body, assets.moves), body.bones.length),
           tumbleAngle: 0,
           yaw: 0,
         };
@@ -414,18 +421,16 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     let pose: RiderPose = "seated";
     let reach = 0;
     let rise = 0;
-    let time = cast.clock;
+    const time = cast.clock;
     const { figure, bike } = view;
+    view.footPace = -1;
     if (seated) {
       if (rider.mode === "mounting" && rider.modeTicks < LIFT_TICKS) {
         pose = "lift";
       } else if (strikeFrame(view.fight, subTick, strike)) {
         ({ pose, reach, rise } = strike);
       }
-      figure.root.position.copy(bike.position);
-      figure.root.quaternion.copy(bike.quaternion);
-      figure.root.translateY(figure.seat.y - view.sag);
-      figure.root.translateZ(figure.seat.z);
+      figure.mount(bike, view.fit, view.sag);
       view.tumbleAngle = 0;
       view.pitch = 0;
       view.lift = figure.standHeight;
@@ -470,20 +475,12 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
         0
       );
     } else {
-      const runPace =
-        Math.hypot(rider.bodySpeed, rider.bodyLateralSpeed) / RUN_SPEED;
-      const moving = runPace > WALKING / RUN_SPEED;
-      pose = moving ? "run" : "stand";
-      time = view.stride;
-      view.stride += runPace * seconds;
+      view.footPace = Math.hypot(rider.bodySpeed, rider.bodyLateralSpeed);
+      const moving = view.footPace > WALKING;
       const standUp = Math.min(1, rider.modeTicks / TICK_RATE / RISE_SECONDS);
       const eased = standUp * standUp * (3 - 2 * standUp);
       view.pitch = LYING_PITCH * (1 - eased);
-      const bob = moving
-        ? Math.abs(Math.sin(view.stride * Math.PI * 2 * RUN_HZ)) * 0.05
-        : 0;
-      view.lift =
-        LYING_HEIGHT + (figure.standHeight - LYING_HEIGHT) * eased + bob;
+      view.lift = LYING_HEIGHT + (figure.standHeight - LYING_HEIGHT) * eased;
       if (moving) {
         view.yaw = Math.atan2(rider.bodyLateralSpeed, rider.bodySpeed);
       } else if (standUp >= 0.5 && standUp < 1) {
@@ -554,7 +551,12 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
       seconds
     );
     if (index === stage.me || withinReach(seated ? s : bodyS)) {
-      view.figure.animate(stance, seconds);
+      if (view.footPace >= 0) {
+        view.strider.step(view.footPace, seconds);
+        view.figure.onFoot(view.strider, rider.weapon, seconds);
+      } else {
+        view.figure.animate(stance, seconds);
+      }
       if (kneeScrapes(stance.lean, stance.speed)) {
         cast.puffs?.scrape(view.bike, Math.sign(stance.lean), rider.speed);
       }

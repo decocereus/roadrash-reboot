@@ -38,10 +38,10 @@ const Row = ({
   readonly slot: number;
 }) => (
   <li
-    className={`absolute inset-x-0 top-0 flex items-center gap-[0.35em] pl-[0.35em] transition-transform duration-[220ms] ease-out motion-reduce:transition-none ${row.you ? "text-yellow border-yellow border-l-[0.2em]" : "text-text border-l-[0.2em] border-transparent"} ${out(row) ? "opacity-50" : ""}`}
+    className={`absolute inset-x-0 flex items-center gap-[0.35em] pl-[0.35em] transition-[top] duration-[220ms] ease-out motion-reduce:transition-none ${row.you ? "text-yellow border-yellow border-l-[0.2em]" : "text-text border-l-[0.2em] border-transparent"} ${out(row) ? "opacity-50" : ""}`}
     style={{
       height: `${ROW_EM}em`,
-      transform: `translateY(${slot * ROW_EM}em)`,
+      top: `${slot * ROW_EM}em`,
     }}
   >
     <span className="w-[1.3em] shrink-0 text-right">{row.place}</span>
@@ -76,7 +76,7 @@ export const RaceTower = memo(
     return (
       <div
         className="font-display tracking-display numeric hud-ink bg-ink/55 absolute leading-none font-bold uppercase"
-        style={towerBox(shown)}
+        style={towerBox(shown, drawn.length)}
       >
         <ol
           aria-label="Race order"

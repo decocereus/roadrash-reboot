@@ -1,5 +1,8 @@
 import * as THREE from "three";
 
+import { contactNames } from "./bike-fit.ts";
+import type { BikeFit, ContactName } from "./bike-fit.ts";
+import type { Contacts } from "./figure-contacts.ts";
 import {
   leanToward,
   placeChain,
@@ -11,15 +14,13 @@ import {
   writeLocal,
 } from "./figure-ik.ts";
 import type { Chain, Grip, Joint, Limb } from "./figure-ik.ts";
-import { posed, read } from "./figure-rig.ts";
+import { boneNamed, posed, read } from "./figure-rig.ts";
 import type { Rig } from "./figure-rig.ts";
 
 export type RiderPose =
   | "seated"
   | "tumble"
   | "lying"
-  | "run"
-  | "stand"
   | "lift"
   | "punch"
   | "kick"
@@ -166,8 +167,6 @@ const plantedIn = (pose: RiderPose): Planted => {
     }
     case "tumble":
     case "lying":
-    case "run":
-    case "stand":
     case "lift":
     case "surrender": {
       return "none";
@@ -179,6 +178,11 @@ const plantedIn = (pose: RiderPose): Planted => {
 };
 
 export interface Planter {
+  readonly seatOn: (
+    fit: BikeFit,
+    contacts: Contacts,
+    hip: THREE.Vector3
+  ) => void;
   readonly plant: (
     pose: number[],
     lift: THREE.Vector3,
@@ -205,6 +209,9 @@ const KNEE_SWING = THREE.MathUtils.degToRad(55);
 const KNEE_SCRAPE = 0.92;
 export const HANG_SHIFT = 0.13;
 const KNEE_FORWARD = new THREE.Vector3(0, 0, -1);
+const origin = new THREE.Vector3();
+const reaching = new THREE.Vector3();
+const ARM_STRETCH = 0.96;
 const footTarget = new THREE.Vector3();
 
 const footDown = (lean: number, speed: number): number =>
@@ -222,14 +229,6 @@ export const kneeOut = (lean: number, speed: number): number =>
 
 export const kneeScrapes = (lean: number, speed: number): boolean =>
   speed >= KNEE_FULL_SPEED && Math.abs(lean) >= KNEE_SCRAPE;
-
-const boneNamed = (rig: Rig, name: string): THREE.Bone => {
-  const bone = rig.skeleton.getBoneByName(name);
-  if (!bone) {
-    throw new Error(`The rider model has no ${name} bone.`);
-  }
-  return bone;
-};
 
 const chainOf = (rig: Rig, ends: readonly string[]): Chain => {
   const joints = new Map<THREE.Bone, Joint>();
@@ -252,7 +251,7 @@ const chainOf = (rig: Rig, ends: readonly string[]): Chain => {
     return joint;
   };
   for (const end of ends) {
-    jointOf(boneNamed(rig, end));
+    jointOf(boneNamed(rig.skeleton, end));
   }
   const top = [...joints.keys()].find((bone) => !joints.get(bone)?.parent);
   if (!top?.parent) {
@@ -272,17 +271,17 @@ const chainOf = (rig: Rig, ends: readonly string[]): Chain => {
 const descends = (joint: Joint, from: Joint): boolean =>
   joint === from || (joint.parent !== null && descends(joint.parent, from));
 
-const gripOf = (limb: Limb): Grip => ({
+const gripOf = (limb: Limb, stretch: number): Grip => ({
   at: limb.bones[2].at.clone(),
   facing: limb.bones[2].turn.clone(),
   limb,
-  reach: reachOf(limb),
+  reach: reachOf(limb) * stretch,
 });
 
 export const planterOf = (rig: Rig, seated: readonly number[]): Planter => {
   const chain = chainOf(rig, ["hand_l", "hand_r", "foot_l", "foot_r"]);
   const jointNamed = (name: string): Joint => {
-    const index = rig.bones.indexOf(boneNamed(rig, name));
+    const index = rig.bones.indexOf(boneNamed(rig.skeleton, name));
     const joint = chain.joints.find((each) => each.index === index);
     if (!joint) {
       throw new Error(`The rider model's ${name} bone holds no grip.`);
@@ -295,10 +294,13 @@ export const planterOf = (rig: Rig, seated: readonly number[]): Planter => {
     end: string,
     girdle: string | null
   ): Grip =>
-    gripOf({
-      bones: [jointNamed(upper), jointNamed(lower), jointNamed(end)],
-      girdle: girdle === null ? null : jointNamed(girdle),
-    });
+    gripOf(
+      {
+        bones: [jointNamed(upper), jointNamed(lower), jointNamed(end)],
+        girdle: girdle === null ? null : jointNamed(girdle),
+      },
+      girdle === null ? 1 : ARM_STRETCH
+    );
   const torso = jointNamed("spine_01");
   const above = chain.joints.filter((joint) => descends(joint, torso));
   placeChain(chain, seated, new THREE.Vector3());
@@ -311,6 +313,12 @@ export const planterOf = (rig: Rig, seated: readonly number[]): Planter => {
     right: limbOf("thigh_r", "calf_r", "foot_r", null),
   };
   const every = [arms.left, arms.right, legs.left, legs.right];
+  const byContact = {
+    foot_l: legs.left,
+    foot_r: legs.right,
+    hand_l: arms.left,
+    hand_r: arms.right,
+  } satisfies Record<ContactName, Grip>;
   const without = (free: Grip) => every.filter((grip) => grip !== free);
   const held = {
     all: { left: every, right: every },
@@ -354,6 +362,31 @@ export const planterOf = (rig: Rig, seated: readonly number[]): Planter => {
         for (const joint of bones) {
           writeLocal(chain, pose, joint);
         }
+      }
+    },
+    seatOn(fit, contacts, hip) {
+      placeChain(chain, seated, origin);
+      for (const name of contactNames) {
+        const grip = byContact[name];
+        grip.at
+          .copy(contacts[name])
+          .applyQuaternion(grip.facing)
+          .negate()
+          .add(fit[name])
+          .sub(fit.seat);
+      }
+      let slide = 0;
+      for (const arm of [arms.left, arms.right]) {
+        reaching.subVectors(arm.at, arm.limb.bones[0].at);
+        const room = arm.reach ** 2 - reaching.x ** 2 - reaching.y ** 2;
+        if (room > 0) {
+          slide = Math.max(slide, -reaching.z - Math.sqrt(room));
+        }
+      }
+      hip.copy(fit.seat);
+      hip.z -= slide;
+      for (const grip of every) {
+        grip.at.z += slide;
       }
     },
   };

@@ -5,10 +5,14 @@ import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 
+import { fitOf, isFitNode } from "./bike-fit.ts";
+import type { BikeFit } from "./bike-fit.ts";
 import type { BikeModelId } from "./bike-models.ts";
 import { isMesh, isSkinnedMesh } from "./meshes.ts";
 import { coloured, isSlot } from "./model-slots.ts";
 import type { Primitive, Slot } from "./model-slots.ts";
+import { movesOf } from "./rider-moves.ts";
+import type { RiderMoves } from "./rider-moves.ts";
 import { walkerBodies, walkerClipLoops } from "./walker-clips.ts";
 import type {
   WalkerClip,
@@ -17,7 +21,7 @@ import type {
 } from "./walker-clips.ts";
 import { POSE_TEXELS_PER_BONE } from "./walker-skin.ts";
 
-const POSE_NAMES = [
+export const POSE_FRAMES = [
   "rest",
   "seated",
   "punch_l",
@@ -28,8 +32,8 @@ const POSE_NAMES = [
   "windup_r",
   "swing_l",
   "swing_r",
-  "run_a",
-  "run_b",
+  null,
+  null,
   "lift",
   "lying",
   "tumble_a",
@@ -38,7 +42,7 @@ const POSE_NAMES = [
   "stand",
 ] as const;
 
-export type PoseName = (typeof POSE_NAMES)[number];
+export type PoseName = Exclude<(typeof POSE_FRAMES)[number], null>;
 
 export interface RiderAsset {
   readonly scene: THREE.Object3D;
@@ -46,7 +50,6 @@ export interface RiderAsset {
   readonly atlas: THREE.Texture | null;
   readonly bones: readonly string[];
   readonly poses: ReadonlyMap<PoseName, number[]>;
-  readonly seat: THREE.Vector3;
   readonly standHeight: number;
 }
 
@@ -59,14 +62,20 @@ export interface WalkerAsset {
 
 export type ModelParts = ReadonlyMap<string, readonly Primitive[]>;
 
+export interface BikeModel {
+  readonly parts: ModelParts;
+  readonly fit: BikeFit;
+}
+
 const ATLAS = "atlas" satisfies Slot;
 
 export interface Assets {
-  readonly bikes: Readonly<Record<BikeModelId, ModelParts>>;
+  readonly bikes: Readonly<Record<BikeModelId, BikeModel>>;
   readonly car: readonly Primitive[];
   readonly truck: readonly Primitive[];
   readonly van: readonly Primitive[];
   readonly figures: readonly RiderAsset[];
+  readonly moves: RiderMoves;
   readonly stalls: ModelParts;
   readonly walkers: WalkerAsset;
 }
@@ -221,9 +230,9 @@ const samplePoses = (clip: THREE.AnimationClip) => {
   const poses = new Map<PoseName, number[]>();
   const pelvis = new Map<PoseName, THREE.Vector3>();
   const moved = clip.tracks.find((track) => track.name === "pelvis.position");
-  for (let frame = 0; frame < POSE_NAMES.length; frame += 1) {
-    const name = POSE_NAMES[frame];
-    if (name === undefined) {
+  for (let frame = 0; frame < POSE_FRAMES.length; frame += 1) {
+    const name = POSE_FRAMES[frame];
+    if (!name) {
       continue;
     }
     const pose: number[] = [];
@@ -264,10 +273,12 @@ export type Parse<Value> = (
 ) => Promise<Decoded<Value>>;
 
 export interface AssetParsers {
+  readonly bike: Parse<BikeModel>;
   readonly parts: Parse<ModelParts>;
   readonly whole: Parse<readonly Primitive[]>;
   readonly rider: Parse<RiderAsset>;
   readonly walkers: Parse<WalkerAsset>;
+  readonly moves: Parse<RiderMoves>;
 }
 
 export type LoadCelebrity = (
@@ -347,6 +358,9 @@ const decoded = <Value>(
 const parsed = async (bytes: ArrayBuffer): Promise<GLTF> =>
   await loader.parseAsync(bytes, "");
 
+const moves: Parse<RiderMoves> = async (bytes, url) =>
+  movesOf(await parsed(bytes), url);
+
 const rider: Parse<RiderAsset> = async (bytes, url) => {
   const [gltf] = await Promise.all([parsed(bytes), MeshoptSimplifier.ready]);
   const refused = refuser(gltf.scene, `rider model ${url}`);
@@ -356,7 +370,6 @@ const rider: Parse<RiderAsset> = async (bytes, url) => {
     throw refused("has no poses.");
   }
   const { bones, pelvis, poses } = samplePoses(clip);
-  const seat = toGame(rootBone, pelvis.get("seated") ?? new THREE.Vector3());
   const stand = toGame(rootBone, pelvis.get("rest") ?? new THREE.Vector3());
   const primitives = primitivesOf(gltf.scene, refused);
   const atlases = atlasesOf(gltf.scene);
@@ -379,19 +392,42 @@ const rider: Parse<RiderAsset> = async (bytes, url) => {
     poses,
     primitives,
     scene: gltf.scene,
-    seat,
     standHeight: stand.y,
   });
 };
 
-const parts: Parse<ModelParts> = async (bytes, url) => {
-  const gltf = await parsed(bytes);
-  const refused = refuser(gltf.scene, `model ${url}`);
+const partsOf = (
+  children: readonly THREE.Object3D[],
+  refused: Refuse
+): Map<string, readonly Primitive[]> => {
   const byName = new Map<string, readonly Primitive[]>();
-  for (const child of gltf.scene.children) {
+  for (const child of children) {
     byName.set(child.name, primitivesOf(child, refused));
   }
+  return byName;
+};
+
+const parts: Parse<ModelParts> = async (bytes, url) => {
+  const gltf = await parsed(bytes);
+  const byName = partsOf(
+    gltf.scene.children,
+    refuser(gltf.scene, `model ${url}`)
+  );
   return decoded(gltf.scene, [...byName.values()].flat(), byName);
+};
+
+const bike: Parse<BikeModel> = async (bytes, url) => {
+  const gltf = await parsed(bytes);
+  const refused = refuser(gltf.scene, `bike model ${url}`);
+  const fit = fitOf(gltf.scene, refused);
+  const byName = partsOf(
+    gltf.scene.children.filter((child) => !isFitNode(child)),
+    refused
+  );
+  return decoded(gltf.scene, [...byName.values()].flat(), {
+    fit,
+    parts: byName,
+  });
 };
 
 const whole: Parse<readonly Primitive[]> = async (bytes, url) => {
@@ -575,4 +611,11 @@ const walkers: Parse<WalkerAsset> = async (bytes, url) => {
   };
 };
 
-export const assetParsers: AssetParsers = { parts, rider, walkers, whole };
+export const assetParsers: AssetParsers = {
+  bike,
+  moves,
+  parts,
+  rider,
+  walkers,
+  whole,
+};

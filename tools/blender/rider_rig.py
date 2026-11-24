@@ -3,6 +3,7 @@ import bpy, bmesh, math, sys, os
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from common import *
+from rider_poses import ON_BIKE, POSE_FRAMES, UNUSED
 import rider as R
 import bike as bike_mod
 from mathutils import Vector, Matrix
@@ -193,30 +194,6 @@ def surrender(p):
         p.aim("hand" + s, (sx * 0.05, -0.05, 1))
 
 
-def run(p, sx):
-    p.reset()
-    p.rot("spine_01", X, 8)
-    p.rot("spine_03", X, 8)
-    p.rot("spine_02", Z, -sx * 10)
-    p.rot("head", X, -10)
-    for s, k in SIDES:
-        fwd = k == sx
-        if fwd:
-            p.aim("thigh" + s, (k * 0.06, -0.72, -0.7))
-            p.aim("calf" + s, (k * 0.02, 0.28, -0.96))
-            p.aim("foot" + s, (k * 0.05, -0.9, -0.4))
-            p.aim("upperarm" + s, (k * 0.2, 0.6, -0.78))
-            p.aim("lowerarm" + s, (k * 0.05, -0.35, -0.94))
-        else:
-            p.aim("thigh" + s, (k * 0.06, 0.34, -0.94))
-            p.aim("calf" + s, (k * 0.02, 0.86, -0.5))
-            p.aim("foot" + s, (k * 0.05, 0.2, -1))
-            p.aim("upperarm" + s, (k * 0.2, -0.5, -0.85))
-            p.aim("lowerarm" + s, (-k * 0.1, -0.92, 0.25))
-        p.aim("hand" + s, (0, -0.6, -0.5))
-        p.grip(s, k, (55, 60, 45))
-
-
 def lift(p):
     p.reset()
     p.rot("pelvis", X, 30)
@@ -265,26 +242,25 @@ def tumble(p, k):
         p.aim("calf" + s, (sx * 0.1, 0.75 if a > 0 else 0.2, -0.6))
 
 
-POSES = [
-    ("rest", lambda p: p.reset()),
-    ("seated", lambda p: ride(p)),
-    ("punch_l", lambda p: punch(p, 1)),
-    ("punch_r", lambda p: punch(p, -1)),
-    ("kick_l", lambda p: kick(p, 1)),
-    ("kick_r", lambda p: kick(p, -1)),
-    ("windup_l", lambda p: windup(p, 1)),
-    ("windup_r", lambda p: windup(p, -1)),
-    ("swing_l", lambda p: swing(p, 1)),
-    ("swing_r", lambda p: swing(p, -1)),
-    ("run_a", lambda p: run(p, 1)),
-    ("run_b", lambda p: run(p, -1)),
-    ("lift", lift),
-    ("lying", lying),
-    ("tumble_a", lambda p: tumble(p, 1)),
-    ("tumble_b", lambda p: tumble(p, -1)),
-    ("surrender", surrender),
-    ("stand", stand),
-]
+MAKERS = {
+    "rest": lambda p: p.reset(),
+    "seated": lambda p: ride(p),
+    "punch_l": lambda p: punch(p, 1),
+    "punch_r": lambda p: punch(p, -1),
+    "kick_l": lambda p: kick(p, 1),
+    "kick_r": lambda p: kick(p, -1),
+    "windup_l": lambda p: windup(p, 1),
+    "windup_r": lambda p: windup(p, -1),
+    "swing_l": lambda p: swing(p, 1),
+    "swing_r": lambda p: swing(p, -1),
+    "lift": lift,
+    "lying": lying,
+    "tumble_a": lambda p: tumble(p, 1),
+    "tumble_b": lambda p: tumble(p, -1),
+    "surrender": surrender,
+    "stand": stand,
+}
+POSES = [(name, (lambda p: p.reset()) if name in UNUSED else MAKERS[name]) for name in POSE_FRAMES]
 
 
 def bake_body(h):
@@ -370,7 +346,7 @@ def lineup(h, arm, bike_objs, path):
         col, row = f % 6, f // 6
         o.location = (col * 1.5, 0, -row * 2.3)
         made.append(o)
-        if 1 <= f <= 9:
+        if name in ON_BIKE:
             for b in bike_objs:
                 c = b.copy()
                 sc.collection.objects.link(c)

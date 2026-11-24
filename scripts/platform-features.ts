@@ -163,6 +163,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/assets.ts",
       "apps/web/src/game/model-slots.ts",
       "apps/web/test/asset-load.test.ts",
+      "apps/web/test/asset-summary.ts",
       "apps/web/test/celebrity-load.test.ts",
       "apps/web/test/model-slots.test.ts",
       "apps/web/test/node-images.ts",
@@ -484,6 +485,8 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "tools/perf/test/gpu.test.ts",
       "tools/perf/test/measure-page.test.ts",
       "tools/perf/test/red-cases.ts",
+      "tools/perf/test/stamp-guard.test.ts",
+      "tools/perf/test/steady.test.ts",
     ],
     perf: [],
     start: [

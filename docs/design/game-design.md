@@ -575,7 +575,7 @@ The owner approved the names and bios on November 2, 2026. The bios are `celebri
 
 | Rival | Age | Home | Skill | Aggression | Starts with | Bike paint | Jacket |
 | --- | --: | --- | --: | --: | --- | --- | --- |
-| Juno Kade | 34 | Stonepeak | 0.99 | 0.25 | Nothing, ever | `#15171B` black, gold stripe `#D4A63A` | `#15171B` |
+| Juno Kade | 34 | Stonepeak | 0.99 | 0.25 | Nothing, ever | `#15171B` black, gold stripe `#D4A63A` | `#343D50` dark slate |
 | Ruth Ann Bixby | 38 | Cinder Junction | 0.95 | 0.45 | Nothing | `#26A6A0` teal | `#A8743E` suede |
 | Dee Santangelo | 20 | Lowtown | 0.93 | 0.50 | Chain | `#2F9A4E` basil green | `#D7263D` red |
 | Ines Marchetti | 29 | Saltmouth | 0.91 | 0.75 | Nothing (club from tier 3) | `#F2ECDF` ivory | `#F2ECDF` ivory |
@@ -585,14 +585,14 @@ The owner approved the names and bios on November 2, 2026. The bios are `celebri
 | Coach Dale Hutto | 55 | Stonepeak | 0.86 | 0.55 | Pool cue from tier 2 | `#E0A21B` gold | `#1E5AA8` polo blue |
 | Moose Kowalczyk | 41 | Lowtown | 0.84 | 0.85 | Club | `#C2521F` rust | `#5B4632` brown vest |
 | Gus Abernathy | 66 | Kettle | 0.82 | 0.65 | Stop sign from tier 2 | `#6B6B3A` olive | `#C8E03A` hi-vis |
-| Sister Agnes Mulcahy | 61 | Lowtown | 0.89 | 0.20 | Nothing | `#BFC4C9` convent grey | `#1A1A1F` black habit |
+| Sister Agnes Mulcahy | 61 | Lowtown | 0.89 | 0.20 | Nothing | `#BFC4C9` convent grey | `#3B3B4F` slate habit |
 | Hollis Thorne | 33 | Stonepeak | 0.88 | 0.45 | Nothing | `#7A1F3D` rescue maroon | `#F26B1D` high-vis orange |
 | Wanda Pruitt | 49 | Cinder Junction | 0.87 | 0.30 | Nothing | `#5FB7E6` studio blue | `#E9E3D6` cream blazer |
 | Benny Okafor | 27 | Saltmouth | 0.85 | 0.40 | Nothing | `#F27D16` tangerine | `#1D7A8C` sequin teal |
 | Orrin Blackwell | 31 | Kettle | 0.83 | 0.55 | Nothing (club from tier 3) | `#6B4A2B` bark brown | `#8C9A5B` field khaki |
 | Dr Felix Aurand | 44 | Lowtown | 0.80 | 0.70 | Club | `#6AD6B5` mint | `#2B5F8F` scrubs blue |
 
-The player's default is bike `#C82F2F` red and jacket `#23262C` charcoal. Police are bike `#F4F6F8` white with `#2F6BFF` blue panels and jacket `#141C33`.
+The player's default is bike `#C82F2F` red and jacket `#343D50` slate. Police are bike `#F4F6F8` white with `#2F6BFF` blue panels and jacket `#333C56`. The darkest jackets were lifted to OKLab lightness 0.36 on November 24, 2026, so a rider in a building's shadow keeps a readable suit ([art-direction.md](art-direction.md#budget-and-build)).
 
 Home roads among the ordinary sixteen: Breakwater Run (Tristan, Ines, Benny, Ruth Ann, Mags, Wanda), Slag Row (Moose, Dee, Agnes, Felix), Ridge Road (Juno, Coach, Hollis, Lyle, Gus, Orrin). At tier 1, where Juno does not race, Ridge Road's home riders are Coach, Hollis, and Ruth Ann (section 4).
 
@@ -786,7 +786,7 @@ Visual: lanky and bent, white beard, hi-vis vest over a red flannel shirt, a hel
 
 Sister Agnes runs the Lowtown soup kitchen and rides because the diocese van was repossessed and the bike was donated. Every dollar she wins goes to the roof fund, and she keeps the ledger in her jacket.
 
-Visual: small and very upright, elbows in. Black habit cut short over grey leathers, a plain white helmet with a black band, and a wooden rosary wound round the left mirror.
+Visual: small and very upright, elbows in. Dark slate habit cut short over grey leathers, a plain white helmet with a black band, and a wooden rosary wound round the left mirror.
 
 - Taunt: "I'll pray for you. From ahead. The reception's better up there."
 - Grudge taunt: "You struck a nun last time. I've forgiven you. The roof fund hasn't."
@@ -1038,7 +1038,7 @@ How long a crash takes, measured by simulation on a straight road on November 3,
 
 Measured again on November 3, 2026, after a play test found riders flung too far forward. The October numbers matched the original's slower fall: at 160 km/h a pole had the rider standing at 5.9 s and back on at 16.1 s after a 67 m run. At 200 km/h the body now travels 40 to 70 m against 107 to 209 m, and the rider is back on in 5.3 to 9.9 s against 16.5 to 24.9 s. Tumbling riders can steer with left and right at up to 5 m/s and shorten the slide with the brake, from the moment of the crash. A rider on foot who is hit by a car or a bike goes down again for about two seconds, as the original's did.
 
-**On foot.** After the first play test asked for it, the rider on foot is the player's to steer, as the original's was: once they are up, throttle runs up the road, brake runs back down it, and left and right run across it, at up to 7 m/s whichever way, with a quarter of a second to reach full speed and to stop. The camera keeps facing along the road, so the keys mean on foot what they mean on the bike. A key that was already held when the rider went down does nothing on foot until it has been released: the second play test found a player still holding the throttle from the ride walking the rider straight away from the bike and out of frame without meaning to, so each of throttle, brake, and steer is dead after a fall until it has read zero once, and a fresh press moves. A rider who touches nothing stands where they got up, mid-stride, and can be arrested there. A play test on November 2, 2026 found that lining the rider up with a 0.7 m circle round the bike took several tries, so touching the bike no longer does anything. One press of E or the pad's first face button, at any moment from the fall onwards, sends the rider running to the bike with no steering and plays the climb-on; a small prompt shows until it is pressed, which replaces the old idle walk as what a player who does not know the controls has to go on. The run still takes its time at 7 m/s and traffic can still hit the rider on the way. The bike waits where it fell. They cannot leave the verges and cannot finish on foot: the body stops at the finish line. The pilot presses the same button for rivals and police, so an AI rider's recovery is the table above, and in multiplayer a remote player's on-foot steering is their ordinary input frame. There is no fighting on foot.
+**On foot.** After the first play test asked for it, the rider on foot is the player's to steer, as the original's was: once they are up, throttle runs up the road, brake runs back down it, and left and right run across it, at up to 7 m/s whichever way, with a quarter of a second to reach full speed and to stop. The camera keeps facing along the road, so the keys mean on foot what they mean on the bike. A key that was already held when the rider went down does nothing on foot until it has been released: the second play test found a player still holding the throttle from the ride walking the rider straight away from the bike and out of frame without meaning to, so each of throttle, brake, and steer is dead after a fall until it has read zero once, and a fresh press moves. A rider who touches nothing finishes the step they are in, stands with both feet down where they got up, and can be arrested there. A play test on November 2, 2026 found that lining the rider up with a 0.7 m circle round the bike took several tries, so touching the bike no longer does anything. One press of E or the pad's first face button, at any moment from the fall onwards, sends the rider running to the bike with no steering and plays the climb-on; a small prompt shows until it is pressed, which replaces the old idle walk as what a player who does not know the controls has to go on. The run still takes its time at 7 m/s and traffic can still hit the rider on the way. The bike waits where it fell. They cannot leave the verges and cannot finish on foot: the body stops at the finish line. The pilot presses the same button for rivals and police, so an AI rider's recovery is the table above, and in multiplayer a remote player's on-foot steering is their ordinary input frame. There is no fighting on foot.
 
 ### The first career release without the later items
 

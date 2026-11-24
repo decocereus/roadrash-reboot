@@ -6,11 +6,11 @@ export interface RiderColours {
 }
 
 export const riderPalette: readonly RiderColours[] = [
-  { bike: 0xc8_2f_2f, helmet: 0xf2_c2_30, jacket: 0x23_26_2c },
+  { bike: 0xc8_2f_2f, helmet: 0xf2_c2_30, jacket: 0x34_3d_50 },
   {
     bike: 0x15_17_1b,
     helmet: 0x15_17_1b,
-    jacket: 0x15_17_1b,
+    jacket: 0x34_3d_50,
     trim: 0xd4_a6_3a,
   },
   { bike: 0x26_a6_a0, helmet: 0xed_e4_d0, jacket: 0xa8_74_3e },
@@ -25,13 +25,13 @@ export const riderPalette: readonly RiderColours[] = [
   {
     bike: 0xf4_f6_f8,
     helmet: 0xf4_f6_f8,
-    jacket: 0x14_1c_33,
+    jacket: 0x33_3c_56,
     trim: 0x2f_6b_ff,
   },
   { bike: 0xf2_7d_16, helmet: 0xff_ff_ff, jacket: 0x1d_7a_8c },
   { bike: 0x5f_b7_e6, helmet: 0x5f_b7_e6, jacket: 0xe9_e3_d6 },
   { bike: 0x6b_4a_2b, helmet: 0x6b_4a_2b, jacket: 0x8c_9a_5b },
-  { bike: 0xbf_c4_c9, helmet: 0xf6_f2_ea, jacket: 0x1a_1a_1f },
+  { bike: 0xbf_c4_c9, helmet: 0xf6_f2_ea, jacket: 0x3b_3b_4f },
   { bike: 0x7a_1f_3d, helmet: 0xf2_6b_1d, jacket: 0xf2_6b_1d },
   { bike: 0x6a_d6_b5, helmet: 0xfa_fa_fa, jacket: 0x2b_5f_8f },
 ];

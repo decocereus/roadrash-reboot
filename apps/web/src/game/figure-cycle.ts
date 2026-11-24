@@ -1,7 +1,6 @@
 import type { PoseName } from "./assets.ts";
 import type { RiderPose } from "./figure-pose.ts";
 
-const RUN_HZ = 2.6;
 const TUMBLE_HZ = 1.75;
 const FULL_TURN = Math.PI * 2;
 
@@ -32,12 +31,7 @@ export interface Cycle {
 }
 
 export const cycleFor = (pose: RiderPose, time: number, cycle: Cycle): void => {
-  if (pose === "run" || pose === "stand") {
-    cycle.from = "run_a";
-    cycle.to = "run_b";
-    cycle.blend =
-      pose === "run" ? 0.5 - 0.5 * Math.cos(time * RUN_HZ * FULL_TURN) : 0.5;
-  } else if (pose === "tumble") {
+  if (pose === "tumble") {
     cycle.from = "tumble_a";
     cycle.to = "tumble_b";
     cycle.blend = 0.5 + 0.5 * Math.sin(time * TUMBLE_HZ * FULL_TURN);

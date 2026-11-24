@@ -297,8 +297,12 @@ const shoot = (
   try {
     if (figure) {
       scene.add(figure.root);
-      figure.root.translateY(figure.seat.y);
-      figure.root.translateZ(figure.seat.z);
+      const [, bike] = bikes.roots;
+      const [, fit] = bikes.fits;
+      if (!(bike && fit)) {
+        throw new Error("The shade probe has no bike to seat the rider on.");
+      }
+      figure.mount(bike, fit, 0);
       for (let step = 0; step < SETTLE_STEPS; step += 1) {
         figure.animate(stance, 1);
       }

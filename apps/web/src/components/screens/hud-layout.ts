@@ -67,8 +67,10 @@ export const hudEdge = percent(EDGE);
 export const noticeTop = percent(NOTICE_TOP);
 export const warningPad = `${WARNING_PAD_REM}rem ${WARNING_SIDE_PAD_REM}rem`;
 
-export const towerBox = (rows: TowerRows) => ({
+export const towerBox = (rows: TowerRows, drawn: number) => ({
+  contain: "layout size",
   fontSize: cssOf(towerFont),
+  height: `${2 * TOWER_PAD_EM + drawn * ROW_EM}em`,
   padding: `${TOWER_PAD_EM}em`,
   right: percent(TOWER_RIGHT),
   top: rows === "all" ? hudEdge : underWarning,

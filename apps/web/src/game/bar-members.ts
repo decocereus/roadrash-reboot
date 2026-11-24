@@ -29,7 +29,6 @@ import type { BarWalkers, WalkerView } from "./bar-walker.ts";
 const SEND_EVERY_SECONDS = 1 / WALKS_PER_SECOND;
 const FOLLOW_RATE = 12;
 const SNAP_METRES = 4;
-const STRIDE_RUN_SPEED = 7;
 const TICKS_PER_SECOND = 60;
 const READY_SUFFIX = " READY";
 const NO_CONTROL = { forward: 0, right: 0, sprint: false };
@@ -59,7 +58,7 @@ interface Body {
 }
 
 interface MemberParts {
-  readonly bikes: Pick<Bikes, "roots" | "show" | "spin">;
+  readonly bikes: Pick<Bikes, "fits" | "roots" | "show" | "spin">;
   readonly firstBike: number;
   readonly rider: LobbyRider;
   readonly seat: Pick<
@@ -89,7 +88,6 @@ const newBody = (): Body => ({
     lean: 0,
     mounted: false,
     pace: 0,
-    stride: 0,
     x: 0,
     z: 0,
   },
@@ -109,7 +107,6 @@ const followWalk = (
   view.heading += angleOff(view.heading, walk.heading) * share;
   view.lean += (walk.lean - view.lean) * ease;
   view.pace = walk.pace;
-  view.stride += (walk.pace / STRIDE_RUN_SPEED) * seconds;
   view.mounted = walk.place === "bike";
   occupant.shoving = Math.max(0, occupant.shoving - seconds * TICKS_PER_SECOND);
 };
@@ -308,7 +305,8 @@ export const createMembers = ({
       for (let index = 0; index < bodies.length; index += 1) {
         const body = bodies[index];
         const bike = bikes.roots[firstBike + index];
-        if (body && body.presence.phase !== "vacant" && bike) {
+        const fit = bikes.fits[firstBike + index];
+        if (body && body.presence.phase !== "vacant" && bike && fit) {
           const { shoving, walk } = body.presence;
           walkers
             .at(index)
@@ -316,6 +314,7 @@ export const createMembers = ({
               { place: walk.place, pose: walk.pose, shoving },
               body.view,
               bike,
+              fit,
               now,
               seconds,
               camera,

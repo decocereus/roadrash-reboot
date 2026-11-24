@@ -24,6 +24,7 @@ import type { Bikes } from "./actors.ts";
 import type { BarAction } from "./bar-input.ts";
 import type { BarSpeech } from "./bar-speech.ts";
 import type { BarWalker, WalkerStance, WalkerView } from "./bar-walker.ts";
+import type { BikeFit } from "./bike-fit.ts";
 import type { Puffs } from "./puffs.ts";
 
 const GREET_FIRST = 1.4;
@@ -44,6 +45,7 @@ export interface BarCompany {
 export interface PlayerSlot {
   readonly walker: BarWalker;
   readonly bike: THREE.Object3D;
+  readonly fit: BikeFit;
   readonly bikeIndex: number;
 }
 
@@ -90,7 +92,6 @@ export const createBarPlayer = ({
     lean: 0,
     mounted: false,
     pace: 0,
-    stride: 0,
     x: rider.x,
     z: rider.z,
   };
@@ -229,7 +230,6 @@ export const createBarPlayer = ({
     view.heading = fromHeading + angleOff(fromHeading, rider.heading) * share;
     view.lean = fromLean + (rider.lean - fromLean) * share;
     view.pace = rider.pace;
-    view.stride = rider.stride;
     view.mounted = rider.place.kind === "bike";
     if (view.mounted) {
       bike.position.set(view.x, 0, view.z);

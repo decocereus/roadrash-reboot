@@ -128,6 +128,19 @@ export const hotBodies = {
     ["createRaceTally", "frameDrawn"],
     ["createRaceTally", "heardTick"],
   ],
+  "apps/web/src/game/bar-cast.ts": [
+    ["createCast", "walkOn"],
+    ["createCast", "walkToDoor"],
+    ["createCast", "walkTheRoute"],
+    ["createCast", "moveOnFoot"],
+    ["createCast", "update"],
+  ],
+  "apps/web/src/game/bar-walker.ts": [
+    ["createWalker", "hold"],
+    ["createWalker", "onBike"],
+    ["createWalker", "onFoot"],
+    ["createWalker", "update"],
+  ],
   "apps/web/src/game/bench-profile.ts": [["createBenchProfile", "record"]],
   "apps/web/src/game/figure-ik.ts": [
     ["placeChain"],
@@ -141,6 +154,11 @@ export const hotBodies = {
   ],
   "apps/web/src/game/figure-pose.ts": [["planterOf", "plant"]],
   "apps/web/src/game/fixed-tick.ts": [["createFixedTick", "advance"]],
+  "apps/web/src/game/foot-lock.ts": [
+    ["groundAt"],
+    ["reach"],
+    ["createFootLock", "hold"],
+  ],
   "apps/web/src/game/frame-loop.ts": [
     ["installFrameLoop", "setAnimationLoop()"],
   ],
@@ -167,6 +185,20 @@ export const hotBodies = {
   ],
   "apps/web/src/game/input.ts": [["createControls", "read"]],
   "apps/web/src/game/presets.ts": [["bindQuality", "noteDisplay"]],
+  "apps/web/src/game/rider-figure.ts": [
+    ["createRiderFigure", "mount"],
+    ["createRiderFigure", "onFoot"],
+  ],
+  "apps/web/src/game/strider.ts": [
+    ["clipTime"],
+    ["phaseRate"],
+    ["sampled"],
+    ["mixInto"],
+    ["crossed"],
+    ["createStrider", "pairAt"],
+    ["createStrider", "advance"],
+    ["createStrider", "step"],
+  ],
   "packages/sim/src/bench-workload.ts": [["observeWorkload"], ["racersAhead"]],
   "packages/sim/src/combat.ts": [
     ["pickThieves"],

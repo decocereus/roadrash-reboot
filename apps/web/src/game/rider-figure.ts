@@ -5,9 +5,12 @@ import * as THREE from "three";
 import { clone as cloneRig } from "three/addons/utils/SkeletonUtils.js";
 
 import type { PoseName, RiderAsset } from "./assets.ts";
+import type { BikeFit } from "./bike-fit.ts";
 import type { Shading } from "./cel.ts";
 import { disposeTree } from "./dispose.ts";
 import { reachOfPoses } from "./figure-bounds.ts";
+import { contactsOf as measureContacts } from "./figure-contacts.ts";
+import type { Contacts } from "./figure-contacts.ts";
 import { cycleFor, strikeName, striking } from "./figure-cycle.ts";
 import type { Cycle } from "./figure-cycle.ts";
 import {
@@ -27,9 +30,11 @@ import type { RiderPose, Riding, Sided, Turn } from "./figure-pose.ts";
 import { posed, PosedSkeleton } from "./figure-rig.ts";
 import type { Rig } from "./figure-rig.ts";
 import { weaponMesh } from "./figure-weapons.ts";
+import { createFootLock } from "./foot-lock.ts";
 import { isSkinnedMesh } from "./meshes.ts";
 import { paintPrimitives } from "./model-slots.ts";
 import type { Palette } from "./model-slots.ts";
+import type { Footing } from "./strider.ts";
 
 export interface Stance {
   pose: RiderPose;
@@ -47,11 +52,12 @@ export interface Stance {
 
 const BLEND_RATE = 16;
 const HOLD_RATE = 9;
+const FOOT_FADE_SECONDS = 0.25;
 
 export interface RiderFigure {
   readonly root: THREE.Group;
-  readonly seat: THREE.Vector3;
   readonly standHeight: number;
+  mount: (bike: THREE.Object3D, fit: BikeFit, sag: number) => void;
   dispose: () => void;
   animate: (stance: Stance, seconds: number) => void;
   rest: () => void;
@@ -64,6 +70,7 @@ export interface RiderFigure {
     blend: number,
     seconds: number
   ) => void;
+  onFoot: (footing: Footing, weapon: WeaponKind, seconds: number) => void;
 }
 
 const FAR_TRIANGLES = 4000;
@@ -120,6 +127,7 @@ const farBodyOf = (
 };
 
 const reachByAsset = new WeakMap<RiderAsset, THREE.Sphere>();
+const contactsByAsset = new WeakMap<RiderAsset, Contacts>();
 
 export const createRiderFigure = (
   asset: RiderAsset,
@@ -205,9 +213,16 @@ export const createRiderFigure = (
   const upright = [...current];
   const bent = [...current];
   const written = current.map(() => Number.NaN);
+  const fadeFrom = [...current];
+  let footing = 0;
+  let onFootLast = false;
+  const lock = createFootLock(root, asset.bones, asset.standHeight);
   const turn = new THREE.Quaternion();
   const cycle: Cycle = { blend: 0, from: "seated", to: "seated" };
   let resting = false;
+  let drawn = false;
+  let seatedOn: BikeFit | null = null;
+  const hip = new THREE.Vector3();
 
   const hands = [
     skeleton.getBoneByName("hand_l"),
@@ -233,9 +248,7 @@ export const createRiderFigure = (
   );
   let holding: THREE.Group | null = null;
 
-  const showWeapon = (weapon: WeaponKind, pose: RiderPose, side: number) => {
-    const swinging = pose === "windup" || pose === "swing" || pose === "swung";
-    const weaponHand = swinging && side < 0 ? 0 : 1;
+  const showWeapon = (weapon: WeaponKind, weaponHand: number) => {
     const next = held[weaponHand]?.[weaponKinds.indexOf(weapon)] ?? null;
     if (next === holding) {
       return;
@@ -255,6 +268,20 @@ export const createRiderFigure = (
     }
   };
   composeBones(false);
+
+  const contactsOf = (): Contacts => {
+    const known = contactsByAsset.get(asset);
+    if (known) {
+      return known;
+    }
+    composeBones(true);
+    posed(rig, seated);
+    const measured = measureContacts(body, root);
+    posed(rig, written);
+    composeBones(false);
+    contactsByAsset.set(asset, measured);
+    return measured;
+  };
 
   const apply = () => {
     let offset = -4;
@@ -389,7 +416,8 @@ export const createRiderFigure = (
       lift.x +=
         Math.sign(stance.lean) *
         HANG_SHIFT *
-        kneeOut(stance.lean, stance.speed);
+        kneeOut(stance.lean, stance.speed) *
+        (1 - stance.rise);
       const target = aim(stance);
       if (!target) {
         return;
@@ -402,6 +430,7 @@ export const createRiderFigure = (
           ? 1
           : Math.min(1, BLEND_RATE * seconds);
       resting = false;
+      drawn = true;
       for (let offset = 0; offset < current.length; offset += 4) {
         THREE.Quaternion.slerpFlat(
           current,
@@ -423,11 +452,14 @@ export const createRiderFigure = (
       );
       apply();
       model.position.copy(lift);
+      const { pose, side } = stance;
+      const swinging =
+        pose === "windup" || pose === "swing" || pose === "swung";
       showWeapon(
-        stance.pose === "surrender" ? "none" : stance.weapon,
-        stance.pose,
-        stance.side
+        pose === "surrender" ? "none" : stance.weapon,
+        swinging && side < 0 ? 0 : 1
       );
+      onFootLast = false;
     },
     bakePose(from, turns) {
       const pose = asset.poses.get(from);
@@ -479,6 +511,7 @@ export const createRiderFigure = (
     },
     holdPose(from, to, blend, seconds) {
       skeleton.stale = true;
+      drawn = true;
       const follow = Math.min(1, HOLD_RATE * seconds);
       for (let offset = 0; offset < current.length; offset += 4) {
         THREE.Quaternion.slerpFlat(
@@ -502,10 +535,57 @@ export const createRiderFigure = (
       }
       apply();
       model.position.set(0, 0, 0);
+      onFootLast = false;
     },
     judgeFar(pixelsTall) {
       far = staysFar(far, pixelsTall);
       body.geometry = far ? farBody : near;
+    },
+    mount(bike, fit, sag) {
+      if (fit !== seatedOn) {
+        planter.seatOn(fit, contactsOf(), hip);
+        seatedOn = fit;
+      }
+      root.quaternion.copy(bike.quaternion);
+      root.position
+        .set(hip.x, hip.y - sag, hip.z)
+        .applyQuaternion(bike.quaternion)
+        .add(bike.position);
+    },
+    onFoot({ lift: footLift, planted, pose }, weapon, seconds) {
+      skeleton.stale = true;
+      const fresh = resting || !drawn;
+      if (resting) {
+        root.add(model);
+        resting = false;
+      }
+      drawn = true;
+      if (!onFootLast) {
+        onFootLast = true;
+        footing = fresh ? 1 : 0;
+        lock.free();
+        for (let index = 0; index < current.length; index += 1) {
+          fadeFrom[index] = current[index] ?? 0;
+        }
+      }
+      footing = Math.min(1, footing + seconds / FOOT_FADE_SECONDS);
+      const eased = footing * footing * (3 - 2 * footing);
+      for (let offset = 0; offset < current.length; offset += 4) {
+        THREE.Quaternion.slerpFlat(
+          current,
+          offset,
+          fadeFrom,
+          offset,
+          pose,
+          offset,
+          eased
+        );
+      }
+      model.position.copy(footLift);
+      apply();
+      lock.hold(current, planted, seconds);
+      apply();
+      showWeapon(weapon, 1);
     },
     rest() {
       if (!resting) {
@@ -514,7 +594,6 @@ export const createRiderFigure = (
       }
     },
     root,
-    seat: asset.seat,
     standHeight: asset.standHeight,
   };
 };
