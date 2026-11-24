@@ -127,6 +127,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "packages/sim/src/carrier-roads.test.ts",
       "packages/sim/src/carrier.test.ts",
       "packages/sim/src/traffic.ts",
+      "packages/sim/src/lane-seats.ts",
       "packages/sim/src/lanes.test.ts",
       "packages/sim/src/lanes-closing.test.ts",
     ],

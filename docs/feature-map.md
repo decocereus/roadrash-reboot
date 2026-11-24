@@ -168,11 +168,12 @@ Same-way and oncoming cars in every lane, spawned from each road's traffic densi
 - Docs: [docs/architecture/tracks.md#tracks](architecture/tracks.md#tracks)
 - Verify: none yet
 - Perf: `sim.ticksPerSecond`, `sim.tick.p95`, `sim.tick.p99`, `sim.allocatedBytesPerTick`
-- Owns: `packages/sim/src/carrier.ts`, `packages/sim/src/carrier-roads.test.ts`, `packages/sim/src/carrier.test.ts`, `packages/sim/src/traffic.ts`, `packages/sim/src/lanes.test.ts`, `packages/sim/src/lanes-closing.test.ts`
+- Owns: `packages/sim/src/carrier.ts`, `packages/sim/src/carrier-roads.test.ts`, `packages/sim/src/carrier.test.ts`, `packages/sim/src/traffic.ts`, `packages/sim/src/lane-seats.ts`, `packages/sim/src/lanes.test.ts`, `packages/sim/src/lanes-closing.test.ts`
 
 Source files:
 
 - `packages/sim/src/carrier.ts`
+- `packages/sim/src/lane-seats.ts`
 - `packages/sim/src/traffic.ts`
 
 Test files:

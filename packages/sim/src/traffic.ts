@@ -1,9 +1,10 @@
-import { openLanesAt, trafficReachAt } from "@racer/track/districts";
+import { openLanesAt } from "@racer/track/districts";
 import type { LaneCentres } from "@racer/track/districts";
 import type { Random } from "@racer/track/random";
 import type { Track } from "@racer/track/track";
 
 import { carrierAt, inJumpZone, jumpZoneFrom, jumpZoneTo } from "./carrier.ts";
+import { narrows, seatCar, seatCars, seatOf } from "./lane-seats.ts";
 import { trafficPaints } from "./palette.ts";
 import { blocksCars } from "./pedestrians.ts";
 import { isSignalled, mainLightOf, signalPhaseAt } from "./signals.ts";
@@ -100,31 +101,6 @@ const laneFor = (
     }
     default: {
       return lanes satisfies never;
-    }
-  }
-};
-
-const narrows = (track: Track): boolean => track.plan.districts.length > 1;
-
-const seatOf = (home: number, track: Track, s: number): number =>
-  Math.sign(home) * Math.min(Math.abs(home), trafficReachAt(track, s));
-
-const seatCar = (car: TrafficCar, track: Track): void => {
-  car.x = seatOf(car.home, track, car.s);
-};
-
-export const carSlant = (
-  { halfLength, home }: Pick<TrafficCar, "halfLength" | "home">,
-  track: Track,
-  s: number
-): number =>
-  (seatOf(home, track, s + halfLength) - seatOf(home, track, s - halfLength)) /
-  (2 * halfLength);
-
-export const seatCars = (cars: readonly TrafficCar[], track: Track): void => {
-  if (narrows(track)) {
-    for (const car of cars) {
-      seatCar(car, track);
     }
   }
 };
