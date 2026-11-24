@@ -1,63 +1,20 @@
-import { heightAt, slopeAt, slopeRateAt } from "@racer/track/track";
+import { slopeRateAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
-import {
-  clearsDecks,
-  climbOffLip,
-  frontOf,
-  lipOf,
-  passingLineOf,
-  RAMP_RISE,
-  ridingOver,
-  toeOf,
-} from "./carrier.ts";
-import { canBrakeAfterLanding, landsOnRoad, riding } from "./pilot-corners.ts";
+import { frontOf, passingLineOf, ridingOver, toeOf } from "./carrier.ts";
+import { canBrakeAfterLanding, riding } from "./pilot-corners.ts";
+import { landed, landsOffLip } from "./pilot-landing.ts";
 import { LANE_REACH } from "./pilot-lines.ts";
 import type { Aim } from "./pilot-lines.ts";
-import { HARD_LANDING } from "./rider-flight.ts";
 import { GRAVITY, sidewaysRate } from "./state.ts";
 import type { RaceState, RiderState, TrafficCar } from "./state.ts";
 
 const JUDGE_SECONDS = 3;
 const MISJUDGE_SHARE = 0.8;
-const FLIGHT_STEP = 0.05;
-const LONGEST_FLIGHT = 4;
 const LANDING_ROOM_BEHIND = 15;
 const LANDING_ROOM_SECONDS = 1;
 const STRAIGHTEN_SECONDS = 0.6;
 const STRAIGHTEN_SCAN_STEP = 2;
-
-const flight = { impact: 0, seconds: 0 };
-
-const forecastFlight = (
-  track: Track,
-  lip: number,
-  speed: number,
-  climb: number
-): void => {
-  const rise = climb + slopeAt(track, lip) * speed;
-  const from = heightAt(track, lip) + RAMP_RISE;
-  let above = RAMP_RISE;
-  flight.impact = Number.NEGATIVE_INFINITY;
-  flight.seconds = LONGEST_FLIGHT;
-  for (let at = FLIGHT_STEP; at < LONGEST_FLIGHT; at += FLIGHT_STEP) {
-    const clearance =
-      from +
-      rise * at -
-      (GRAVITY * at * at) / 2 -
-      heightAt(track, lip + speed * at);
-    if (clearance <= 0) {
-      const seconds = at - (FLIGHT_STEP * clearance) / (clearance - above);
-      flight.seconds = seconds;
-      flight.impact =
-        rise -
-        GRAVITY * seconds -
-        slopeAt(track, lip + speed * seconds) * speed;
-      return;
-    }
-    above = clearance;
-  }
-};
 
 const carInTheWay = (
   state: RaceState,
@@ -84,27 +41,27 @@ const carInTheWay = (
   return false;
 };
 
+const landsArriving = (
+  state: RaceState,
+  track: Track,
+  rider: RiderState,
+  carrier: TrafficCar,
+  ceiling: number
+): boolean =>
+  landsOffLip(track, rider, carrier, riding.margin, ceiling) &&
+  canBrakeAfterLanding(track, rider, landed.s, landed.speed, riding.margin) &&
+  !carInTheWay(state, rider, carrier, landed.s, landed.seconds);
+
 const jumpWorks = (
   state: RaceState,
   track: Track,
   rider: RiderState,
-  carrier: TrafficCar
-): boolean => {
-  const { speed } = rider;
-  if (!clearsDecks(speed, carrier.speed)) {
-    return false;
-  }
-  const toLip = (lipOf(carrier) - rider.s) / (speed - carrier.speed);
-  const lip = rider.s + speed * toLip;
-  forecastFlight(track, lip, speed, climbOffLip(speed, carrier.speed));
-  const carried = speed * flight.seconds;
-  return (
-    flight.impact >= HARD_LANDING &&
-    landsOnRoad(track, rider, lip, carried, carrier.x, speed, riding.margin) &&
-    canBrakeAfterLanding(track, rider, lip + carried, speed, riding.margin) &&
-    !carInTheWay(state, rider, carrier, lip + carried, toLip + flight.seconds)
-  );
-};
+  carrier: TrafficCar,
+  wanted: number
+): boolean =>
+  landsArriving(state, track, rider, carrier, rider.speed) &&
+  (wanted <= rider.speed ||
+    landsArriving(state, track, rider, carrier, wanted));
 
 const inJudgingRange = (rider: RiderState, car: TrafficCar): boolean => {
   const toToe = toeOf(car) - rider.s;
@@ -150,7 +107,8 @@ export const jumpAim = (
         const misjudges =
           roll(state) < (1 - rider.profile.skill) * MISJUDGE_SHARE;
         rider.jumpSeen = index;
-        rider.jumpTaken = misjudges || jumpWorks(state, track, rider, car);
+        rider.jumpTaken =
+          misjudges || jumpWorks(state, track, rider, car, aim.speed);
       }
       x = ridingOver(rider, index) ? car.x : passingLineOf(car, x);
     }

@@ -54,9 +54,35 @@ const dropOnto = (metres: number): RaceEvent[] => {
   rider.speed = 40;
   rider.airborne = true;
   rider.air = metres;
-  return hold(state, straight, flatOut, 2).filter(
+  return hold(state, straight, flatOut, 3).filter(
     (event) => event.kind === "crash"
   );
+};
+
+const landAt = (impact: number, steering = 0, clearance = 0.01) => {
+  const state = field(straight, 1, 0, 0);
+  const rider = player(state);
+  rider.s = 3000;
+  rider.speed = 45;
+  rider.airborne = true;
+  rider.airTicks = TICK_RATE;
+  rider.air = clearance;
+  rider.verticalSpeed = -impact;
+  rider.lateralSpeed = steering * lateralSpeedLimit(rider.bike, rider.speed);
+  const pace = rider.speed;
+  stepRace(
+    state,
+    straight,
+    frameOf(state, [PLAYER_RIDER, { ...flatOut, steer: Math.sign(steering) }])
+  );
+  const landed = state.events.find((event) => event.kind === "land");
+  return {
+    crashes: state.events.filter((event) => event.kind === "crash"),
+    impact: landed?.kind === "land" ? -landed.impact : Number.NaN,
+    kept: rider.speed / pace,
+    riding: rider.mode === "riding",
+    wobble: rider.wobble,
+  };
 };
 
 const overSlagRowHump = (speed: number, throttle: number): RaceEvent[] => {
@@ -103,9 +129,61 @@ describe("jumping", () => {
     ]);
   });
 
-  it("a bike that drops eight metres onto the road crashes however straight it lands; a two metre drop is ridden out", () => {
+  it("a hard landing up to 19 m/s rides on and pays for it in speed and shake", () => {
+    const at = [12, 14, 16].map((impact) => landAt(impact));
+    expect(at.map((landing) => landing.crashes.length)).toStrictEqual([
+      0, 0, 0,
+    ]);
+    expect(at.map((landing) => landing.riding)).toStrictEqual([
+      true,
+      true,
+      true,
+    ]);
+    expect(at.map((landing) => Math.round(landing.impact))).toStrictEqual([
+      12, 14, 16,
+    ]);
+    expect(at.map((landing) => 1 - landing.kept)).toStrictEqual([
+      expect.closeTo(0.116, 2),
+      expect.closeTo(0.16, 2),
+      expect.closeTo(0.2, 2),
+    ]);
+    expect(at.map((landing) => landing.wobble)).toStrictEqual([
+      expect.closeTo(1, 1),
+      expect.closeTo(14 / 12, 1),
+      expect.closeTo(16 / 12, 1),
+    ]);
+  });
+
+  it("a landing just under 19 m/s rides on; 19 m/s and harder crashes", () => {
+    expect(landAt(18.8).crashes).toHaveLength(0);
     expect(
-      dropOnto(8).map((crash) => crash.kind === "crash" && crash.cause)
+      landAt(19.2).crashes.map((crash) => crash.kind === "crash" && crash.cause)
+    ).toStrictEqual(["landing"]);
+  });
+
+  it("a judged contact at exactly 19 m/s crashes and one a hair softer rides on", () => {
+    const softer = landAt(19 - 1e-6, 0, 0);
+    expect(softer.crashes).toHaveLength(0);
+    expect(softer.impact).toBeCloseTo(19 - 1e-6, 6);
+    expect(
+      landAt(19, 0, 0).crashes.map(
+        (crash) => crash.kind === "crash" && crash.cause
+      )
+    ).toStrictEqual(["landing"]);
+  });
+
+  it("a hard landing that also slides across the road still crashes", () => {
+    expect(landAt(14, 0).crashes).toHaveLength(0);
+    expect(
+      landAt(14, 0.75).crashes.map(
+        (crash) => crash.kind === "crash" && crash.cause
+      )
+    ).toStrictEqual(["landing"]);
+  });
+
+  it("a bike that drops twenty metres onto the road crashes however straight it lands; a two metre drop is ridden out", () => {
+    expect(
+      dropOnto(20).map((crash) => crash.kind === "crash" && crash.cause)
     ).toStrictEqual(["landing"]);
     expect(dropOnto(2)).toHaveLength(0);
   });

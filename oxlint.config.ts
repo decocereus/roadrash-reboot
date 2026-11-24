@@ -40,6 +40,7 @@ export const deterministicFiles = [
   "packages/sim/src/pilot-forecast.ts",
   "packages/sim/src/pilot-history.ts",
   "packages/sim/src/pilot-jumps.ts",
+  "packages/sim/src/pilot-landing.ts",
   "packages/sim/src/pilot-lines.ts",
   "packages/sim/src/pilot-police.ts",
   "packages/sim/src/pilot.ts",
