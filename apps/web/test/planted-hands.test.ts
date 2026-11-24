@@ -156,7 +156,7 @@ const struckInLeans: readonly Held[] = strikes.flatMap(({ limb, pose, rise }) =>
 
 const fitOf = async (model: BikeModelId): Promise<BikeFit> => {
   const url = modelUrls.bikes[model];
-  const { value } = await assetParsers.bike(artFile(url), url);
+  const { value } = await assetParsers.bike(model)(artFile(url), url);
   return value.fit;
 };
 

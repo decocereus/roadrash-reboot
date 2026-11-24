@@ -41,6 +41,9 @@ const chest: ReadonlySet<string> = new Set(["spine_02", "spine_03"]);
 
 const riding: readonly (readonly [string, Partial<Stance>])[] = [
   ["rest", {}],
+  ["a quarter tuck", { tuck: 0.25 }],
+  ["half a tuck", { tuck: 0.5 }],
+  ["three quarters of a tuck", { tuck: 0.75 }],
   ["tuck", { tuck: 1 }],
   ["lean left", { lean: -1, speed: RIDING_SPEED }],
   ["lean right", { lean: 1, speed: RIDING_SPEED }],
@@ -143,7 +146,7 @@ const shading = createShading(lookOf("salt-coast"));
 
 const bikeOf = async (model: BikeModelId): Promise<BikeModel> => {
   const url = modelUrls.bikes[model];
-  const { value } = await assetParsers.bike(artFile(url), url);
+  const { value } = await assetParsers.bike(model)(artFile(url), url);
   return value;
 };
 

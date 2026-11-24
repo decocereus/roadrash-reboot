@@ -1,5 +1,8 @@
 import * as THREE from "three";
 
+import type { BikeDeck } from "./bike-deck.ts";
+import type { BikePosture } from "./bike-posture.ts";
+
 export const BIKE_TURN = new THREE.Matrix4().makeRotationY(Math.PI);
 
 export const contactNames = ["hand_l", "hand_r", "foot_l", "foot_r"] as const;
@@ -12,6 +15,8 @@ export interface BikeFit {
   readonly hand_l: THREE.Vector3;
   readonly hand_r: THREE.Vector3;
   readonly seat: THREE.Vector3;
+  readonly posture: BikePosture;
+  readonly deck: BikeDeck;
 }
 
 const fitNodes = {
@@ -20,7 +25,7 @@ const fitNodes = {
   hand_l: "fit_grip_l",
   hand_r: "fit_grip_r",
   seat: "fit_seat",
-} as const satisfies Record<keyof BikeFit, string>;
+} as const satisfies Record<Exclude<keyof BikeFit, "deck" | "posture">, string>;
 
 const fitNodeNames: ReadonlySet<string> = new Set(Object.values(fitNodes));
 
@@ -29,6 +34,8 @@ export const isFitNode = (node: THREE.Object3D): boolean =>
 
 export const fitOf = (
   scene: THREE.Object3D,
+  posture: BikePosture,
+  deck: BikeDeck,
   refuse: (why: string) => Error
 ): BikeFit => {
   scene.updateMatrixWorld(true);
@@ -40,10 +47,12 @@ export const fitOf = (
     return node.getWorldPosition(new THREE.Vector3()).applyMatrix4(BIKE_TURN);
   };
   return {
+    deck,
     foot_l: pointOf(fitNodes.foot_l),
     foot_r: pointOf(fitNodes.foot_r),
     hand_l: pointOf(fitNodes.hand_l),
     hand_r: pointOf(fitNodes.hand_r),
+    posture,
     seat: pointOf(fitNodes.seat),
   };
 };

@@ -133,6 +133,17 @@ export const swingGirdle = (grip: Grip, limit: number) => {
   }
 };
 
+export const turnAbove = (
+  torso: Joint,
+  above: readonly Joint[],
+  axis: THREE.Vector3,
+  angle: number
+) => {
+  if (angle !== 0) {
+    turnAbout(above, 0, torso.at, spin.setFromAxisAngle(axis, angle));
+  }
+};
+
 export const leanToward = (
   torso: Joint,
   above: readonly Joint[],
@@ -150,9 +161,7 @@ export const leanToward = (
       );
     }
   }
-  if (angle > 0) {
-    turnAbout(above, 0, torso.at, spin.setFromAxisAngle(axis, angle));
-  }
+  turnAbove(torso, above, axis, angle);
 };
 
 const interiorAngle = (upper: number, lower: number, span: number): number =>

@@ -5,9 +5,11 @@ import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 
-import { fitOf, isFitNode } from "./bike-fit.ts";
+import { deckOf } from "./bike-deck.ts";
+import { BIKE_TURN, fitOf, isFitNode } from "./bike-fit.ts";
 import type { BikeFit } from "./bike-fit.ts";
 import type { BikeModelId } from "./bike-models.ts";
+import { bikePostures } from "./bike-posture.ts";
 import { isMesh, isSkinnedMesh } from "./meshes.ts";
 import { coloured, isSlot } from "./model-slots.ts";
 import type { Primitive, Slot } from "./model-slots.ts";
@@ -273,7 +275,7 @@ export type Parse<Value> = (
 ) => Promise<Decoded<Value>>;
 
 export interface AssetParsers {
-  readonly bike: Parse<BikeModel>;
+  readonly bike: (model: BikeModelId) => Parse<BikeModel>;
   readonly parts: Parse<ModelParts>;
   readonly whole: Parse<readonly Primitive[]>;
   readonly rider: Parse<RiderAsset>;
@@ -416,19 +418,30 @@ const parts: Parse<ModelParts> = async (bytes, url) => {
   return decoded(gltf.scene, [...byName.values()].flat(), byName);
 };
 
-const bike: Parse<BikeModel> = async (bytes, url) => {
-  const gltf = await parsed(bytes);
-  const refused = refuser(gltf.scene, `bike model ${url}`);
-  const fit = fitOf(gltf.scene, refused);
-  const byName = partsOf(
-    gltf.scene.children.filter((child) => !isFitNode(child)),
-    refused
-  );
-  return decoded(gltf.scene, [...byName.values()].flat(), {
-    fit,
-    parts: byName,
-  });
-};
+const bike =
+  (model: BikeModelId): Parse<BikeModel> =>
+  async (bytes, url) => {
+    const gltf = await parsed(bytes);
+    const refused = refuser(gltf.scene, `bike model ${url}`);
+    const byName = partsOf(
+      gltf.scene.children.filter((child) => !isFitNode(child)),
+      refused
+    );
+    const primitives = [...byName.values()].flat();
+    const fit = fitOf(
+      gltf.scene,
+      bikePostures[model],
+      deckOf(
+        primitives.map(({ geometry }) => geometry),
+        BIKE_TURN
+      ),
+      refused
+    );
+    return decoded(gltf.scene, primitives, {
+      fit,
+      parts: byName,
+    });
+  };
 
 const whole: Parse<readonly Primitive[]> = async (bytes, url) => {
   const gltf = await parsed(bytes);

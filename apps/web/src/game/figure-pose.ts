@@ -2,6 +2,10 @@ import * as THREE from "three";
 
 import { contactNames } from "./bike-fit.ts";
 import type { BikeFit, ContactName } from "./bike-fit.ts";
+import { bareDeck } from "./bike-deck.ts";
+import type { BikeDeck } from "./bike-deck.ts";
+import type { BikePosture } from "./bike-posture.ts";
+import type { ChestPoint } from "./figure-chest.ts";
 import type { Contacts } from "./figure-contacts.ts";
 import {
   leanToward,
@@ -10,6 +14,7 @@ import {
   reachOf,
   swingGirdle,
   swingKneeOut,
+  turnAbove,
   turnInWorld,
   writeLocal,
 } from "./figure-ik.ts";
@@ -43,18 +48,36 @@ export interface Turn {
   readonly degrees: number;
 }
 
-export const TUCK_TURNS: readonly Turn[] = [
-  { axis: PITCH_FORWARD, bone: "spine_01", degrees: 9 },
-  { axis: PITCH_FORWARD, bone: "spine_02", degrees: 11 },
-  { axis: PITCH_FORWARD, bone: "spine_03", degrees: 9 },
-  { axis: PITCH_FORWARD, bone: "neck_01", degrees: -10 },
-  { axis: PITCH_FORWARD, bone: "head", degrees: -12 },
+const pitchShares = [
+  ["spine_01", 0.3],
+  ["spine_02", 0.4],
+  ["spine_03", 0.3],
+  ["neck_01", -0.4],
+  ["head", -0.4],
+] as const;
+
+const pitchedBy = (pitch: number): Turn[] =>
+  pitchShares.map(([bone, share]) => ({
+    axis: PITCH_FORWARD,
+    bone,
+    degrees: share * pitch,
+  }));
+
+const TUCKED_ARMS: readonly Turn[] = [
   { axis: PITCH_FORWARD, bone: "upperarm_l", degrees: -22 },
   { axis: PITCH_FORWARD, bone: "upperarm_r", degrees: -22 },
   { axis: ROLL, bone: "upperarm_l", degrees: 16 },
   { axis: ROLL, bone: "upperarm_r", degrees: -16 },
   { axis: PITCH_FORWARD, bone: "lowerarm_l", degrees: 14 },
   { axis: PITCH_FORWARD, bone: "lowerarm_r", degrees: 14 },
+];
+
+export const restTurns = ({ restPitch }: BikePosture): readonly Turn[] =>
+  pitchedBy(restPitch);
+
+export const tuckTurns = ({ tuckPitch }: BikePosture): readonly Turn[] => [
+  ...pitchedBy(tuckPitch),
+  ...TUCKED_ARMS,
 ];
 
 export const hangTurns = (side: number): readonly Turn[] => [
@@ -181,6 +204,7 @@ export interface Planter {
   readonly seatOn: (
     fit: BikeFit,
     contacts: Contacts,
+    seated: readonly number[],
     hip: THREE.Vector3
   ) => void;
   readonly plant: (
@@ -191,6 +215,12 @@ export interface Planter {
     lean: number,
     speed: number
   ) => void;
+  readonly settle: (pose: number[], lift: THREE.Vector3, lie: boolean) => void;
+  readonly sinkOf: (pose: readonly number[], lift: THREE.Vector3) => number;
+  readonly reachShortOf: (
+    pose: readonly number[],
+    lift: THREE.Vector3
+  ) => number;
 }
 
 const KMH = 3.6;
@@ -213,6 +243,13 @@ const origin = new THREE.Vector3();
 const reaching = new THREE.Vector3();
 const ARM_STRETCH = 0.96;
 const footTarget = new THREE.Vector3();
+const chestAt = new THREE.Vector3();
+const pulled = new THREE.Vector3();
+
+const CHEST_CLEAR = 0.004;
+const SETTLE_PASSES = 8;
+const SETTLED_TIP = THREE.MathUtils.degToRad(0.05);
+const SHORTEST_LEVER = 0.05;
 
 const footDown = (lean: number, speed: number): number =>
   (1 -
@@ -278,8 +315,12 @@ const gripOf = (limb: Limb, stretch: number): Grip => ({
   reach: reachOf(limb) * stretch,
 });
 
-export const planterOf = (rig: Rig, seated: readonly number[]): Planter => {
-  const chain = chainOf(rig, ["hand_l", "hand_r", "foot_l", "foot_r"]);
+export const planterOf = (
+  rig: Rig,
+  seated: readonly number[],
+  chestPoints: readonly ChestPoint[]
+): Planter => {
+  const chain = chainOf(rig, ["hand_l", "hand_r", "foot_l", "foot_r", "head"]);
   const jointNamed = (name: string): Joint => {
     const index = rig.bones.indexOf(boneNamed(rig.skeleton, name));
     const joint = chain.joints.find((each) => each.index === index);
@@ -312,7 +353,54 @@ export const planterOf = (rig: Rig, seated: readonly number[]): Planter => {
     left: limbOf("thigh_l", "calf_l", "foot_l", null),
     right: limbOf("thigh_r", "calf_r", "foot_r", null),
   };
-  const every = [arms.left, arms.right, legs.left, legs.right];
+  const reachingArms = [arms.left, arms.right];
+  const chest = chestPoints.flatMap((pulls) => {
+    const held = pulls.flatMap(({ at, bone, weight }) => {
+      const joint = chain.joints.find((each) => each.index === bone);
+      return joint ? [{ at, joint, weight }] : [];
+    });
+    const total = held.reduce((sum, { weight }) => sum + weight, 0);
+    return total > 0
+      ? [held.map((pull) => ({ ...pull, weight: pull.weight / total }))]
+      : [];
+  });
+  const chestPointAt = (point: (typeof chest)[number]) => {
+    chestAt.set(0, 0, 0);
+    for (const { at, joint, weight } of point) {
+      pulled.copy(at).applyQuaternion(joint.turn).add(joint.at);
+      chestAt.addScaledVector(pulled, weight);
+    }
+    return chestAt;
+  };
+  let deck: BikeDeck = bareDeck;
+  const seat = new THREE.Vector3();
+  const placedAt = (pose: readonly number[], lift: THREE.Vector3) => {
+    placeChain(chain, pose, lift);
+    for (const arm of reachingArms) {
+      swingGirdle(arm, GIRDLE_SWING);
+    }
+    leanToward(torso, above, PITCH_FORWARD, reachingArms, TORSO_LEAN);
+    for (const arm of reachingArms) {
+      reachFor(arm);
+    }
+  };
+  const tipFor = (lie: boolean): number => {
+    let back = 0;
+    let down = Infinity;
+    for (const point of chest) {
+      chestPointAt(point);
+      const floor = deck.heightAt(chestAt.x + seat.x, chestAt.z + seat.z) - seat.y;
+      const gap = chestAt.y - floor - CHEST_CLEAR;
+      const lever = torso.at.z - chestAt.z;
+      if (lever > SHORTEST_LEVER) {
+        const turn = Math.atan2(gap, lever);
+        back = Math.min(back, turn);
+        down = Math.min(down, turn);
+      }
+    }
+    return back < 0 || !lie || down === Infinity ? back : down;
+  };
+  const every = [...reachingArms, legs.left, legs.right];
   const byContact = {
     foot_l: legs.left,
     foot_r: legs.right,
@@ -364,10 +452,22 @@ export const planterOf = (rig: Rig, seated: readonly number[]): Planter => {
         }
       }
     },
-    seatOn(fit, contacts, hip) {
-      placeChain(chain, seated, origin);
+    reachShortOf(pose, lift) {
+      placedAt(pose, lift);
+      let short = -Infinity;
+      for (const arm of reachingArms) {
+        short = Math.max(
+          short,
+          arm.at.distanceTo(arm.limb.bones[0].at) - arm.reach
+        );
+      }
+      return short;
+    },
+    seatOn(fit, contacts, seatedOn, hip) {
+      placeChain(chain, seatedOn, origin);
       for (const name of contactNames) {
         const grip = byContact[name];
+        grip.facing.copy(grip.limb.bones[2].turn);
         grip.at
           .copy(contacts[name])
           .applyQuaternion(grip.facing)
@@ -375,8 +475,9 @@ export const planterOf = (rig: Rig, seated: readonly number[]): Planter => {
           .add(fit[name])
           .sub(fit.seat);
       }
+      leanToward(torso, above, PITCH_FORWARD, reachingArms, TORSO_LEAN);
       let slide = 0;
-      for (const arm of [arms.left, arms.right]) {
+      for (const arm of reachingArms) {
         reaching.subVectors(arm.at, arm.limb.bones[0].at);
         const room = arm.reach ** 2 - reaching.x ** 2 - reaching.y ** 2;
         if (room > 0) {
@@ -388,6 +489,32 @@ export const planterOf = (rig: Rig, seated: readonly number[]): Planter => {
       for (const grip of every) {
         grip.at.z += slide;
       }
+      ({ deck } = fit);
+      seat.copy(hip);
+    },
+    settle(pose, lift, lie) {
+      for (let pass = 0; pass < SETTLE_PASSES; pass += 1) {
+        placedAt(pose, lift);
+        const tip = tipFor(lie);
+        if (Math.abs(tip) < SETTLED_TIP) {
+          return;
+        }
+        placeChain(chain, pose, lift);
+        turnAbove(torso, above, PITCH_FORWARD, tip);
+        writeLocal(chain, pose, torso);
+      }
+    },
+    sinkOf(pose, lift) {
+      placedAt(pose, lift);
+      let sink = -Infinity;
+      for (const point of chest) {
+        chestPointAt(point);
+        sink = Math.max(
+          sink,
+          deck.heightAt(chestAt.x + seat.x, chestAt.z + seat.z) - seat.y - chestAt.y
+        );
+      }
+      return sink;
     },
   };
 };

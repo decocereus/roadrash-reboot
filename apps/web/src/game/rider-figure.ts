@@ -6,9 +6,14 @@ import { clone as cloneRig } from "three/addons/utils/SkeletonUtils.js";
 
 import type { PoseName, RiderAsset } from "./assets.ts";
 import type { BikeFit } from "./bike-fit.ts";
+import { bikeModelIds } from "./bike-models.ts";
+import { bikePostures } from "./bike-posture.ts";
+import type { BikePosture } from "./bike-posture.ts";
 import type { Shading } from "./cel.ts";
 import { disposeTree } from "./dispose.ts";
 import { reachOfPoses } from "./figure-bounds.ts";
+import { chestOf } from "./figure-chest.ts";
+import type { ChestPoint } from "./figure-chest.ts";
 import { contactsOf as measureContacts } from "./figure-contacts.ts";
 import type { Contacts } from "./figure-contacts.ts";
 import { cycleFor, strikeName, striking } from "./figure-cycle.ts";
@@ -20,10 +25,11 @@ import {
   HANG_SHIFT,
   kneeOut,
   planterOf,
+  restTurns,
   riseOffset,
   risenTurns,
   sideOf,
-  TUCK_TURNS,
+  tuckTurns,
   turnedFrom,
 } from "./figure-pose.ts";
 import type { RiderPose, Riding, Sided, Turn } from "./figure-pose.ts";
@@ -58,6 +64,7 @@ export interface RiderFigure {
   readonly root: THREE.Group;
   readonly standHeight: number;
   mount: (bike: THREE.Object3D, fit: BikeFit, sag: number) => void;
+  seatOn: (fit: BikeFit) => void;
   dispose: () => void;
   animate: (stance: Stance, seconds: number) => void;
   rest: () => void;
@@ -127,7 +134,23 @@ const farBodyOf = (
 };
 
 const reachByAsset = new WeakMap<RiderAsset, THREE.Sphere>();
+const ridingByAsset = new WeakMap<
+  RiderAsset,
+  ReadonlyMap<BikePosture, Riding>
+>();
+const [firstModel] = bikeModelIds;
 const contactsByAsset = new WeakMap<RiderAsset, Contacts>();
+const HANG_STEPS = 6;
+const SLIDE_PASSES = 4;
+
+const hung = (side: number) => new THREE.Vector3(side * HANG_SHIFT, 0, 0);
+
+interface Seated {
+  readonly riding: Riding;
+  readonly tuckSlide: THREE.Vector3;
+}
+const chestByAsset = new WeakMap<RiderAsset, readonly ChestPoint[]>();
+const settledByAsset = new WeakMap<RiderAsset, WeakMap<BikeFit, Seated>>();
 
 export const createRiderFigure = (
   asset: RiderAsset,
@@ -178,35 +201,141 @@ export const createRiderFigure = (
   const rig: Rig = { bones, names: asset.bones, root, skeleton };
   const bake = (base: readonly number[], turns: readonly Turn[]) =>
     turnedFrom(rig, base, turns);
-  const tucked = bake(seated, TUCK_TURNS);
+  const lifts = { left: riseOffset(-1), right: riseOffset(1) };
+  const lift = new THREE.Vector3();
+  const chest = chestByAsset.get(asset) ?? chestOf(rig, body);
+  chestByAsset.set(asset, chest);
+  const planter = planterOf(rig, seated, chest);
   const risen = {
     left: bake(seated, risenTurns(-1)),
     right: bake(seated, risenTurns(1)),
   };
-  const lifts = { left: riseOffset(-1), right: riseOffset(1) };
-  const lift = new THREE.Vector3();
-  const planter = planterOf(rig, seated);
-  const riding: Riding = {
-    flinch: {
-      left: bake(seated, flinchTurns(-1)),
-      right: bake(seated, flinchTurns(1)),
-    },
-    hang: {
-      left: bake(seated, hangTurns(-1)),
-      right: bake(seated, hangTurns(1)),
-    },
-    kicked: {
-      left: kickedFrom(rig, risen.left, kickLeft, -1),
-      right: kickedFrom(rig, risen.right, kickRight, 1),
-    },
-    risen,
-    seated,
-    tucked,
-    tuckedHang: {
-      left: bake(tucked, hangTurns(-1)),
-      right: bake(tucked, hangTurns(1)),
-    },
+  const kicked = {
+    left: kickedFrom(rig, risen.left, kickLeft, -1),
+    right: kickedFrom(rig, risen.right, kickRight, 1),
   };
+  const ridingOn = (posture: BikePosture): Riding => {
+    const rest = bake(seated, restTurns(posture));
+    const tucked = bake(seated, tuckTurns(posture));
+    return {
+      flinch: {
+        left: bake(rest, flinchTurns(-1)),
+        right: bake(rest, flinchTurns(1)),
+      },
+      hang: {
+        left: bake(rest, hangTurns(-1)),
+        right: bake(rest, hangTurns(1)),
+      },
+      kicked,
+      risen,
+      seated: rest,
+      tucked,
+      tuckedHang: {
+        left: bake(tucked, hangTurns(-1)),
+        right: bake(tucked, hangTurns(1)),
+      },
+    };
+  };
+  const ridingSets =
+    ridingByAsset.get(asset) ??
+    new Map(
+      Object.values(bikePostures).map((posture) => [posture, ridingOn(posture)])
+    );
+  ridingByAsset.set(asset, ridingSets);
+  const posturedFor = (posture: BikePosture): Riding => {
+    const set = ridingSets.get(posture);
+    if (!set) {
+      throw new Error("No riding poses were baked for this bike's posture.");
+    }
+    return set;
+  };
+  const settledSets =
+    settledByAsset.get(asset) ?? new WeakMap<BikeFit, Seated>();
+  settledByAsset.set(asset, settledSets);
+  const settled = (
+    pose: readonly number[],
+    at: THREE.Vector3,
+    lie: boolean
+  ) => {
+    const copy = [...pose];
+    planter.settle(copy, at, lie);
+    return copy;
+  };
+  const settledOn = (fit: BikeFit, postured: Riding): Seated => {
+    const known = settledSets.get(fit);
+    if (known) {
+      return known;
+    }
+    const slide = fit.posture.tuckSlide.clone();
+    const tuckedHangs = [-1, 1].map(
+      (side) => [bake(postured.tucked, hangTurns(side)), hung(side)] as const
+    );
+    for (let pass = 0; pass < SLIDE_PASSES; pass += 1) {
+      const short = Math.max(
+        planter.reachShortOf(postured.tucked, slide),
+        ...tuckedHangs.map(([pose, shift]) =>
+          planter.reachShortOf(pose, shift.clone().add(slide))
+        )
+      );
+      if (short <= 0 || slide.z <= 0) {
+        break;
+      }
+      slide.multiplyScalar(Math.max(0, 1 - short / slide.z));
+    }
+    const hangingFrom = (
+      from: readonly number[],
+      side: number,
+      at: THREE.Vector3,
+      lie: boolean
+    ) => {
+      const full = hangTurns(side);
+      const hangBy = (share: number) =>
+        bake(
+          from,
+          full.map((turn) => ({ ...turn, degrees: turn.degrees * share }))
+        );
+      const whole = bake(from, full);
+      if (planter.sinkOf(whole, at) <= 0) {
+        return whole;
+      }
+      let clear = 0;
+      let sunk = 1;
+      for (let step = 0; step < HANG_STEPS; step += 1) {
+        const share = (clear + sunk) / 2;
+        if (planter.sinkOf(hangBy(share), at) <= 0) {
+          clear = share;
+        } else {
+          sunk = share;
+        }
+      }
+      return settled(hangBy(clear), at, lie);
+    };
+    const rest = settled(postured.seated, new THREE.Vector3(), false);
+    const tucked = settled(postured.tucked, slide, true);
+    const set: Riding = {
+      flinch: {
+        left: bake(rest, flinchTurns(-1)),
+        right: bake(rest, flinchTurns(1)),
+      },
+      hang: {
+        left: hangingFrom(rest, -1, hung(-1), false),
+        right: hangingFrom(rest, 1, hung(1), false),
+      },
+      kicked: postured.kicked,
+      risen: postured.risen,
+      seated: rest,
+      tucked,
+      tuckedHang: {
+        left: hangingFrom(tucked, -1, hung(-1).add(slide), false),
+        right: hangingFrom(tucked, 1, hung(1).add(slide), false),
+      },
+    };
+    const seating = { riding: set, tuckSlide: slide };
+    settledSets.set(fit, seating);
+    return seating;
+  };
+  let riding = posturedFor(bikePostures[firstModel]);
+  let { tuckSlide } = bikePostures[firstModel];
   const current = [...seated];
   const wanted = [...current];
   const base = [...current];
@@ -232,8 +361,10 @@ export const createRiderFigure = (
     reachByAsset.get(asset) ??
     reachOfPoses(rig, body, hands, [
       ...asset.poses.values(),
-      ...Object.values(riding).flatMap((pose: number[] | Sided<number[]>) =>
-        Array.isArray(pose) ? [pose] : [pose.left, pose.right]
+      ...[...ridingSets.values()].flatMap((set) =>
+        Object.values(set).flatMap((pose: number[] | Sided<number[]>) =>
+          Array.isArray(pose) ? [pose] : [pose.left, pose.right]
+        )
       ),
     ]);
   reachByAsset.set(asset, reach);
@@ -409,6 +540,16 @@ export const createRiderFigure = (
     return from && to ? between(from, to, cycle.blend) : null;
   };
 
+  const seatOn = (fit: BikeFit) => {
+    if (fit === seatedOn) {
+      return;
+    }
+    const postured = posturedFor(fit.posture);
+    planter.seatOn(fit, contactsOf(), postured.seated, hip);
+    ({ riding, tuckSlide } = settledOn(fit, postured));
+    seatedOn = fit;
+  };
+
   return {
     animate(stance, seconds) {
       skeleton.stale = true;
@@ -418,6 +559,7 @@ export const createRiderFigure = (
         HANG_SHIFT *
         kneeOut(stance.lean, stance.speed) *
         (1 - stance.rise);
+      lift.addScaledVector(tuckSlide, stance.tuck * (1 - stance.rise));
       const target = aim(stance);
       if (!target) {
         return;
@@ -542,10 +684,7 @@ export const createRiderFigure = (
       body.geometry = far ? farBody : near;
     },
     mount(bike, fit, sag) {
-      if (fit !== seatedOn) {
-        planter.seatOn(fit, contactsOf(), hip);
-        seatedOn = fit;
-      }
+      seatOn(fit);
       root.quaternion.copy(bike.quaternion);
       root.position
         .set(hip.x, hip.y - sag, hip.z)
@@ -594,6 +733,7 @@ export const createRiderFigure = (
       }
     },
     root,
+    seatOn,
     standHeight: asset.standHeight,
   };
 };

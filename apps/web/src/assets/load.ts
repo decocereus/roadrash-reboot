@@ -106,7 +106,6 @@ const model = <Value>(
     );
   });
 
-const bikeModel = (parsers: AssetParsers) => parsers.bike;
 const modelParts = (parsers: AssetParsers) => parsers.parts;
 const wholeModel = (parsers: AssetParsers) => parsers.whole;
 const riderModel = (parsers: AssetParsers) => parsers.rider;
@@ -132,7 +131,9 @@ interface Loaded {
 
 const bikeModels = (cache: ByteCache, { bikes }: ModelUrls) =>
   Effect.all(
-    byId(bikeVisuals, ({ id }) => model(cache, bikes[id], bikeModel)),
+    byId(bikeVisuals, ({ id }) =>
+      model(cache, bikes[id], (parsers) => parsers.bike(id))
+    ),
     { concurrency: "unbounded" }
   );
 
