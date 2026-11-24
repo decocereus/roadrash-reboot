@@ -13,6 +13,7 @@ import * as Schema from "effect/Schema";
 import { TaggedError as TaggedErrorClass } from "effect/Schema";
 
 import { MeasurementFailed } from "./measurement-failed.ts";
+import { measurementProtocol } from "./protocol.ts";
 import { quantile } from "./result.ts";
 import {
   benchRun,
@@ -35,10 +36,10 @@ const INCREMENT = 1_013_904_223;
 const CALIBRATION_WARMUP = 5;
 export const CALIBRATION_ROUNDS = 10;
 const ALLOCATION_SAMPLING_BYTES = 4096;
-export const STEADY_TOLERANCE = 0.03;
-export const MIN_WARM_WINDOWS = 3;
-export const MAX_WARM_WINDOWS = 10;
-export const TIMED_WINDOWS = 4;
+export const STEADY_TOLERANCE = measurementProtocol.warmUp.tolerance;
+export const MIN_WARM_WINDOWS = measurementProtocol.warmUp.minWindows;
+export const MAX_WARM_WINDOWS = measurementProtocol.warmUp.maxWindows;
+export const TIMED_WINDOWS = measurementProtocol.timedWindows;
 
 const calibrationData = new Uint32Array(CALIBRATION_WORDS);
 

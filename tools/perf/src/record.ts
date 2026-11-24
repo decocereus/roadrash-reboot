@@ -16,6 +16,7 @@ import {
 } from "./budgets.ts";
 import type { Budgets, Limit } from "./budgets.ts";
 import { ConfigInvalid } from "./config-invalid.ts";
+import { currentProtocol, protocolAccepted } from "./protocol.ts";
 import {
   derive,
   readRecordings,
@@ -31,7 +32,13 @@ const REPO_ROOT = path.resolve(import.meta.dirname, "../../..");
 const BUDGETS = path.join(REPO_ROOT, "tools/perf/budgets.json");
 
 export const gateResult = Schema.Struct({
+  comparisonId: Schema.String,
   environment: Schema.String,
+  evidence: Schema.Array(Schema.String),
+  load: Schema.NullOr(
+    Schema.Struct({ limit: Schema.Number, peak: Schema.Number })
+  ),
+  mode: Schema.String,
   observations: Schema.Array(
     Schema.Struct({
       environment: Schema.String,
@@ -46,14 +53,24 @@ export const gateResult = Schema.Struct({
       value: Schema.Number,
     })
   ),
-  sides: Schema.Struct({ A: Schema.Struct({ revision: Schema.String }) }),
+  protocol: Schema.String,
+  sides: Schema.Struct({
+    A: Schema.Struct({ revision: Schema.String }),
+    B: Schema.Struct({ dirty: Schema.Boolean, revision: Schema.String }),
+  }),
 });
 
-type GateResult = typeof gateResult.Type;
+export type GateResult = typeof gateResult.Type;
 
 const childRuntime = Schema.Struct({
-  runtime: Schema.Struct({ cpu: Schema.String }),
+  runtime: Schema.Struct({
+    arch: Schema.String,
+    cpu: Schema.String,
+    platform: Schema.String,
+  }),
 });
+
+export type ChildRuntime = typeof childRuntime.Type;
 
 const nodeRows = metricKinds.filter((kind) => kind.lane === "node");
 
@@ -69,7 +86,6 @@ interface RunReading {
 
 const recordedRunOf = (
   result: GateResult,
-  id: string,
   cpu: string,
   origin: string
 ): RunReading => {
@@ -126,8 +142,99 @@ const recordedRunOf = (
   );
   return {
     missing: [...missing, ...unpaired],
-    run: { cpu, id, origin, scenarios: runScenarios, unscoped },
+    run: {
+      b: result.sides.B.revision,
+      cpu,
+      id: result.comparisonId,
+      load: result.load,
+      mode: "gate",
+      origin,
+      protocol: result.protocol,
+      scenarios: runScenarios,
+      unscoped,
+    },
   };
+};
+
+export type Admission =
+  | { readonly kind: "refused"; readonly problems: readonly string[] }
+  | { readonly kind: "already recorded"; readonly id: string }
+  | { readonly kind: "recorded"; readonly run: RecordedRun };
+
+const sameReadings = (left: RecordedRun, right: RecordedRun): boolean =>
+  JSON.stringify({ ...left, origin: "" }) ===
+  JSON.stringify({ ...right, origin: "" });
+
+export const admit = (
+  result: GateResult,
+  children: readonly ChildRuntime[],
+  recorded: Recording | undefined,
+  origin: string,
+  protocol: string
+): Admission => {
+  const id = result.comparisonId;
+  const file = recordingFile(result.environment);
+  const environments = [
+    ...new Set(
+      children.map(({ runtime }) => `node-${runtime.platform}-${runtime.arch}`)
+    ),
+  ];
+  const cpus = [...new Set(children.map(({ runtime }) => runtime.cpu))];
+  const problems = [
+    ...(recorded ? [] : [`${file} does not exist`]),
+    ...(recorded && recorded.sideA !== result.sides.A.revision
+      ? [
+          `it measured side A at ${result.sides.A.revision.slice(0, 12)}, and ${file} holds ${recorded.sideA.slice(0, 12)}`,
+        ]
+      : []),
+    ...(result.mode === "gate"
+      ? []
+      : [`it is a ${result.mode} run, and only gate runs are recorded`]),
+    ...(result.load !== null && result.load.peak > result.load.limit
+      ? [
+          `it has no verdict: the load peaked at ${result.load.peak} over the limit of ${result.load.limit}`,
+        ]
+      : []),
+    ...(result.evidence.length > 0
+      ? [`it failed as evidence: ${result.evidence.join("; ")}`]
+      : []),
+    ...(result.sides.B.dirty ? ["its side B had uncommitted changes"] : []),
+    ...(protocolAccepted(result.protocol, protocol)
+      ? []
+      : [
+          `it was measured under protocol ${result.protocol.slice(0, 12)}, and this harness measures under ${protocol.slice(0, 12)} with no compatibility declared`,
+        ]),
+    ...(environments.length === 1 && environments[0] === result.environment
+      ? []
+      : [
+          `its node children ran on ${environments.join(", ") || "nothing"}, and the result is filed for ${result.environment}`,
+        ]),
+    ...(cpus.length === 1
+      ? []
+      : [
+          `its node children disagree on the CPU: ${cpus.join(", ") || "none recorded"}`,
+        ]),
+  ];
+  const { missing, run } = recordedRunOf(result, cpus.join(", "), origin);
+  const all = [
+    ...problems,
+    ...(missing.length > 0 ? [`it lacks ${missing.join(", ")}`] : []),
+  ];
+  if (all.length > 0) {
+    return { kind: "refused", problems: all };
+  }
+  const earlier = recorded?.runs.find((each) => each.id === id);
+  if (earlier === undefined) {
+    return { kind: "recorded", run };
+  }
+  return sameReadings(earlier, run)
+    ? { id, kind: "already recorded" }
+    : {
+        kind: "refused",
+        problems: [
+          `${file} already records ${id} with other readings, so this result conflicts with it`,
+        ],
+      };
 };
 
 const derivedBudgets = (budgets: Budgets, recordings: Recordings): Budgets => {
@@ -173,21 +280,18 @@ const readJson = Effect.fnUntraced(function* readJson<A>(
   );
 });
 
-const cpuOf = Effect.fnUntraced(function* cpuOf(dir: string) {
+const childrenOf = Effect.fnUntraced(function* childrenOf(dir: string) {
   const fs = yield* FileSystem.FileSystem;
-  const children = (yield* fs
+  const names = (yield* fs
     .readDirectory(path.join(dir, "node"))
     .pipe(Effect.orElseSucceed((): string[] => [])))
     .filter((name) => name.endsWith(".json"))
     .toSorted();
-  const [first] = children;
-  if (first === undefined) {
-    return yield* new ConfigInvalid({
-      message: `${dir} has no node child records to read the CPU from.`,
-    });
+  const children: ChildRuntime[] = [];
+  for (const name of names) {
+    children.push(yield* readJson(path.join(dir, "node", name), childRuntime));
   }
-  return (yield* readJson(path.join(dir, "node", first), childRuntime)).runtime
-    .cpu;
+  return children;
 });
 
 const writeRecording = Effect.fnUntraced(function* writeRecording(
@@ -210,31 +314,32 @@ const add = Effect.fnUntraced(function* add(
   const lines: string[] = [];
   for (const dir of dirs) {
     const result = yield* readJson(path.join(dir, "result.json"), gateResult);
-    const id = path.basename(dir);
-    const current = recordings.get(result.environment);
-    if (!current || current.sideA !== result.sides.A.revision) {
-      return yield* new ConfigInvalid({
-        message: `${id} measured side A at ${result.sides.A.revision.slice(0, 12)}, and ${recordingFile(result.environment)} holds ${current?.sideA.slice(0, 12) ?? "no recording"}.`,
-      });
-    }
-    const { missing, run } = recordedRunOf(
+    const recorded = recordings.get(result.environment);
+    const admission = admit(
       result,
-      id,
-      yield* cpuOf(dir),
-      origin
+      yield* childrenOf(dir),
+      recorded,
+      origin,
+      currentProtocol
     );
-    if (missing.length > 0) {
+    if (admission.kind === "refused") {
       return yield* new ConfigInvalid({
-        message: `${id} lacks ${missing.join(", ")}`,
+        message: `${dir} is not recorded: ${admission.problems.join("; ")}.`,
       });
     }
-    recordings.set(
-      result.environment,
-      current.runs.some((each) => each.id === id)
-        ? current
-        : { ...current, runs: [...current.runs, run] }
+    if (admission.kind === "already recorded") {
+      lines.push(`already recorded ${admission.id}, nothing added`);
+      continue;
+    }
+    if (recorded) {
+      recordings.set(result.environment, {
+        ...recorded,
+        runs: [...recorded.runs, admission.run],
+      });
+    }
+    lines.push(
+      `recorded ${admission.run.id} on ${admission.run.cpu} in ${result.environment}`
     );
-    lines.push(`recorded ${id} on ${run.cpu} in ${result.environment}`);
   }
   for (const [environment, recorded] of recordings) {
     yield* writeRecording(environment, recorded);

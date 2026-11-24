@@ -409,7 +409,11 @@ const sideAMissing = (
     case "paired": {
       return (
         observed !== undefined &&
-        !(observed.paired !== null && finite(observed.paired))
+        !(
+          observed.runs.a.some(finite) &&
+          observed.paired !== null &&
+          finite(observed.paired)
+        )
       );
     }
     case "absolute":

@@ -19,13 +19,14 @@ import {
   TIMED_WINDOWS,
 } from "./node.ts";
 import type { ChildRecord } from "./node.ts";
+import { measurementProtocol } from "./protocol.ts";
 import { median, p95Of, quantile } from "./result.ts";
 import { validateWorkload, WINDOW_TICKS } from "./scenarios.ts";
 import type { RoomPart, Scenario } from "./scenarios.ts";
 import type { Side, SideName } from "./sides.ts";
 
-const TIMING_PAIRS = 5;
-const ALLOCATION_PAIRS = 3;
+const TIMING_PAIRS = measurementProtocol.pairs.timing;
+const ALLOCATION_PAIRS = measurementProtocol.pairs.allocation;
 
 const decodeChild = Schema.decodeUnknownEffect(
   Schema.fromJsonString(childRecord)
@@ -89,8 +90,7 @@ export interface Sides {
 }
 
 const NODE_CHILD = "tools/perf/node.ts";
-const SYNCHRONOUS_COMPILE = "--no-concurrent-recompilation";
-const LAYOUT_BYTES = 16_384;
+const LAYOUT_BYTES = measurementProtocol.layoutPaddingBytes;
 
 export const layoutPadding = (childFile: string): string =>
   "x".repeat(
@@ -126,7 +126,7 @@ export const runChild = Effect.fnUntraced(function* runChild(
   yield* processes.run(
     process.execPath,
     [
-      SYNCHRONOUS_COMPILE,
+      ...measurementProtocol.nodeFlags,
       path.join(side.root, script),
       ...taskArgs,
       ...childArgs,
@@ -422,8 +422,8 @@ const timingOf = (record: ChildRecord): RunTiming => {
   const durations = record.durations ?? [];
   const sorted = durations.toSorted((left, right) => left - right);
   return {
-    p95: quantile(sorted, 0.95),
-    p99: quantile(sorted, 0.99),
+    p95: quantile(sorted, measurementProtocol.shares.p95),
+    p99: quantile(sorted, measurementProtocol.shares.p99),
     ticksPerSecond:
       durations.length === WINDOW_TICKS * TIMED_WINDOWS
         ? 1000 / mean(durations)
@@ -436,7 +436,7 @@ const allocatedPerTick = (record: ChildRecord): number =>
 
 type SnapshotRun = NonNullable<ChildRecord["snapshot"]>;
 
-const STAMP_TRIM = 0.05;
+const STAMP_TRIM = measurementProtocol.shares.stampTrim;
 
 const trimmedMeanOf = (durations: readonly number[]): number => {
   const sorted = durations.toSorted((left, right) => left - right);

@@ -237,6 +237,41 @@ describe("perf gate red cases", { timeout: 30_000 }, () => {
     expect(judged("sim.tick.p95", "pack-riding-v1")).toBeTruthy();
   });
 
+  it.each([
+    ["no side-A readings beside a finite ratio", { a: [] }, 1],
+    ["side-A readings beside no ratio", {}, null],
+  ] as const)(
+    "refuses a paired row with %s before judging it",
+    (_case, runs, paired) => {
+      const steadyRun = evaluateGate(
+        samplesOf("steady", steadyLanes(steady), build),
+        budgets
+      );
+      const row = (each: (typeof steadyRun.observations)[number]) =>
+        each.lane === "node" &&
+        each.metric === "sim.tick.p95" &&
+        each.scenario === "reference-v1";
+      const broken = steadyRun.observations.map((each) =>
+        row(each) ? { ...each, paired, runs: { ...each.runs, ...runs } } : each
+      );
+      expect(broken.filter(row)).toHaveLength(1);
+      const { evidence, verdicts } = judge(
+        budgets.limits,
+        broken,
+        requiredRows(["node"], [steadyRun.environment], [])
+      );
+      const name = rowName("sim.tick.p95", "reference-v1");
+      expect(evidence.filter((line) => line.includes(name))).toStrictEqual([
+        expect.stringContaining(
+          "SideAMissing: this row is judged by its A/B ratio"
+        ),
+      ]);
+      expect(
+        verdicts.some((verdict) => verdict.text.includes(name))
+      ).toBeFalsy();
+    }
+  );
+
   it("fails a thinner or thrown pack window and judges none of its timings", () => {
     if (!(reference && packRiding)) {
       throw new Error("The registry lost a scenario.");

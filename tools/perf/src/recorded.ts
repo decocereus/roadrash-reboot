@@ -13,14 +13,21 @@ import {
 } from "./budgets.ts";
 import type { Budgets, MetricKind } from "./budgets.ts";
 import { ConfigInvalid } from "./config-invalid.ts";
+import { protocolAccepted } from "./protocol.ts";
 
 export const recording = Schema.Struct({
   runs: Schema.Array(
     Schema.Struct({
+      b: Schema.String,
       cpu: Schema.String,
       excluded: Schema.optional(Schema.String),
       id: Schema.String,
+      load: Schema.NullOr(
+        Schema.Struct({ limit: Schema.Number, peak: Schema.Number })
+      ),
+      mode: Schema.Literal("gate"),
       origin: Schema.String,
+      protocol: Schema.String,
       scenarios: Schema.Array(
         Schema.Struct({
           paired: Schema.Record(Schema.String, Schema.Number),
@@ -112,7 +119,8 @@ export const derive = (readings: readonly Reading[]): Derived | null => {
 const recordingProblems = (
   budgets: Budgets,
   environment: string,
-  recorded: Recording
+  recorded: Recording,
+  protocol: string
 ): string[] => {
   const pin = budgets.baseline.revision;
   const pinned =
@@ -126,6 +134,15 @@ const recordingProblems = (
     .map(
       (run) =>
         `${recordingFile(environment)} run ${run.id} did not measure side A at ${pin.slice(0, 7)}`
+    );
+  const unmatched = recorded.runs
+    .filter(
+      (run) =>
+        run.excluded === undefined && !protocolAccepted(run.protocol, protocol)
+    )
+    .map(
+      (run) =>
+        `${recordingFile(environment)} run ${run.id} was measured under protocol ${run.protocol.slice(0, 12)}, and this harness measures under ${protocol.slice(0, 12)}: re-derive from runs of this protocol, or declare the change in compatibleProtocols with its reason and evidence`
     );
   const rows = requiredRows(["node"], [environment], [])
     .filter(({ kind }) => recordedLimit(kind))
@@ -156,19 +173,20 @@ const recordingProblems = (
             `${where} reads baseline ${limit.baseline} from ${limit.source}, value ${limit.value}, "${limit.derivation}"; the recorded runs give ${expected.baseline} from ${expected.source}, value ${expected.value}, "${expected.derivation}"`,
           ];
     });
-  return [...pinned, ...foreign, ...rows];
+  return [...pinned, ...foreign, ...unmatched, ...rows];
 };
 
 export const recordedProblems = (
   budgets: Budgets,
-  recordings: Recordings
+  recordings: Recordings,
+  protocol: string
 ): string[] =>
   Object.keys(budgets.nodeProfiles)
     .toSorted()
     .flatMap((environment) => {
       const recorded = recordings.get(environment);
       return recorded
-        ? recordingProblems(budgets, environment, recorded)
+        ? recordingProblems(budgets, environment, recorded, protocol)
         : [`${recordingFile(environment)} is missing`];
     });
 

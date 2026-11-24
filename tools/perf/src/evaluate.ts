@@ -117,6 +117,7 @@ const incompleteLine = (samples: Samples): string[] => {
 
 export interface Evaluation {
   readonly ok: boolean;
+  readonly evidence: readonly string[];
   readonly lines: readonly string[];
   readonly environment: string;
   readonly observations: readonly Observation[];
@@ -136,6 +137,7 @@ export const evaluateGate = (
   const incomplete = incompleteLine(samples);
   return {
     environment: observed.environment,
+    evidence: [...failures, ...incomplete],
     lines: [
       ...failures,
       ...verdicts.map((verdict) => verdict.text),
@@ -259,6 +261,7 @@ export const evaluateBaseline = (samples: Samples): BaselineEvaluation => {
   ];
   return {
     environment: observed.environment,
+    evidence: [...observed.failures, ...incomplete],
     lines,
     observations: observed.observations,
     ok:
