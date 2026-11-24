@@ -3680,6 +3680,22 @@
       "side": "B",
       "source": "gpu-2026-11-24T08-17-21-321Z-c6be25b-a1b16b0",
       "value": 0.10000002384185791
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "world.cpu.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-24T08-52-03-778Z-c6be25b-a1b16b0",
+      "value": 0.19999998807907104
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "world.cpu.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-24T08-52-03-778Z-c6be25b-a1b16b0",
+      "value": 0.10000002384185791
     }
   ],
   "revisions": {
@@ -5165,6 +5181,31 @@
         "why": "first Mac campaign that draws the time of day; it sets the gpu-helium-metal world.cpu.p95 rows, twice the worst B window"
       },
       "id": "gpu-2026-11-24T08-17-21-321Z-c6be25b-a1b16b0",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "c6be25bc6b008206614dbe4d5de2a674e3e14f54",
+        "B": "a1b16b0c4fe94783e710b3dc412db6564506ced9"
+      }
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "facts": {
+        "machine": "Mac16,8, Apple M4 Pro, 12 CPU cores, 24 GiB",
+        "os": "macOS 26.7.3 (25G342)",
+        "power": "AC power",
+        "display": "External 1920x1080 display at 60 Hz, which held both windows; requestAnimationFrame measured 60 Hz on both sides; display settings untouched",
+        "frameRate": "game setting 60 (rushline.settings.v1), so every vsync is drawn",
+        "browser": "Helium 0.22.2.1, windowed, rv slots 0 and 1, --use-angle=metal --enable-gpu --ignore-gpu-blocklist",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)",
+        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview; doctor build is current on both sides",
+        "page": "1504x790 CSS at device pixel ratio 1, cpu x1, network off",
+        "pairs": "5 alternating pairs per scenario after one warm-up per scenario and side; the idle side parked on /kit",
+        "wallMs": "1466375",
+        "quiet": "another agent shared the Mac. The 1-minute load read 3.1 to 6.0, mean 4.2; a second Chromium ran during reference-v1 pairs 0 and 1 and node jobs at 115 to 140% CPU through pairs 2 to 4. Every row passed, and world.cpu.p95 read 0.1 ms in every window but one reference-v1 B window at 0.2 ms",
+        "sideA": "#226 at c6be25bc, a /tmp clone under B's rv, the same rv runs as gpu-2026-11-24T08-17-21-321Z-c6be25b-a1b16b0; B is #227 at a1b16b0c",
+        "why": "second Mac campaign that draws the time of day; with the first it sets the gpu-helium-metal world.cpu.p95 rows, twice the worst B window over both, because the Mac profiler reads in 0.1 ms steps and a limit one step above the first campaign's worst failed on noise"
+      },
+      "id": "gpu-2026-11-24T08-52-03-778Z-c6be25b-a1b16b0",
       "lanes": ["gpu"],
       "sides": {
         "A": "c6be25bc6b008206614dbe4d5de2a674e3e14f54",

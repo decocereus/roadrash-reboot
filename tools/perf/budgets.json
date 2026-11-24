@@ -102,6 +102,10 @@
         "sha256": "4f57a4f3763f5a136641e64b11e000f07ff364fdd77acd106470f5d55fcca012"
       },
       {
+        "file": "tools/perf/baselines/time-of-day-2.mac.gpu-helium-metal.json.gz",
+        "sha256": "ee0952869df73b736b67b2fb121af9193b5314f45e94af4cd1eaa183ed2a3dcc"
+      },
+      {
         "file": "tools/perf/baselines/time-of-day.mac.gpu-helium-metal.json.gz",
         "sha256": "7650f0bfb6c21fdce04660094bc9e1a8cde7cef1f523381246685bf700566935"
       },
@@ -128,7 +132,7 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "83ce17e4de354090b84d801ec63b6a8c146b8019f9b7c4ed50a50fe60f524146"
+    "summarySha256": "94208f9e0b1d27f23f64441cc2bd606cc3a7b3f188f8f890b4489dca45b7dac2"
   },
   "limits": [
     {
@@ -2400,20 +2404,20 @@
       "value": 0.6000003814697266
     },
     {
-      "baseline": 0.10000002384185791,
-      "derivation": "2 x the worst B window of the first campaign that draws the time of day",
+      "baseline": 0.19999998807907104,
+      "derivation": "2 x the worst B window over two campaigns (10 windows); the Mac profiler reads in 0.1 ms steps",
       "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "world.cpu.p95",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "gpu-2026-11-24T08-17-21-321Z-c6be25b-a1b16b0",
+      "source": "gpu-2026-11-24T08-52-03-778Z-c6be25b-a1b16b0",
       "unit": "ms",
-      "value": 0.20000004768371582
+      "value": 0.3999999761581421
     },
     {
       "baseline": 0.10000002384185791,
-      "derivation": "2 x the worst B window of the first campaign that draws the time of day",
+      "derivation": "2 x the worst B window over two campaigns (10 windows), taken across both scenarios: reference-v1's, so the lane has one limit; this scenario's own worst is its baseline; the Mac profiler reads in 0.1 ms steps",
       "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "world.cpu.p95",
@@ -2421,7 +2425,7 @@
       "scenario": "pack-riding-v1",
       "source": "gpu-2026-11-24T08-17-21-321Z-c6be25b-a1b16b0",
       "unit": "ms",
-      "value": 0.20000004768371582
+      "value": 0.3999999761581421
     }
   ],
   "nodeProfiles": {
