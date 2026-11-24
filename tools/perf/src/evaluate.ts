@@ -127,10 +127,12 @@ export const evaluateGate = (
   budgets: Budgets
 ): Evaluation => {
   const observed = observe(samples, budgets.nodeProfiles);
+  const [first] = samples.node.flatMap((lane) => lane.calibrations);
   const verdicts = judge(
     budgets.limits,
     observed.observations,
-    requiredRows(samples.lanes, [observed.environment], [])
+    requiredRows(samples.lanes, [observed.environment], []),
+    first?.record.runtime.cpu ?? null
   );
   const incomplete = incompleteLine(samples);
   return {

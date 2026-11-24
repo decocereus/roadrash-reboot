@@ -57,6 +57,12 @@ export const quantile = (sorted: readonly number[], share: number): number =>
     : (sorted[Math.min(sorted.length - 1, Math.floor(share * sorted.length))] ??
       Number.NaN);
 
+export const p95Of = (durations: readonly number[]): number =>
+  quantile(
+    durations.toSorted((left, right) => left - right),
+    0.95
+  );
+
 export const median = (values: readonly number[]): number =>
   quantile(
     values.toSorted((left, right) => left - right),

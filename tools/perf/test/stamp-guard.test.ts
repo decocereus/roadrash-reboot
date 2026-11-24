@@ -8,6 +8,8 @@ import { describe, expect, it } from "vitest";
 import { budgetsFile, judge, metricKinds } from "../src/budgets.ts";
 import { snapshotTiming, stampMetric } from "../src/node-lane.ts";
 import { scenarios } from "../src/scenarios.ts";
+import { stampRecording } from "../src/worst-run.ts";
+import type { StampRun } from "../src/worst-run.ts";
 
 const BASELINES = path.join(import.meta.dirname, "../baselines");
 
@@ -15,31 +17,14 @@ const { limits } = Schema.decodeUnknownSync(Schema.fromJsonString(budgetsFile))(
   readFileSync(path.join(import.meta.dirname, "../budgets.json"), "utf-8")
 );
 
-const stampRuns = Schema.Struct({
-  runs: Schema.Array(
-    Schema.Struct({
-      cpu: Schema.String,
-      id: Schema.String,
-      scenarios: Schema.Array(
-        Schema.Struct({
-          scale: Schema.Number,
-          scenario: Schema.String,
-          windows: Schema.Array(Schema.Array(Schema.Number)),
-        })
-      ),
-    })
-  ),
-});
-
-type StampRun = (typeof stampRuns.Type)["runs"][number];
 type Window = readonly number[];
 
 const recorded = (environment: string): readonly StampRun[] =>
-  Schema.decodeUnknownSync(Schema.fromJsonString(stampRuns))(
+  Schema.decodeUnknownSync(Schema.fromJsonString(stampRecording))(
     gunzipSync(
       readFileSync(path.join(BASELINES, `stamp.${environment}.json.gz`))
     ).toString("utf-8")
-  ).runs;
+  ).runs.filter((run) => run.excluded === undefined);
 
 const kind = metricKinds.find((each) => each.metric === stampMetric.metric);
 
@@ -66,7 +51,8 @@ const fails = (
     const [verdict] = judge(
       limits,
       [observed],
-      [{ environment, kind, scenario: known.id }]
+      [{ environment, kind, scenario: known.id }],
+      run.cpu
     );
     return verdict?.ok !== true;
   });
@@ -98,46 +84,53 @@ const twoProcessesTimes =
 
 const machines = [
   {
+    cpu: "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+    environment: "node-linux-x64",
+    everyRunFailsFromPercent: 15,
+    slowestRunFailsFromPercent: 15,
+    twoProcessesFailEveryRunAt: 1.35,
+  },
+  {
     cpu: "AMD EPYC 7763 64-Core Processor",
     environment: "node-linux-x64",
-    everyRunFailsFromPercent: 39.5,
-    slowestRunFailsFromPercent: 20.4,
-    twoProcessesFailEveryRunAt: 1.43,
+    everyRunFailsFromPercent: 32.6,
+    slowestRunFailsFromPercent: 15,
+    twoProcessesFailEveryRunAt: 1.36,
   },
   {
     cpu: "INTEL(R) XEON(R) PLATINUM 8573C",
     environment: "node-linux-x64",
-    everyRunFailsFromPercent: 52.4,
-    slowestRunFailsFromPercent: 48.3,
-    twoProcessesFailEveryRunAt: 1.57,
+    everyRunFailsFromPercent: 16.8,
+    slowestRunFailsFromPercent: 15,
+    twoProcessesFailEveryRunAt: 1.22,
   },
   {
     cpu: "AMD EPYC 9V74 80-Core Processor",
     environment: "node-linux-x64",
-    everyRunFailsFromPercent: 62,
-    slowestRunFailsFromPercent: 36.4,
-    twoProcessesFailEveryRunAt: 1.63,
+    everyRunFailsFromPercent: 50.6,
+    slowestRunFailsFromPercent: 15.1,
+    twoProcessesFailEveryRunAt: 1.51,
   },
   {
     cpu: "Intel(R) Xeon(R) 6975P-C",
     environment: "node-linux-x64",
-    everyRunFailsFromPercent: 70.7,
-    slowestRunFailsFromPercent: 64.3,
-    twoProcessesFailEveryRunAt: 1.73,
+    everyRunFailsFromPercent: 31.1,
+    slowestRunFailsFromPercent: 15.1,
+    twoProcessesFailEveryRunAt: 1.33,
   },
   {
     cpu: "AMD EPYC 9V45 96-Core Processor",
     environment: "node-linux-x64",
-    everyRunFailsFromPercent: 100.6,
-    slowestRunFailsFromPercent: 92.5,
-    twoProcessesFailEveryRunAt: 2.09,
+    everyRunFailsFromPercent: 147.9,
+    slowestRunFailsFromPercent: 132.8,
+    twoProcessesFailEveryRunAt: 2.53,
   },
   {
     cpu: "Apple M4 Pro",
     environment: "node-darwin-arm64",
-    everyRunFailsFromPercent: 15.7,
-    slowestRunFailsFromPercent: 4.8,
-    twoProcessesFailEveryRunAt: 1.2,
+    everyRunFailsFromPercent: 26.8,
+    slowestRunFailsFromPercent: 15,
+    twoProcessesFailEveryRunAt: 1.3,
   },
 ] as const;
 

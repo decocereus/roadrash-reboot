@@ -16,6 +16,7 @@ import { MeasurementFailed } from "./measurement-failed.ts";
 import { quantile } from "./result.ts";
 import {
   benchRun,
+  roomParts,
   rowsOf,
   scenarioHash,
   scenarios,
@@ -285,8 +286,10 @@ export const childRecord = Schema.Struct({
       checkpoint: Schema.Array(Schema.Number),
       checkpointBytes: Schema.Array(Schema.Number),
       confirm: Schema.Array(Schema.Number),
+      part: Schema.Literals(roomParts),
       resimulated: Schema.Array(Schema.Number),
       rollback: Schema.Array(Schema.Number),
+      seeds: Schema.Array(Schema.Number),
       tick: Schema.Array(Schema.Number),
     })
   ),
