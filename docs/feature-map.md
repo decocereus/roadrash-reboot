@@ -298,6 +298,7 @@ Test files:
 - `apps/web/test/pilot-replay.ts`
 - `packages/sim/src/pilot-cornering.test.ts`
 - `packages/sim/src/pilot-flight.test.ts`
+- `packages/sim/src/pilot-jumps.test.ts`
 - `packages/sim/src/pilot-landing.test.ts`
 - `packages/sim/src/pilot-traffic.test.ts`
 

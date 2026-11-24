@@ -10,6 +10,7 @@ export const TICK_SECONDS = 1 / TICK_RATE;
 export const GRAVITY = 9.81;
 export const BIKE_HALF_LENGTH = 1;
 export const BIKE_HALF_WIDTH = 0.38;
+export const LANE_REACH = 1.7;
 const MIN_STEER_SPEED = 12;
 export const WALKING_PACE = 3;
 const GENTLE_CURVATURE = 5e-4;
