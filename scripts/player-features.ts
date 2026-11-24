@@ -447,6 +447,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/sky.ts",
       "apps/web/src/game/sky-clock.ts",
       "apps/web/test/sky-clock.test.ts",
+      "apps/web/test/world-light.test.ts",
       "apps/web/src/game/sign-*.ts",
       "apps/web/src/game/texture-canvas.ts",
       "apps/web/test/roadside-clearance.test.ts",

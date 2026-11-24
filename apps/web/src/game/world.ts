@@ -25,6 +25,7 @@ import { createHazardMarks } from "./hazards.ts";
 import { buildJunctions } from "./junctions.ts";
 import { lookOf } from "./looks.ts";
 import type { Look } from "./looks.ts";
+import type { Grade } from "./post.ts";
 import {
   buildRibbon,
   districtPieces,
@@ -299,6 +300,17 @@ export interface World {
   dispose: () => void;
 }
 
+export const lightRace = (
+  world: Pick<World, "clock" | "light">,
+  post: { readonly setLook: (grade: Grade) => void },
+  view: Pick<RaceView, "tick">,
+  pinned: number | null
+): void => {
+  if (world.light(view.tick, pinned)) {
+    post.setLook(world.clock.hour);
+  }
+};
+
 export const createWorld = (
   track: Track,
   assets: Pick<Assets, "stalls" | "walkers">,
@@ -431,12 +443,12 @@ export const createWorld = (
   );
   plain.rotation.x = -Math.PI / 2;
   plain.position.y = lowest - 24;
-  const sky = buildSky(createRandom(track.plan.seed + 3));
+  const clock = skyClock(look);
+  const sky = buildSky(createRandom(track.plan.seed + 3), clock.hour);
   textures.add(sky.texture);
   const backdrop = buildMountains(look);
   backdrop.visible = city === null;
   scene.add(plain, sky.mesh, backdrop);
-  const clock = skyClock(look);
 
   const light = (tick: number, pinned: number | null): boolean => {
     if (!clock.at(pinned ?? hourOf(look.nightTick, tick))) {
@@ -450,7 +462,7 @@ export const createWorld = (
     background.copy(hour.fog);
     plainMaterial.color.copy(hour.ground);
     backdrop.material.color.copy(hour.backdrop);
-    sky.setHour(hour, shading.key);
+    sky.setHour(shading.key);
     return true;
   };
   light(0, null);

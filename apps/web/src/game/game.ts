@@ -76,6 +76,7 @@ import { bindFeedback, createFeedback, out } from "./race-feedback.ts";
 import { bindCast, createCast, pickFarRiders } from "./rider-views.ts";
 import { bindStage, createStage } from "./scene-lifecycle.ts";
 import { hourPinOf } from "./sky-clock.ts";
+import { lightRace } from "./world.ts";
 
 const LAST_STRETCH = 1000;
 const MARKER_KEY = "KeyB";
@@ -518,9 +519,7 @@ const startGame = (
     }
     frame.profiler?.lap("camera");
     stage.world.showRoadLife(stage.race.view, cast.subject.s);
-    if (stage.world.light(stage.race.view.tick + blend, pinnedHour)) {
-      pipeline.setLook(stage.world.clock.hour);
-    }
+    lightRace(stage.world, pipeline, stage.race.view, pinnedHour);
     stage.world.follow(chase.camera, cast.subject.s);
     frame.profiler?.lap("world");
     present();

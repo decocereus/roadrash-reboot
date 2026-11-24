@@ -6,12 +6,14 @@ const STEPS = 1000;
 
 type Triple = [number, number, number];
 
-type Five<Item> = readonly [Item, Item, Item, Item, Item];
+type Five<Item> = [Item, Item, Item, Item, Item];
+
+type Three<Item> = [Item, Item, Item];
 
 export interface LiveHour {
-  readonly stops: Float32Array;
-  readonly sky: Five<THREE.Color>;
-  readonly clouds: readonly [THREE.Color, THREE.Color, THREE.Color];
+  readonly stops: Five<number>;
+  readonly sky: Readonly<Five<THREE.Color>>;
+  readonly clouds: Readonly<Three<THREE.Color>>;
   readonly sun: THREE.Color;
   sunElevation: number;
   night: number;
@@ -39,69 +41,41 @@ export interface SkyClock {
   readonly at: (time: number) => boolean;
 }
 
-const colours = (count: number): THREE.Color[] =>
-  Array.from({ length: count }, () => new THREE.Color());
-
-const emptyHour = (): LiveHour => {
-  const [s0, s1, s2, s3, s4] = colours(5);
-  const [c0, c1, c2] = colours(3);
-  if (!(s0 && s1 && s2 && s3 && s4 && c0 && c1 && c2)) {
-    throw new Error("A sky hour needs its colours.");
-  }
-  return {
-    backdrop: new THREE.Color(),
-    bloom: 0,
-    clouds: [c0, c1, c2],
-    fog: new THREE.Color(),
-    glow: 1,
-    grade: [1, 1, 1],
-    ground: new THREE.Color(),
-    ink: new THREE.Color(),
-    keyDirection: [0, 1, 0],
-    lit: [1, 1, 1],
-    night: 0,
-    rim: new THREE.Color(),
-    rimDirection: [0, 1, 0],
-    shadow: [1, 1, 1],
-    sky: [s0, s1, s2, s3, s4],
-    stops: new Float32Array(5),
-    sun: new THREE.Color(),
-    sunElevation: 0,
-  };
-};
-
-const copyTriple = (into: Triple, from: readonly number[]): void => {
-  into[0] = from[0] ?? 0;
-  into[1] = from[1] ?? 0;
-  into[2] = from[2] ?? 0;
-};
+const tripleOf = (from: readonly [number, number, number]): Triple => [
+  from[0],
+  from[1],
+  from[2],
+];
 
 const liveOf = (hour: Hour): LiveHour => {
-  const live = emptyHour();
-  for (let stop = 0; stop < hour.sky.length; stop += 1) {
-    const [at, colour] = hour.sky[stop] ?? [0, "#000000"];
-    live.stops[stop] = at;
-    live.sky[stop]?.set(colour);
-  }
-  for (let layer = 0; layer < hour.clouds.length; layer += 1) {
-    live.clouds[layer]?.set(hour.clouds[layer] ?? "#000000");
-  }
-  live.sun.set(hour.sun);
-  live.sunElevation = hour.sunElevation;
-  live.night = hour.night;
-  live.fog.set(hour.fog);
-  copyTriple(live.shadow, hour.shadow);
-  copyTriple(live.lit, hour.lit);
-  copyTriple(live.keyDirection, hour.keyDirection);
-  copyTriple(live.rimDirection, hour.rimDirection);
-  live.rim.set(hour.rim);
-  live.ink.set(hour.ink);
-  live.backdrop.set(hour.backdrop);
-  live.ground.set(hour.ground);
-  live.bloom = hour.bloom;
-  copyTriple(live.grade, hour.grade);
-  live.glow = hour.glow;
-  return live;
+  const [s0, s1, s2, s3, s4] = hour.sky;
+  const [c0, c1, c2] = hour.clouds;
+  return {
+    backdrop: new THREE.Color(hour.backdrop),
+    bloom: hour.bloom,
+    clouds: [new THREE.Color(c0), new THREE.Color(c1), new THREE.Color(c2)],
+    fog: new THREE.Color(hour.fog),
+    glow: hour.glow,
+    grade: tripleOf(hour.grade),
+    ground: new THREE.Color(hour.ground),
+    ink: new THREE.Color(hour.ink),
+    keyDirection: tripleOf(hour.keyDirection),
+    lit: tripleOf(hour.lit),
+    night: hour.night,
+    rim: new THREE.Color(hour.rim),
+    rimDirection: tripleOf(hour.rimDirection),
+    shadow: tripleOf(hour.shadow),
+    sky: [
+      new THREE.Color(s0[1]),
+      new THREE.Color(s1[1]),
+      new THREE.Color(s2[1]),
+      new THREE.Color(s3[1]),
+      new THREE.Color(s4[1]),
+    ],
+    stops: [s0[0], s1[0], s2[0], s3[0], s4[0]],
+    sun: new THREE.Color(hour.sun),
+    sunElevation: hour.sunElevation,
+  };
 };
 
 const lerpTriple = (
@@ -121,25 +95,20 @@ const blend = (
   to: LiveHour,
   share: number
 ): void => {
-  for (let stop = 0; stop < into.sky.length; stop += 1) {
-    into.stops[stop] = THREE.MathUtils.lerp(
-      from.stops[stop] ?? 0,
-      to.stops[stop] ?? 0,
-      share
-    );
-    const fromColour = from.sky[stop];
-    const toColour = to.sky[stop];
-    if (fromColour && toColour) {
-      into.sky[stop]?.lerpColors(fromColour, toColour, share);
-    }
-  }
-  for (let layer = 0; layer < into.clouds.length; layer += 1) {
-    const fromColour = from.clouds[layer];
-    const toColour = to.clouds[layer];
-    if (fromColour && toColour) {
-      into.clouds[layer]?.lerpColors(fromColour, toColour, share);
-    }
-  }
+  const { lerp } = THREE.MathUtils;
+  into.stops[0] = lerp(from.stops[0], to.stops[0], share);
+  into.stops[1] = lerp(from.stops[1], to.stops[1], share);
+  into.stops[2] = lerp(from.stops[2], to.stops[2], share);
+  into.stops[3] = lerp(from.stops[3], to.stops[3], share);
+  into.stops[4] = lerp(from.stops[4], to.stops[4], share);
+  into.sky[0].lerpColors(from.sky[0], to.sky[0], share);
+  into.sky[1].lerpColors(from.sky[1], to.sky[1], share);
+  into.sky[2].lerpColors(from.sky[2], to.sky[2], share);
+  into.sky[3].lerpColors(from.sky[3], to.sky[3], share);
+  into.sky[4].lerpColors(from.sky[4], to.sky[4], share);
+  into.clouds[0].lerpColors(from.clouds[0], to.clouds[0], share);
+  into.clouds[1].lerpColors(from.clouds[1], to.clouds[1], share);
+  into.clouds[2].lerpColors(from.clouds[2], to.clouds[2], share);
   into.sun.lerpColors(from.sun, to.sun, share);
   into.sunElevation = THREE.MathUtils.lerp(
     from.sunElevation,
@@ -167,13 +136,12 @@ interface Keyframe {
 }
 
 const hourAt = (
-  keyframes: readonly Keyframe[],
+  keyframes: readonly [Keyframe, ...Keyframe[]],
   time: number,
   into: LiveHour
 ): void => {
-  const [first] = keyframes;
-  let from = first;
-  let to = first;
+  let [from] = keyframes;
+  let to = from;
   for (const keyframe of keyframes) {
     if (keyframe.at <= time) {
       from = keyframe;
@@ -182,9 +150,6 @@ const hourAt = (
     if (keyframe.at > time) {
       break;
     }
-  }
-  if (!(from && to)) {
-    throw new Error("A sky needs at least one hour.");
   }
   const span = to.at - from.at;
   const share =
@@ -213,12 +178,12 @@ export const hourPinOf = (search: string): number | null => {
 };
 
 export const skyClock = (look: Look): SkyClock => {
-  const keyframes: Keyframe[] = [
+  const keyframes: [Keyframe, ...Keyframe[]] = [
     { at: 0, hour: liveOf(look) },
     ...look.later.map((later) => ({ at: later.at, hour: liveOf(later) })),
   ];
   const air = airOf(look.air);
-  const hour = emptyHour();
+  const hour = liveOf(look);
   let step = -1;
   return {
     at(time) {

@@ -516,7 +516,7 @@ The road, terrain, sky, city blocks, signs and roadside props drawn from the com
 - Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/design/art-direction.md#palette](design/art-direction.md#palette), [docs/design/art-direction.md#regions](design/art-direction.md#regions)
 - Verify: [roadside-clearance.md](../.claude/skills/verify-rushline/features/roadside-clearance.md), [time-of-day.md](../.claude/skills/verify-rushline/features/time-of-day.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`, `world.cpu.p95`
-- Owns: `apps/web/src/game/world.ts`, `apps/web/src/game/city-blocks.ts`, `apps/web/src/game/road-strips.ts`, `apps/web/src/game/city.ts`, `apps/web/src/game/clearance.ts`, `apps/web/src/game/ground.ts`, `apps/web/src/game/roadside.ts`, `apps/web/src/game/looks.ts`, `apps/web/src/game/facade-texture.ts`, `apps/web/src/game/road-texture.ts`, `apps/web/src/game/shop-texture.ts`, `apps/web/src/game/sky.ts`, `apps/web/src/game/sky-clock.ts`, `apps/web/test/sky-clock.test.ts`, `apps/web/src/game/sign-*.ts`, `apps/web/src/game/texture-canvas.ts`, `apps/web/test/roadside-clearance.test.ts`, `apps/web/test/road-districts.test.ts`
+- Owns: `apps/web/src/game/world.ts`, `apps/web/src/game/city-blocks.ts`, `apps/web/src/game/road-strips.ts`, `apps/web/src/game/city.ts`, `apps/web/src/game/clearance.ts`, `apps/web/src/game/ground.ts`, `apps/web/src/game/roadside.ts`, `apps/web/src/game/looks.ts`, `apps/web/src/game/facade-texture.ts`, `apps/web/src/game/road-texture.ts`, `apps/web/src/game/shop-texture.ts`, `apps/web/src/game/sky.ts`, `apps/web/src/game/sky-clock.ts`, `apps/web/test/sky-clock.test.ts`, `apps/web/test/world-light.test.ts`, `apps/web/src/game/sign-*.ts`, `apps/web/src/game/texture-canvas.ts`, `apps/web/test/roadside-clearance.test.ts`, `apps/web/test/road-districts.test.ts`
 
 Source files:
 
@@ -542,6 +542,7 @@ Test files:
 - `apps/web/test/road-districts.test.ts`
 - `apps/web/test/roadside-clearance.test.ts`
 - `apps/web/test/sky-clock.test.ts`
+- `apps/web/test/world-light.test.ts`
 
 ### Riders, bikes and cars on screen
 

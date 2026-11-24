@@ -148,7 +148,7 @@ void main() {
 export interface Sky {
   readonly mesh: THREE.Mesh;
   readonly texture: THREE.Texture;
-  setHour: (hour: LiveHour, key: THREE.Vector3) => void;
+  setHour: (key: THREE.Vector3) => void;
 }
 
 const placeOf = (
@@ -163,24 +163,21 @@ const placeOf = (
   );
 };
 
-const colours = (count: number): THREE.Color[] =>
-  Array.from({ length: count }, () => new THREE.Color());
-
-export const buildSky = (random: Random): Sky => {
+export const buildSky = (random: Random, hour: LiveHour): Sky => {
   const texture = detailTexture(random);
   const uniforms = {
-    clouds: { value: colours(3) },
-    colours: { value: colours(5) },
+    clouds: { value: hour.clouds },
+    colours: { value: hour.sky },
     detail: { value: texture },
-    fogColour: { value: new THREE.Color() },
+    fogColour: { value: hour.fog },
     moonAt: {
       value: placeOf(MOON_BEARING, MOON_ELEVATION, new THREE.Vector2()),
     },
     night: { value: 0 },
     spans: { value: new Float32Array(4) },
-    stops: { value: new Float32Array(5) },
+    stops: { value: hour.stops },
     sunAt: { value: new THREE.Vector2() },
-    sunColour: { value: new THREE.Color() },
+    sunColour: { value: hour.sun },
   };
   const mesh = new THREE.Mesh(
     new THREE.SphereGeometry(SKY_RADIUS, 48, 24),
@@ -196,27 +193,12 @@ export const buildSky = (random: Random): Sky => {
   const bearing = new THREE.Vector3();
   return {
     mesh: onFxLayer(mesh),
-    setHour(hour, key) {
-      for (let stop = 0; stop < 5; stop += 1) {
-        uniforms.stops.value[stop] = hour.stops[stop] ?? 0;
-        const from = hour.sky[stop];
-        if (from) {
-          uniforms.colours.value[stop]?.copy(from);
-        }
-      }
-      for (let span = 0; span < 4; span += 1) {
-        uniforms.spans.value[span] =
-          1 /
-          Math.max((hour.stops[span + 1] ?? 1) - (hour.stops[span] ?? 0), 1e-4);
-      }
-      for (let layer = 0; layer < 3; layer += 1) {
-        const from = hour.clouds[layer];
-        if (from) {
-          uniforms.clouds.value[layer]?.copy(from);
-        }
-      }
-      uniforms.fogColour.value.copy(hour.fog);
-      uniforms.sunColour.value.copy(hour.sun);
+    setHour(key) {
+      const [s0, s1, s2, s3, s4] = hour.stops;
+      uniforms.spans.value[0] = 1 / Math.max(s1 - s0, 1e-4);
+      uniforms.spans.value[1] = 1 / Math.max(s2 - s1, 1e-4);
+      uniforms.spans.value[2] = 1 / Math.max(s3 - s2, 1e-4);
+      uniforms.spans.value[3] = 1 / Math.max(s4 - s3, 1e-4);
       uniforms.night.value = hour.night;
       bearing.copy(key).setY(0).normalize();
       placeOf(bearing, hour.sunElevation, uniforms.sunAt.value);
