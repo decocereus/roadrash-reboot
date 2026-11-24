@@ -12,12 +12,19 @@ import { accountBuild, glbNames } from "../src/build.ts";
 import type { BuildRecord } from "../src/build.ts";
 import { evaluateGate } from "../src/evaluate.ts";
 import type { Samples } from "../src/evaluate.ts";
+import type {
+  NodeLane,
+  NodeSample,
+  RoomSample,
+  SnapshotSample,
+} from "../src/node-lane.ts";
 import { scenarios, WINDOW_TICKS } from "../src/scenarios.ts";
 import { fixtureBuild, GLB_BYTES, plainFixture } from "./fixture-build.ts";
 import type { FixtureOptions } from "./fixture-build.ts";
 import {
   ALLOCATED_PER_TICK,
   BIKE_BYTES,
+  COLD_TICK_MS,
   samplesOf,
   steadyLanes,
   syntheticLobby,
@@ -30,6 +37,25 @@ import {
 
 const GATE = path.join(import.meta.dirname, "../gate.ts");
 
+interface UnpaidLane extends Omit<NodeLane, "rooms" | "snapshots"> {
+  readonly rooms: readonly NodeSample[];
+  readonly snapshots: readonly NodeSample[];
+}
+
+interface UnpaidSamples extends Omit<Samples, "node"> {
+  readonly node: readonly UnpaidLane[];
+}
+
+const unpaidSnapshot = ({
+  record: { snapshot: _payload, ...record },
+  ...sample
+}: SnapshotSample): NodeSample => ({ ...sample, record });
+
+const unpaidRoom = ({
+  record: { room: _payload, ...record },
+  ...sample
+}: RoomSample): NodeSample => ({ ...sample, record });
+
 const made: string[] = [];
 
 const scratch = (): string => {
@@ -38,7 +64,7 @@ const scratch = (): string => {
   return dir;
 };
 
-const throughEntry = (samples: Samples, budgets: Budgets) => {
+const throughEntry = (samples: Samples | UnpaidSamples, budgets: Budgets) => {
   const dir = scratch();
   const samplesFile = path.join(dir, "samples.json");
   const budgetsFile = path.join(dir, "budgets.json");
@@ -243,6 +269,75 @@ describe("perf gate red cases", { timeout: 30_000 }, () => {
         .map((each) => each.value)
     );
     expect(throughEntry(runnerOnly, budgets).status).toBe(0);
+  });
+
+  it("refuses samples whose snapshot or room run lost its timings or its third run", () => {
+    const whole = samplesOf("payload", steadyLanes(steady), build);
+    expect(throughEntry(whole, budgets).status).toBe(0);
+    const [lane, ...others] = whole.node;
+    if (!lane) {
+      throw new Error("the steady samples have no node lane");
+    }
+    const [snapshot, ...laterSnapshots] = lane.snapshots;
+    const [firstRoom, room, lastRoom] = lane.rooms;
+    const broken = [
+      {
+        ...lane,
+        snapshots: [unpaidSnapshot(snapshot), ...laterSnapshots],
+      },
+      {
+        ...lane,
+        rooms: [firstRoom, unpaidRoom(room), lastRoom],
+      },
+      { ...lane, snapshots: laterSnapshots },
+    ];
+    for (const each of broken) {
+      const entry = throughEntry(
+        { ...whole, node: [each, ...others] },
+        budgets
+      );
+      expect(entry.status).not.toBe(0);
+      expect(entry.stdout).not.toContain("PASS");
+    }
+  });
+
+  it("reports each scenario's cold tick p99 without judging it", () => {
+    const evaluation = evaluateGate(
+      samplesOf("sim", steadyLanes({ runner: 1.6, sim: 1.3 }), build),
+      budgets
+    );
+    expect(
+      evaluation.lines.filter((line) => line.startsWith("info node"))
+    ).toStrictEqual(
+      scenarios.map(
+        (scenario) =>
+          `info node ${scenario.id} cold.tick.p99 A=${COLD_TICK_MS.toPrecision(4)} ms B=${(COLD_TICK_MS * 1.3).toPrecision(4)} ms, the first window of a fresh process, calibrated, no budget; warm windows A=3,3,3,3,3 B=3,3,3,3,3`
+      )
+    );
+    expect(
+      evaluation.observations.some((each) => each.metric.includes("cold"))
+    ).toBeFalsy();
+  });
+
+  it("fails a timing child that wrote no warm-up windows", () => {
+    const [first, ...rest] = steadyLanes(steady);
+    const [pair, ...pairs] = first?.timing ?? [];
+    if (!(first && pair)) {
+      throw new Error("The synthetic lane lost its timing pairs.");
+    }
+    const { warmup: _dropped, ...bare } = pair.b.record;
+    const unwarmed = {
+      ...first,
+      timing: [{ ...pair, b: { ...pair.b, record: bare } }, ...pairs],
+    };
+    const evaluation = evaluateGate(
+      samplesOf("warm-up", [unwarmed, ...rest], build),
+      budgets
+    );
+    expect(failing(evaluation.lines)).toContain(
+      `FAIL workload ${first.scenario} side=B ${pair.b.file} wrote no settled warm-up windows`
+    );
+    expect(evaluation.ok).toBeFalsy();
   });
 
   it("fails a slower sim on the same slower runner", () => {

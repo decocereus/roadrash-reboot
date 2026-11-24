@@ -2,6 +2,10 @@
   "baseline": {
     "raw": [
       {
+        "file": "tools/perf/baselines/allocation.node-linux-x64.json.gz",
+        "sha256": "2a2fe2775cefcc7369190c0e7eb7b7d44a0456c7f221815a3699d5b832e8e6dc"
+      },
+      {
         "file": "tools/perf/baselines/bar.mac.gpu-helium-metal.json.gz",
         "sha256": "0259f386185869722e968c50417dde9d8264a84e2692cdcca8c09c9c7bccac42"
       },
@@ -90,6 +94,14 @@
         "sha256": "f338793c75c9696bdba9019d28df6eefe61ba395d5fff26da151b02f83e6ca2e"
       },
       {
+        "file": "tools/perf/baselines/stamp.node-darwin-arm64.json.gz",
+        "sha256": "47d5cb0288ec9784d0437861bdb7a33b3259160523736890ec6be83018a91995"
+      },
+      {
+        "file": "tools/perf/baselines/stamp.node-linux-x64.json.gz",
+        "sha256": "433110e0f8dc0ee8cbb2e9a17fa8813940f0bcd76f30de7ca51dedcfb4946a2b"
+      },
+      {
         "file": "tools/perf/baselines/tiers.node-darwin-arm64.json.gz",
         "sha256": "04e49d7a716e1b697e070f51d8e98185aa38863bb3d2d815954d85faa4732698"
       },
@@ -104,19 +116,11 @@
       {
         "file": "tools/perf/baselines/uhd630.vimaan.gpu-chromium-intel.json.gz",
         "sha256": "fbd6ed619b13e9b5b48d776e6d974ae2aaeed0473c7c659b50613b4129874939"
-      },
-      {
-        "file": "tools/perf/baselines/timing.node-darwin-arm64.json.gz",
-        "sha256": "cc7cb8068b977761a0928c7f3c763f49a4e2c8d391aa4ad71660f051c32dcbbb"
-      },
-      {
-        "file": "tools/perf/baselines/timing.node-linux-x64.json.gz",
-        "sha256": "b1503143e31f4ad753b64b88ad6acbe35fe84ebb760f05218420a4423ea51064"
       }
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "db46b6dd71f4e96b752b4007ceae9b04fbd9ba2f6671596a79c2ab089f3e85a1"
+    "summarySha256": "696979c1dae6b6a1865b8cfc04c1b21c5ef0709ad1eacb5a29ca36dc4278bc9a"
   },
   "limits": [
     {
@@ -1368,15 +1372,15 @@
       "unit": "B"
     },
     {
-      "derivation": "1.1 x baseline median, uncalibrated",
-      "value": 67747.67121464227,
-      "baseline": 61588.79201331115,
+      "derivation": "1.1 x baseline median of five runs, uncalibrated",
+      "value": 62899.22262895176,
+      "baseline": 57181.11148086523,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "sim.allocatedBytesPerTick",
       "paired": 1.1,
       "scenario": "pack-riding-v1",
-      "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "source": "gate-2026-11-23T15-33-42-887Z-9f67ba9-ae99aa4",
       "unit": "B"
     },
     {
@@ -1392,15 +1396,15 @@
       "unit": "B"
     },
     {
-      "derivation": "1.1 x baseline median, uncalibrated",
-      "value": 50744.18236272879,
-      "baseline": 46131.07487520799,
+      "derivation": "1.1 x baseline median of five runs, uncalibrated",
+      "value": 47516.9836938436,
+      "baseline": 43197.257903494174,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "sim.allocatedBytesPerTick",
       "paired": 1.1,
       "scenario": "reference-v1",
-      "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "source": "gate-2026-11-23T15-48-10-456Z-9f67ba9-ae99aa4",
       "unit": "B"
     },
     {
@@ -2292,52 +2296,52 @@
       "unit": "ms"
     },
     {
-      "baseline": 0.0002155,
-      "derivation": "1.15 x calibrated baseline median",
+      "baseline": 0.0001449646179422796,
+      "derivation": "1.15 x calibrated baseline median of five runs",
       "direction": "max",
       "environment": "node-darwin-arm64",
-      "metric": "timing.stamp.p95",
+      "metric": "timing.stamp.trimmedMean",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "baseline-2026-11-19T15-28-11-312Z-9f67ba9-db125dc",
+      "source": "gate-2026-11-23T12-14-20-834Z-9f67ba9-1cd7416",
       "unit": "ms",
-      "value": 0.00024782499999999997
+      "value": 0.00016670931063362152
     },
     {
-      "baseline": 0.00026031,
-      "derivation": "1.15 x calibrated baseline median",
+      "baseline": 0.00016400691877988452,
+      "derivation": "1.15 x calibrated baseline median of five runs",
       "direction": "max",
       "environment": "node-darwin-arm64",
-      "metric": "timing.stamp.p95",
+      "metric": "timing.stamp.trimmedMean",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-11-19T15-28-11-312Z-9f67ba9-db125dc",
+      "source": "gate-2026-11-23T12-19-09-676Z-9f67ba9-1cd7416",
       "unit": "ms",
-      "value": 0.0002993565
+      "value": 0.00018860795659686718
     },
     {
-      "baseline": 0.00037299,
-      "derivation": "1.15 x calibrated baseline median, with 1.3 x for the spread between GitHub runners",
+      "baseline": 0.0002645882531507824,
+      "derivation": "1.15 x calibrated baseline median of five runs, with 1.3 x for the spread between GitHub runners",
       "direction": "max",
       "environment": "node-linux-x64",
-      "metric": "timing.stamp.p95",
+      "metric": "timing.stamp.trimmedMean",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "gate-2026-11-19T16-03-05-306Z-9f67ba9-38eaebb",
+      "source": "gate-2026-11-23T11-37-35-632Z-9f67ba9-7cf5536",
       "unit": "ms",
-      "value": 0.00055762005
+      "value": 0.0003955594384604197
     },
     {
-      "baseline": 0.00042264,
-      "derivation": "1.15 x calibrated baseline median, with 1.3 x for the spread between GitHub runners",
+      "baseline": 0.00033581075426518777,
+      "derivation": "1.15 x calibrated baseline median of five runs, with 1.3 x for the spread between GitHub runners",
       "direction": "max",
       "environment": "node-linux-x64",
-      "metric": "timing.stamp.p95",
+      "metric": "timing.stamp.trimmedMean",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "gate-2026-11-19T16-03-05-306Z-9f67ba9-38eaebb",
+      "source": "gate-2026-11-23T12-03-19-896Z-9f67ba9-7cf5536",
       "unit": "ms",
-      "value": 0.0006318468
+      "value": 0.0005020370776264557
     }
   ],
   "nodeProfiles": {
