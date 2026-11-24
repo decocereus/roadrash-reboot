@@ -11,6 +11,7 @@ export interface ModelUrls {
   readonly truck: string;
   readonly van: string;
   readonly figures: readonly [string, string, string];
+  readonly moves: string;
   readonly stalls: string;
   readonly walkers: string;
   readonly celebrities: Readonly<Record<CelebrityId, string>>;
@@ -25,6 +26,7 @@ export const modelUrls: ModelUrls = {
     artUrl("models/rider_b.glb"),
     artUrl("models/rider_c.glb"),
   ],
+  moves: artUrl("models/rider_moves.glb"),
   stalls: artUrl("models/stalls.glb"),
   truck: artUrl("models/truck.glb"),
   van: artUrl("models/van.glb"),

@@ -26,7 +26,6 @@ export interface LobbyRider extends Spot {
   heading: number;
   speed: number;
   pace: number;
-  stride: number;
   lean: number;
   dirX: number;
   dirZ: number;
@@ -47,7 +46,6 @@ export interface LobbyControl {
 
 const SPAWN = { x: 3.4, z: 3.6 } as const;
 const OTHER_RADIUS = 0.34;
-const STRIDE_RUN_SPEED = 7;
 const STUCK_PACE = 0.35;
 const STUCK_TICKS = 27;
 const STEP_OFF_STOOL = 0.75;
@@ -57,12 +55,12 @@ const STEP_OFF_BIKE = 1.1;
 const FULL_TURN = Math.PI * 2;
 
 const FOOT = {
-  accel: 26,
+  accel: 10,
   arrived: 0.2,
-  jog: 4.4,
   radius: 0.36,
-  sprint: 7,
+  run: 4.4,
   turnRate: 13,
+  walk: 1.6,
 } as const;
 
 const BIKE = {
@@ -126,7 +124,6 @@ export const createLobbyRider = (): LobbyRider => ({
   shoving: 0,
   speed: 0,
   stopAt: FOOT.arrived,
-  stride: 0,
   stuck: 0,
   target: null,
   x: SPAWN.x,
@@ -351,7 +348,7 @@ const approach = (from: number, to: number, change: number): number =>
 const stoppingSpeed = ({ route, target, x, z }: LobbyRider): number =>
   target && route.length === 0
     ? Math.sqrt(2 * FOOT.accel * hypot2(target.x - x, target.z - z))
-    : FOOT.sprint;
+    : FOOT.run;
 
 const stepFoot = (
   rider: LobbyRider,
@@ -359,7 +356,7 @@ const stepFoot = (
   control: LobbyControl
 ): void => {
   const top = Math.min(
-    control.sprint ? FOOT.sprint : FOOT.jog,
+    control.sprint ? FOOT.run : FOOT.walk,
     stoppingSpeed(rider)
   );
   rider.speed = approach(rider.speed, wants ? top : 0, FOOT.accel * LOBBY_TICK);
@@ -433,7 +430,6 @@ export const stepLobbyRider = (
   carryPush(rider, radius, others);
   rider.pace = hypot2(rider.x - fromX, rider.z - fromZ) / LOBBY_TICK;
   rider.speed = Math.min(rider.speed, rider.pace + FOOT.accel * LOBBY_TICK);
-  rider.stride += (rider.pace / STRIDE_RUN_SPEED) * LOBBY_TICK;
   if (rider.target && rider.pace < STUCK_PACE) {
     rider.stuck += 1;
     if (rider.stuck > STUCK_TICKS) {

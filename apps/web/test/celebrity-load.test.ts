@@ -78,6 +78,7 @@ const wardrobeOf = (answer: (url: string) => Promise<Response>) => {
       Promise.resolve({
         assetParsers: {
           bike: onlyRiders,
+          moves: onlyRiders,
           parts: onlyRiders,
           rider,
           walkers: onlyRiders,

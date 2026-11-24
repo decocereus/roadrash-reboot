@@ -1,6 +1,5 @@
 import type { RaceRun } from "@racer/sim/race-run";
 import type { RiderView } from "@racer/sim/race-view";
-import { RUN_SPEED } from "@racer/sim/rider-recovery";
 import { clamp, riderOf, TICK_RATE } from "@racer/sim/state";
 import type { HazardEffect, RaceEvent, RiderId } from "@racer/sim/state";
 import type { Track } from "@racer/track/track";
@@ -21,6 +20,7 @@ import type { RiderPose } from "./figure-pose.ts";
 import { bodyFor, paletteOf, suitOf } from "./figure-rig.ts";
 import type { Dressing } from "./figure-wardrobe.ts";
 import type { Fleet } from "./fleet.ts";
+import { gaitOf } from "./gait.ts";
 import type { Palette } from "./model-slots.ts";
 import { createPuffs } from "./puffs.ts";
 import type { Puffs } from "./puffs.ts";
@@ -42,6 +42,8 @@ import {
 import type { RiderFight, StrikeFrame } from "./rider-fight.ts";
 import { createRiderFigure } from "./rider-figure.ts";
 import type { RiderFigure, Stance } from "./rider-figure.ts";
+import { createStrider } from "./strider.ts";
+import type { Strider } from "./strider.ts";
 import type { World } from "./world.ts";
 
 const WRAP_JUMP = 30;
@@ -49,7 +51,6 @@ const LYING_PITCH = -Math.PI / 2;
 const LYING_HEIGHT = 0.22;
 const RISE_SECONDS = 0.3;
 const LIFT_TICKS = 14;
-const RUN_HZ = 2.6;
 const WALKING = 0.3;
 const SAG_PER_IMPACT = 0.45;
 const MOST_SAG_KICK = 3.2;
@@ -87,7 +88,8 @@ interface RiderActor {
   pitch: number;
   lift: number;
   yaw: number;
-  stride: number;
+  readonly strider: Strider;
+  footPace: number;
   sag: number;
   sagSpeed: number;
 }
@@ -268,11 +270,8 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
         puffs.dispose();
       });
       const views = riders.map((rider) => {
-        const figure = createRiderFigure(
-          dressing.get(rider.id)?.body ?? bodyFor(assets, rider.id),
-          shading,
-          worn(rider)
-        );
+        const body = dressing.get(rider.id)?.body ?? bodyFor(assets, rider.id);
+        const figure = createRiderFigure(body, shading, worn(rider));
         owners.push(() => {
           figure.dispose();
         });
@@ -289,11 +288,12 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
           fight: quietFight(),
           figure,
           fit,
+          footPace: -1,
           lift: figure.standHeight,
           pitch: 0,
           sag: 0,
           sagSpeed: 0,
-          stride: 0,
+          strider: createStrider(gaitOf(body, assets.moves), body.bones.length),
           tumbleAngle: 0,
           yaw: 0,
         };
@@ -421,8 +421,9 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     let pose: RiderPose = "seated";
     let reach = 0;
     let rise = 0;
-    let time = cast.clock;
+    const time = cast.clock;
     const { figure, bike } = view;
+    view.footPace = -1;
     if (seated) {
       if (rider.mode === "mounting" && rider.modeTicks < LIFT_TICKS) {
         pose = "lift";
@@ -474,20 +475,12 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
         0
       );
     } else {
-      const runPace =
-        Math.hypot(rider.bodySpeed, rider.bodyLateralSpeed) / RUN_SPEED;
-      const moving = runPace > WALKING / RUN_SPEED;
-      pose = moving ? "run" : "stand";
-      time = view.stride;
-      view.stride += runPace * seconds;
+      view.footPace = Math.hypot(rider.bodySpeed, rider.bodyLateralSpeed);
+      const moving = view.footPace > WALKING;
       const standUp = Math.min(1, rider.modeTicks / TICK_RATE / RISE_SECONDS);
       const eased = standUp * standUp * (3 - 2 * standUp);
       view.pitch = LYING_PITCH * (1 - eased);
-      const bob = moving
-        ? Math.abs(Math.sin(view.stride * Math.PI * 2 * RUN_HZ)) * 0.05
-        : 0;
-      view.lift =
-        LYING_HEIGHT + (figure.standHeight - LYING_HEIGHT) * eased + bob;
+      view.lift = LYING_HEIGHT + (figure.standHeight - LYING_HEIGHT) * eased;
       if (moving) {
         view.yaw = Math.atan2(rider.bodyLateralSpeed, rider.bodySpeed);
       } else if (standUp >= 0.5 && standUp < 1) {
@@ -558,7 +551,12 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
       seconds
     );
     if (index === stage.me || withinReach(seated ? s : bodyS)) {
-      view.figure.animate(stance, seconds);
+      if (view.footPace >= 0) {
+        view.strider.step(view.footPace, seconds);
+        view.figure.onFoot(view.strider, rider.weapon, seconds);
+      } else {
+        view.figure.animate(stance, seconds);
+      }
       if (kneeScrapes(stance.lean, stance.speed)) {
         cast.puffs?.scrape(view.bike, Math.sign(stance.lean), rider.speed);
       }
