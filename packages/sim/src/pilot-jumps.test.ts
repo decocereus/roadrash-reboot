@@ -101,7 +101,7 @@ describe("a pilot committed to a truck jump keeps the approach its forecast judg
     expect(rode.events.find((event) => event.kind === "crash")).toBeUndefined();
   });
 
-  it("keeps braking for a rock that lands in its approach after it committed, and rides on", () => {
+  it("brakes while committed for a rock that lands in its approach, and rides on", () => {
     const run = approach(100);
     const rode = ride(run, (tick) => {
       if (tick === 1) {
@@ -114,10 +114,11 @@ describe("a pilot committed to a truck jump keeps the approach its forecast judg
       }
     });
     expect(rode.committed).toBeTruthy();
+    expect(rode.brakedCommitted).toBeTruthy();
     expect(rode.events.find((event) => event.kind === "crash")).toBeUndefined();
   });
 
-  it("keeps braking for riders stopped in its approach after it committed, and rides on", () => {
+  it("brakes while committed for riders stopped in its approach, and rides on", () => {
     const run = approach(100, 2);
     const rode = ride(run, (tick) => {
       if (tick === 1) {
@@ -133,6 +134,7 @@ describe("a pilot committed to a truck jump keeps the approach its forecast judg
       }
     });
     expect(rode.committed).toBeTruthy();
+    expect(rode.brakedCommitted).toBeTruthy();
     expect(rode.events.find((event) => event.kind === "crash")).toBeUndefined();
   });
 });
