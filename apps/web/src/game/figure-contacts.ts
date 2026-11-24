@@ -1,5 +1,7 @@
 import * as THREE from "three";
 
+import { boneNamed } from "./figure-rig.ts";
+
 export interface Contacts {
   readonly foot_l: THREE.Vector3;
   readonly foot_r: THREE.Vector3;
@@ -9,14 +11,6 @@ export interface Contacts {
 
 const FINGERS = ["index", "middle", "ring", "pinky"] as const;
 const SOLE_REACH = 0.03;
-
-const boneNamed = (body: THREE.SkinnedMesh, name: string): THREE.Bone => {
-  const bone = body.skeleton.getBoneByName(name);
-  if (!bone) {
-    throw new Error(`The rider model has no ${name} bone.`);
-  }
-  return bone;
-};
 
 const skinOf = (body: THREE.SkinnedMesh) => {
   const { bindMatrix, geometry, skeleton } = body;
@@ -74,7 +68,7 @@ const palmOf = (
   skin: ReturnType<typeof skinOf>,
   side: "l" | "r"
 ): THREE.Vector3 => {
-  const hand = boneNamed(body, `hand_${side}`);
+  const hand = boneNamed(body.skeleton, `hand_${side}`);
   const toHand = hand.matrixWorld.clone().invert();
   const inHand = (points: readonly THREE.Vector3[]) =>
     points.map((point) => point.applyMatrix4(toHand));
@@ -82,12 +76,14 @@ const palmOf = (
   const fingers = inHand(
     skin(
       FINGERS.flatMap((finger) =>
-        [1, 2, 3].map((joint) => boneNamed(body, `${finger}_0${joint}_${side}`))
+        [1, 2, 3].map((joint) =>
+          boneNamed(body.skeleton, `${finger}_0${joint}_${side}`)
+        )
       )
     )
   );
   const knuckle = (finger: string) =>
-    boneNamed(body, `${finger}_01_${side}`)
+    boneNamed(body.skeleton, `${finger}_01_${side}`)
       .getWorldPosition(new THREE.Vector3())
       .applyMatrix4(toHand);
   const centre = centreOf(palm);
@@ -114,8 +110,8 @@ const soleOf = (
   side: "l" | "r"
 ): THREE.Vector3 => {
   const toRoot = root.matrixWorld.clone().invert();
-  const foot = boneNamed(body, `foot_${side}`);
-  const ballBone = boneNamed(body, `ball_${side}`);
+  const foot = boneNamed(body.skeleton, `foot_${side}`);
+  const ballBone = boneNamed(body.skeleton, `ball_${side}`);
   const ball = ballBone
     .getWorldPosition(new THREE.Vector3())
     .applyMatrix4(toRoot);

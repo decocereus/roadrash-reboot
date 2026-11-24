@@ -3762,6 +3762,22 @@
       "value": 0.00035067475425827095
     },
     {
+      "environment": "build",
+      "metric": "assets.glb.rider_moves",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-23T10-29-05-736Z-68344ba-68344ba",
+      "value": 41132
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.total",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-23T10-29-05-736Z-68344ba-68344ba",
+      "value": 3602412
+    },
+    {
       "environment": "node-linux-x64",
       "metric": "sim.allocatedBytesPerTick",
       "scenario": "reference-v1",
@@ -3840,6 +3856,22 @@
       "side": "B",
       "source": "gate-2026-11-23T15-55-13-698Z-9f67ba9-ae99aa4",
       "value": 57087.28119800333
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.incremental.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-24T09-25-12-732Z-4f4f6aa-4f4f6aa",
+      "value": 242389
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.incremental.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-24T09-25-12-732Z-4f4f6aa-4f4f6aa",
+      "value": 844748
     }
   ],
   "revisions": {
@@ -5501,6 +5533,29 @@
       }
     },
     {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 888025, \"bytes.route.root.gzip\": 372174, \"bytes.route.kit.raw\": 565608, \"bytes.route.kit.gzip\": 256271, \"bytes.game.raw\": 1735175, \"bytes.game.gzip\": 615548, \"bytes.game.incremental.raw\": 847150, \"bytes.game.incremental.gzip\": 243374, \"bytes.worker.raw\": 677093, \"bytes.worker.gzip\": 171113, \"bytes.client.raw\": 2037648, \"bytes.client.gzip\": 829181}",
+        "builtB": "{\"bytes.route.root.raw\": 888025, \"bytes.route.root.gzip\": 372174, \"bytes.route.kit.raw\": 565608, \"bytes.route.kit.gzip\": 256271, \"bytes.game.raw\": 1735175, \"bytes.game.gzip\": 615548, \"bytes.game.incremental.raw\": 847150, \"bytes.game.incremental.gzip\": 243374, \"bytes.worker.raw\": 677219, \"bytes.worker.gzip\": 171126, \"bytes.client.raw\": 2037648, \"bytes.client.gzip\": 829181}",
+        "harnessDigest": "cd6fb798699ae096d2164b88d22ef08a0f66443ac7d7f45682b2c39cd95483c2",
+        "lockfileSha256": "d17a9d597390c734c7d1e85b125af25cd26c22d2c807d0b1fa05e3a43c20c058",
+        "machine": "Mac16,8",
+        "node": "v26.13.1",
+        "os": "macOS 26.7.3 (25G342)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "2318126d386a4679e8cfdaac7d22f12aac58430930c7f3d56a3ed30014c86917",
+        "sideBSourceDigest": "2318126d386a4679e8cfdaac7d22f12aac58430930c7f3d56a3ed30014c86917",
+        "why": "Riders on foot play four shared loops, idle, walk, jog and sprint, from one new model on the art CDN, models/rider_moves.glb, so assets.glb.rider_moves and assets.glb.total come from this run. A GLB's limit is its exact size, which this revision does not change. This revision still carried the Madrid code a later main deleted, so no code byte row comes from it: the pull request's own build fits the existing code byte limits."
+      },
+      "id": "baseline-2026-11-23T10-29-05-736Z-68344ba-68344ba",
+      "lanes": ["build"],
+      "sides": {
+        "A": "68344ba033261b33f2ebf8aed435d6a2f23bc527",
+        "B": "68344ba033261b33f2ebf8aed435d6a2f23bc527"
+      }
+    },
+    {
       "environment": "node-linux-x64",
       "facts": {
         "arch": "x64",
@@ -5653,6 +5708,29 @@
       "sides": {
         "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
         "B": "ae99aa48d5b8130be171980bfc01faa9d47592fa"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 886989, \"bytes.route.root.gzip\": 371930, \"bytes.route.kit.raw\": 565291, \"bytes.route.kit.gzip\": 256189, \"bytes.game.raw\": 1731737, \"bytes.game.gzip\": 614319, \"bytes.game.incremental.raw\": 844748, \"bytes.game.incremental.gzip\": 242389, \"bytes.worker.raw\": 668363, \"bytes.worker.gzip\": 168337, \"bytes.client.raw\": 2026106, \"bytes.client.gzip\": 824663}",
+        "builtB": "{\"bytes.route.root.raw\": 886989, \"bytes.route.root.gzip\": 371930, \"bytes.route.kit.raw\": 565291, \"bytes.route.kit.gzip\": 256189, \"bytes.game.raw\": 1731737, \"bytes.game.gzip\": 614319, \"bytes.game.incremental.raw\": 844748, \"bytes.game.incremental.gzip\": 242389, \"bytes.worker.raw\": 668468, \"bytes.worker.gzip\": 168349, \"bytes.client.raw\": 2026106, \"bytes.client.gzip\": 824663}",
+        "harnessDigest": "1f7ef1d1a48b26670a8b3b7a25d4942a5e08d9aaf77a493d617d0b211a5c85b4",
+        "lockfileSha256": "77c8e6e3d12c228040bf14967c83c703ecf744fbf90d7ef9b77c41f64e29a992",
+        "machine": "Mac16,8",
+        "node": "v26.13.1",
+        "os": "macOS 26.7.3 (25G342)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "2aee74b9be5dec1aa6241ce03910e203425a9103a9e7974525cb5835d7f5563c",
+        "sideBSourceDigest": "2aee74b9be5dec1aa6241ce03910e203425a9103a9e7974525cb5835d7f5563c",
+        "why": "On-foot riders play the shared walk, jog and sprint loops through four new modules, gait.ts, strider.ts, foot-lock.ts and rider-moves.ts, which add 3,971 B gzip and 9,821 B raw to the game chunk loaded after the menus over main at 7eac830 (242,389 B against 238,418 B gzip). Minified and gzipped one by one they come to about 1.9, 1.0, 1.2 and 0.6 KB. The gzip row was 174 B over its limit, so both bytes.game.incremental rows re-pin on this run with the usual headroom."
+      },
+      "id": "baseline-2026-11-24T09-25-12-732Z-4f4f6aa-4f4f6aa",
+      "lanes": ["build"],
+      "sides": {
+        "A": "4f4f6aacfc18dc9f6d211fa747f7dcd8d01f5fec",
+        "B": "4f4f6aacfc18dc9f6d211fa747f7dcd8d01f5fec"
       }
     }
   ],

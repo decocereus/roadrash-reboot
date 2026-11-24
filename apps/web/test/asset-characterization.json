@@ -1531,16 +1531,6 @@
           "values": 212
         },
         {
-          "digest": "4d10b384d1757f9a",
-          "name": "run_a",
-          "values": 212
-        },
-        {
-          "digest": "0a52d91b0d4c6ad9",
-          "name": "run_b",
-          "values": 212
-        },
-        {
           "digest": "f95d1fd4a8dd45be",
           "name": "lift",
           "values": 212
@@ -1709,16 +1699,6 @@
           "values": 212
         },
         {
-          "digest": "e468345d284d5f6b",
-          "name": "run_a",
-          "values": 212
-        },
-        {
-          "digest": "d5e8c72051a22a17",
-          "name": "run_b",
-          "values": 212
-        },
-        {
           "digest": "d362558100de3a3a",
           "name": "lift",
           "values": 212
@@ -1880,16 +1860,6 @@
         {
           "digest": "176d7145544cb140",
           "name": "swing_r",
-          "values": 212
-        },
-        {
-          "digest": "5dffb570ecceedcb",
-          "name": "run_a",
-          "values": 212
-        },
-        {
-          "digest": "7ba565ab59fe76db",
-          "name": "run_b",
           "values": 212
         },
         {
@@ -2056,16 +2026,6 @@
         {
           "digest": "1d316bc468036797",
           "name": "swing_r",
-          "values": 212
-        },
-        {
-          "digest": "1b01725d293a17fe",
-          "name": "run_a",
-          "values": 212
-        },
-        {
-          "digest": "ac0983ebf4d089ab",
-          "name": "run_b",
           "values": 212
         },
         {
@@ -2237,16 +2197,6 @@
           "values": 212
         },
         {
-          "digest": "e3cef06a25a93117",
-          "name": "run_a",
-          "values": 212
-        },
-        {
-          "digest": "8ce0a13a0cb236ac",
-          "name": "run_b",
-          "values": 212
-        },
-        {
           "digest": "ee937deb622746a6",
           "name": "lift",
           "values": 212
@@ -2408,16 +2358,6 @@
         {
           "digest": "f8d47aba7a156cf9",
           "name": "swing_r",
-          "values": 212
-        },
-        {
-          "digest": "6fcfaa1358189a6b",
-          "name": "run_a",
-          "values": 212
-        },
-        {
-          "digest": "4e452ad897819a3c",
-          "name": "run_b",
           "values": 212
         },
         {
@@ -2586,16 +2526,6 @@
         {
           "digest": "c5f6151ff5d9f06f",
           "name": "swing_r",
-          "values": 212
-        },
-        {
-          "digest": "ec0f4851495d3d94",
-          "name": "run_a",
-          "values": 212
-        },
-        {
-          "digest": "225abc5d2078106a",
-          "name": "run_b",
           "values": 212
         },
         {
@@ -2845,16 +2775,6 @@
           "values": 212
         },
         {
-          "digest": "a180c8f59e891d85",
-          "name": "run_a",
-          "values": 212
-        },
-        {
-          "digest": "d175caabb8ab2546",
-          "name": "run_b",
-          "values": 212
-        },
-        {
           "digest": "b24cb2ca50f8638f",
           "name": "lift",
           "values": 212
@@ -3094,16 +3014,6 @@
         {
           "digest": "85bc48cf202836c7",
           "name": "swing_r",
-          "values": 212
-        },
-        {
-          "digest": "d4bff9f66bb4f5c2",
-          "name": "run_a",
-          "values": 212
-        },
-        {
-          "digest": "0d19339aaf0cc4e0",
-          "name": "run_b",
           "values": 212
         },
         {
