@@ -50,7 +50,7 @@ export const roomRecording = Schema.Struct({
 });
 
 export type RoomRecording = typeof roomRecording.Type;
-export type StampRecording = typeof stampRecording.Type;
+type StampRecording = typeof stampRecording.Type;
 
 export interface Recordings {
   readonly room: Readonly<Record<string, RoomRecording>>;
@@ -99,7 +99,7 @@ const stampValue = (
     : Number.NaN;
 };
 
-export const recordedRuns = (
+const recordedRuns = (
   recordings: Recordings,
   summary: BaselineSummary,
   environment: string,
@@ -139,7 +139,7 @@ interface Expected {
   readonly worst: Recorded;
 }
 
-export const expectedLimits = (runs: readonly Recorded[]): Expected[] => {
+const expectedLimits = (runs: readonly Recorded[]): Expected[] => {
   const worst = worstOf(runs);
   if (worst === null) {
     return [];

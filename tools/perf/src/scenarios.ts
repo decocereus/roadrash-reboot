@@ -30,7 +30,7 @@ export const WINDOW_TICKS = 601;
 export const roomParts = [0, 1, 2] as const;
 export type RoomPart = (typeof roomParts)[number];
 
-export const pooledRoomSeeds = [
+const pooledRoomSeeds = [
   [1, 4, 7],
   [2, 5],
   [3, 6],

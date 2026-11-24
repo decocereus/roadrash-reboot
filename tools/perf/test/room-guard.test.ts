@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 
 import { budgetsFile, judge, metricKinds } from "../src/budgets.ts";
 import type { Observation } from "../src/budgets.ts";
+import { scenarios } from "../src/scenarios.ts";
 import { roomRecording } from "../src/worst-run.ts";
 import type { RoomRecording } from "../src/worst-run.ts";
 
@@ -39,8 +40,9 @@ const verdicts = (
   run.scenarios.flatMap(({ rows: measured, scenario }) =>
     rows.map((metric) => {
       const kind = metricKinds.find((each) => each.metric === metric);
+      const known = scenarios.find((each) => each.id === scenario);
       const value = measured[metric]?.value;
-      if (!kind || value === undefined) {
+      if (!kind || !known || value === undefined) {
         throw new Error(`${run.id} ${scenario} records no ${metric}`);
       }
       const observed: Observation = {
@@ -56,7 +58,7 @@ const verdicts = (
       const [verdict] = judge(
         limits,
         [observed],
-        [{ environment, kind, scenario }],
+        [{ environment, kind, scenario: known.id }],
         run.cpu
       );
       return { metric, ok: verdict?.ok === true, scenario };
