@@ -29,6 +29,7 @@ export const deterministicFiles = [
   "packages/sim/src/difficulty.ts",
   "packages/sim/src/engine.ts",
   "packages/sim/src/hazards.ts",
+  "packages/sim/src/lane-seats.ts",
   "packages/sim/src/lobby-floor.ts",
   "packages/sim/src/lobby-walk.ts",
   "packages/sim/src/lobby.ts",
@@ -219,6 +220,7 @@ export const hotBodies = {
     ["gapInTraffic"],
     ["yields"],
   ],
+  "packages/sim/src/lane-seats.ts": [["seatCar"]],
   "packages/sim/src/pedestrians.ts": [
     ["stepPedestrians"],
     ["stepPedestrian"],
@@ -410,7 +412,6 @@ export const hotBodies = {
     ["queueOf"],
     ["headingOf"],
     ["readCars"],
-    ["seatCar"],
   ],
 };
 

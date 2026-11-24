@@ -1,9 +1,10 @@
-import { openLanesAt, trafficReachAt } from "@racer/track/districts";
+import { openLanesAt } from "@racer/track/districts";
 import type { LaneCentres } from "@racer/track/districts";
 import type { Random } from "@racer/track/random";
 import type { Track } from "@racer/track/track";
 
 import { carrierAt, inJumpZone, jumpZoneFrom, jumpZoneTo } from "./carrier.ts";
+import { narrows, seatCar, seatCars, seatOf } from "./lane-seats.ts";
 import { trafficPaints } from "./palette.ts";
 import { blocksCars } from "./pedestrians.ts";
 import { isSignalled, mainLightOf, signalPhaseAt } from "./signals.ts";
@@ -104,31 +105,6 @@ const laneFor = (
   }
 };
 
-const narrows = (track: Track): boolean => track.plan.districts.length > 1;
-
-const seatOf = (home: number, track: Track, s: number): number =>
-  Math.sign(home) * Math.min(Math.abs(home), trafficReachAt(track, s));
-
-const seatCar = (car: TrafficCar, track: Track): void => {
-  car.x = seatOf(car.home, track, car.s);
-};
-
-export const carSlant = (
-  { halfLength, home }: Pick<TrafficCar, "halfLength" | "home">,
-  track: Track,
-  s: number
-): number =>
-  (seatOf(home, track, s + halfLength) - seatOf(home, track, s - halfLength)) /
-  (2 * halfLength);
-
-export const seatCars = (cars: readonly TrafficCar[], track: Track): void => {
-  if (narrows(track)) {
-    for (const car of cars) {
-      seatCar(car, track);
-    }
-  }
-};
-
 const patienceOf = (random: Random): number =>
   Math.round(
     LEAST_PATIENCE_TICKS +
@@ -165,12 +141,64 @@ const convoysOf = (
   });
 };
 
+const overlapOf = (
+  convoy: readonly TrafficCar[],
+  carriers: readonly TrafficCar[]
+): number =>
+  Math.max(
+    0,
+    ...convoy.flatMap((car) =>
+      carriers
+        .filter((carrier) => inJumpZone(car, car.s, car.x, carrier))
+        .map((carrier) => car.s + car.halfLength - jumpZoneFrom(carrier))
+    )
+  );
+
+const blocksStart = (s: number, clearTo: number): boolean =>
+  s > CLEAR_START_FROM && s < clearTo;
+
 const clearOfConvoys = (
   car: TrafficCar,
   convoys: readonly TrafficCar[]
 ): boolean =>
   car.cruiseSpeed < 0 ||
   convoys.every((other) => Math.abs(car.s - other.s) > CONVOY_GAP);
+
+const placeConvoys = (
+  convoys: readonly TrafficCar[],
+  carriers: readonly TrafficCar[],
+  track: Track
+): TrafficCar[] => {
+  const groups = Array.from({ length: convoys.length / CONVOY_CARS }, (_, at) =>
+    convoys.slice(at * CONVOY_CARS, (at + 1) * CONVOY_CARS)
+  );
+  const placed = groups
+    .filter((convoy) => overlapOf(convoy, carriers) === 0)
+    .flat();
+  for (const convoy of groups) {
+    const moved = overlapOf(convoy, carriers) > 0;
+    for (
+      let back = overlapOf(convoy, carriers);
+      back > 0;
+      back = overlapOf(convoy, carriers)
+    ) {
+      for (const car of convoy) {
+        car.s -= back;
+      }
+      seatCars(convoy, track);
+    }
+    if (
+      moved &&
+      convoy.every(
+        (car) =>
+          !blocksStart(car.s, CLEAR_START_TO) && clearOfConvoys(car, placed)
+      )
+    ) {
+      placed.push(...convoy);
+    }
+  }
+  return convoys.filter((car) => placed.includes(car));
+};
 
 const freeFor = (
   car: TrafficCar,
@@ -239,8 +267,7 @@ export const createTraffic = (
       const cruiseSpeed = direction * (19 + random() * 8);
       const clearTo =
         direction === 1 ? CLEAR_START_TO : CLEAR_ONCOMING_START_TO;
-      const blocksStart = s > CLEAR_START_FROM && s < clearTo;
-      if (!blocksStart) {
+      if (!blocksStart(s, clearTo)) {
         const paint = Math.floor(random() * PAINT_COUNT);
         const home = laneFor(lanes, cruiseSpeed, random);
         cars.push({
@@ -263,13 +290,14 @@ export const createTraffic = (
   const carriers = track.carrierStarts.map((s) =>
     carrierAt(s, lane, Math.floor(random() * PAINT_COUNT), patienceOf(patience))
   );
-  const convoys = convoysOf(
+  const drawn = convoysOf(
     track,
     conditions.slowConvoys,
     convoyRandom,
     patience
   );
-  seatCars(convoys, track);
+  seatCars(drawn, track);
+  const convoys = placeConvoys(drawn, carriers, track);
   const kept = cars.filter((car) => clearOfConvoys(car, convoys));
   moveOutOfCarriers(kept, carriers, convoys, track);
   return [...kept, ...convoys, ...carriers];

@@ -4,7 +4,7 @@ import { compileTrack, curvatureAt } from "@racer/track/track";
 import { describe, expect, it } from "vitest";
 
 import { streetBike } from "./bikes.ts";
-import { inJumpZone, toeOf } from "./carrier.ts";
+import { inJumpZone, jumpZoneFrom, toeOf } from "./carrier.ts";
 import { difficulties, tiers } from "./difficulty.ts";
 import { KMH, frameOf, player } from "./race-fixtures.ts";
 import { createRace, defaultSetup, stepRace } from "./race.ts";
@@ -12,8 +12,14 @@ import { TICK_RATE, clamp, curvePushOf, lateralSpeedLimit } from "./state.ts";
 import type { RaceEvent } from "./state.ts";
 import { CONVOY_CRUISE } from "./traffic.ts";
 
+const CONVOY_LENGTH = 6;
+const CONVOY_GAP = 14;
+const START_STRETCH_FROM = -70;
+const START_STRETCH_TO = 260;
+const [firstPiece, ...laterPieces] = roads["ridge-road"].pieces;
+
 describe("trucks on the roads", () => {
-  it("move every car out of a truck's jump zone, so every road keeps its traffic and nothing waits where riders take off or land", () => {
+  it("move every car and every slow convoy out of a truck's jump zone, so every road keeps its traffic, give or take the cars beside a convoy moved back, and nothing waits where riders take off or land", () => {
     const races = roadIds.flatMap((roadId) => {
       const track = trackFor(roadId);
       const bare = compileTrack({ ...roads[roadId], carriers: [] });
@@ -28,16 +34,30 @@ describe("trucks on the roads", () => {
           const cars = all.filter(
             (car) => !car.carrier && car.cruiseSpeed !== CONVOY_CRUISE
           );
-          const without = createRace({
+          const bareCars = createRace({
             ...defaultSetup(bare, seed),
             conditions,
-          }).cars.filter((car) => car.cruiseSpeed !== CONVOY_CRUISE);
+          }).cars;
+          const without = bareCars.filter(
+            (car) => car.cruiseSpeed !== CONVOY_CRUISE
+          );
+          const convoyAt = (list: readonly (typeof all)[number][]) =>
+            list
+              .filter((car) => car.cruiseSpeed === CONVOY_CRUISE)
+              .map((car) => car.s)
+              .join(",");
+          const convoyMoved = convoyAt(all) !== convoyAt(bareCars);
           const inZone = (car: (typeof all)[number]) =>
             trucks.some((truck) => inJumpZone(car, car.s, car.x, truck));
           return {
+            convoyInZone: all.filter(
+              (car) => car.cruiseSpeed === CONVOY_CRUISE && inZone(car)
+            ).length,
             inTheWay: without.filter(inZone).length,
             inZone: cars.filter(inZone).length,
-            kept: cars.length === without.length,
+            kept: convoyMoved
+              ? Math.abs(cars.length - without.length) <= CONVOY_LENGTH
+              : cars.length === without.length,
             overlaps: cars.filter((car, index) =>
               cars.some(
                 (other, before) =>
@@ -53,8 +73,84 @@ describe("trucks on the roads", () => {
     expect(races.filter(({ kept }) => !kept)).toStrictEqual([]);
     expect(races.reduce((sum, { overlaps }) => sum + overlaps, 0)).toBe(0);
     expect(races.reduce((sum, { inZone }) => sum + inZone, 0)).toBe(0);
+    expect(races.reduce((sum, { convoyInZone }) => sum + convoyInZone, 0)).toBe(
+      0
+    );
     expect(races.some(({ inTheWay }) => inTheWay > 0)).toBeTruthy();
   });
+
+  it.each([4, 8])(
+    "on Ridge Road at tier 2, seed %i, the slow convoy starts whole behind the truck's jump zone, where the faster truck pulls away from it",
+    (seed) => {
+      const track = trackFor("ridge-road");
+      const { cars } = createRace({
+        ...defaultSetup(track, seed),
+        conditions: difficulties[2].conditions,
+      });
+      const truck = cars.find((car) => car.carrier);
+      if (truck === undefined) {
+        throw new Error("Ridge Road has a truck");
+      }
+      const convoy = cars.filter((car) => car.cruiseSpeed === CONVOY_CRUISE);
+      const gaps = convoy
+        .slice(1)
+        .map((car, index) => (convoy[index]?.s ?? car.s) - car.s);
+      expect(convoy).toHaveLength(CONVOY_LENGTH);
+      expect(
+        convoy.every((car) => car.s + car.halfLength <= jumpZoneFrom(truck))
+      ).toBeTruthy();
+      expect(new Set(gaps).size).toBe(1);
+      expect(truck.cruiseSpeed).toBeGreaterThan(CONVOY_CRUISE);
+    }
+  );
+
+  it.each([
+    {
+      carriers: Array.from({ length: 22 }, (_, at) => 300 + at * 200),
+      name: "a chain of trucks from 300 m",
+      pieces: roads["ridge-road"].pieces,
+      seed: 4,
+      tier: 2,
+    },
+    {
+      carriers: Array.from({ length: 22 }, (_, at) => 2000 + at * 200),
+      name: "a chain of trucks from 2,000 m",
+      pieces: roads["ridge-road"].pieces,
+      seed: 1,
+      tier: 3,
+    },
+    {
+      carriers: [300],
+      name: "one truck at 300 m on a 900 m road",
+      pieces: [firstPiece, ...laterPieces.slice(0, 3)],
+      seed: 3,
+      tier: 2,
+    },
+  ] as const)(
+    "with $name, a convoy moved back off a zone is left out rather than start in the start stretch or on another convoy",
+    ({ carriers, pieces, seed, tier }) => {
+      const track = compileTrack({
+        ...roads["ridge-road"],
+        carriers,
+        chevrons: [],
+        pieces,
+      });
+      const convoy = createRace({
+        ...defaultSetup(track, seed),
+        conditions: difficulties[tier].conditions,
+      })
+        .cars.filter((car) => car.cruiseSpeed === CONVOY_CRUISE)
+        .map((car) => car.s)
+        .toSorted((a, b) => a - b);
+      expect(convoy.length % CONVOY_LENGTH).toBe(0);
+      expect(
+        convoy.filter((s) => s > START_STRETCH_FROM && s < START_STRETCH_TO)
+      ).toStrictEqual([]);
+      expect(
+        convoy.slice(1).filter((s, at) => s - (convoy[at] ?? s) < CONVOY_GAP)
+      ).toStrictEqual([]);
+    }
+  );
 
   it("a skill-one pilot that meets Ridge Road's 4,500 m truck at 220 km/h on tier 1, seed 21, launches at speed and lands clean", () => {
     const track = trackFor("ridge-road");

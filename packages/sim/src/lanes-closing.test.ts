@@ -8,6 +8,7 @@ import { breakwaterRun } from "@racer/track/tracks/breakwater-run";
 import { describe, expect, it } from "vitest";
 
 import { difficulties, tiers } from "./difficulty.ts";
+import { carSlant } from "./lane-seats.ts";
 import { frameOf, player } from "./race-fixtures.ts";
 import { createRace, defaultSetup, emptyFrame, stepRace } from "./race.ts";
 import { setupDigest } from "./snapshot-setup.ts";
@@ -23,7 +24,7 @@ import type {
   RiderState,
   TrafficCar,
 } from "./state.ts";
-import { CONVOY_CRUISE, carSlant } from "./traffic.ts";
+import { CONVOY_CRUISE } from "./traffic.ts";
 
 const NARROW_FROM = 2000;
 const WIDE_AGAIN_FROM = 2600;

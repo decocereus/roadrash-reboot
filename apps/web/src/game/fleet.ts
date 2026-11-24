@@ -1,6 +1,7 @@
+import { carSlant } from "@racer/sim/lane-seats";
 import { trafficPaints } from "@racer/sim/palette";
 import type { CrossCarView, TrafficView } from "@racer/sim/race-view";
-import { carSlant, PAINT_COUNT } from "@racer/sim/traffic";
+import { PAINT_COUNT } from "@racer/sim/traffic";
 import type { Track, TrackPoint } from "@racer/track/track";
 import * as THREE from "three";
 
