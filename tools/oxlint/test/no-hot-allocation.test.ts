@@ -14,6 +14,17 @@ const hotBodies = {
     ["createWalker", "update"],
   ],
   "apps/web/src/game/bench-profile.ts": [["createBenchProfile", "record"]],
+  "apps/web/src/game/figure-ik.ts": [
+    ["placeChain"],
+    ["turnAbout"],
+    ["swingInto"],
+    ["swingGirdle"],
+    ["leanToward"],
+    ["spanAfter"],
+    ["reachFor"],
+    ["writeLocal"],
+  ],
+  "apps/web/src/game/figure-pose.ts": [["planterOf", "plant"]],
   "apps/web/src/game/fixed-tick.ts": [["createFixedTick", "advance"]],
   "apps/web/src/game/foot-lock.ts": [["reach"], ["createFootLock", "hold"]],
   "apps/web/src/game/frame-loop.ts": [
@@ -26,7 +37,10 @@ const hotBodies = {
   ],
   "apps/web/src/game/input.ts": [["createControls", "read"]],
   "apps/web/src/game/presets.ts": [["bindQuality", "noteDisplay"]],
-  "apps/web/src/game/rider-figure.ts": [["createRiderFigure", "onFoot"]],
+  "apps/web/src/game/rider-figure.ts": [
+    ["createRiderFigure", "mount"],
+    ["createRiderFigure", "onFoot"],
+  ],
   "apps/web/src/game/strider.ts": [
     ["sampled"],
     ["mixInto"],

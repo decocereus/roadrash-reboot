@@ -193,6 +193,41 @@ ARGS = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
 SHOW = "show" in ARGS
 
 
+HIP_ABOVE_SEAT = 0.105
+HIP_Z = 0.36
+
+
+def mirror(point, side):
+    return (side * point[0], point[1], point[2])
+
+
+def middle(a, b):
+    return tuple((p + q) / 2 for p, q in zip(a, b))
+
+
+def seat_top(rings, z):
+    for (z0, top0), (z1, top1) in zip(rings, rings[1:]):
+        if z0 <= z <= z1:
+            return top0[0][1] + (top1[0][1] - top0[0][1]) * (z - z0) / (z1 - z0)
+    raise ValueError(f"No seat ring spans z = {z}.")
+
+
+def fit_points(seat_rings, grip, peg, peg_radius):
+    """Empties the game seats every rider by: the hip on the seat, each grip's axis centre and each peg's top."""
+    peg_x, peg_y, peg_z = middle(*peg)
+    points = {"fit_seat": (0, seat_top(seat_rings, HIP_Z) + HIP_ABOVE_SEAT, HIP_Z)}
+    for side, s in (("l", 1), ("r", -1)):
+        points[f"fit_grip_{side}"] = mirror(middle(*grip), s)
+        points[f"fit_peg_{side}"] = mirror((peg_x, peg_y + peg_radius, peg_z), s)
+    made = []
+    for name, at in points.items():
+        empty = bpy.data.objects.new(name, None)
+        empty.location = B(*at)
+        bpy.context.scene.collection.objects.link(empty)
+        made.append(empty)
+    return made
+
+
 def export_static(name, objs):
     os.makedirs(MODELS, exist_ok=True)
     for o in bpy.context.scene.objects:

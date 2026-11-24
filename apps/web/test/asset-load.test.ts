@@ -1,8 +1,6 @@
-import { createHash } from "node:crypto";
 import { setImmediate as nextTurn } from "node:timers/promises";
 
 import { celebrityIds } from "@racer/sim/cast";
-import type { CelebrityId } from "@racer/sim/cast";
 import * as THREE from "three";
 import { describe, expect, it, vi } from "vitest";
 
@@ -10,19 +8,21 @@ import { celebrityLoader } from "../src/asset-load.ts";
 import type { AssetRequest } from "../src/asset-load.ts";
 import { createAssetRuntime } from "../src/asset-runtime.ts";
 import type { ByteCache, Fonts, Transport } from "../src/assets/load.ts";
+import { ModelDecodeFailed } from "../src/assets/model-decode-failed.ts";
 import { modelUrls } from "../src/assets/model-urls.ts";
 import type { ModelUrls } from "../src/assets/model-urls.ts";
 import { assetParsers } from "../src/game/assets.ts";
 import type {
   AssetParsers,
   Assets,
-  ModelParts,
+  BikeModel,
   Decoded,
   RiderAsset,
 } from "../src/game/assets.ts";
 import type { Primitive } from "../src/game/model-slots.ts";
 import { artFile } from "./art-files.ts";
 import characterization from "./asset-characterization.json" with { type: "json" };
+import { summary } from "./asset-summary.ts";
 import { fakeRiderMoves, fakeWalkerAsset } from "./walker-asset.ts";
 
 const urls: ModelUrls = {
@@ -167,13 +167,24 @@ interface Parsing {
   readonly releases: Map<string, number>;
 }
 
+const nowhere = new THREE.Vector3();
+const fakeBike = (): BikeModel => ({
+  fit: {
+    foot_l: nowhere,
+    foot_r: nowhere,
+    hand_l: nowhere,
+    hand_r: nowhere,
+    seat: nowhere,
+  },
+  parts: new Map<string, readonly Primitive[]>(),
+});
+
 const fakeRider = (): RiderAsset => ({
   atlas: null,
   bones: [],
   poses: new Map(),
   primitives: [],
   scene: new THREE.Object3D(),
-  seat: new THREE.Vector3(),
   standHeight: 0,
 });
 
@@ -199,6 +210,7 @@ const parsingOf = (
   return {
     decodes,
     parsers: {
+      bike: async (_, url) => await decoded(url, fakeBike()),
       moves: async (_, url) => await decoded(url, fakeRiderMoves()),
       parts: async (_, url) =>
         await decoded(url, new Map<string, readonly Primitive[]>()),
@@ -495,80 +507,79 @@ describe("asset loading through the Effect boundary", () => {
   });
 });
 
-const plain = (value: number): number => value + 0;
-
-const primitiveSummary = (primitive: Primitive) => {
-  const position = primitive.geometry.getAttribute("position");
-  const box = new THREE.Box3();
-  const point = new THREE.Vector3();
-  for (let index = 0; index < position.count; index += 1) {
-    box.expandByPoint(point.fromBufferAttribute(position, index));
-  }
-  return {
-    attributes: Object.keys(primitive.geometry.attributes).toSorted(),
-    first: [position.getX(0), position.getY(0), position.getZ(0)].map(plain),
-    indices: primitive.geometry.getIndex()?.count ?? 0,
-    max: box.max.toArray().map(plain),
-    min: box.min.toArray().map(plain),
-    slot: primitive.slot,
-    vertices: position.count,
-  };
-};
-
-const riderSummary = (rider: RiderAsset) => {
-  let nodes = 0;
-  rider.scene.traverse(() => {
-    nodes += 1;
-  });
-  return {
-    atlas: rider.atlas?.colorSpace ?? null,
-    bones: rider.bones,
-    nodes,
-    poses: [...rider.poses].map(([name, pose]) => ({
-      digest: createHash("sha256")
-        .update(Float64Array.from(pose))
-        .digest("hex")
-        .slice(0, 16),
-      name,
-      values: pose.length,
-    })),
-    primitives: rider.primitives.map(primitiveSummary),
-    seat: rider.seat.toArray().map(plain),
-    standHeight: plain(rider.standHeight),
-  };
-};
-
-const partsSummary = (parts: ModelParts) =>
-  [...parts].map(([name, primitives]) => ({
-    name,
-    primitives: primitives.map(primitiveSummary),
-  }));
-
-interface Worn {
-  readonly id: CelebrityId;
-  readonly value: RiderAsset;
-}
-
-const summary = (assets: Assets, celebrities: readonly Worn[]) => ({
-  bikes: {
-    classic: partsSummary(assets.bikes.classic),
-    ghost: partsSummary(assets.bikes.ghost),
-    oni: partsSummary(assets.bikes.oni),
-    seraph: partsSummary(assets.bikes.seraph),
-  },
-  car: assets.car.map(primitiveSummary),
-  celebrities: Object.fromEntries(
-    celebrities.map(({ id, value }) => [id, riderSummary(value)])
-  ),
-  figures: assets.figures.map(riderSummary),
-  van: assets.van.map(primitiveSummary),
-});
-
 const pinned: Transport = {
   fetch: async (url) => await Promise.resolve(new Response(artFile(url))),
 };
 
+const fitNodeNames = [
+  "fit_seat",
+  "fit_grip_l",
+  "fit_grip_r",
+  "fit_peg_l",
+  "fit_peg_r",
+] as const;
+
+const withoutNode = (
+  file: ArrayBuffer,
+  name: string
+): Uint8Array<ArrayBuffer> => {
+  const bytes = new Uint8Array(file);
+  const text = new TextDecoder("latin1").decode(bytes);
+  const quoted = `"${name}"`;
+  const at = text.indexOf(quoted);
+  if (at === -1 || text.includes(quoted, at + 1)) {
+    throw new Error(`The bike model names ${name} other than once.`);
+  }
+  const renamed = new Uint8Array(bytes.byteLength);
+  renamed.set(bytes);
+  renamed.set(new TextEncoder().encode(`"${"x".repeat(name.length)}"`), at);
+  return renamed;
+};
+
 describe("the real parser on the pinned models", () => {
+  it.each(fitNodeNames)(
+    "refuses a bike without its %s point instead of seating riders on zeros",
+    async (name) => {
+      const bike = modelUrls.bikes.classic;
+      const fetches = new Map<string, number>();
+      const runtime = createAssetRuntime(
+        {
+          fonts: readyFonts,
+          transport: {
+            fetch: async (url) => {
+              fetches.set(url, (fetches.get(url) ?? 0) + 1);
+              const bytes = artFile(url);
+              return await Promise.resolve(
+                new Response(url === bike ? withoutNode(bytes, name) : bytes)
+              );
+            },
+          },
+        },
+        new Map(),
+        modelUrls
+      );
+      const outcome = await mount(runtime, assetParsers).outcome;
+      if (outcome.kind !== "failed") {
+        throw new Error(`The mount ended ${outcome.kind}.`);
+      }
+      const { error } = outcome;
+      if (!(error instanceof ModelDecodeFailed)) {
+        throw new Error(`The mount failed with ${error.name}.`, {
+          cause: error,
+        });
+      }
+      expect({
+        fetched: fetches.get(bike),
+        message: error.message,
+        url: error.url,
+      }).toStrictEqual({
+        fetched: 1,
+        message: `The bike model ${bike} has no ${name} point.`,
+        url: bike,
+      });
+    }
+  );
+
   it("decodes the same assets as before the Effect boundary and releases their geometry and atlases", async () => {
     const runtime = createAssetRuntime(
       { fonts: readyFonts, transport: pinned },

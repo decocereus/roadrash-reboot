@@ -186,7 +186,8 @@ export const run = async (
     for (let row = 0; row < bikeModelIds.length; row += 1) {
       const model = bikeModelIds[row];
       const bike = bikes.roots[row];
-      if (!(model && bike)) {
+      const fit = bikes.fits[row];
+      if (!(model && bike && fit)) {
         continue;
       }
       for (let column = 0; column < poses.length; column += 1) {
@@ -197,10 +198,7 @@ export const run = async (
         bike.position.set(0, 0, 0);
         bike.rotation.set(0, 0, -pose.roll, "YXZ");
         bike.updateMatrixWorld();
-        figure.root.position.copy(bike.position);
-        figure.root.quaternion.copy(bike.quaternion);
-        figure.root.translateY(figure.seat.y);
-        figure.root.translateZ(figure.seat.z);
+        figure.mount(bike, fit, 0);
         const stance = stanceOf(pose);
         for (let step = 0; step < SETTLE_STEPS; step += 1) {
           figure.animate(stance, 1);
@@ -239,7 +237,6 @@ export const run = async (
       celebrity,
       contacts,
       notes,
-      seat: figure.seat.toArray(),
       view,
     };
   } finally {

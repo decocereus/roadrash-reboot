@@ -257,7 +257,10 @@ describe("bike models", () => {
     }
     bikes.commit(new THREE.Vector3());
     const modelOfBody = new Map(
-      bikeModelIds.map((model) => [bodyVertices(assets.bikes[model]), model])
+      bikeModelIds.map((model) => [
+        bodyVertices(assets.bikes[model].parts),
+        model,
+      ])
     );
     const drawn = instancedIn(bikes.group).flatMap((mesh) => {
       const model = modelOfBody.get(

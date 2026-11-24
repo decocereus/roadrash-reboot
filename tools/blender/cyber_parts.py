@@ -3,7 +3,11 @@ import math
 import bpy
 import bmesh
 from mathutils import Vector, Matrix
-from common import B, MI, box, tube, lathe, ring_loft, finish
+from common import B, MI, box, tube, lathe, ring_loft, finish, mirror
+
+GRIP = ((.25, .963, -.387), (.355, .936, -.35))
+PEG = ((.14, .40, .20), (.24, .40, .20))
+PEG_RADIUS = .017
 
 
 def linear(hex_colour):
@@ -115,7 +119,7 @@ def mechanics(style):
         tube(bm,[(s*.105,.293,-.69),(s*.105,.58,-.572)],[.023],"metal",n=12)
         tube(bm,[(s*.105,.55,-.584),(s*.105,.97,-.412)],[.031],"gold" if style!="oni" else "metal",n=12)
         tube(bm,[(s*.105,.97,-.412),(s*.24,.965,-.39),(s*.34,.94,-.355)],[.013],"dark",n=8)
-        tube(bm,[(s*.25,.963,-.387),(s*.355,.936,-.35)],[.021],"seat",n=10)
+        tube(bm,[mirror(p,s) for p in GRIP],[.021],"seat",n=10)
         tube(bm,[(s*.25,.94,-.423),(s*.36,.918,-.4)],[.006],"metal",n=6)
         for y in (.70,.94):
             box(bm,(0,y,-.52+(y-.7)*.43),(.28,.025,.075),"dark")
@@ -123,7 +127,7 @@ def mechanics(style):
         tube(bm,[(s*.13,.67,.14),(s*.13,.40,.52)],[.018],"metal",n=8)
         tube(bm,[(s*.09,.78,-.38),(s*.16,.52,-.06),(s*.115,.66,.30),(s*.09,.78,-.38)],
              [.021],"accent" if style=="oni" else "metal",n=6,cap=False)
-        tube(bm,[(s*.14,.40,.20),(s*.24,.40,.20)],[.017],"metal",n=8)
+        tube(bm,[mirror(p,s) for p in PEG],[PEG_RADIUS],"metal",n=8)
         box(bm,(s*.14,.30,-.60),(.055,.105,.07),"gold")
     lathe(bm,(0,.41,.05),[(0,-.155),(.115,-.155),(.118,-.14),(.118,.14),(.115,.155),(0,.155)],"dark",steps=20)
     for s in (-1,1):

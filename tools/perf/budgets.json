@@ -2,6 +2,10 @@
   "baseline": {
     "raw": [
       {
+        "file": "tools/perf/baselines/allocation.node-linux-x64.json.gz",
+        "sha256": "2a2fe2775cefcc7369190c0e7eb7b7d44a0456c7f221815a3699d5b832e8e6dc"
+      },
+      {
         "file": "tools/perf/baselines/bar.mac.gpu-helium-metal.json.gz",
         "sha256": "0259f386185869722e968c50417dde9d8264a84e2692cdcca8c09c9c7bccac42"
       },
@@ -116,12 +120,12 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "37ba7c6b2b939a12c1ba56f3f8160e848c16fe996e797df6ecdc0022e9225e0d"
+    "summarySha256": "f2a918468689221392325cb2c1675aa1041085626827bc9e1df8cf654825d30c"
   },
   "limits": [
     {
-      "derivation": "exact baseline",
-      "value": 122108,
+      "derivation": "measured 122336 B: the five fit points, seat, both grips and both pegs, that every rider is seated by add 228 B",
+      "value": 122336,
       "baseline": 122108,
       "direction": "max",
       "environment": "build",
@@ -144,8 +148,8 @@
       "unit": "B"
     },
     {
-      "derivation": "exact baseline",
-      "value": 116948,
+      "derivation": "measured 117212 B: the five fit points, seat, both grips and both pegs, that every rider is seated by add 264 B",
+      "value": 117212,
       "baseline": 116948,
       "direction": "max",
       "environment": "build",
@@ -156,8 +160,8 @@
       "unit": "B"
     },
     {
-      "derivation": "exact baseline",
-      "value": 126272,
+      "derivation": "measured 126532 B: the five fit points, seat, both grips and both pegs, that every rider is seated by add 260 B",
+      "value": 126532,
       "baseline": 126272,
       "direction": "max",
       "environment": "build",
@@ -300,8 +304,8 @@
       "unit": "B"
     },
     {
-      "derivation": "exact baseline",
-      "value": 118884,
+      "derivation": "measured 119148 B: the five fit points, seat, both grips and both pegs, that every rider is seated by add 264 B",
+      "value": 119148,
       "baseline": 118884,
       "direction": "max",
       "environment": "build",
@@ -324,8 +328,8 @@
       "unit": "B"
     },
     {
-      "derivation": "exact baseline",
-      "value": 3602412,
+      "derivation": "measured 3603428 B: the four bikes' fit points, seat, both grips and both pegs, that every rider is seated by add 1016 B",
+      "value": 3603428,
       "baseline": 3602412,
       "direction": "max",
       "environment": "build",
@@ -1380,15 +1384,15 @@
       "unit": "B"
     },
     {
-      "derivation": "1.1 x baseline median, uncalibrated",
-      "value": 67747.67121464227,
-      "baseline": 61588.79201331115,
+      "derivation": "1.1 x baseline median of five runs, uncalibrated",
+      "value": 62899.22262895176,
+      "baseline": 57181.11148086523,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "sim.allocatedBytesPerTick",
       "paired": 1.1,
       "scenario": "pack-riding-v1",
-      "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "source": "gate-2026-11-23T15-33-42-887Z-9f67ba9-ae99aa4",
       "unit": "B"
     },
     {
@@ -1404,15 +1408,15 @@
       "unit": "B"
     },
     {
-      "derivation": "1.1 x baseline median, uncalibrated",
-      "value": 50744.18236272879,
-      "baseline": 46131.07487520799,
+      "derivation": "1.1 x baseline median of five runs, uncalibrated",
+      "value": 47516.9836938436,
+      "baseline": 43197.257903494174,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "sim.allocatedBytesPerTick",
       "paired": 1.1,
       "scenario": "reference-v1",
-      "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "source": "gate-2026-11-23T15-48-10-456Z-9f67ba9-ae99aa4",
       "unit": "B"
     },
     {

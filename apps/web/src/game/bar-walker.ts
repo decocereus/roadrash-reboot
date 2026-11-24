@@ -8,6 +8,7 @@ import * as THREE from "three";
 import type { Assets } from "./assets.ts";
 import { breathTurns, poseTurns } from "./bar-poses.ts";
 import type { Tag, TagLayer } from "./bar-tags.ts";
+import type { BikeFit } from "./bike-fit.ts";
 import type { Shading } from "./cel.ts";
 import { bodyFor } from "./figure-rig.ts";
 import { gaitOf } from "./gait.ts";
@@ -63,6 +64,7 @@ export interface BarWalker {
     stance: WalkerStance,
     view: WalkerView,
     bike: THREE.Object3D,
+    fit: BikeFit,
     time: number,
     seconds: number,
     camera: THREE.Camera,
@@ -120,12 +122,10 @@ const createWalker = (
     { shoving: shoveLeft }: WalkerStance,
     view: WalkerView,
     bike: THREE.Object3D,
+    fit: BikeFit,
     seconds: number
   ): void => {
-    figure.root.position.copy(bike.position);
-    figure.root.quaternion.copy(bike.quaternion);
-    figure.root.translateY(figure.seat.y);
-    figure.root.translateZ(figure.seat.z);
+    figure.mount(bike, fit, 0);
     const age = SHOVE_SECONDS - shoveLeft * LOBBY_TICK;
     stance.pose = shoveLeft > 0 && age < PUNCH.back ? "punch" : "seated";
     stance.reach = stance.pose === "punch" ? punchReach(age) : 0;
@@ -169,10 +169,10 @@ const createWalker = (
       figure.root.visible = visible;
       tag.show(visible);
     },
-    update(walking, view, bike, time, seconds, camera, size) {
+    update(walking, view, bike, fit, time, seconds, camera, size) {
       switch (walking.place) {
         case "bike": {
-          onBike(walking, view, bike, seconds);
+          onBike(walking, view, bike, fit, seconds);
           break;
         }
         case "stool": {

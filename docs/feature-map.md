@@ -541,21 +541,23 @@ Test files:
 
 ### Riders, bikes and cars on screen
 
-The riders, bikes and traffic cars drawn from the race each frame: placement on the road, poses, punches and kicks, falls, the walk, run and sprint on foot in the race and the bar, weapons in hand, the painted celebrity figures, the `?as` and `?against` flags that dress riders in them and the wardrobe that holds the celebrity figures the race on screen wears, each maker's bike model, and the instanced fleet of cars.
+The riders, bikes and traffic cars drawn from the race each frame: placement on the road, poses, punches and kicks, falls, the walk, run and sprint on foot in the race and the bar, weapons in hand, the painted celebrity figures, the `?as` and `?against` flags that dress riders in them and the wardrobe that holds the celebrity figures the race on screen wears, each maker's bike model with the seat, grip and peg points every rider is fitted to, and the instanced fleet of cars.
 
 - Id: `riders-on-screen`
 - Start: `apps/web/src/game/rider-views.ts`, `apps/web/src/game/rider-figure.ts`, `apps/web/src/game/actors.ts`
 - Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/design/art-direction.md#riders-and-bikes](design/art-direction.md#riders-and-bikes), [docs/design/art-direction.md#budget-and-build](design/art-direction.md#budget-and-build)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`, `riders.cpu.p95`
-- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/fleet.ts`, `apps/web/src/game/cross-car-pose.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/test/actor-tables.test.ts`, `apps/web/test/bike-contact.ts`, `apps/web/test/figure-wear.test.ts`, `apps/web/test/figure-shadow.test.ts`, `apps/web/test/planted-hands.test.ts`, `apps/web/test/rider-gait.test.ts`, `apps/web/test/rider-poses.test.ts`, `apps/web/test/rider-shade.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`, `apps/web/src/game/gait.ts`, `apps/web/src/game/strider.ts`, `apps/web/src/game/foot-lock.ts`
+- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/fleet.ts`, `apps/web/src/game/cross-car-pose.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/src/game/bike-fit.ts`, `apps/web/test/actor-tables.test.ts`, `apps/web/test/bike-contact.ts`, `apps/web/test/figure-wear.test.ts`, `apps/web/test/figure-shadow.test.ts`, `apps/web/test/planted-hands.test.ts`, `apps/web/test/rider-gait.test.ts`, `apps/web/test/rider-poses.test.ts`, `apps/web/test/seated-callers.test.ts`, `apps/web/test/seated-contacts.ts`, `apps/web/test/rider-shade.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`, `apps/web/src/game/gait.ts`, `apps/web/src/game/strider.ts`, `apps/web/src/game/foot-lock.ts`
 
 Source files:
 
 - `apps/web/src/game/actors.ts`
+- `apps/web/src/game/bike-fit.ts`
 - `apps/web/src/game/bike-models.ts`
 - `apps/web/src/game/cross-car-pose.ts`
 - `apps/web/src/game/figure-bounds.ts`
+- `apps/web/src/game/figure-contacts.ts`
 - `apps/web/src/game/figure-cycle.ts`
 - `apps/web/src/game/figure-ik.ts`
 - `apps/web/src/game/figure-pose.ts`
@@ -570,7 +572,11 @@ Source files:
 - `apps/web/src/game/rider-drift.ts`
 - `apps/web/src/game/rider-fight.ts`
 - `apps/web/src/game/rider-figure.ts`
+- `apps/web/src/game/rider-figure.ts`
+- `apps/web/src/game/rider-figure.ts`
 - `apps/web/src/game/rider-moves.ts`
+- `apps/web/src/game/rider-views.ts`
+- `apps/web/src/game/rider-views.ts`
 - `apps/web/src/game/rider-views.ts`
 - `apps/web/src/game/strider.ts`
 
@@ -586,6 +592,8 @@ Test files:
 - `apps/web/test/rider-gait.test.ts`
 - `apps/web/test/rider-poses.test.ts`
 - `apps/web/test/rider-shade.ts`
+- `apps/web/test/seated-callers.test.ts`
+- `apps/web/test/seated-contacts.ts`
 
 ### Frame rate and quality
 
@@ -876,10 +884,12 @@ Booting the game module with a dynamic import, downloading and decoding the nine
 - Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/errors.md#asset-loading](errors.md#asset-loading)
 - Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
 - Perf: none yet
-- Owns: `apps/web/src/asset-*.ts`, `apps/web/src/assets/load.ts`, `apps/web/src/assets/model-*.ts`, `apps/web/src/assets/font-readiness-failed.ts`, `apps/web/src/game/assets.ts`, `apps/web/src/game/model-slots.ts`, `apps/web/test/asset-load.test.ts`, `apps/web/test/celebrity-load.test.ts`, `apps/web/test/model-slots.test.ts`, `apps/web/test/node-images.ts`, `apps/web/test/pinned-assets.ts`
+- Owns: `apps/web/src/asset-*.ts`, `apps/web/src/assets/load.ts`, `apps/web/src/assets/model-*.ts`, `apps/web/src/assets/font-readiness-failed.ts`, `apps/web/src/game/assets.ts`, `apps/web/src/game/model-slots.ts`, `apps/web/test/asset-load.test.ts`, `apps/web/test/asset-summary.ts`, `apps/web/test/celebrity-load.test.ts`, `apps/web/test/model-slots.test.ts`, `apps/web/test/node-images.ts`, `apps/web/test/pinned-assets.ts`
 
 Source files:
 
+- `apps/web/src/asset-load.ts`
+- `apps/web/src/asset-load.ts`
 - `apps/web/src/asset-load.ts`
 - `apps/web/src/asset-runtime.ts`
 - `apps/web/src/assets/font-readiness-failed.ts`
@@ -889,14 +899,23 @@ Source files:
 - `apps/web/src/assets/model-response-rejected.ts`
 - `apps/web/src/assets/model-urls.ts`
 - `apps/web/src/game/assets.ts`
+- `apps/web/src/game/assets.ts`
+- `apps/web/src/game/assets.ts`
 - `apps/web/src/game/model-slots.ts`
 
 Test files:
 
 - `apps/web/test/asset-load.test.ts`
+- `apps/web/test/asset-load.test.ts`
+- `apps/web/test/asset-load.test.ts`
+- `apps/web/test/asset-summary.ts`
+- `apps/web/test/celebrity-load.test.ts`
+- `apps/web/test/celebrity-load.test.ts`
 - `apps/web/test/celebrity-load.test.ts`
 - `apps/web/test/model-slots.test.ts`
 - `apps/web/test/node-images.ts`
+- `apps/web/test/pinned-assets.ts`
+- `apps/web/test/pinned-assets.ts`
 - `apps/web/test/pinned-assets.ts`
 
 ### Game art store
@@ -1243,7 +1262,7 @@ Test files:
 - Docs: [docs/observability.md#frame-profiles](observability.md#frame-profiles), [docs/standards/tooling.md#the-checks](standards/tooling.md#the-checks)
 - Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
 - Perf: none yet
-- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/room.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/load.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/gpu*.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane*.ts`, `tools/perf/src/node-room.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/bench-queue*.ts`, `tools/perf/test/load.test.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu-page.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`, `tools/perf/test/stamp-guard.test.ts`
+- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/room.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/load.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/gpu*.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane*.ts`, `tools/perf/src/node-room.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/bench-queue*.ts`, `tools/perf/test/load.test.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu-page.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`, `tools/perf/test/stamp-guard.test.ts`, `tools/perf/test/steady.test.ts`
 
 Source files:
 
@@ -1298,6 +1317,7 @@ Test files:
 - `tools/perf/test/measure-page.test.ts`
 - `tools/perf/test/red-cases.ts`
 - `tools/perf/test/stamp-guard.test.ts`
+- `tools/perf/test/steady.test.ts`
 
 ### Lint plugins
 
@@ -1391,6 +1411,8 @@ Test files:
 - `tools/oxlint/test/no-distance-hide.test.ts`
 - `tools/oxlint/test/no-entries-loop.test.ts`
 - `tools/oxlint/test/no-hot-allocation.test.ts`
+- `tools/oxlint/test/no-hot-allocation.test.ts`
+- `tools/oxlint/test/no-hot-allocation.test.ts`
 - `tools/oxlint/test/no-page-move.test.ts`
 - `tools/oxlint/test/no-top-level-await.test.ts`
 - `tools/oxlint/test/numeric-draw-sort.test.ts`
@@ -1434,6 +1456,8 @@ Source files:
 - `scripts/git-files.ts`
 - `scripts/node-error.ts`
 - `scripts/platform-features.ts`
+- `scripts/player-features.ts`
+- `scripts/player-features.ts`
 - `scripts/player-features.ts`
 - `scripts/postcss-tokenize.d.ts`
 - `scripts/renderer-imports.ts`

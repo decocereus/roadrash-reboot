@@ -58,7 +58,7 @@ interface Body {
 }
 
 interface MemberParts {
-  readonly bikes: Pick<Bikes, "roots" | "show" | "spin">;
+  readonly bikes: Pick<Bikes, "fits" | "roots" | "show" | "spin">;
   readonly firstBike: number;
   readonly rider: LobbyRider;
   readonly seat: Pick<
@@ -305,7 +305,8 @@ export const createMembers = ({
       for (let index = 0; index < bodies.length; index += 1) {
         const body = bodies[index];
         const bike = bikes.roots[firstBike + index];
-        if (body && body.presence.phase !== "vacant" && bike) {
+        const fit = bikes.fits[firstBike + index];
+        if (body && body.presence.phase !== "vacant" && bike && fit) {
           const { shoving, walk } = body.presence;
           walkers
             .at(index)
@@ -313,6 +314,7 @@ export const createMembers = ({
               { place: walk.place, pose: walk.pose, shoving },
               body.view,
               bike,
+              fit,
               now,
               seconds,
               camera,

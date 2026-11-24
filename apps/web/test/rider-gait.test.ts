@@ -376,6 +376,7 @@ describe("riders on foot", () => {
     const corrected: RoomWalked = { ...heard, x: CORRECTION };
     const members = createMembers({
       bikes: {
+        fits: riderBlocks.map(() => assets.bikes.seraph.fit),
         roots: riderBlocks.map(() => new THREE.Object3D()),
         show: vi.fn<(index: number) => void>(),
         spin: vi.fn<(index: number, distance: number) => void>(),

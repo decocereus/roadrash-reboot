@@ -185,7 +185,10 @@ export const hotBodies = {
   ],
   "apps/web/src/game/input.ts": [["createControls", "read"]],
   "apps/web/src/game/presets.ts": [["bindQuality", "noteDisplay"]],
-  "apps/web/src/game/rider-figure.ts": [["createRiderFigure", "onFoot"]],
+  "apps/web/src/game/rider-figure.ts": [
+    ["createRiderFigure", "mount"],
+    ["createRiderFigure", "onFoot"],
+  ],
   "apps/web/src/game/strider.ts": [
     ["clipTime"],
     ["phaseRate"],

@@ -10,6 +10,7 @@ import * as THREE from "three";
 import type { BarSpot } from "../bar-view.ts";
 import type { BikeRider, Bikes } from "./actors.ts";
 import type { Tag, TagLayer } from "./bar-tags.ts";
+import type { BikeFit } from "./bike-fit.ts";
 import { bikeModelOf } from "./bike-models.ts";
 
 const RESTING_YAW = 2.61;
@@ -45,6 +46,7 @@ type ViewSize = Parameters<Tag["set"]>[2];
 
 export interface GarageCorner {
   readonly mount: THREE.Object3D;
+  readonly fit: () => BikeFit;
   readonly isOpen: () => boolean;
   readonly set: (next: StandView) => void;
   readonly turn: (pixels: number) => void;
@@ -83,6 +85,9 @@ export const createGarageCorner = (
     view = next;
   };
 
+  const shownSlot = (): number =>
+    FIRST_STAND_BIKE + bikeIds.indexOf(view.bikeId);
+
   const touring = (seconds: number, frame: number): void => {
     if (tourFrom === null) {
       return;
@@ -93,6 +98,13 @@ export const createGarageCorner = (
   };
 
   return {
+    fit() {
+      const fit = bikes.fits[shownSlot()];
+      if (!fit) {
+        throw new Error(`The garage has no bike for ${view.bikeId}.`);
+      }
+      return fit;
+    },
     isOpen: () => view.open,
     listen(next) {
       listener = next;
@@ -118,7 +130,7 @@ export const createGarageCorner = (
       const turned = yaw - sway;
       mount.rotation.y =
         sway + (turned - Math.round(turned / TAU) * TAU) * shown;
-      const slot = FIRST_STAND_BIKE + bikeIds.indexOf(view.bikeId);
+      const slot = shownSlot();
       const bike = bikes.roots[slot];
       if (bike) {
         bike.position.copy(mount.position);

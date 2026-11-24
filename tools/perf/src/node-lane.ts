@@ -14,6 +14,7 @@ import {
   CALIBRATION_ROUNDS,
   CALIBRATION_VERSION,
   childRecord,
+  TIMED_WINDOWS,
 } from "./node.ts";
 import type { ChildRecord } from "./node.ts";
 import { median, quantile } from "./result.ts";
@@ -324,6 +325,12 @@ const workloadFailures = (
     if (!record.rows) {
       return [`${where} wrote no workload rows`];
     }
+    if (
+      (record.task === "time" || record.task === "alloc") &&
+      (record.warmup?.length ?? 0) < 2
+    ) {
+      return [`${where} wrote no settled warm-up windows`];
+    }
     const problem = validateWorkload(scenario, record.rows);
     return problem
       ? [
@@ -413,7 +420,9 @@ const timingOf = (record: ChildRecord): RunTiming => {
     p95: quantile(sorted, 0.95),
     p99: quantile(sorted, 0.99),
     ticksPerSecond:
-      durations.length === WINDOW_TICKS ? 1000 / mean(durations) : Number.NaN,
+      durations.length === WINDOW_TICKS * TIMED_WINDOWS
+        ? 1000 / mean(durations)
+        : Number.NaN,
   };
 };
 
@@ -562,6 +571,27 @@ const roomObservations = (
     ),
     allocated("room.frame.allocatedBytesPerTick", (run) => run.allocated.frame),
   ];
+};
+
+export const coldLine = (
+  scenario: Scenario,
+  lane: NodeLane,
+  scales: readonly number[]
+): string => {
+  const side = (pick: (pair: NodePair) => NodeSample) => {
+    const cold = lane.timing.map(
+      (pair, index) =>
+        (pick(pair).record.warmup?.[0]?.p99 ?? Number.NaN) /
+        (scales[index] ?? Number.NaN)
+    );
+    const windows = lane.timing.map(
+      (pair) => pick(pair).record.warmup?.length ?? 0
+    );
+    return { cold: median(cold), windows: windows.join(",") };
+  };
+  const a = side((pair) => pair.a);
+  const b = side((pair) => pair.b);
+  return `info node ${scenario.id} cold.tick.p99 A=${a.cold.toPrecision(4)} ms B=${b.cold.toPrecision(4)} ms, the first window of a fresh process, calibrated, no budget; warm windows A=${a.windows} B=${b.windows}`;
 };
 
 export const nodeVerdicts = (

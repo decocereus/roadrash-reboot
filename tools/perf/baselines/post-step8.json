@@ -3776,6 +3776,86 @@
       "side": "B",
       "source": "baseline-2026-11-23T10-29-05-736Z-68344ba-68344ba",
       "value": 3602412
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-23T15-15-41-219Z-9f67ba9-ae99aa4",
+      "value": 43063.20133111481
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-23T15-15-41-219Z-9f67ba9-ae99aa4",
+      "value": 56992.74542429284
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-23T15-33-42-887Z-9f67ba9-ae99aa4",
+      "value": 42660.31281198003
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-23T15-33-42-887Z-9f67ba9-ae99aa4",
+      "value": 57181.11148086523
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-23T15-41-07-855Z-9f67ba9-ae99aa4",
+      "value": 43437.24459234609
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-23T15-41-07-855Z-9f67ba9-ae99aa4",
+      "value": 57591.92013311148
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-23T15-48-10-456Z-9f67ba9-ae99aa4",
+      "value": 43197.257903494174
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-23T15-48-10-456Z-9f67ba9-ae99aa4",
+      "value": 57259.10149750416
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-23T15-55-13-698Z-9f67ba9-ae99aa4",
+      "value": 43334.57570715474
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-23T15-55-13-698Z-9f67ba9-ae99aa4",
+      "value": 57087.28119800333
     }
   ],
   "revisions": {
@@ -5457,6 +5537,161 @@
       "sides": {
         "A": "68344ba033261b33f2ebf8aed435d6a2f23bc527",
         "B": "68344ba033261b33f2ebf8aed435d6a2f23bc527"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, lane scale reference-v1 0.7750, pack-riding-v1 0.7780",
+        "cpu": "Intel(R) Xeon(R) 6975P-C",
+        "cpus": "4",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "harnessDigest": "a6357f55eae0e969d396815fe3ed5411334efc886f4854be6bbc12d624ba71b4",
+        "memoryBytes": "16464306176",
+        "node": "v26.13.0",
+        "platform": "linux",
+        "sideASourceDigest": "854207074dc0fc27efb5e17c85462ecbe045dc5294b2fb2bbd050380150da011",
+        "sideBSourceDigest": "1bb1fc5e4929e426c4479953dd1b6ceb6b9b50e35b9ecf3bce65a9d0620b4a8b",
+        "v8": "14.6.202.34-node.40",
+        "wallMs": "{\"build\":3725,\"materialize\":9025,\"node\":330721,\"total\":343725}",
+        "machine": "GitHub-hosted runner, Intel(R) Xeon(R) 6975P-C",
+        "os": "Ubuntu 24.04, runner image ubuntu-24.04",
+        "ci": "GitHub Actions run 45203063160 attempt 1 (perf), pull_request event on PR #229",
+        "checkout": "the pull request merge of d605af96 into main",
+        "command": "node tools/perf/gate.ts, the perf job's ordinary run",
+        "artifact": "perf-results 14832957548",
+        "why": "one of the first five runs on an Intel Xeon 6975P-C under the steady-state warm-up; the Linux sim.allocatedBytesPerTick limits take the median of the five"
+      },
+      "id": "gate-2026-11-23T15-15-41-219Z-9f67ba9-ae99aa4",
+      "lanes": ["node"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "ae99aa48d5b8130be171980bfc01faa9d47592fa"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, lane scale reference-v1 0.7710, pack-riding-v1 0.7710",
+        "cpu": "Intel(R) Xeon(R) 6975P-C",
+        "cpus": "4",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "harnessDigest": "a6357f55eae0e969d396815fe3ed5411334efc886f4854be6bbc12d624ba71b4",
+        "memoryBytes": "16464297984",
+        "node": "v26.13.0",
+        "platform": "linux",
+        "sideASourceDigest": "854207074dc0fc27efb5e17c85462ecbe045dc5294b2fb2bbd050380150da011",
+        "sideBSourceDigest": "1bb1fc5e4929e426c4479953dd1b6ceb6b9b50e35b9ecf3bce65a9d0620b4a8b",
+        "v8": "14.6.202.34-node.40",
+        "wallMs": "{\"build\":3619,\"materialize\":8626,\"node\":325396,\"total\":337889}",
+        "machine": "GitHub-hosted runner, Intel(R) Xeon(R) 6975P-C",
+        "os": "Ubuntu 24.04, runner image ubuntu-24.04",
+        "ci": "GitHub Actions run 45203063160 attempt 3 (perf), pull_request event on PR #229",
+        "checkout": "the pull request merge of d605af96 into main",
+        "command": "node tools/perf/gate.ts, the perf job's ordinary run",
+        "artifact": "perf-results 14833523486",
+        "why": "one of the first five runs on an Intel Xeon 6975P-C under the steady-state warm-up; the Linux sim.allocatedBytesPerTick limits take the median of the five"
+      },
+      "id": "gate-2026-11-23T15-33-42-887Z-9f67ba9-ae99aa4",
+      "lanes": ["node"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "ae99aa48d5b8130be171980bfc01faa9d47592fa"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, lane scale reference-v1 0.7770, pack-riding-v1 0.7740",
+        "cpu": "Intel(R) Xeon(R) 6975P-C",
+        "cpus": "4",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "harnessDigest": "a6357f55eae0e969d396815fe3ed5411334efc886f4854be6bbc12d624ba71b4",
+        "memoryBytes": "16464302080",
+        "node": "v26.13.0",
+        "platform": "linux",
+        "sideASourceDigest": "854207074dc0fc27efb5e17c85462ecbe045dc5294b2fb2bbd050380150da011",
+        "sideBSourceDigest": "1bb1fc5e4929e426c4479953dd1b6ceb6b9b50e35b9ecf3bce65a9d0620b4a8b",
+        "v8": "14.6.202.34-node.40",
+        "wallMs": "{\"build\":3690,\"materialize\":9666,\"node\":328978,\"total\":342544}",
+        "machine": "GitHub-hosted runner, Intel(R) Xeon(R) 6975P-C",
+        "os": "Ubuntu 24.04, runner image ubuntu-24.04",
+        "ci": "GitHub Actions run 45203063160 attempt 4 (perf), pull_request event on PR #229",
+        "checkout": "the pull request merge of d605af96 into main",
+        "command": "node tools/perf/gate.ts, the perf job's ordinary run",
+        "artifact": "perf-results 14835457056",
+        "why": "one of the first five runs on an Intel Xeon 6975P-C under the steady-state warm-up; the Linux sim.allocatedBytesPerTick limits take the median of the five"
+      },
+      "id": "gate-2026-11-23T15-41-07-855Z-9f67ba9-ae99aa4",
+      "lanes": ["node"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "ae99aa48d5b8130be171980bfc01faa9d47592fa"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, lane scale reference-v1 0.7740, pack-riding-v1 0.7730",
+        "cpu": "Intel(R) Xeon(R) 6975P-C",
+        "cpus": "4",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "harnessDigest": "a6357f55eae0e969d396815fe3ed5411334efc886f4854be6bbc12d624ba71b4",
+        "memoryBytes": "16464302080",
+        "node": "v26.13.0",
+        "platform": "linux",
+        "sideASourceDigest": "854207074dc0fc27efb5e17c85462ecbe045dc5294b2fb2bbd050380150da011",
+        "sideBSourceDigest": "1bb1fc5e4929e426c4479953dd1b6ceb6b9b50e35b9ecf3bce65a9d0620b4a8b",
+        "v8": "14.6.202.34-node.40",
+        "wallMs": "{\"build\":3725,\"materialize\":9528,\"node\":328873,\"total\":342365}",
+        "machine": "GitHub-hosted runner, Intel(R) Xeon(R) 6975P-C",
+        "os": "Ubuntu 24.04, runner image ubuntu-24.04",
+        "ci": "GitHub Actions run 45203063160 attempt 5 (perf), pull_request event on PR #229",
+        "checkout": "the pull request merge of d605af96 into main",
+        "command": "node tools/perf/gate.ts, the perf job's ordinary run",
+        "artifact": "perf-results 14834678292",
+        "why": "one of the first five runs on an Intel Xeon 6975P-C under the steady-state warm-up; the Linux sim.allocatedBytesPerTick limits take the median of the five"
+      },
+      "id": "gate-2026-11-23T15-48-10-456Z-9f67ba9-ae99aa4",
+      "lanes": ["node"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "ae99aa48d5b8130be171980bfc01faa9d47592fa"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, lane scale reference-v1 0.7720, pack-riding-v1 0.7710",
+        "cpu": "Intel(R) Xeon(R) 6975P-C",
+        "cpus": "4",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "harnessDigest": "a6357f55eae0e969d396815fe3ed5411334efc886f4854be6bbc12d624ba71b4",
+        "memoryBytes": "16464306176",
+        "node": "v26.13.0",
+        "platform": "linux",
+        "sideASourceDigest": "854207074dc0fc27efb5e17c85462ecbe045dc5294b2fb2bbd050380150da011",
+        "sideBSourceDigest": "1bb1fc5e4929e426c4479953dd1b6ceb6b9b50e35b9ecf3bce65a9d0620b4a8b",
+        "v8": "14.6.202.34-node.40",
+        "wallMs": "{\"build\":3738,\"materialize\":8610,\"node\":327167,\"total\":339795}",
+        "machine": "GitHub-hosted runner, Intel(R) Xeon(R) 6975P-C",
+        "os": "Ubuntu 24.04, runner image ubuntu-24.04",
+        "ci": "GitHub Actions run 45203063160 attempt 6 (perf), pull_request event on PR #229",
+        "checkout": "the pull request merge of d605af96 into main",
+        "command": "node tools/perf/gate.ts, the perf job's ordinary run",
+        "artifact": "perf-results 14837011165",
+        "why": "one of the first five runs on an Intel Xeon 6975P-C under the steady-state warm-up; the Linux sim.allocatedBytesPerTick limits take the median of the five"
+      },
+      "id": "gate-2026-11-23T15-55-13-698Z-9f67ba9-ae99aa4",
+      "lanes": ["node"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "ae99aa48d5b8130be171980bfc01faa9d47592fa"
       }
     }
   ],

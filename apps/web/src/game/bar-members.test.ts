@@ -10,6 +10,15 @@ import { describe, expect, it, vi } from "vitest";
 import { createMembers } from "./bar-members.ts";
 import type { BarSpeech } from "./bar-speech.ts";
 import type { BarWalker } from "./bar-walker.ts";
+import type { BikeFit } from "./bike-fit.ts";
+
+const seatedFit = (): BikeFit => ({
+  foot_l: new THREE.Vector3(-0.2, 0.4, 0.2),
+  foot_r: new THREE.Vector3(0.2, 0.4, 0.2),
+  hand_l: new THREE.Vector3(-0.3, 0.95, -0.37),
+  hand_r: new THREE.Vector3(0.3, 0.95, -0.37),
+  seat: new THREE.Vector3(0, 0.9, 0.36),
+});
 
 const FRAME = 1 / 8;
 const BLINK = 1 / 6000;
@@ -84,6 +93,7 @@ const room = ({ lobby, phase, walkOf }: Heard) => {
   const rider = createLobbyRider();
   const members = createMembers({
     bikes: {
+      fits: riderBlocks.map(() => seatedFit()),
       roots: riderBlocks.map(() => new THREE.Object3D()),
       show: showBike,
       spin: vi.fn<(index: number, distance: number) => void>(),
