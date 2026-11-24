@@ -223,6 +223,7 @@ const createWatches = (ledger: Ledger) => {
     let missed = 0;
     for (let index = seen.casting; index < seen.before; index += 1) {
       seen.mesh.getMatrixAt(index, matrix);
+      matrix.premultiply(seen.mesh.matrixWorld);
       if (
         box.intersectsSphere(sphere.copy(bounds).applyMatrix4(matrix)) &&
         vertexInBox(seen)
@@ -291,6 +292,7 @@ const createWatches = (ledger: Ledger) => {
         index += 1
       ) {
         seen.mesh.getMatrixAt(index, matrix);
+        matrix.premultiply(seen.mesh.matrixWorld);
         at.setFromMatrixPosition(matrix);
         const onScreen = view.intersectsSphere(sphere.set(at, 1));
         if (
