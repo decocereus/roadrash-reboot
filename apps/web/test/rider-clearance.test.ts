@@ -1,10 +1,13 @@
+import { GARAGE_PLINTH } from "@racer/sim/lobby-floor";
 import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
 import { modelUrls } from "../src/assets/model-urls.ts";
 import { assetParsers } from "../src/game/assets.ts";
 import type { BikeModel } from "../src/game/assets.ts";
+import { FOV, GARAGE_SHOT } from "../src/game/bar-camera.ts";
 import { BIKE_TURN } from "../src/game/bike-fit.ts";
+import type { BikeFit } from "../src/game/bike-fit.ts";
 import { bikeModelIds } from "../src/game/bike-models.ts";
 import type { BikeModelId } from "../src/game/bike-models.ts";
 import { createShading } from "../src/game/cel.ts";
@@ -22,8 +25,10 @@ const SETTLED = 1;
 const SETTLE_STEPS = 8;
 const RIDING_SPEED = 30;
 const FLAT = 1e-6;
+const SCREEN_ROWS = 1080;
+const SEEN_PIXELS = 2;
 
-const upperBody: ReadonlySet<string> = new Set([
+const torso: ReadonlySet<string> = new Set([
   "spine_01",
   "spine_02",
   "spine_03",
@@ -31,6 +36,9 @@ const upperBody: ReadonlySet<string> = new Set([
   "head",
   "clavicle_l",
   "clavicle_r",
+]);
+
+const arms: ReadonlySet<string> = new Set([
   "upperarm_l",
   "upperarm_r",
   "lowerarm_l",
@@ -193,7 +201,7 @@ const ridden = async (url: string, model: BikeModelId) => {
     }
     return { gap, where };
   };
-  return { figure, lowest };
+  return { figure, fit: bike.fit, lowest };
 };
 
 const riderUrls = [
@@ -207,15 +215,37 @@ const pairs = riderUrls.flatMap((url) =>
 
 const millimetres = (metres: number) => `${(metres * 1000).toFixed(0)} mm`;
 
+const hiddenArmSink = ({ hand_l: grip }: BikeFit): number => {
+  const across =
+    Math.hypot(GARAGE_SHOT.eyeX, GARAGE_SHOT.eyeZ) - Math.hypot(grip.x, grip.z);
+  const up = GARAGE_SHOT.eyeY - GARAGE_PLINTH.height - grip.y;
+  const rowHeight =
+    (2 *
+      Math.hypot(across, up) *
+      Math.tan(THREE.MathUtils.degToRad(FOV.garage) / 2)) /
+    SCREEN_ROWS;
+  return SEEN_PIXELS * rowHeight;
+};
+
 describe("rider clearance against the bike's own triangles", () => {
   it.each(pairs)(
     "%s on the %s keeps the upper body out of the bike in every riding pose",
     async (url, model) => {
-      const { figure, lowest } = await ridden(url, model);
-      const sunk = riding.flatMap(([name, stance]) => {
-        const { gap, where } = lowest(stance, upperBody);
-        return gap < -SINK ? [`${name}: ${where} ${millimetres(gap)}`] : [];
-      });
+      const { fit, figure, lowest } = await ridden(url, model);
+      const armSink = hiddenArmSink(fit);
+      const sunk = riding.flatMap(([name, stance]) =>
+        (
+          [
+            [torso, SINK],
+            [arms, armSink],
+          ] as const
+        ).flatMap(([bones, allowed]) => {
+          const { gap, where } = lowest(stance, bones);
+          return gap < -allowed
+            ? [`${name}: ${where} ${millimetres(gap)}`]
+            : [];
+        })
+      );
       figure.dispose();
       expect(sunk).toStrictEqual([]);
     }
