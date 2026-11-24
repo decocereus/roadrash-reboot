@@ -3,16 +3,21 @@ import { describe, expect, it } from "vitest";
 
 import { modelUrls } from "../src/assets/model-urls.ts";
 import { assetParsers } from "../src/game/assets.ts";
+import { contactNames } from "../src/game/bike-fit.ts";
+import type { BikeFit, ContactName } from "../src/game/bike-fit.ts";
+import { bikeModelIds } from "../src/game/bike-models.ts";
+import type { BikeModelId } from "../src/game/bike-models.ts";
 import { createShading } from "../src/game/cel.ts";
+import { contactsOf } from "../src/game/figure-contacts.ts";
 import { paletteOf } from "../src/game/figure-rig.ts";
 import { lookOf } from "../src/game/looks.ts";
 import { createRiderFigure } from "../src/game/rider-figure.ts";
-import type { RiderFigure, Stance } from "../src/game/rider-figure.ts";
+import type { Stance } from "../src/game/rider-figure.ts";
 import { artFile } from "./art-files.ts";
+import { bodyOf, placesOf } from "./seated-contacts.ts";
 
 const CONTACT = 0.005;
 const FREE = 0.2;
-const PALM = new THREE.Vector3(0, 0.055, 0);
 const SETTLED = 1;
 const FRAME = 1 / 60;
 const CORNER_FRAMES = 240;
@@ -23,11 +28,11 @@ const KNEE_OUT = 0.08;
 const RIDING_SPEED = 30;
 const WALKING_SPEED = 5;
 const SEATED_FRAMES = 30;
+const ELBOW_BEND = THREE.MathUtils.degToRad(20);
 
 const shading = createShading(lookOf("salt-coast"));
 
-const contacts = ["hand_l", "hand_r", "foot_l", "foot_r"] as const;
-type Contact = (typeof contacts)[number];
+type Contact = ContactName;
 
 interface Held {
   readonly name: string;
@@ -98,7 +103,56 @@ const held: readonly Held[] = [
     name: "swing right",
     stance: { pose: "swing", reach: 1, side: 1 },
   },
+  {
+    free: ["foot_l"],
+    name: "kick left while hanging right",
+    stance: {
+      lean: 1,
+      pose: "kick",
+      reach: 1,
+      rise: 1,
+      side: -1,
+      speed: RIDING_SPEED,
+    },
+  },
+  {
+    free: ["foot_r"],
+    name: "kick right while hanging left",
+    stance: {
+      lean: -1,
+      pose: "kick",
+      reach: 1,
+      rise: 1,
+      side: 1,
+      speed: RIDING_SPEED,
+    },
+  },
 ];
+
+const strikes = [
+  { limb: "hand", pose: "punch", rise: 0 },
+  { limb: "hand", pose: "windup", rise: 0 },
+  { limb: "hand", pose: "swing", rise: 0 },
+  { limb: "hand", pose: "swung", rise: 0 },
+  { limb: "foot", pose: "kick", rise: 1 },
+] as const;
+
+const sides = [
+  { name: "left", side: -1, tag: "l" },
+  { name: "right", side: 1, tag: "r" },
+] as const;
+
+const struckInLeans: readonly Held[] = strikes.flatMap(({ limb, pose, rise }) =>
+  sides.flatMap(({ name, side, tag }) =>
+    [-1, -0.65, 0.65, 1].flatMap((lean) =>
+      [0, 1].map((tuck): Held => ({
+        free: [`${limb}_${tag}`],
+        name: `${pose} ${name} at lean ${lean}${tuck === 1 ? " tucked" : ""}`,
+        stance: { lean, pose, reach: 1, rise, side, speed: RIDING_SPEED, tuck },
+      }))
+    )
+  )
+);
 
 const stanceOf = (stance: Partial<Stance>): Stance => ({
   flinch: 0,
@@ -115,28 +169,21 @@ const stanceOf = (stance: Partial<Stance>): Stance => ({
   ...stance,
 });
 
-const figureOf = async (url: string): Promise<RiderFigure> => {
-  const { value } = await assetParsers.rider(artFile(url), url);
-  return createRiderFigure(value, shading, paletteOf(0));
+const fitOf = async (model: BikeModelId): Promise<BikeFit> => {
+  const url = modelUrls.bikes[model];
+  const { value } = await assetParsers.bike(artFile(url), url);
+  return value.fit;
 };
 
-const placesOf = (figure: RiderFigure) => {
+const bike = new THREE.Object3D();
+
+const mountedOf = async (url: string, fit: BikeFit) => {
+  const { value } = await assetParsers.rider(artFile(url), url);
+  const figure = createRiderFigure(value, shading, paletteOf(0));
+  figure.mount(bike, fit, 0);
+  figure.animate(stanceOf({}), SETTLED);
   figure.root.updateMatrixWorld(true);
-  const placed = (contact: Contact) => {
-    const bone = figure.root.getObjectByName(contact);
-    if (!bone) {
-      throw new Error(`The rider has no ${contact} bone.`);
-    }
-    return bone.localToWorld(
-      contact.startsWith("hand") ? PALM.clone() : new THREE.Vector3()
-    );
-  };
-  return {
-    foot_l: placed("foot_l"),
-    foot_r: placed("foot_r"),
-    hand_l: placed("hand_l"),
-    hand_r: placed("hand_r"),
-  };
+  return { contacts: contactsOf(bodyOf(figure.root), figure.root), figure };
 };
 
 const tuckedCorner = Array.from(
@@ -156,24 +203,38 @@ const kickLanding: readonly Partial<Stance>[] = [
   ...Array.from({ length: SEATED_FRAMES }, () => ({})),
 ];
 
+const kickAgainstLean: readonly Partial<Stance>[] = [
+  0, 0.16, 0.36, 0.64, 0.84, 1, 1, 0.84, 0.64, 0.36, 0.16, 0,
+].map((rise) => ({
+  lean: 1,
+  pose: "kick",
+  reach: rise,
+  rise,
+  side: -1,
+  speed: RIDING_SPEED,
+}));
+
 const riderUrls = [
   ...modelUrls.figures,
   ...Object.values(modelUrls.celebrities),
 ];
 
-describe("planted hands and feet on every shipped rider", () => {
-  it.each(riderUrls)(
-    "%s keeps each planted palm on its grip and each foot on its peg",
-    async (url) => {
-      const figure = await figureOf(url);
-      figure.animate(stanceOf({}), SETTLED);
-      const grips = placesOf(figure);
+const pairs = riderUrls.flatMap((url) =>
+  bikeModelIds.map((model) => [url, model] as const)
+);
+
+describe("planted hands and feet on every shipped rider and bike", () => {
+  it.each(pairs)(
+    "%s on the %s keeps each planted palm on its grip and each sole on its peg",
+    async (url, model) => {
+      const fit = await fitOf(model);
+      const { contacts, figure } = await mountedOf(url, fit);
       const misses: string[] = [];
-      for (const { free, name, stance } of held) {
+      for (const { free, name, stance } of [...held, ...struckInLeans]) {
         figure.animate(stanceOf(stance), SETTLED);
-        const places = placesOf(figure);
-        for (const contact of contacts) {
-          const off = places[contact].distanceTo(grips[contact]);
+        const places = placesOf(figure.root, contacts);
+        for (const contact of contactNames) {
+          const off = places[contact].distanceTo(fit[contact]);
           const loose = free.includes(contact);
           if (loose ? off < FREE : off > CONTACT) {
             misses.push(`${name} ${contact} ${(off * 1000).toFixed(1)} mm`);
@@ -185,40 +246,67 @@ describe("planted hands and feet on every shipped rider", () => {
     }
   );
 
-  it.each(
-    riderUrls.flatMap((url) => [
-      [url, "a tucked corner", tuckedCorner] as const,
-      [url, "a kick dropping back to the seat", kickLanding] as const,
-    ])
-  )("%s keeps both palms on the grips through %s", async (url, _, frames) => {
-    const figure = await figureOf(url);
-    figure.animate(stanceOf({}), SETTLED);
-    const grips = placesOf(figure);
-    figure.animate(stanceOf(frames[0] ?? {}), SETTLED);
-    let worst = 0;
-    for (const frame of frames) {
-      figure.animate(stanceOf(frame), FRAME);
-      const places = placesOf(figure);
-      worst = Math.max(
-        worst,
-        places.hand_l.distanceTo(grips.hand_l),
-        places.hand_r.distanceTo(grips.hand_r)
-      );
+  it.each(pairs)(
+    "%s on the %s rides with both elbows bent",
+    async (url, model) => {
+      const { figure } = await mountedOf(url, await fitOf(model));
+      const at = (name: string) => {
+        const bone = figure.root.getObjectByName(name);
+        if (!bone) {
+          throw new Error(`The rider has no ${name} bone.`);
+        }
+        return bone.getWorldPosition(new THREE.Vector3());
+      };
+      const bends = (["l", "r"] as const).map((side) => {
+        const elbow = at(`lowerarm_${side}`);
+        return (
+          Math.PI -
+          at(`upperarm_${side}`)
+            .sub(elbow)
+            .angleTo(at(`hand_${side}`).sub(elbow))
+        );
+      });
+      figure.dispose();
+      expect(Math.min(...bends)).toBeGreaterThan(ELBOW_BEND);
     }
-    figure.dispose();
-    expect(worst).toBeLessThan(CONTACT);
-  });
+  );
 
   it.each(
-    riderUrls.flatMap((url) => [
-      [url, "calf_l", -1] as const,
-      [url, "calf_r", 1] as const,
+    pairs.flatMap(([url, model]) => [
+      [url, model, "a tucked corner", tuckedCorner] as const,
+      [url, model, "a kick dropping back to the seat", kickLanding] as const,
+      [url, model, "a kick against a hard lean", kickAgainstLean] as const,
     ])
   )(
-    "%s swings %s out in a lean and holds it still",
-    async (url, knee, lean) => {
-      const figure = await figureOf(url);
-      figure.animate(stanceOf({}), SETTLED);
+    "%s on the %s keeps both palms on the grips through %s",
+    async (url, model, _, frames) => {
+      const fit = await fitOf(model);
+      const { contacts, figure } = await mountedOf(url, fit);
+      figure.animate(stanceOf(frames[0] ?? {}), SETTLED);
+      let worst = 0;
+      for (const frame of frames) {
+        figure.animate(stanceOf(frame), FRAME);
+        const places = placesOf(figure.root, contacts);
+        worst = Math.max(
+          worst,
+          places.hand_l.distanceTo(fit.hand_l),
+          places.hand_r.distanceTo(fit.hand_r)
+        );
+      }
+      figure.dispose();
+      expect(worst).toBeLessThan(CONTACT);
+    }
+  );
+
+  it.each(
+    pairs.flatMap(([url, model]) => [
+      [url, model, "calf_l", -1] as const,
+      [url, model, "calf_r", 1] as const,
+    ])
+  )(
+    "%s on the %s swings %s out in a lean and holds it still",
+    async (url, model, knee, lean) => {
+      const { figure } = await mountedOf(url, await fitOf(model));
       const kneeAt = () => {
         figure.root.updateMatrixWorld(true);
         const bone = figure.root.getObjectByName(knee);

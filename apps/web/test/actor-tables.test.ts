@@ -188,7 +188,7 @@ const RESIZED = 1.2;
 const moveEveryWheel = (assets: Assets): Assets => {
   for (const bike of Object.values(assets.bikes)) {
     for (const part of ["wheel_f", "wheel_r"]) {
-      const primitives = bike.get(part) ?? [];
+      const primitives = bike.parts.get(part) ?? [];
       const tyre = new THREE.Box3();
       for (const { geometry, slot } of primitives) {
         geometry.computeBoundingBox();
