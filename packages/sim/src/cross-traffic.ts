@@ -200,20 +200,37 @@ const behindCars = (
   return limit;
 };
 
-const gapInTraffic = (
-  state: RaceState,
-  crossing: TrackCrossing,
-  car: CrossCar
-): boolean => {
+const pathOf = (car: CrossCar): readonly [number, number] => {
   const from = car.fromX + car.across * car.stopAt;
   const to =
     car.turnAt < Number.POSITIVE_INFINITY
       ? car.fromX + car.across * car.turnAt
       : car.fromX + car.across * car.endAt;
-  const low = Math.min(from, to);
-  const high = Math.max(from, to);
+  return [Math.min(from, to) - LANE_REACH, Math.max(from, to) + LANE_REACH];
+};
+
+const boxTaken = (
+  state: RaceState,
+  crossing: TrackCrossing,
+  car: CrossCar
+): boolean => {
+  const [low, high] = pathOf(car);
+  return state.cars.some(
+    (other) =>
+      other.x > low &&
+      other.x < high &&
+      Math.abs(other.s - crossing.s) < other.halfLength + crossing.boxHalfLength
+  );
+};
+
+const gapInTraffic = (
+  state: RaceState,
+  crossing: TrackCrossing,
+  car: CrossCar
+): boolean => {
+  const [low, high] = pathOf(car);
   for (const other of state.cars) {
-    if (other.x > low - LANE_REACH && other.x < high + LANE_REACH) {
+    if (other.x > low && other.x < high) {
       const toBox = (crossing.s - other.s) * Math.sign(other.cruiseSpeed);
       if (
         toBox > -BOX_MARGIN &&
@@ -232,7 +249,8 @@ const heldAtLine = (
   car: CrossCar
 ): boolean =>
   isSignalled(crossing)
-    ? crossLightOf(signalPhaseAt(crossing, state.tick)) !== "green"
+    ? crossLightOf(signalPhaseAt(crossing, state.tick)) !== "green" ||
+      boxTaken(state, crossing, car)
     : !gapInTraffic(state, crossing, car);
 
 const beforeLine = (state: RaceState, track: Track, car: CrossCar): number => {
