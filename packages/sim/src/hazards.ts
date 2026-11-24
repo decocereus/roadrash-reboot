@@ -4,7 +4,8 @@ import type { HazardKind } from "@racer/track/hazards";
 import { curvatureAt, slopeAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
-import { forwardRateOf } from "./rider-flight.ts";
+import { forwardRateAt } from "./rider-flight.ts";
+import type { Flight } from "./rider-flight.ts";
 import {
   BIKE_HALF_LENGTH,
   BIKE_HALF_WIDTH,
@@ -12,6 +13,7 @@ import {
   lateralSpeedLimit,
 } from "./state.ts";
 import type {
+  BikeSpec,
   CrashCause,
   Hazard,
   HazardEffect,
@@ -245,7 +247,7 @@ export const shoveOff = (
   reportHazard(state, rider, hazard, "stagger");
 };
 
-interface BikeBump {
+export interface BikeBump {
   readonly kick: number;
   readonly loss: number;
   readonly fastLoss: number;
@@ -259,28 +261,43 @@ export const ROCK_BUMP = {
   upset: 1,
 } as const satisfies BikeBump;
 
-export const rockUpsetShare = (speed: number): number => {
+const rockUpsetShare = (speed: number): number => {
   const ratio = speed / ROCK_UPSET_SPEED;
   return ROCK_UPSET * (ratio * ratio * ratio);
 };
 
+export const keptAfterBump = (blow: BikeBump, pace: number): number =>
+  1 - blow.loss - blow.fastLoss * Math.min(1, pace / ROCK_FAST);
+
+export const upsetOf = (bike: BikeSpec, blow: BikeBump, pace: number): number =>
+  blow.upset * lateralSpeedLimit(bike, pace) * rockUpsetShare(pace);
+
+export const knockSideOf = (lateralSpeed: number, x: number, from: number) =>
+  Math.sign(lateralSpeed) || Math.sign(x - from) || 1;
+
+interface Bumped extends Flight {
+  airborne: boolean;
+  speed: number;
+  lateralSpeed: number;
+}
+
 export const bumpBike = (
   track: Track,
-  rider: RiderState,
+  rider: Bumped,
   x: number,
   blow: BikeBump
 ): void => {
   const pace = rider.speed;
-  const upset =
-    blow.upset * lateralSpeedLimit(rider.bike, pace) * rockUpsetShare(pace);
-  const lean = Math.sign(rider.lateralSpeed) || Math.sign(rider.x - x) || 1;
-  rider.speed *= 1 - blow.loss - blow.fastLoss * Math.min(1, pace / ROCK_FAST);
+  const upset = upsetOf(rider.bike, blow, pace);
+  const lean = knockSideOf(rider.lateralSpeed, rider.x, x);
+  rider.speed *= keptAfterBump(blow, pace);
   rider.lateralSpeed += lean * upset;
   rider.airborne = true;
   rider.airTicks = 0;
   rider.verticalSpeed =
     blow.kick * pace +
-    slopeAt(track, rider.s) * forwardRateOf(rider, curvatureAt(track, rider.s));
+    slopeAt(track, rider.s) *
+      forwardRateAt(rider.speed, curvatureAt(track, rider.s), rider.x);
 };
 
 const bumpOver = (

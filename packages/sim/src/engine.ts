@@ -37,6 +37,9 @@ const peakPower = (): number => {
 
 const POWER_NORM = peakPower();
 
+export const strongestPull = (bike: BikeSpec, speed: number): number =>
+  Math.min(bike.launchAcceleration, bike.powerPerMass / Math.max(1, speed));
+
 const gearTop = (bike: BikeSpec, gear: number): number =>
   bike.gears[gear - 1] ?? bike.gears[0];
 
