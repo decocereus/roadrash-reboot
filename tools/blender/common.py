@@ -194,7 +194,6 @@ SHOW = "show" in ARGS
 
 
 HIP_ABOVE_SEAT = 0.105
-HIP_Z = 0.36
 
 
 def mirror(point, side):
@@ -212,10 +211,26 @@ def seat_top(rings, z):
     raise ValueError(f"No seat ring spans z = {z}.")
 
 
-def fit_points(seat_rings, grip, peg, peg_radius):
+def hip_height(seat_rings, hip_z):
+    return seat_top(seat_rings, hip_z) + HIP_ABOVE_SEAT
+
+
+def grip_at(seat_rings, hip_z, forward, up, inner=0.25, outer=0.355, sweep=0.037, drop=0.018):
+    """A grip tube whose axis centre sits `forward` ahead of the hip point and `up` above it."""
+    y, z = hip_height(seat_rings, hip_z) + up, hip_z - forward
+    return ((inner, y + drop / 2, z - sweep / 2), (outer, y - drop / 2, z + sweep / 2))
+
+
+def peg_at(seat_rings, hip_z, forward, up, radius, inner, outer):
+    """A peg whose top sits `forward` ahead of the hip point and `up` above it (negative: below)."""
+    y, z = hip_height(seat_rings, hip_z) + up - radius, hip_z - forward
+    return ((inner, y, z), (outer, y, z))
+
+
+def fit_points(seat_rings, hip_z, grip, peg, peg_radius):
     """Empties the game seats every rider by: the hip on the seat, each grip's axis centre and each peg's top."""
     peg_x, peg_y, peg_z = middle(*peg)
-    points = {"fit_seat": (0, seat_top(seat_rings, HIP_Z) + HIP_ABOVE_SEAT, HIP_Z)}
+    points = {"fit_seat": (0, hip_height(seat_rings, hip_z), hip_z)}
     for side, s in (("l", 1), ("r", -1)):
         points[f"fit_grip_{side}"] = mirror(middle(*grip), s)
         points[f"fit_peg_{side}"] = mirror((peg_x, peg_y + peg_radius, peg_z), s)

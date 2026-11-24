@@ -3,11 +3,34 @@ import math
 import bpy
 import bmesh
 from mathutils import Vector, Matrix
-from common import B, MI, box, tube, lathe, ring_loft, finish, mirror
+from common import B, MI, box, tube, lathe, ring_loft, finish, mirror, grip_at, peg_at
 
-GRIP = ((.25, .963, -.387), (.355, .936, -.35))
-PEG = ((.14, .40, .20), (.24, .40, .20))
+SEAT=[(.00,[(0,.80),(.09,.80),(.122,.78),(.11,.745),(0,.74)]),
+      (.20,[(0,.79),(.11,.79),(.143,.77),(.125,.735),(0,.73)]),
+      (.51,[(0,.83),(.10,.82),(.13,.79),(.12,.75),(0,.745)])]
 PEG_RADIUS = .017
+# Where each bike seats its rider: the hip point's author z, then each grip's axis centre and each peg's top
+# as (metres forward of the hip point, metres above it), from the posture report's per-mesh targets.
+STATIONS = {
+    "seraph": {"hip_z": .22, "grip": (.55, -.025), "peg": (.03, -.55)},
+    "ghost": {"hip_z": .22, "grip": (.56, -.045), "peg": (.02, -.545)},
+    "oni": {"hip_z": .22, "grip": (.60, -.005), "peg": (.06, -.545)},
+}
+
+
+def grip(style):
+    station = STATIONS[style]
+    return grip_at(SEAT, station["hip_z"], *station["grip"])
+
+
+def peg(style):
+    station = STATIONS[style]
+    return peg_at(SEAT, station["hip_z"], *station["peg"], PEG_RADIUS, .14, .24)
+
+
+def fork_z(y):
+    """Author z of the fork tube's axis at height y."""
+    return -.584 + (y - .55) / .42 * .172
 
 
 def linear(hex_colour):
@@ -118,16 +141,20 @@ def mechanics(style):
     for s in (-1,1):
         tube(bm,[(s*.105,.293,-.69),(s*.105,.58,-.572)],[.023],"metal",n=12)
         tube(bm,[(s*.105,.55,-.584),(s*.105,.97,-.412)],[.031],"gold" if style!="oni" else "metal",n=12)
-        tube(bm,[(s*.105,.97,-.412),(s*.24,.965,-.39),(s*.34,.94,-.355)],[.013],"dark",n=8)
-        tube(bm,[mirror(p,s) for p in GRIP],[.021],"seat",n=10)
-        tube(bm,[(s*.25,.94,-.423),(s*.36,.918,-.4)],[.006],"metal",n=6)
+        bar=grip(style);clamp=bar[0][1]+.002
+        tube(bm,[(s*.105,clamp,fork_z(clamp)),(s*.19,clamp,(fork_z(clamp)+bar[0][2])/2),mirror(bar[0],s)],[.013],"dark",n=8)
+        tube(bm,[(s*.105,clamp-.02,fork_z(clamp-.02)),(s*.105,clamp+.02,fork_z(clamp+.02))],[.037],"dark",n=10)
+        tube(bm,[mirror(p,s) for p in bar],[.021],"seat",n=10)
+        tube(bm,[(s*.25,bar[0][1]-.025,bar[0][2]-.035),(s*.36,bar[1][1]-.04,bar[1][2]-.035)],[.006],"metal",n=6)
         for y in (.70,.94):
             box(bm,(0,y,-.52+(y-.7)*.43),(.28,.025,.075),"dark")
         tube(bm,[(s*.13,.39,.13),(s*.13,.306,.69)],[ (.043,.025)],"metal",n=6)
         tube(bm,[(s*.13,.67,.14),(s*.13,.40,.52)],[.018],"metal",n=8)
         tube(bm,[(s*.09,.78,-.38),(s*.16,.52,-.06),(s*.115,.66,.30),(s*.09,.78,-.38)],
              [.021],"accent" if style=="oni" else "metal",n=6,cap=False)
-        tube(bm,[mirror(p,s) for p in PEG],[PEG_RADIUS],"metal",n=8)
+        rest=peg(style)
+        tube(bm,[(s*.13,.40,.12),(s*.13,rest[0][1]+.012,rest[0][2]-.012)],[(.006,.022)],"dark",n=4)
+        tube(bm,[mirror(p,s) for p in rest],[PEG_RADIUS],"metal",n=8)
         box(bm,(s*.14,.30,-.60),(.055,.105,.07),"gold")
     lathe(bm,(0,.41,.05),[(0,-.155),(.115,-.155),(.118,-.14),(.118,.14),(.115,.155),(0,.155)],"dark",steps=20)
     for s in (-1,1):

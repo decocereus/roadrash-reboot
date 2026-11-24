@@ -9,8 +9,8 @@ import bmesh
 from mathutils import Vector
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from common import B, join, fit_points
-from cyber_parts import GRIP, PEG, PEG_RADIUS, colours, linear, mechanics, wheel, fender, labels
-from cyber_bodywork import SEAT, upper, fairings, aero, tank_tail
+from cyber_parts import SEAT, STATIONS, PEG_RADIUS, grip, peg, colours, linear, mechanics, wheel, fender, labels
+from cyber_bodywork import upper, fairings, aero, tank_tail
 
 ROOT=Path(__file__).resolve().parents[2]
 OUT=ROOT/'docs/art/cyber-bike-options'
@@ -161,7 +161,7 @@ def build(design):
         assert all(t.area>1e-12 for t in obj.data.loop_triangles),obj.name
         obj.select_set(True)
     assert sum(counts.values())<18500,counts
-    for empty in fit_points(SEAT,GRIP,PEG,PEG_RADIUS):
+    for empty in fit_points(SEAT,STATIONS[design['id']]['hip_z'],grip(design['id']),peg(design['id']),PEG_RADIUS):
         put_in(empty,game);empty.select_set(True)
     folder=OUT/design['id'];folder.mkdir(parents=True,exist_ok=True)
     bpy.ops.export_scene.gltf(filepath=str(folder/f"{design['id']}.glb"),use_selection=True,export_apply=True,export_yup=True,export_texcoords=False,export_cameras=False,export_lights=False)
