@@ -97,6 +97,7 @@ void main() {
 const FRAGMENT = `
 uniform sampler2D detail;
 uniform float stops[5];
+uniform float spans[4];
 uniform vec3 colours[5];
 uniform vec3 clouds[3];
 uniform vec3 fogColour;
@@ -108,38 +109,39 @@ varying vec2 vUv;
 const float HORIZON = ${(SKY_HEIGHT / 2).toFixed(1)};
 const float BAND_TOP = ${(SKY_HEIGHT / 4).toFixed(1)};
 const float WIDTH = ${SKY_WIDTH.toFixed(1)};
-const vec3 HALO = vec3(1.0, 0.9412, 0.5882);
-const vec3 MOON = vec3(0.9333, 0.9412, 1.0);
-vec3 linearOf(vec3 colour) {
-  return mix(colour / 12.92, pow((colour + 0.055) / 1.055, vec3(2.4)), step(0.04045, colour));
-}
+const vec3 HALO = vec3(1.0, 0.871, 0.305);
+const vec3 MOON = vec3(0.855, 0.871, 1.0);
 float reach(vec2 sky, vec2 centre) {
   vec2 gap = sky - centre;
   gap.x = mod(gap.x + 0.5 * WIDTH, WIDTH) - 0.5 * WIDTH;
   return length(gap);
 }
 void main() {
-  vec2 vSky = vec2(vUv.x * WIDTH, (1.0 - vUv.y) * ${SKY_HEIGHT.toFixed(1)});
-  float along = clamp((vSky.y - BAND_TOP) / (HORIZON - BAND_TOP), 0.0, 1.0);
-  vec3 colour = colours[0];
-  for (int stop = 1; stop < 5; stop++) {
-    colour = mix(colour, colours[stop], clamp((along - stops[stop - 1]) / max(stops[stop] - stops[stop - 1], 1e-4), 0.0, 1.0));
+  vec2 sky = vec2(vUv.x * WIDTH, (1.0 - vUv.y) * ${SKY_HEIGHT.toFixed(1)});
+  float along = clamp((sky.y - BAND_TOP) * ${(1 / (SKY_HEIGHT / 4)).toFixed(8)}, 0.0, 1.0);
+  vec3 colour = mix(colours[0], colours[1], clamp((along - stops[0]) * spans[0], 0.0, 1.0));
+  colour = mix(colour, colours[2], clamp((along - stops[1]) * spans[1], 0.0, 1.0));
+  colour = mix(colour, colours[3], clamp((along - stops[2]) * spans[2], 0.0, 1.0));
+  colour = mix(colour, colours[4], clamp((along - stops[3]) * spans[3], 0.0, 1.0));
+  float above = step(sky.y, HORIZON);
+  if (night > 0.0) {
+    vec2 cell = floor(sky * 0.5);
+    float seed = fract(sin(dot(cell, vec2(12.9898, 78.233))) * 43758.5453);
+    float star = step(1.0 - ${STAR_SHARE.toFixed(4)}, seed) * (0.2 + 0.7 * fract(seed * 97.0)) * step(sky.y, HORIZON * 0.9);
+    colour = mix(colour, vec3(1.0), star * night);
+    colour = mix(colour, MOON, night * step(reach(sky, moonAt), 44.0) * (1.0 - step(reach(sky, moonAt + vec2(22.0, -10.0)), 40.0)));
   }
-  float above = step(vSky.y, HORIZON);
+  if (night < 1.0) {
+    float sun = reach(sky, sunAt);
+    colour = mix(colour, HALO, 0.55 * (1.0 - night) * clamp((260.0 - sun) * 0.005, 0.0, 1.0) * above);
+    colour = mix(colour, sunColour, step(sun, 64.0) * above);
+  }
   vec4 detail = texture2D(detail, vUv);
-  vec2 cell = floor(vSky / 2.0);
-  float seed = fract(sin(dot(cell, vec2(12.9898, 78.233))) * 43758.5453);
-  float star = step(1.0 - ${STAR_SHARE.toFixed(4)}, seed) * (0.2 + 0.7 * fract(seed * 97.0)) * step(vSky.y, HORIZON * 0.9);
-  colour = mix(colour, vec3(1.0), star * night);
-  float sun = reach(vSky, sunAt);
-  colour = mix(colour, HALO, 0.55 * (1.0 - night) * clamp((260.0 - sun) / 200.0, 0.0, 1.0) * above);
-  colour = mix(colour, sunColour, step(sun, 64.0) * above);
-  colour = mix(colour, MOON, night * step(reach(vSky, moonAt), 44.0) * (1.0 - step(reach(vSky, moonAt + vec2(22.0, -10.0)), 40.0)));
   colour = mix(colour, fogColour, 1.0 - above);
   colour = mix(colour, clouds[2], detail.b);
   colour = mix(colour, clouds[1], detail.g);
   colour = mix(colour, clouds[0], detail.r);
-  gl_FragColor = vec4(linearOf(colour), 1.0);
+  gl_FragColor = vec4(colour, 1.0);
   #include <colorspace_fragment>
 }`;
 
@@ -161,24 +163,21 @@ const placeOf = (
   );
 };
 
-const srgb = (count: number): THREE.Color[] =>
+const colours = (count: number): THREE.Color[] =>
   Array.from({ length: count }, () => new THREE.Color());
-
-const toSrgb = (from: THREE.Color, into: THREE.Color): void => {
-  into.copy(from).convertLinearToSRGB();
-};
 
 export const buildSky = (random: Random): Sky => {
   const texture = detailTexture(random);
   const uniforms = {
-    clouds: { value: srgb(3) },
-    colours: { value: srgb(5) },
+    clouds: { value: colours(3) },
+    colours: { value: colours(5) },
     detail: { value: texture },
     fogColour: { value: new THREE.Color() },
     moonAt: {
       value: placeOf(MOON_BEARING, MOON_ELEVATION, new THREE.Vector2()),
     },
     night: { value: 0 },
+    spans: { value: new Float32Array(4) },
     stops: { value: new Float32Array(5) },
     sunAt: { value: new THREE.Vector2() },
     sunColour: { value: new THREE.Color() },
@@ -201,20 +200,23 @@ export const buildSky = (random: Random): Sky => {
       for (let stop = 0; stop < 5; stop += 1) {
         uniforms.stops.value[stop] = hour.stops[stop] ?? 0;
         const from = hour.sky[stop];
-        const into = uniforms.colours.value[stop];
-        if (from && into) {
-          toSrgb(from, into);
+        if (from) {
+          uniforms.colours.value[stop]?.copy(from);
         }
+      }
+      for (let span = 0; span < 4; span += 1) {
+        uniforms.spans.value[span] =
+          1 /
+          Math.max((hour.stops[span + 1] ?? 1) - (hour.stops[span] ?? 0), 1e-4);
       }
       for (let layer = 0; layer < 3; layer += 1) {
         const from = hour.clouds[layer];
-        const into = uniforms.clouds.value[layer];
-        if (from && into) {
-          toSrgb(from, into);
+        if (from) {
+          uniforms.clouds.value[layer]?.copy(from);
         }
       }
-      toSrgb(hour.fog, uniforms.fogColour.value);
-      toSrgb(hour.sun, uniforms.sunColour.value);
+      uniforms.fogColour.value.copy(hour.fog);
+      uniforms.sunColour.value.copy(hour.sun);
       uniforms.night.value = hour.night;
       bearing.copy(key).setY(0).normalize();
       placeOf(bearing, hour.sunElevation, uniforms.sunAt.value);
