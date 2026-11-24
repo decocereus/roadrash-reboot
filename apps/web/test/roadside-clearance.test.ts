@@ -80,32 +80,48 @@ const rideTo = (
 const horizontal = (a: THREE.Vector3, b: THREE.Vector3): number =>
   Math.hypot(a.x - b.x, a.z - b.z);
 
-const postsAt = (
-  world: World,
-  track: Track,
-  s: number,
-  x: number
-): THREE.Mesh[] => {
+interface Post {
+  readonly mesh: THREE.Mesh;
+  readonly vertices: readonly number[];
+}
+
+const postsAt = (world: World, track: Track, s: number, x: number): Post[] => {
   placeOnTrack(track, s, x, point);
-  const posts: THREE.Mesh[] = [];
-  const box = new THREE.Box3();
+  const posts: Post[] = [];
   world.scene.traverse((node) => {
-    if (!isMesh(node) || isInstancedMesh(node)) {
+    if (
+      !isMesh(node) ||
+      isInstancedMesh(node) ||
+      !node.castShadow ||
+      !node.geometry.getIndex()
+    ) {
       return;
     }
-    box.setFromObject(node);
-    const size = box.getSize(spot);
-    const centre = box.getCenter(new THREE.Vector3());
-    if (
-      size.y > 3 &&
-      Math.hypot(centre.x - point.x, centre.z - point.z) < 0.5 &&
-      Math.max(size.x, size.z) > 0.1 &&
-      Math.max(size.x, size.z) < 1
-    ) {
-      posts.push(node);
+    const position = node.geometry.getAttribute("position");
+    const vertices: number[] = [];
+    let low = Number.POSITIVE_INFINITY;
+    let high = Number.NEGATIVE_INFINITY;
+    for (let vertex = 0; vertex < position.count; vertex += 1) {
+      spot.fromBufferAttribute(position, vertex).applyMatrix4(node.matrixWorld);
+      if (Math.hypot(spot.x - point.x, spot.z - point.z) < 0.2) {
+        vertices.push(vertex);
+        low = Math.min(low, spot.y);
+        high = Math.max(high, spot.y);
+      }
+    }
+    if (high - low > 3) {
+      posts.push({ mesh: node, vertices });
     }
   });
   return posts;
+};
+
+const standing = ({ mesh, vertices }: Post): boolean => {
+  const index = mesh.geometry.getIndex();
+  return (
+    drawn(mesh) &&
+    vertices.every((vertex) => vertex === 0 || index?.getX(vertex) === vertex)
+  );
 };
 
 describe("the roadside clears the chase camera", () => {
@@ -193,7 +209,7 @@ describe("the roadside clears the chase camera", () => {
     const lost: number[] = [];
     for (let s = harbour.s - 80; s < harbour.s + 20; s += 2) {
       rideTo(world, track, { s, x: half - 2 });
-      if (!far.every(drawn)) {
+      if (!far.every(standing)) {
         lost.push(s);
       }
     }

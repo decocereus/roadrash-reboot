@@ -190,7 +190,7 @@ Junctions, cross roads and pedestrian crossings a road declares, their lights, t
 - Docs: [docs/architecture/tracks.md#junctions-and-crossings](architecture/tracks.md#junctions-and-crossings), [docs/design/tracks.md#junctions-and-crossings](design/tracks.md#junctions-and-crossings)
 - Verify: [junctions.md](../.claude/skills/verify-rushline/features/junctions.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`, `roadLife.tick.p95`
-- Owns: `packages/track/src/crossings*.ts`, `packages/sim/src/signals*.ts`, `packages/sim/src/junction-traffic*.ts`, `packages/sim/src/cross-traffic*.ts`, `packages/track/src/walk-sites*.ts`, `packages/sim/src/pedestrians*.ts`, `apps/web/src/game/junctions.ts`, `apps/web/src/game/road-sheet.ts`, `apps/web/src/game/walker*.ts`, `apps/web/test/walker-*.ts`, `tools/perf/road-life.ts`, `tools/perf/src/node-road-life.ts`, `tools/perf/src/road-life.ts`
+- Owns: `packages/track/src/crossings*.ts`, `packages/sim/src/signals*.ts`, `packages/sim/src/junction-traffic*.ts`, `packages/sim/src/cross-traffic*.ts`, `packages/track/src/walk-sites*.ts`, `packages/sim/src/pedestrians*.ts`, `apps/web/src/game/junctions.ts`, `apps/web/src/game/road-sheet.ts`, `apps/web/src/game/walker*.ts`, `apps/web/test/walker-*.ts`, `apps/web/test/junction-*.ts`, `tools/perf/road-life.ts`, `tools/perf/src/node-road-life.ts`, `tools/perf/src/road-life.ts`
 
 Source files:
 
@@ -210,6 +210,7 @@ Source files:
 
 Test files:
 
+- `apps/web/test/junction-lamps.test.ts`
 - `apps/web/test/walker-asset.ts`
 - `apps/web/test/walker-clips.test.ts`
 - `apps/web/test/walker-model.test.ts`

@@ -8,6 +8,7 @@ import { createRandom } from "@racer/track/random";
 import { placeOnTrack } from "@racer/track/track";
 import type { Track, TrackPoint, TrackProp } from "@racer/track/track";
 import * as THREE from "three";
+import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
 import type { Assets } from "./assets.ts";
 import { buildBazaar } from "./bazaar.ts";
@@ -58,6 +59,20 @@ const POLE = "#221a30";
 
 const point: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
 const placer = new THREE.Object3D();
+
+const joined = (
+  geometries: readonly THREE.BufferGeometry[]
+): THREE.BufferGeometry | null => {
+  const [first, ...rest] = geometries;
+  if (!first || rest.length === 0) {
+    return first ?? null;
+  }
+  const merged = mergeGeometries([...geometries]);
+  for (const geometry of geometries) {
+    geometry.dispose();
+  }
+  return merged;
+};
 
 const walkEdgeAt = (track: Track, s: number): number =>
   widestVergeAlong(track, s - LONGEST_BLOCK, s + LONGEST_BLOCK) +
@@ -415,9 +430,17 @@ export const createWorld = (
           ];
           return side > 0 ? rails : rails.toReversed();
         };
-        for (const piece of piecesBesideArms(track, span, side)) {
-          add(buildRibbon(track, piece, kerb, 2), kerbMaterial, span);
-          add(buildRibbon(track, piece, walk, 2), walkMaterial, span);
+        const pieces = piecesBesideArms(track, span, side);
+        for (const [rails, material] of [
+          [kerb, kerbMaterial],
+          [walk, walkMaterial],
+        ] as const) {
+          const ribbon = joined(
+            pieces.map((piece) => buildRibbon(track, piece, rails, 2))
+          );
+          if (ribbon) {
+            add(ribbon, material, span);
+          }
         }
       } else {
         add(buildTerrainChunk(track, span, side, look), terrainMaterial, span);

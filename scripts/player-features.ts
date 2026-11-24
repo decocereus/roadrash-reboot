@@ -154,6 +154,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/road-sheet.ts",
       "apps/web/src/game/walker*.ts",
       "apps/web/test/walker-*.ts",
+      "apps/web/test/junction-*.ts",
       "tools/perf/road-life.ts",
       "tools/perf/src/node-road-life.ts",
       "tools/perf/src/road-life.ts",
