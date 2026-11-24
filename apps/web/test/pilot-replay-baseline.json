@@ -17,20 +17,20 @@
       "window": "e0bb60ea2d8c46274218190b23b466d6"
     },
     {
-      "final": "3eef62fdce33f84a3cb70dd106598a8b",
-      "full": "76243646a1f6d3c8d6db84a3fca709ba",
+      "final": "539a6c89bdf5ff368fe0d92b75a6fa4e",
+      "full": "c8c5f42f91fd8e7ffc14307ade5e9d59",
       "id": "ridge-road/tier3/seed9",
       "result": null,
       "ticks": 7200,
-      "window": "097e7105ab27c235e67f22eaaca438e5"
+      "window": "4414fb437a7ca7f9476b8aadeaf4dc25"
     },
     {
-      "final": "0eafae381469ef516de6bc03dfe04755",
-      "full": "e4455fd34d2b06f791c579603cf66e03",
+      "final": "8388e99ca33cbaff68c5b5bee9bf4fe6",
+      "full": "a9ad29f782c9becf013f6da50ac28fec",
       "id": "ridge-road/tier3/seed31",
       "result": null,
       "ticks": 7200,
-      "window": "774d271fbcefab53de5c3cd9cb17d009"
+      "window": "f26b32a56d4f9221ad4ec33a54b08ee0"
     },
     {
       "final": "954dd07d07ecd28b1d2485d10e6f94cd",
@@ -57,20 +57,20 @@
       "window": "4f483b00392e9aad2854067b05ff1912"
     },
     {
-      "final": "6deb71d3d4838d06ee60f8a67350ac3d",
-      "full": "f9c0c3db42ffafa5b58758d8d6274f81",
+      "final": "d0c9da2970b2163f9ef40dced9bd249f",
+      "full": "37b0ce7a36bb2ab7fed20efe632066c8",
       "id": "slag-row/tier3/seed31",
       "result": "busted",
       "ticks": 7200,
-      "window": "2166b64a701a6a88c477b84d7614f4bd"
+      "window": "1afea301bdb11e62709b8747c9b69b25"
     },
     {
-      "final": "ba401f050ee8f030339ad444b6a4ae8b",
-      "full": "c75ff681b44c37e1dd68809b786cb9f9",
+      "final": "500a91d59dfdc783df46b61ee858c3c4",
+      "full": "894d172afa3a256c0b856c663e9f5bdc",
       "id": "breakwater-run/tier3/seed9",
       "result": null,
       "ticks": 7200,
-      "window": "b998cec219f803ffbc5cc453e96ccf3d"
+      "window": "df235e7d3e86990bda1882b7450df8f8"
     },
     {
       "final": "f6516a9d7a797c8ee9d0af3e1426bb5e",
@@ -92,8 +92,8 @@
   "provenance": {
     "fixed": 7200,
     "limit": 54000,
-    "recordedAt": ["e6d71c0f", "feat/breakwater-road-life"],
-    "recordedWith": "snapshot format 7, at the first three-tier difficulty table. Re-recorded on darwin-arm64 Node v26.13.0 when a car began braking for a stopped car ahead from its stopping distance rather than only inside its following distance. Every hash moved because traffic drives differently on every road, and that moves the riders. Three races changed outcome: ridge-road/tier3/seed31 from a bust to a finish, slag-row/tier3/seed1 from a bust to a finish, and slag-row/tier3/seed5 from a finish to a bust. The solo, fixed, interleaved and restored rides still agree on every tick. Re-recorded again when Breakwater Run took its seven districts, its squeeze and hill bends and its moved crossing and trucks. Only the two breakwater-run/tier3/seed8 rows moved, the solo ride from a finish at tick 12790 to a finish at tick 13065, and the other ten cases are identical. Re-recorded again when a car moving back to its lane where the road opens began braking for a car stopped there. Only the two breakwater-run/tier3/seed8 rows moved, the solo ride from a finish at tick 13065 to a finish at tick 13075, and the other ten cases are identical. Re-recorded again when Breakwater Run took its eighth district, the Arcades neck, and its tighter and added bends. On the new road the breakwater case's seed 8 is busted at tick 3794 at 1,975 m, so it would no longer ride the neck, the market cross or the trucks, and the case moved to seed 9, which finishes at tick 13808. Only the two breakwater rows moved, and the other ten cases are identical. Re-recorded again when Breakwater Run took more traffic, more walkers and more hazards. The breakwater ride still finishes, at tick 14865 where it was 13808. Only the two breakwater rows moved, and the other ten cases are identical. Re-recorded again when Breakwater Run took its market stalls. The setup digest now lists a road's stalls, so every hash moved. With the stalls left out of the digest, the ten cases on other roads and the stress field are identical hash for hash, tick by tick, so only the digest moved them. The breakwater-run/tier3/seed9 row also moved because the stalls took out roadside trees and rocks that the digest lists, and it still finishes at tick 13808. Re-recorded on the merge of the two, and again when the stalls left gaps at the walk sites and began to stop sliding bikes and bodies. Only the two breakwater rows moved. The breakwater ride now ends at tick 6523, when a cop arrests the rider after a fight at 4,184 m. It crosses the market without touching a stall, and no stall is involved. Re-recorded again when the control's steer byte became the rider's steer target and the simulation began ramping each human's steer toward it inside stepRace, at 9 per second to lock and 18 per second to centre, the rates the browser used to apply before sending. The handover case rides a human on a square-wave steer, so its steer now ramps where it flipped, and its rows move. The pilot's steer is not ramped, so every pilot-only case is identical hash for hash. Rows that moved: handover/slag-row/tier3/seed5 (solo, from finished at tick 13814 to finished at tick 13680); handover/slag-row/tier3/seed5 (fixed). The other rows are identical. Re-recorded again when landing slip became the bike's movement across the road (its sideways speed less the bend's push where it lands), a truck launch took the road's rise at the forward rate a crest launch and a landing use, the airborne heading followed the bike's real movement across the road, and the pilot's truck, crest and rock forecasts moved to the same slip and rate, with the deck clearance forecast over the road's real heights. With only the three rule changes, ten cases are identical tick for tick and slag-row/tier3/seed31 first differs at tick 9396 in rider 0's airborne heading, with the same finish at tick 12471. With the pilot's forecasts too, every case first differs in the pilot's crest speed ceiling (pilot.braked), where the crest landing forecast now refuses a flight that lands sliding across a bend, and no outcome changes kind: ridge-road/tier3/seed5 finishes at 15099 where it was 14567, ridge-road/tier3/seed31 at 16648 where it was 21726, handover/slag-row/tier3/seed5 at 13643 where it was 13680, and breakwater-run/tier3/seed9 is busted at 2925 where it was busted at 6523. The other seven cases end at the same tick with the same outcome. Rows that moved: ridge-road/tier3/seed1 (solo, from finished at tick 17043 to finished at tick 17043); ridge-road/tier3/seed5 (solo, from finished at tick 14567 to finished at tick 15099); ridge-road/tier3/seed9 (solo, from busted at tick 6896 to busted at tick 6896); ridge-road/tier3/seed31 (solo, from finished at tick 21726 to finished at tick 16648); slag-row/tier3/seed1 (solo, from finished at tick 12718 to finished at tick 12718); slag-row/tier3/seed5 (solo, from busted at tick 4721 to busted at tick 4721); slag-row/tier3/seed9 (solo, from finished at tick 12994 to finished at tick 12994); slag-row/tier3/seed31 (solo, from finished at tick 12471 to finished at tick 12471); breakwater-run/tier3/seed9 (solo, from busted at tick 6523 to busted at tick 2925); stress/seed8 (solo, from busted at tick 9931 to busted at tick 9931); handover/slag-row/tier3/seed5 (solo, from finished at tick 13680 to finished at tick 13643); ridge-road/tier3/seed1 (fixed); ridge-road/tier3/seed5 (fixed); ridge-road/tier3/seed9 (fixed); ridge-road/tier3/seed31 (fixed); slag-row/tier3/seed1 (fixed); slag-row/tier3/seed5 (fixed); slag-row/tier3/seed9 (fixed); slag-row/tier3/seed31 (fixed); breakwater-run/tier3/seed9 (fixed); stress/seed8 (fixed); handover/slag-row/tier3/seed5 (fixed). The other rows are identical. Re-recorded again when a landing harder than 11 m/s began to ride on at a cost in speed, with only 19 m/s and harder crashing, the owner's call of 2026-11-23. No replay case lands harder than 11 m/s, so every case is identical tick for tick. No row moved. Re-recorded again when the pilot's truck, crest and rock forecasts began flying the rule's own flight step, stepFlight, from the real takeoff state (the rock forecast from the state bumpBike leaves), and a truck forecast began also checking the speed full throttle reaches the lip with. Each case first differs in the pilot's crest speed ceiling (pilot.braked), where a crest flight the old forecast refused now lands on the road under the slip limit, except slag-row/tier3/seed31, which first differs at tick 1391 in rider 10's line past a rock, and breakwater-run/tier3/seed9, whose solo ride is identical and whose fixed row first differs at tick 1133 in a line's course limit. For the player: ridge-road/tier3/seed1 trades a traffic crash for three combat knockdowns and finishes at 18303 where it was 17043; ridge-road/tier3/seed5 flies the crest that lands at 2,255 m and takes three more combat knockdowns, finishing at 15431 where it was 15099; ridge-road/tier3/seed9 flies the crests that land at 2,255 m and 5,779 m, escapes the two combat knockdowns that led to its arrest and finishes at 13127 where it was busted at 6896; ridge-road/tier3/seed31 flies the crest that lands at 2,256 m and finishes at 16626 where it was 16648; slag-row/tier3/seed31 is knocked off by cop 16 at 3,403 m and arrested at 5213, where it finished at 12471 after a hazard crash at 6,389 m, because the field around it moved. No case crashes on a landing. The other cases end at the same tick with the same outcome. Rows that moved: ridge-road/tier3/seed1 (solo, from finished at tick 17043 to finished at tick 18303); ridge-road/tier3/seed5 (solo, from finished at tick 15099 to finished at tick 15431); ridge-road/tier3/seed9 (solo, from busted at tick 6896 to finished at tick 13127); ridge-road/tier3/seed31 (solo, from finished at tick 16648 to finished at tick 16626); slag-row/tier3/seed1 (solo, from finished at tick 12718 to finished at tick 12718); slag-row/tier3/seed5 (solo, from busted at tick 4721 to busted at tick 4721); slag-row/tier3/seed9 (solo, from finished at tick 12994 to finished at tick 12994); slag-row/tier3/seed31 (solo, from finished at tick 12471 to busted at tick 5213); stress/seed8 (solo, from busted at tick 9931 to busted at tick 9931); handover/slag-row/tier3/seed5 (solo, from finished at tick 13643 to finished at tick 13643); ridge-road/tier3/seed1 (fixed); ridge-road/tier3/seed5 (fixed); ridge-road/tier3/seed9 (fixed); ridge-road/tier3/seed31 (fixed); slag-row/tier3/seed1 (fixed); slag-row/tier3/seed5 (fixed); slag-row/tier3/seed9 (fixed); slag-row/tier3/seed31 (fixed); breakwater-run/tier3/seed9 (fixed); stress/seed8 (fixed); handover/slag-row/tier3/seed5 (fixed). The other rows are identical. Re-recorded again when Breakwater Run's road life moved onto the quiet middle: crossings re-timed, trucks met on the seawall and the battery, the pier held by its lights, and cars held while their body covers a walker's line. Rows that moved: breakwater-run/tier3/seed9 (solo, from busted at tick 2925 to finished at tick 13203); breakwater-run/tier3/seed9 (fixed). The other rows are identical.",
+    "recordedAt": ["e78951b1", "feat/road-life-rules"],
+    "recordedWith": "snapshot format 7, at the first three-tier difficulty table. Re-recorded on darwin-arm64 Node v26.13.0 when a car began braking for a stopped car ahead from its stopping distance rather than only inside its following distance. Every hash moved because traffic drives differently on every road, and that moves the riders. Three races changed outcome: ridge-road/tier3/seed31 from a bust to a finish, slag-row/tier3/seed1 from a bust to a finish, and slag-row/tier3/seed5 from a finish to a bust. The solo, fixed, interleaved and restored rides still agree on every tick. Re-recorded again when Breakwater Run took its seven districts, its squeeze and hill bends and its moved crossing and trucks. Only the two breakwater-run/tier3/seed8 rows moved, the solo ride from a finish at tick 12790 to a finish at tick 13065, and the other ten cases are identical. Re-recorded again when a car moving back to its lane where the road opens began braking for a car stopped there. Only the two breakwater-run/tier3/seed8 rows moved, the solo ride from a finish at tick 13065 to a finish at tick 13075, and the other ten cases are identical. Re-recorded again when Breakwater Run took its eighth district, the Arcades neck, and its tighter and added bends. On the new road the breakwater case's seed 8 is busted at tick 3794 at 1,975 m, so it would no longer ride the neck, the market cross or the trucks, and the case moved to seed 9, which finishes at tick 13808. Only the two breakwater rows moved, and the other ten cases are identical. Re-recorded again when Breakwater Run took more traffic, more walkers and more hazards. The breakwater ride still finishes, at tick 14865 where it was 13808. Only the two breakwater rows moved, and the other ten cases are identical. Re-recorded again when Breakwater Run took its market stalls. The setup digest now lists a road's stalls, so every hash moved. With the stalls left out of the digest, the ten cases on other roads and the stress field are identical hash for hash, tick by tick, so only the digest moved them. The breakwater-run/tier3/seed9 row also moved because the stalls took out roadside trees and rocks that the digest lists, and it still finishes at tick 13808. Re-recorded on the merge of the two, and again when the stalls left gaps at the walk sites and began to stop sliding bikes and bodies. Only the two breakwater rows moved. The breakwater ride now ends at tick 6523, when a cop arrests the rider after a fight at 4,184 m. It crosses the market without touching a stall, and no stall is involved. Re-recorded again when the control's steer byte became the rider's steer target and the simulation began ramping each human's steer toward it inside stepRace, at 9 per second to lock and 18 per second to centre, the rates the browser used to apply before sending. The handover case rides a human on a square-wave steer, so its steer now ramps where it flipped, and its rows move. The pilot's steer is not ramped, so every pilot-only case is identical hash for hash. Rows that moved: handover/slag-row/tier3/seed5 (solo, from finished at tick 13814 to finished at tick 13680); handover/slag-row/tier3/seed5 (fixed). The other rows are identical. Re-recorded again when landing slip became the bike's movement across the road (its sideways speed less the bend's push where it lands), a truck launch took the road's rise at the forward rate a crest launch and a landing use, the airborne heading followed the bike's real movement across the road, and the pilot's truck, crest and rock forecasts moved to the same slip and rate, with the deck clearance forecast over the road's real heights. With only the three rule changes, ten cases are identical tick for tick and slag-row/tier3/seed31 first differs at tick 9396 in rider 0's airborne heading, with the same finish at tick 12471. With the pilot's forecasts too, every case first differs in the pilot's crest speed ceiling (pilot.braked), where the crest landing forecast now refuses a flight that lands sliding across a bend, and no outcome changes kind: ridge-road/tier3/seed5 finishes at 15099 where it was 14567, ridge-road/tier3/seed31 at 16648 where it was 21726, handover/slag-row/tier3/seed5 at 13643 where it was 13680, and breakwater-run/tier3/seed9 is busted at 2925 where it was busted at 6523. The other seven cases end at the same tick with the same outcome. Rows that moved: ridge-road/tier3/seed1 (solo, from finished at tick 17043 to finished at tick 17043); ridge-road/tier3/seed5 (solo, from finished at tick 14567 to finished at tick 15099); ridge-road/tier3/seed9 (solo, from busted at tick 6896 to busted at tick 6896); ridge-road/tier3/seed31 (solo, from finished at tick 21726 to finished at tick 16648); slag-row/tier3/seed1 (solo, from finished at tick 12718 to finished at tick 12718); slag-row/tier3/seed5 (solo, from busted at tick 4721 to busted at tick 4721); slag-row/tier3/seed9 (solo, from finished at tick 12994 to finished at tick 12994); slag-row/tier3/seed31 (solo, from finished at tick 12471 to finished at tick 12471); breakwater-run/tier3/seed9 (solo, from busted at tick 6523 to busted at tick 2925); stress/seed8 (solo, from busted at tick 9931 to busted at tick 9931); handover/slag-row/tier3/seed5 (solo, from finished at tick 13680 to finished at tick 13643); ridge-road/tier3/seed1 (fixed); ridge-road/tier3/seed5 (fixed); ridge-road/tier3/seed9 (fixed); ridge-road/tier3/seed31 (fixed); slag-row/tier3/seed1 (fixed); slag-row/tier3/seed5 (fixed); slag-row/tier3/seed9 (fixed); slag-row/tier3/seed31 (fixed); breakwater-run/tier3/seed9 (fixed); stress/seed8 (fixed); handover/slag-row/tier3/seed5 (fixed). The other rows are identical. Re-recorded again when a landing harder than 11 m/s began to ride on at a cost in speed, with only 19 m/s and harder crashing, the owner's call of 2026-11-23. No replay case lands harder than 11 m/s, so every case is identical tick for tick. No row moved. Re-recorded again when the pilot's truck, crest and rock forecasts began flying the rule's own flight step, stepFlight, from the real takeoff state (the rock forecast from the state bumpBike leaves), and a truck forecast began also checking the speed full throttle reaches the lip with. Each case first differs in the pilot's crest speed ceiling (pilot.braked), where a crest flight the old forecast refused now lands on the road under the slip limit, except slag-row/tier3/seed31, which first differs at tick 1391 in rider 10's line past a rock, and breakwater-run/tier3/seed9, whose solo ride is identical and whose fixed row first differs at tick 1133 in a line's course limit. For the player: ridge-road/tier3/seed1 trades a traffic crash for three combat knockdowns and finishes at 18303 where it was 17043; ridge-road/tier3/seed5 flies the crest that lands at 2,255 m and takes three more combat knockdowns, finishing at 15431 where it was 15099; ridge-road/tier3/seed9 flies the crests that land at 2,255 m and 5,779 m, escapes the two combat knockdowns that led to its arrest and finishes at 13127 where it was busted at 6896; ridge-road/tier3/seed31 flies the crest that lands at 2,256 m and finishes at 16626 where it was 16648; slag-row/tier3/seed31 is knocked off by cop 16 at 3,403 m and arrested at 5213, where it finished at 12471 after a hazard crash at 6,389 m, because the field around it moved. No case crashes on a landing. The other cases end at the same tick with the same outcome. Rows that moved: ridge-road/tier3/seed1 (solo, from finished at tick 17043 to finished at tick 18303); ridge-road/tier3/seed5 (solo, from finished at tick 15099 to finished at tick 15431); ridge-road/tier3/seed9 (solo, from busted at tick 6896 to finished at tick 13127); ridge-road/tier3/seed31 (solo, from finished at tick 16648 to finished at tick 16626); slag-row/tier3/seed1 (solo, from finished at tick 12718 to finished at tick 12718); slag-row/tier3/seed5 (solo, from busted at tick 4721 to busted at tick 4721); slag-row/tier3/seed9 (solo, from finished at tick 12994 to finished at tick 12994); slag-row/tier3/seed31 (solo, from finished at tick 12471 to busted at tick 5213); stress/seed8 (solo, from busted at tick 9931 to busted at tick 9931); handover/slag-row/tier3/seed5 (solo, from finished at tick 13643 to finished at tick 13643); ridge-road/tier3/seed1 (fixed); ridge-road/tier3/seed5 (fixed); ridge-road/tier3/seed9 (fixed); ridge-road/tier3/seed31 (fixed); slag-row/tier3/seed1 (fixed); slag-row/tier3/seed5 (fixed); slag-row/tier3/seed9 (fixed); slag-row/tier3/seed31 (fixed); breakwater-run/tier3/seed9 (fixed); stress/seed8 (fixed); handover/slag-row/tier3/seed5 (fixed). The other rows are identical. Re-recorded again when Breakwater Run's road life moved onto the quiet middle: crossings re-timed, trucks met on the seawall and the battery, the pier held by its lights, and cars held while their body covers a walker's line. Rows that moved: breakwater-run/tier3/seed9 (solo, from busted at tick 2925 to finished at tick 13203); breakwater-run/tier3/seed9 (fixed). The other rows are identical. Re-recorded again when cars move out of a truck's way instead of being deleted, and Breakwater Run's hazards keep a floor per kind and tier. Rows that moved: ridge-road/tier3/seed9 (solo, from finished at tick 13127 to finished at tick 13168); ridge-road/tier3/seed31 (solo, from finished at tick 16626 to finished at tick 16666); slag-row/tier3/seed31 (solo, from busted at tick 5213 to busted at tick 5213); breakwater-run/tier3/seed9 (solo, from finished at tick 13203 to busted at tick 8696); ridge-road/tier3/seed9 (fixed); ridge-road/tier3/seed31 (fixed); slag-row/tier3/seed31 (fixed); breakwater-run/tier3/seed9 (fixed). The other rows are identical.",
     "window": {
       "from": 2880,
       "to": 3480
@@ -117,20 +117,20 @@
       "window": "e0bb60ea2d8c46274218190b23b466d6"
     },
     {
-      "final": "c9804b5aebbe0e05d10b55617f4d7302",
-      "full": "d775a94e6a2808c4aec7a004fcc4bb60",
+      "final": "bf0dbeec79563c69b98de262b694a7c6",
+      "full": "e1e15d29a7910355b2752ff3cffb8498",
       "id": "ridge-road/tier3/seed9",
       "result": "finished",
-      "ticks": 13127,
-      "window": "097e7105ab27c235e67f22eaaca438e5"
+      "ticks": 13168,
+      "window": "4414fb437a7ca7f9476b8aadeaf4dc25"
     },
     {
-      "final": "014cff3ebe5d6fac26808885c1d8c1fa",
-      "full": "914b8c82d7c2f394f85d4e80032c2247",
+      "final": "ed576f30549a6da228ac40b4084210ec",
+      "full": "33dc0a8c5a6235fd27027a6a2255f8bb",
       "id": "ridge-road/tier3/seed31",
       "result": "finished",
-      "ticks": 16626,
-      "window": "774d271fbcefab53de5c3cd9cb17d009"
+      "ticks": 16666,
+      "window": "f26b32a56d4f9221ad4ec33a54b08ee0"
     },
     {
       "final": "294ffcad7933a1708f13474cbd5971b1",
@@ -157,20 +157,20 @@
       "window": "4f483b00392e9aad2854067b05ff1912"
     },
     {
-      "final": "b04731c0921bd6492cb424fd7f1f9d78",
-      "full": "3c868e212be214f9a3bb9c7b25323e96",
+      "final": "2380309b112cb639ccd1673055a88836",
+      "full": "cc6918034d6f94cc429f75c0f0715697",
       "id": "slag-row/tier3/seed31",
       "result": "busted",
       "ticks": 5213,
-      "window": "2166b64a701a6a88c477b84d7614f4bd"
+      "window": "1afea301bdb11e62709b8747c9b69b25"
     },
     {
-      "final": "b84f8135591b33f8d24c0263ea9f67d1",
-      "full": "2fee11417e0f456cfefaf2561cbe400a",
+      "final": "35fdc72c33872916e83856009ad239a5",
+      "full": "47cbef700a126cb488b1d97e1066d2f2",
       "id": "breakwater-run/tier3/seed9",
-      "result": "finished",
-      "ticks": 13203,
-      "window": "b998cec219f803ffbc5cc453e96ccf3d"
+      "result": "busted",
+      "ticks": 8696,
+      "window": "df235e7d3e86990bda1882b7450df8f8"
     },
     {
       "final": "48daa3525478159781a46d2c8602e5fc",
