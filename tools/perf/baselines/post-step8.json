@@ -7110,7 +7110,7 @@
         "pnpm": "11.21.0",
         "sideASourceDigest": "b3679e62716ac4452aa36ca0fadb95d0396695dcc4cf1eea3116185afcdb586b",
         "sideBSourceDigest": "b3679e62716ac4452aa36ca0fadb95d0396695dcc4cf1eea3116185afcdb586b",
-        "why": "The seated rider, a lighter chest over the tank, a seat that slides and turns per bike and a jacket that gives at the hip, adds 6,192 B gzip and 20,132 B raw to the game chunk loaded after the menus over main at deefebb1 (248,789 B against 242,597 B gzip). About 2.8 KB gzip of it is seat-table.json, the fit baked per bike and rider so the race does not fit seats while it loads, held to six decimal places; the rest is figure-seating.ts, figure-chest.ts, bike-deck.ts and the pose changes. Both bytes.game.incremental rows were over their limits, so both re-pin on this run with the usual headroom."
+        "why": "The seated rider, a lighter chest over the tank, a seat that slides and turns per bike and a jacket that gives at the hip, adds 6,192 B gzip and 20,132 B raw to the game chunk loaded after the menus over main at deefebb1 (248,789 B against 242,597 B gzip). About 2.8 KB gzip of it is seat-table.json, the fit baked per bike and rider so the race does not fit seats while it loads, held to six decimal places; the rest is the seat, chest and pose code in figure-seating.ts, figure-chest.ts, figure-pose.ts and rider-figure.ts; bike-deck.ts reaches the chunk only as a type, so it adds nothing. Both bytes.game.incremental rows were over their limits, so both re-pin on this run with the usual headroom."
       },
       "id": "baseline-2026-11-24T20-00-53-824Z-890794a-890794a",
       "lanes": ["build"],

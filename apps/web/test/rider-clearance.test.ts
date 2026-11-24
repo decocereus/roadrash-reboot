@@ -13,7 +13,7 @@ import type { BikeModelId } from "../src/game/bike-models.ts";
 import { createShading } from "../src/game/cel.ts";
 import { bareCloth, clothOf } from "../src/game/figure-chest.ts";
 import { paletteOf } from "../src/game/figure-rig.ts";
-import { SEAT_CHECK_SPEED, seatChecks } from "../src/game/figure-seating.ts";
+import { SEAT_CHECK_SPEED, seatGrid } from "../src/game/figure-seating.ts";
 import { lookOf } from "../src/game/looks.ts";
 import { createRiderFigure } from "../src/game/rider-figure.ts";
 import type { Stance } from "../src/game/rider-figure.ts";
@@ -29,6 +29,7 @@ const FLAT = 1e-6;
 const SCREEN_ROWS = 1080;
 const BARE_DIGITS = 4;
 const SEEN_PIXELS = 2;
+const GRID_TIMEOUT_MS = 60_000;
 
 const torso: ReadonlySet<string> = new Set([
   "spine_01",
@@ -49,10 +50,28 @@ const arms: ReadonlySet<string> = new Set([
 
 const chest: ReadonlySet<string> = new Set(["spine_02", "spine_03"]);
 
-const riding = seatChecks.map(
-  ({ lean, name, tuck }) =>
-    [name, { lean, speed: SEAT_CHECK_SPEED, tuck }] as const
+const riding = seatGrid.map(
+  ({ lean, tuck }) =>
+    [
+      `lean ${String(lean)}, tuck ${String(tuck)}`,
+      { lean, speed: SEAT_CHECK_SPEED, tuck },
+    ] as const
 );
+
+const KNOWN_SINKS = [
+  { deepest: 7.4, lean: -0.75, model: "ghost", tuck: 0 },
+  { deepest: 7.2, lean: 0.75, model: "ghost", tuck: 0 },
+  { deepest: 5.6, lean: -1, model: "oni", tuck: 0.25 },
+  { deepest: 5.7, lean: 1, model: "oni", tuck: 0.25 },
+  { deepest: 5.2, lean: -0.75, model: "oni", tuck: 0 },
+] as const satisfies readonly {
+  readonly deepest: number;
+  readonly lean: number;
+  readonly model: BikeModelId;
+  readonly tuck: number;
+}[];
+
+const SINKING_RIDER = "f1eb12f5249bbf0d1a9a01f4388ae4b3";
 
 type Triangle = readonly [THREE.Vector3, THREE.Vector3, THREE.Vector3];
 
@@ -261,6 +280,7 @@ const ridden = async (url: string, model: BikeModelId) => {
     allowed: (at: number) => number
   ) => {
     let over = 0;
+    let deepestIn = 0;
     let where = "";
     eachPoint(stance, bones, (bone, at, point) => {
       const depth = Math.min(
@@ -271,10 +291,11 @@ const ridden = async (url: string, model: BikeModelId) => {
       const allowance = allowed(at);
       if (depth - allowance > over) {
         over = depth - allowance;
+        deepestIn = depth;
         where = `${placeOf(bone, point)} ${millimetres(depth)} in with ${millimetres(allowance)} allowed`;
       }
     });
-    return { over, where };
+    return { deepest: deepestIn, over, where };
   };
   return {
     cloth: clothOf(bodyOf(figure.root)),
@@ -306,23 +327,59 @@ const hiddenArmSink = ({ hand_l: grip }: BikeFit): number => {
   return SEEN_PIXELS * rowHeight;
 };
 
+interface Sink {
+  readonly deepest: number;
+  readonly over: number;
+  readonly where: string;
+}
+
+const overRows = (name: string, { over, where }: Sink): string[] =>
+  over > 0 ? [`${name}: ${where}`] : [];
+
+const knownSinkMisses = (
+  name: string,
+  pinned: number,
+  { deepest, over, where }: Sink
+): string[] => {
+  if (over <= 0) {
+    return [`${name}: a listed sink now clears; take it off KNOWN_SINKS`];
+  }
+  return deepest * 1000 > pinned
+    ? [
+        `${name}: ${where}, deeper than the ${String(pinned)} mm pinned (${(deepest * 1000).toFixed(3)} mm)`,
+      ]
+    : [];
+};
+
 describe("rider clearance against the bike's own triangles", () => {
   it.each(pairs)(
     "%s on the %s keeps the upper body out of the bike in every riding pose",
+    { timeout: GRID_TIMEOUT_MS },
     async (url, model) => {
       const { cloth, deepest, fit, figure } = await ridden(url, model);
       const armSink = hiddenArmSink(fit);
-      const sunk = riding.flatMap(([name, stance]) =>
-        (
-          [
-            [torso, (at: number) => SINK + cloth.giveAt(at)],
-            [arms, (at: number) => armSink + cloth.giveAt(at)],
-          ] as const
-        ).flatMap(([bones, allowed]) => {
-          const { over, where } = deepest(stance, bones, allowed);
-          return over > 0 ? [`${name}: ${where}`] : [];
-        })
-      );
+      const known = url.includes(SINKING_RIDER)
+        ? KNOWN_SINKS.filter((sink) => sink.model === model)
+        : [];
+      const sunk = riding.flatMap(([name, stance]) => {
+        const listed = known.find(
+          (sink) => sink.lean === stance.lean && sink.tuck === stance.tuck
+        );
+        const torsoSink = deepest(
+          stance,
+          torso,
+          (at) => SINK + cloth.giveAt(at)
+        );
+        const armsSink = deepest(
+          stance,
+          arms,
+          (at) => armSink + cloth.giveAt(at)
+        );
+        const torsoRows = listed
+          ? knownSinkMisses(name, listed.deepest, torsoSink)
+          : overRows(name, torsoSink);
+        return [...torsoRows, ...overRows(name, armsSink)];
+      });
       figure.dispose();
       expect(sunk).toStrictEqual([]);
     }

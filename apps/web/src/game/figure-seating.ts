@@ -23,19 +23,19 @@ const QUATERNION = 4;
 
 export const SEAT_CHECK_SPEED = KNEE_FULL_SPEED;
 
-export const seatChecks = [
-  { lean: 0, name: "rest", tuck: 0 },
-  { lean: 0, name: "a quarter tuck", tuck: 0.25 },
-  { lean: 0, name: "half a tuck", tuck: 0.5 },
-  { lean: 0, name: "three quarters of a tuck", tuck: 0.75 },
-  { lean: 0, name: "tuck", tuck: 1 },
-  { lean: -1, name: "lean left", tuck: 0 },
-  { lean: 1, name: "lean right", tuck: 0 },
-  { lean: -1, name: "tucked lean left", tuck: 1 },
-  { lean: 1, name: "tucked lean right", tuck: 1 },
-] as const;
+const SEAT_LEANS = [-1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1] as const;
+const SEAT_TUCKS = [0, 0.25, 0.5, 0.75, 1] as const;
 
-type SeatCheck = (typeof seatChecks)[number];
+export const seatGrid = SEAT_LEANS.flatMap((lean) =>
+  SEAT_TUCKS.map((tuck) => ({ lean, tuck }))
+);
+
+type SeatCheck = (typeof seatGrid)[number];
+
+const solvedAt = ({ lean, tuck }: SeatCheck) =>
+  lean === 0 || (Math.abs(lean) === 1 && (tuck === 0 || tuck === 1));
+
+const seatFitChecks = seatGrid.filter(solvedAt);
 
 const blended = (
   from: readonly number[],
@@ -233,7 +233,7 @@ export const seatFitOn = (
     tuck: 0 | 1
   ): Hung => {
     const at = hung(side).addScaledVector(slide, tuck);
-    const checks = seatChecks.filter(
+    const checks = seatFitChecks.filter(
       (check) => check.tuck === tuck && Math.sign(check.lean) === side
     );
     const hangBy = (share: number) =>
@@ -252,7 +252,7 @@ export const seatFitOn = (
   const rest = settled(restPose, origin, false);
   const tuckedWith = (elbowsIn: number) =>
     settled(bake(seated, tuckTurns(posture, elbowsIn)), slide, true);
-  const tuckChecks = seatChecks.filter(
+  const tuckChecks = seatFitChecks.filter(
     (check) => check.lean === 0 && check.tuck > 0
   );
   const clearOf = (pose: readonly number[]) =>
