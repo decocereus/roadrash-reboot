@@ -22,10 +22,11 @@ import type {
 } from "@racer/sim/state";
 import * as Schema from "effect/Schema";
 
+import { measurementProtocol } from "./protocol.ts";
 import { digestOf } from "./result.ts";
 
 const VALIDATOR_VERSION = 1;
-export const WINDOW_TICKS = 601;
+export const WINDOW_TICKS = measurementProtocol.windowTicks;
 
 export const roomParts = [0, 1, 2] as const;
 export type RoomPart = (typeof roomParts)[number];

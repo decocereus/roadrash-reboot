@@ -1,7 +1,13 @@
 import { perfEnvironments } from "@racer/devtools/browser-host";
 
-import { requiredRows } from "../src/budgets.ts";
-import type { Budgets, Limit } from "../src/budgets.ts";
+import {
+  SIDE_A_METRIC,
+  UNSCOPED_SIDE_A,
+  limitUnit,
+  recordedRule,
+  requiredRows,
+} from "../src/budgets.ts";
+import type { Budgets, Limit, Observation } from "../src/budgets.ts";
 import { glbNames } from "../src/build.ts";
 import type { BuildRecord } from "../src/build.ts";
 import { evaluateBaseline } from "../src/evaluate.ts";
@@ -16,6 +22,7 @@ import type {
 } from "../src/node-lane.ts";
 import { CALIBRATION_ROUNDS, TIMED_WINDOWS } from "../src/node.ts";
 import type { ChildRecord } from "../src/node.ts";
+import { median } from "../src/result.ts";
 import { ROAD_LIFE } from "../src/road-life.ts";
 import {
   roomPartSeeds,
@@ -386,11 +393,50 @@ const unusedGpuLimits = (): Limit[] =>
     })
   );
 
+const SYNTHETIC_P99_MARGIN = 1.2;
+
+const recordedLimits = (
+  observations: readonly Observation[],
+  environments: readonly string[]
+): Limit[] =>
+  requiredRows(["node"], environments, [])
+    .filter(({ kind }) => kind.rule === "normalised" || kind.rule === "paired")
+    .map(({ environment, kind, scenario }) => {
+      const of = (metric: string, at: string | null) =>
+        observations.find(
+          (each) =>
+            each.metric === metric &&
+            each.scenario === at &&
+            each.environment === environment
+        );
+      const sideA = median(
+        of(SIDE_A_METRIC, scenario ?? UNSCOPED_SIDE_A)?.runs.a ?? []
+      );
+      const normalised =
+        (of(kind.metric, scenario)?.value ?? Number.NaN) / sideA;
+      const value =
+        kind.rule === "paired"
+          ? (kind.paired ?? SYNTHETIC_P99_MARGIN)
+          : normalised * recordedRule.headroom;
+      return {
+        baseline: kind.rule === "paired" ? 1 : normalised,
+        derivation: "synthetic",
+        direction: kind.direction,
+        environment,
+        metric: kind.metric,
+        paired: kind.paired,
+        scenario,
+        source: "synthetic",
+        unit: limitUnit(kind),
+        value,
+      };
+    });
+
 export const syntheticBudgets = (build: {
   readonly A: BuildRecord;
   readonly B: BuildRecord;
 }): Budgets => {
-  const { proposal } = evaluateBaseline({
+  const { observations, proposal } = evaluateBaseline({
     ...samplesOf("baseline", steadyLanes({ runner: 1, sim: 1 }), build),
     mode: "baseline",
   });
@@ -401,7 +447,11 @@ export const syntheticBudgets = (build: {
       summary: "summary.json",
       summarySha256: "0",
     },
-    limits: [...proposal.limits, ...unusedGpuLimits()],
+    limits: [
+      ...proposal.limits,
+      ...recordedLimits(observations, Object.keys(proposal.nodeProfiles)),
+      ...unusedGpuLimits(),
+    ],
     nodeProfiles: proposal.nodeProfiles,
     version: 1,
   };

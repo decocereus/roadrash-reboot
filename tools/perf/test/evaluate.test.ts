@@ -385,7 +385,7 @@ describe("perf gate red cases", { timeout: 30_000 }, () => {
     );
     const failed = evaluateGate(slowerSim, budgets);
     expect(
-      failing(failed.lines).map((line) => line.split(" observed=")[0])
+      failing(failed.lines).map((line) => line.split(" observed")[0])
     ).toStrictEqual(
       ["sim.ticksPerSecond", "sim.tick.p95", "sim.tick.p99"].flatMap((metric) =>
         scenarios.map(
@@ -395,7 +395,7 @@ describe("perf gate red cases", { timeout: 30_000 }, () => {
     );
     expect(
       failed.lines.find((line) => line.includes("reference-v1 sim.tick.p95"))
-    ).toContain("A/B=1.3000 (<= 1.15)");
+    ).toContain("observed A/B=1.3000 limit <= 1.15");
     const entry = throughEntry(slowerSim, budgets);
     expect(entry.status).toBe(1);
     expect(entry.stdout).toContain("scale=1.600");
