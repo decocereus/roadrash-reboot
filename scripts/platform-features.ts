@@ -484,6 +484,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "tools/perf/test/measure-page.test.ts",
       "tools/perf/test/red-cases.ts",
       "tools/perf/test/stamp-guard.test.ts",
+      "tools/perf/test/steady.test.ts",
     ],
     perf: [],
     start: [
