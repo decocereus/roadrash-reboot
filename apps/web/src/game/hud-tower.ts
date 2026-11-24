@@ -18,6 +18,13 @@ interface Entry {
 }
 
 const MS_PER_TENTH = 100;
+const HALF_TENTH_MS = MS_PER_TENTH / 2;
+
+const nearestTenth = (ms: number): number => {
+  const shifted = ms + HALF_TENTH_MS;
+  const below = ((shifted % MS_PER_TENTH) + MS_PER_TENTH) % MS_PER_TENTH;
+  return (shifted - below) / MS_PER_TENTH;
+};
 
 const noRows: readonly TowerRow[] = [];
 
@@ -67,7 +74,7 @@ const markInto = (
   } else if (ahead) {
     const gap = intervalAhead(timing, tick, rider, ahead);
     into.mark = gap === "unknown" ? "blank" : "gap";
-    into.tenths = gap === "unknown" ? 0 : Math.round(gap / MS_PER_TENTH);
+    into.tenths = gap === "unknown" ? 0 : nearestTenth(gap);
   } else {
     into.mark = "lead";
   }
