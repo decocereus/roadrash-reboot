@@ -4,6 +4,8 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
 import type { Assets, ModelParts } from "./assets.ts";
+import { BIKE_TURN } from "./bike-fit.ts";
+import type { BikeFit } from "./bike-fit.ts";
 import type { BikeModelId } from "./bike-models.ts";
 import type { Shading } from "./cel.ts";
 import { disposeTree } from "./dispose.ts";
@@ -17,7 +19,6 @@ const point: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
 const DEFAULT_PAINT = 0xc8_2f_2f;
 const DARK_TRIM = "#1c1826";
 const WHEEL_PARTS = ["wheel_f", "wheel_r"] as const;
-const MODEL = new THREE.Matrix4().makeRotationY(Math.PI);
 const BEACONS = [
   [0x2f_6b_ff, -0.07],
   [0xff_2f_3a, 0.07],
@@ -57,6 +58,7 @@ export interface Reach {
 export interface Bikes {
   readonly group: THREE.Group;
   readonly roots: readonly THREE.Object3D[];
+  readonly fits: readonly BikeFit[];
   spin: (index: number, distance: number) => void;
   sag: (index: number, metres: number) => void;
   show: (index: number) => void;
@@ -287,7 +289,7 @@ export const createBikes = (
       return known;
     }
     const seats = riders.filter((each) => each.model === rider.model).length;
-    const fleet = modelFleet(assets.bikes[rider.model], seats);
+    const fleet = modelFleet(assets.bikes[rider.model].parts, seats);
     fleetByModel.set(rider.model, fleet);
     return fleet;
   });
@@ -345,7 +347,7 @@ export const createBikes = (
         }
         shown[index] = 0;
         root.updateMatrix();
-        frame.multiplyMatrices(root.matrix, MODEL);
+        frame.multiplyMatrices(root.matrix, BIKE_TURN);
         frame.elements[12] -= anchor.x;
         frame.elements[13] -= anchor.y;
         frame.elements[14] -= anchor.z;
@@ -384,6 +386,7 @@ export const createBikes = (
     dispose() {
       disposeTree(group);
     },
+    fits: riders.map(({ model }) => assets.bikes[model].fit),
     group,
     roots,
     sag(index, metres) {

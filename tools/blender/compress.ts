@@ -82,7 +82,7 @@ const compress = async (name: string): Promise<StagedArt> => {
   document.setLogger(new Logger(Logger.Verbosity.WARN));
   dropUnread(document);
   await document.transform(
-    prune(),
+    prune({ keepLeaves: true }),
     textureCompress({
       effort: 100,
       encoder: sharp,

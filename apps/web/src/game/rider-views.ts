@@ -9,6 +9,7 @@ import * as THREE from "three";
 import { createBikes, poseOnTrack, reachOf } from "./actors.ts";
 import type { Bikes, Reach } from "./actors.ts";
 import type { Assets } from "./assets.ts";
+import type { BikeFit } from "./bike-fit.ts";
 import { bikeModelFor } from "./bike-models.ts";
 import type { Shading } from "./cel.ts";
 import type { Subject } from "./chase-camera.ts";
@@ -75,6 +76,7 @@ interface Pose {
 
 interface RiderActor {
   readonly bike: THREE.Object3D;
+  readonly fit: BikeFit;
   readonly drift: RiderDrift;
   readonly drawn: DrawnPlace;
   readonly fight: RiderFight;
@@ -274,6 +276,10 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
         owners.push(() => {
           figure.dispose();
         });
+        const fit = riderOf(bikes.fits, rider.id);
+        if (!fit) {
+          throw new Error(`The race drew no bike for rider ${rider.id}.`);
+        }
         const view: RiderActor = {
           after: emptyPose(),
           before: emptyPose(),
@@ -282,6 +288,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
           drift: stillDrift(),
           fight: quietFight(),
           figure,
+          fit,
           lift: figure.standHeight,
           pitch: 0,
           sag: 0,
@@ -422,10 +429,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
       } else if (strikeFrame(view.fight, subTick, strike)) {
         ({ pose, reach, rise } = strike);
       }
-      figure.root.position.copy(bike.position);
-      figure.root.quaternion.copy(bike.quaternion);
-      figure.root.translateY(figure.seat.y - view.sag);
-      figure.root.translateZ(figure.seat.z);
+      figure.mount(bike, view.fit, view.sag);
       view.tumbleAngle = 0;
       view.pitch = 0;
       view.lift = figure.standHeight;

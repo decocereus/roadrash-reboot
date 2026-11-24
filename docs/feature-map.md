@@ -541,21 +541,23 @@ Test files:
 
 ### Riders, bikes and cars on screen
 
-The riders, bikes and traffic cars drawn from the race each frame: placement on the road, poses, punches and kicks, falls, weapons in hand, the painted celebrity figures, the `?as` and `?against` flags that dress riders in them and the wardrobe that holds the celebrity figures the race on screen wears, each maker's bike model, and the instanced fleet of cars.
+The riders, bikes and traffic cars drawn from the race each frame: placement on the road, poses, punches and kicks, falls, weapons in hand, the painted celebrity figures, the `?as` and `?against` flags that dress riders in them and the wardrobe that holds the celebrity figures the race on screen wears, each maker's bike model with the seat, grip and peg points every rider is fitted to, and the instanced fleet of cars.
 
 - Id: `riders-on-screen`
 - Start: `apps/web/src/game/rider-views.ts`, `apps/web/src/game/rider-figure.ts`, `apps/web/src/game/actors.ts`
 - Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/design/art-direction.md#riders-and-bikes](design/art-direction.md#riders-and-bikes), [docs/design/art-direction.md#budget-and-build](design/art-direction.md#budget-and-build)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`, `riders.cpu.p95`
-- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/fleet.ts`, `apps/web/src/game/cross-car-pose.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/test/actor-tables.test.ts`, `apps/web/test/bike-contact.ts`, `apps/web/test/figure-wear.test.ts`, `apps/web/test/figure-shadow.test.ts`, `apps/web/test/planted-hands.test.ts`, `apps/web/test/rider-shade.ts`, `apps/web/test/shade-flats.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`
+- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/fleet.ts`, `apps/web/src/game/cross-car-pose.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/src/game/bike-fit.ts`, `apps/web/test/actor-tables.test.ts`, `apps/web/test/bike-contact.ts`, `apps/web/test/figure-wear.test.ts`, `apps/web/test/figure-shadow.test.ts`, `apps/web/test/planted-hands.test.ts`, `apps/web/test/seated-callers.test.ts`, `apps/web/test/seated-contacts.ts`, `apps/web/test/rider-shade.ts`, `apps/web/test/shade-flats.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`
 
 Source files:
 
 - `apps/web/src/game/actors.ts`
+- `apps/web/src/game/bike-fit.ts`
 - `apps/web/src/game/bike-models.ts`
 - `apps/web/src/game/cross-car-pose.ts`
 - `apps/web/src/game/figure-bounds.ts`
+- `apps/web/src/game/figure-contacts.ts`
 - `apps/web/src/game/figure-cycle.ts`
 - `apps/web/src/game/figure-ik.ts`
 - `apps/web/src/game/figure-pose.ts`
@@ -580,6 +582,8 @@ Test files:
 - `apps/web/test/figure-wear.test.ts`
 - `apps/web/test/planted-hands.test.ts`
 - `apps/web/test/rider-shade.ts`
+- `apps/web/test/seated-callers.test.ts`
+- `apps/web/test/seated-contacts.ts`
 - `apps/web/test/shade-flats.ts`
 
 ### Frame rate and quality
@@ -871,7 +875,7 @@ Booting the game module with a dynamic import, downloading and decoding the nine
 - Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/errors.md#asset-loading](errors.md#asset-loading)
 - Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
 - Perf: none yet
-- Owns: `apps/web/src/asset-*.ts`, `apps/web/src/assets/load.ts`, `apps/web/src/assets/model-*.ts`, `apps/web/src/assets/font-readiness-failed.ts`, `apps/web/src/game/assets.ts`, `apps/web/src/game/model-slots.ts`, `apps/web/test/asset-load.test.ts`, `apps/web/test/celebrity-load.test.ts`, `apps/web/test/model-slots.test.ts`, `apps/web/test/node-images.ts`, `apps/web/test/pinned-assets.ts`
+- Owns: `apps/web/src/asset-*.ts`, `apps/web/src/assets/load.ts`, `apps/web/src/assets/model-*.ts`, `apps/web/src/assets/font-readiness-failed.ts`, `apps/web/src/game/assets.ts`, `apps/web/src/game/model-slots.ts`, `apps/web/test/asset-load.test.ts`, `apps/web/test/asset-summary.ts`, `apps/web/test/celebrity-load.test.ts`, `apps/web/test/model-slots.test.ts`, `apps/web/test/node-images.ts`, `apps/web/test/pinned-assets.ts`
 
 Source files:
 
@@ -889,6 +893,7 @@ Source files:
 Test files:
 
 - `apps/web/test/asset-load.test.ts`
+- `apps/web/test/asset-summary.ts`
 - `apps/web/test/celebrity-load.test.ts`
 - `apps/web/test/model-slots.test.ts`
 - `apps/web/test/node-images.ts`

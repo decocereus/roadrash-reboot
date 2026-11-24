@@ -9,6 +9,7 @@ import type { BarCompany } from "./bar-player.ts";
 import { poseTurns, breathTurns } from "./bar-poses.ts";
 import type { BarSpeech } from "./bar-speech.ts";
 import type { Tag, TagLayer } from "./bar-tags.ts";
+import type { BikeFit } from "./bike-fit.ts";
 import type { Shading } from "./cel.ts";
 import { bodyFor } from "./figure-rig.ts";
 import { blockPaletteOf } from "./rider-blocks.ts";
@@ -115,21 +116,26 @@ const turnOff = (figure: RiderFigure, wanted: number): number =>
     FULL_TURN
   ) - Math.PI;
 
+export interface BarMount {
+  readonly bike: THREE.Object3D;
+  readonly fit: () => BikeFit;
+}
+
 export const createCast = (
   assets: Assets,
   shading: Shading,
   tags: TagLayer,
   speech: BarSpeech,
-  heroBike: THREE.Object3D,
-  garageBike: THREE.Object3D,
+  hero: BarMount,
+  garage: BarMount,
   shown: number,
   firstStandIns: boolean
 ): BarCast => {
   let standIns = firstStandIns;
   const group = new THREE.Group();
-  const mounts = new Map<BarAct, THREE.Object3D>([
-    ["ride", heroBike],
-    ["tune", garageBike],
+  const mounts = new Map<BarAct, BarMount>([
+    ["ride", hero],
+    ["tune", garage],
   ]);
   const members: CastMember[] = [];
   const motions: Motion[] = [];
@@ -232,13 +238,10 @@ export const createCast = (
 
   const rideMount = (
     { figure, head }: CastMember,
-    bike: THREE.Object3D,
+    { bike, fit }: BarMount,
     seconds: number
   ): void => {
-    figure.root.position.copy(bike.position);
-    figure.root.quaternion.copy(bike.quaternion);
-    figure.root.translateY(figure.seat.y);
-    figure.root.translateZ(figure.seat.z);
+    figure.mount(bike, fit(), 0);
     figure.animate(riding, seconds);
     head.copy(figure.root.position);
     head.y += 0.9;

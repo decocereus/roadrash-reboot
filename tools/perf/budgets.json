@@ -124,8 +124,8 @@
   },
   "limits": [
     {
-      "derivation": "exact baseline",
-      "value": 122108,
+      "derivation": "measured 122336 B: the five fit points, seat, both grips and both pegs, that every rider is seated by add 228 B",
+      "value": 122336,
       "baseline": 122108,
       "direction": "max",
       "environment": "build",
@@ -148,8 +148,8 @@
       "unit": "B"
     },
     {
-      "derivation": "exact baseline",
-      "value": 116948,
+      "derivation": "measured 117212 B: the five fit points, seat, both grips and both pegs, that every rider is seated by add 264 B",
+      "value": 117212,
       "baseline": 116948,
       "direction": "max",
       "environment": "build",
@@ -160,8 +160,8 @@
       "unit": "B"
     },
     {
-      "derivation": "exact baseline",
-      "value": 126272,
+      "derivation": "measured 126532 B: the five fit points, seat, both grips and both pegs, that every rider is seated by add 260 B",
+      "value": 126532,
       "baseline": 126272,
       "direction": "max",
       "environment": "build",
@@ -292,8 +292,8 @@
       "unit": "B"
     },
     {
-      "derivation": "exact baseline",
-      "value": 118884,
+      "derivation": "measured 119148 B: the five fit points, seat, both grips and both pegs, that every rider is seated by add 264 B",
+      "value": 119148,
       "baseline": 118884,
       "direction": "max",
       "environment": "build",
@@ -316,8 +316,8 @@
       "unit": "B"
     },
     {
-      "derivation": "exact baseline",
-      "value": 3561280,
+      "derivation": "measured 3562296 B: the four bikes' fit points, seat, both grips and both pegs, that every rider is seated by add 1016 B",
+      "value": 3562296,
       "baseline": 3561280,
       "direction": "max",
       "environment": "build",
