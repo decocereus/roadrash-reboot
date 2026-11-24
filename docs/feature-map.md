@@ -1296,6 +1296,8 @@ Source files:
 
 Test files:
 
+- `tools/perf/test/bench-queue-env.test.ts`
+- `tools/perf/test/bench-queue-env.ts`
 - `tools/perf/test/bench-queue-race.test.ts`
 - `tools/perf/test/bench-queue-rules.test.ts`
 - `tools/perf/test/bench-queue-worker.ts`
