@@ -23,7 +23,9 @@ const overLimit = (metric: string) => {
     unit: kind.unit,
     value: 1,
   };
-  const [verdict] = judge(
+  const {
+    verdicts: [verdict],
+  } = judge(
     [limit],
     [
       {
@@ -37,8 +39,7 @@ const overLimit = (metric: string) => {
         value: 2,
       },
     ],
-    [{ environment: ENVIRONMENT, kind, scenario: SCENARIO }],
-    null
+    [{ environment: ENVIRONMENT, kind, scenario: SCENARIO }]
   );
   return verdict;
 };

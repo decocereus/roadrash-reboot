@@ -492,11 +492,10 @@ export const evaluateGpu = (
     ...results.flatMap((each) => each.observations),
     ...barRead.observations,
   ];
-  const verdicts = judge(
+  const { evidence, verdicts } = judge(
     limits,
     observations,
-    requiredRows(["gpu"], [], [environment]),
-    null
+    requiredRows(["gpu"], [], [environment])
   );
   const counts = results.map(({ counts: peaks, scenario }) => ({
     peaks,
@@ -506,6 +505,7 @@ export const evaluateGpu = (
     counts,
     lines: [
       ...failures,
+      ...evidence,
       ...verdicts.map((verdict) => verdict.text),
       ...firstUse.held,
       ...counts.flatMap(({ peaks, scenario }) =>
@@ -517,6 +517,9 @@ export const evaluateGpu = (
       ),
     ],
     observations,
-    ok: failures.length === 0 && verdicts.every((verdict) => verdict.ok),
+    ok:
+      failures.length === 0 &&
+      evidence.length === 0 &&
+      verdicts.every((verdict) => verdict.ok),
   };
 };

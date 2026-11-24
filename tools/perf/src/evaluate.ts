@@ -117,6 +117,7 @@ const incompleteLine = (samples: Samples): string[] => {
 
 export interface Evaluation {
   readonly ok: boolean;
+  readonly evidence: readonly string[];
   readonly lines: readonly string[];
   readonly environment: string;
   readonly observations: readonly Observation[];
@@ -127,25 +128,25 @@ export const evaluateGate = (
   budgets: Budgets
 ): Evaluation => {
   const observed = observe(samples, budgets.nodeProfiles);
-  const [first] = samples.node.flatMap((lane) => lane.calibrations);
-  const verdicts = judge(
+  const { evidence, verdicts } = judge(
     budgets.limits,
     observed.observations,
-    requiredRows(samples.lanes, [observed.environment], []),
-    first?.record.runtime.cpu ?? null
+    requiredRows(samples.lanes, [observed.environment], [])
   );
+  const failures = [...observed.failures, ...evidence];
   const incomplete = incompleteLine(samples);
   return {
     environment: observed.environment,
+    evidence: [...failures, ...incomplete],
     lines: [
-      ...observed.failures,
+      ...failures,
       ...verdicts.map((verdict) => verdict.text),
       ...observed.reported,
       ...incomplete,
     ],
     observations: observed.observations,
     ok:
-      observed.failures.length === 0 &&
+      failures.length === 0 &&
       incomplete.length === 0 &&
       verdicts.every((verdict) => verdict.ok),
   };
@@ -260,12 +261,16 @@ export const evaluateBaseline = (samples: Samples): BaselineEvaluation => {
   ];
   return {
     environment: observed.environment,
+    evidence: [...observed.failures, ...incomplete],
     lines,
     observations: observed.observations,
     ok:
       observed.failures.length === 0 &&
       incomplete.length === 0 &&
-      limits.length === required.length,
+      limits.length ===
+        required.filter(
+          ({ kind }) => kind.rule !== "normalised" && kind.rule !== "paired"
+        ).length,
     proposal: { limits, nodeProfiles: profiles },
   };
 };
