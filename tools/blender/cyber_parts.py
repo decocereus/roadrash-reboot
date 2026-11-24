@@ -5,9 +5,11 @@ import bmesh
 from mathutils import Vector, Matrix
 from common import B, MI, box, tube, lathe, ring_loft, finish, mirror, grip_at, peg_at
 
-SEAT=[(.00,[(0,.80),(.09,.80),(.122,.78),(.11,.745),(0,.74)]),
-      (.20,[(0,.79),(.11,.79),(.143,.77),(.125,.735),(0,.73)]),
-      (.51,[(0,.83),(.10,.82),(.13,.79),(.12,.75),(0,.745)])]
+SEAT=[(.00,[(0,.80),(.09,.80),(.122,.775),(.11,.72),(0,.715)]),
+      (.20,[(0,.79),(.11,.79),(.143,.765),(.13,.71),(0,.705)]),
+      (.40,[(0,.816),(.115,.812),(.145,.785),(.13,.715),(0,.71)]),
+      (.45,[(0,.865),(.10,.86),(.13,.83),(.12,.75),(0,.745)]),
+      (.53,[(0,.875),(.095,.87),(.125,.84),(.115,.76),(0,.75)])]
 PEG_RADIUS = .017
 # Where each bike seats its rider: the hip point's author z, then each grip's axis centre and each peg's top
 # as (metres forward of the hip point, metres above it), from the posture report's per-mesh targets.
