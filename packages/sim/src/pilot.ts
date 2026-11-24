@@ -151,19 +151,16 @@ export const pilotRider = (
   riding.brakeShare = Math.min(MOST_BRAKE_SHARE, BRAKE_SHARE + pace.lift);
   slickAhead.metres = Number.POSITIVE_INFINITY;
   slickAhead.speed = Number.POSITIVE_INFINITY;
-  const aim = straightened(
-    track,
-    rider,
-    jumpAim(
-      state,
-      track,
-      rider,
-      police
-        ? copAim(history, state, track, rider)
-        : chooseLine(history, state, track, rider, Number.POSITIVE_INFINITY),
-      roll
-    )
-  );
-  ride(history, track, rider, aim, pace, input);
+  const plan = (): Aim =>
+    police
+      ? copAim(history, state, track, rider)
+      : chooseLine(history, state, track, rider, Number.POSITIVE_INFINITY);
+  let planned = rider.jumpTaken;
+  let aim = jumpAim(state, track, rider, plan(), roll);
+  while (rider.jumpTaken !== planned) {
+    planned = rider.jumpTaken;
+    aim = jumpAim(state, track, rider, plan(), roll);
+  }
+  ride(history, track, rider, straightened(track, rider, aim), pace, input);
   fight(state, rider, input, roll);
 };

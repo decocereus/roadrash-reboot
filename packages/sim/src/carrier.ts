@@ -5,7 +5,12 @@ import { glancesOff } from "./rider-collisions.ts";
 import { throwRider } from "./rider-crash.ts";
 import { forwardRateAt } from "./rider-flight.ts";
 import type { Flight } from "./rider-flight.ts";
-import { BIKE_HALF_LENGTH, BIKE_HALF_WIDTH, TICK_SECONDS } from "./state.ts";
+import {
+  BIKE_HALF_LENGTH,
+  BIKE_HALF_WIDTH,
+  LANE_REACH,
+  TICK_SECONDS,
+} from "./state.ts";
 import type { CarBox, RaceState, RiderState, TrafficCar } from "./state.ts";
 
 const RIG_HALF_LENGTH = 14.35;
@@ -109,6 +114,25 @@ export const passingLineOf = (car: TrafficCar, x: number): number => {
 
 export const ridingOver = (rider: RiderState, carIndex: number): boolean =>
   rider.jumpTaken && rider.jumpSeen === carIndex;
+
+export const jumpClears = (
+  cars: readonly TrafficCar[],
+  rider: RiderState,
+  carIndex: number
+): boolean => {
+  if (!rider.jumpTaken) {
+    return false;
+  }
+  const carrier = cars[rider.jumpSeen];
+  const car = cars[carIndex];
+  return (
+    carIndex === rider.jumpSeen ||
+    (carrier !== undefined &&
+      car !== undefined &&
+      Math.abs(car.x - carrier.x) < LANE_REACH &&
+      car.s > toeOf(carrier))
+  );
+};
 
 export const launchOffLip = (
   track: Track,
