@@ -10,6 +10,8 @@ import * as Schema from "effect/Schema";
 import type { NodeProfile, Observation } from "./budgets.ts";
 import { DRIFTED } from "./load.ts";
 import { MeasurementFailed } from "./measurement-failed.ts";
+import { roomCoverageFailures, roomObservations } from "./node-lane-room.ts";
+import type { RoomRun } from "./node-lane-room.ts";
 import {
   CALIBRATION_ROUNDS,
   CALIBRATION_VERSION,
@@ -17,9 +19,9 @@ import {
   TIMED_WINDOWS,
 } from "./node.ts";
 import type { ChildRecord } from "./node.ts";
-import { median, quantile } from "./result.ts";
+import { median, p95Of, quantile } from "./result.ts";
 import { validateWorkload, WINDOW_TICKS } from "./scenarios.ts";
-import type { Scenario } from "./scenarios.ts";
+import type { RoomPart, Scenario } from "./scenarios.ts";
 import type { Side, SideName } from "./sides.ts";
 
 const TIMING_PAIRS = 5;
@@ -112,7 +114,8 @@ export const runChild = Effect.fnUntraced(function* runChild(
   task: ChildRecord["task"],
   scenario: { readonly id: string },
   dir: string,
-  label: string
+  label: string,
+  childArgs: readonly string[] = []
 ) {
   const fs = yield* FileSystem.FileSystem;
   const processes = yield* ToolProcesses;
@@ -126,6 +129,7 @@ export const runChild = Effect.fnUntraced(function* runChild(
       SYNCHRONOUS_COMPILE,
       path.join(side.root, script),
       ...taskArgs,
+      ...childArgs,
       "--scenario",
       scenario.id,
       "--out",
@@ -228,14 +232,15 @@ const roomRun = Effect.fnUntraced(function* roomRun(
   sides: Sides,
   scenario: Scenario,
   dir: string,
-  run: number
+  part: RoomPart
 ) {
   const sample = yield* runChild(
     sides.B,
     "room",
     scenario,
     dir,
-    `room-${run}-B`
+    `room-${part}-B`,
+    ["--part", String(part)]
   );
   const { room } = sample.record;
   if (!room) {
@@ -431,12 +436,6 @@ const allocatedPerTick = (record: ChildRecord): number =>
 
 type SnapshotRun = NonNullable<ChildRecord["snapshot"]>;
 
-export const p95Of = (durations: readonly number[]): number =>
-  quantile(
-    durations.toSorted((left, right) => left - right),
-    0.95
-  );
-
 const STAMP_TRIM = 0.05;
 
 const trimmedMeanOf = (durations: readonly number[]): number => {
@@ -525,53 +524,8 @@ const snapshotObservations = (
   ];
 };
 
-type RoomRun = NonNullable<ChildRecord["room"]>;
-
 const roomRuns = (lane: NodeLane): readonly RoomRun[] =>
   lane.rooms.map((sample) => sample.record.room);
-
-const roomObservations = (
-  scenario: Scenario,
-  lane: NodeLane,
-  environment: string,
-  scale: number
-): readonly Observation[] => {
-  const runs = roomRuns(lane);
-  const observed = (
-    metric: string,
-    note: string,
-    measured: readonly number[]
-  ): Observation => ({
-    environment,
-    lane: "node",
-    metric,
-    note,
-    paired: null,
-    runs: { a: [], b: measured },
-    scenario: scenario.id,
-    value: median(measured),
-  });
-  const timed = (metric: string, of: (run: RoomRun) => readonly number[]) =>
-    observed(
-      metric,
-      `runs=${runs.length} scale=${scale.toFixed(3)}`,
-      runs.map((run) => p95Of(of(run)) / scale)
-    );
-  const allocated = (metric: string, of: (run: RoomRun) => number) =>
-    observed(metric, `runs=${runs.length}`, runs.map(of));
-  return [
-    timed("room.tick.p95", (run) => run.tick),
-    timed("room.confirm.p95", (run) => run.confirm),
-    timed("room.rollback.p95", (run) => run.rollback),
-    timed("room.checkpoint.p95", (run) => run.checkpoint),
-    allocated("room.allocatedBytesPerTick", (run) => run.allocated.server),
-    allocated(
-      "room.client.allocatedBytesPerTick",
-      (run) => run.allocated.client
-    ),
-    allocated("room.frame.allocatedBytesPerTick", (run) => run.allocated.frame),
-  ];
-};
 
 export const coldLine = (
   scenario: Scenario,
@@ -605,6 +559,7 @@ export const nodeVerdicts = (
   const profile = profiles[environment];
   const failures = [
     ...workloadFailures(scenario, lane, expectedHash),
+    ...roomCoverageFailures(scenario, roomRuns(lane)),
     ...calibrationFailures(scenario, lane, environment, profile),
   ];
   if (failures.length > 0 || !profile) {
@@ -680,7 +635,7 @@ export const nodeVerdicts = (
       value: median(allocated.b),
     },
     ...snapshotObservations(scenario, lane, environment, laneScale),
-    ...roomObservations(scenario, lane, environment, laneScale),
+    ...roomObservations(scenario, roomRuns(lane), environment, laneScale),
   ];
   return { environment, failures, observations, scales };
 };
