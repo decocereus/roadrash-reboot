@@ -2373,7 +2373,7 @@
     },
     {
       "baseline": 0.20000004768371582,
-      "derivation": "2 x the worst B window of the first campaign that draws the time of day",
+      "derivation": "2 x the worst B window of its scenario, and at least 0.4 ms: four 0.1 ms steps of the profiler clock",
       "direction": "max",
       "environment": "gpu-chromium-nvidia",
       "metric": "world.cpu.p95",
@@ -2385,7 +2385,7 @@
     },
     {
       "baseline": 0.20000004768371582,
-      "derivation": "2 x the worst B window of the first campaign that draws the time of day",
+      "derivation": "2 x the worst B window of its scenario, and at least 0.4 ms: four 0.1 ms steps of the profiler clock",
       "direction": "max",
       "environment": "gpu-chromium-nvidia",
       "metric": "world.cpu.p95",
@@ -2397,7 +2397,7 @@
     },
     {
       "baseline": 0.40000009536743164,
-      "derivation": "2 x the worst B window of the first campaign that draws the time of day",
+      "derivation": "2 x the worst B window of its scenario, and at least 0.4 ms: four 0.1 ms steps of the profiler clock",
       "direction": "max",
       "environment": "gpu-chromium-intel",
       "metric": "world.cpu.p95",
@@ -2409,7 +2409,7 @@
     },
     {
       "baseline": 0.3000001907348633,
-      "derivation": "2 x the worst B window of the first campaign that draws the time of day",
+      "derivation": "2 x the worst B window of its scenario, and at least 0.4 ms: four 0.1 ms steps of the profiler clock",
       "direction": "max",
       "environment": "gpu-chromium-intel",
       "metric": "world.cpu.p95",
@@ -2421,7 +2421,7 @@
     },
     {
       "baseline": 0.19999998807907104,
-      "derivation": "2 x the worst B window over two campaigns (10 windows); the Mac profiler reads in 0.1 ms steps",
+      "derivation": "2 x the worst B window of its scenario, and at least 0.4 ms: four 0.1 ms steps of the profiler clock (over the two Mac campaigns)",
       "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "world.cpu.p95",
@@ -2433,7 +2433,7 @@
     },
     {
       "baseline": 0.10000002384185791,
-      "derivation": "2 x the worst B window over two campaigns (10 windows), taken across both scenarios: reference-v1's, so the lane has one limit; this scenario's own worst is its baseline; the Mac profiler reads in 0.1 ms steps",
+      "derivation": "2 x the worst B window of its scenario, and at least 0.4 ms: four 0.1 ms steps of the profiler clock (over the two Mac campaigns)",
       "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "world.cpu.p95",
