@@ -13,6 +13,10 @@ import type { RaceEvent } from "./state.ts";
 import { CONVOY_CRUISE } from "./traffic.ts";
 
 const CONVOY_LENGTH = 6;
+const CONVOY_GAP = 14;
+const START_STRETCH_FROM = -70;
+const START_STRETCH_TO = 260;
+const [firstPiece, ...laterPieces] = roads["ridge-road"].pieces;
 
 describe("trucks on the roads", () => {
   it("move every car and every slow convoy out of a truck's jump zone, so every road keeps its traffic, give or take the cars beside a convoy moved back, and nothing waits where riders take off or land", () => {
@@ -97,6 +101,54 @@ describe("trucks on the roads", () => {
       ).toBeTruthy();
       expect(new Set(gaps).size).toBe(1);
       expect(truck.cruiseSpeed).toBeGreaterThan(CONVOY_CRUISE);
+    }
+  );
+
+  it.each([
+    {
+      carriers: Array.from({ length: 22 }, (_, at) => 300 + at * 200),
+      name: "a chain of trucks from 300 m",
+      pieces: roads["ridge-road"].pieces,
+      seed: 4,
+      tier: 2,
+    },
+    {
+      carriers: Array.from({ length: 22 }, (_, at) => 2000 + at * 200),
+      name: "a chain of trucks from 2,000 m",
+      pieces: roads["ridge-road"].pieces,
+      seed: 1,
+      tier: 3,
+    },
+    {
+      carriers: [300],
+      name: "one truck at 300 m on a 900 m road",
+      pieces: [firstPiece, ...laterPieces.slice(0, 3)],
+      seed: 3,
+      tier: 2,
+    },
+  ] as const)(
+    "with $name, a convoy moved back off a zone is left out rather than start in the start stretch or on another convoy",
+    ({ carriers, pieces, seed, tier }) => {
+      const track = compileTrack({
+        ...roads["ridge-road"],
+        carriers,
+        chevrons: [],
+        pieces,
+      });
+      const convoy = createRace({
+        ...defaultSetup(track, seed),
+        conditions: difficulties[tier].conditions,
+      })
+        .cars.filter((car) => car.cruiseSpeed === CONVOY_CRUISE)
+        .map((car) => car.s)
+        .toSorted((a, b) => a - b);
+      expect(convoy.length % CONVOY_LENGTH).toBe(0);
+      expect(
+        convoy.filter((s) => s > START_STRETCH_FROM && s < START_STRETCH_TO)
+      ).toStrictEqual([]);
+      expect(
+        convoy.slice(1).filter((s, at) => s - (convoy[at] ?? s) < CONVOY_GAP)
+      ).toStrictEqual([]);
     }
   );
 

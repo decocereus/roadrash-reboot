@@ -154,13 +154,29 @@ const overlapOf = (
     )
   );
 
-const moveConvoysBehindCarriers = (
+const blocksStart = (s: number, clearTo: number): boolean =>
+  s > CLEAR_START_FROM && s < clearTo;
+
+const clearOfConvoys = (
+  car: TrafficCar,
+  convoys: readonly TrafficCar[]
+): boolean =>
+  car.cruiseSpeed < 0 ||
+  convoys.every((other) => Math.abs(car.s - other.s) > CONVOY_GAP);
+
+const placeConvoys = (
   convoys: readonly TrafficCar[],
   carriers: readonly TrafficCar[],
   track: Track
-): void => {
-  for (let first = 0; first < convoys.length; first += CONVOY_CARS) {
-    const convoy = convoys.slice(first, first + CONVOY_CARS);
+): TrafficCar[] => {
+  const groups = Array.from({ length: convoys.length / CONVOY_CARS }, (_, at) =>
+    convoys.slice(at * CONVOY_CARS, (at + 1) * CONVOY_CARS)
+  );
+  const placed = groups
+    .filter((convoy) => overlapOf(convoy, carriers) === 0)
+    .flat();
+  for (const convoy of groups) {
+    const moved = overlapOf(convoy, carriers) > 0;
     for (
       let back = overlapOf(convoy, carriers);
       back > 0;
@@ -171,15 +187,18 @@ const moveConvoysBehindCarriers = (
       }
       seatCars(convoy, track);
     }
+    if (
+      moved &&
+      convoy.every(
+        (car) =>
+          !blocksStart(car.s, CLEAR_START_TO) && clearOfConvoys(car, placed)
+      )
+    ) {
+      placed.push(...convoy);
+    }
   }
+  return convoys.filter((car) => placed.includes(car));
 };
-
-const clearOfConvoys = (
-  car: TrafficCar,
-  convoys: readonly TrafficCar[]
-): boolean =>
-  car.cruiseSpeed < 0 ||
-  convoys.every((other) => Math.abs(car.s - other.s) > CONVOY_GAP);
 
 const freeFor = (
   car: TrafficCar,
@@ -248,8 +267,7 @@ export const createTraffic = (
       const cruiseSpeed = direction * (19 + random() * 8);
       const clearTo =
         direction === 1 ? CLEAR_START_TO : CLEAR_ONCOMING_START_TO;
-      const blocksStart = s > CLEAR_START_FROM && s < clearTo;
-      if (!blocksStart) {
+      if (!blocksStart(s, clearTo)) {
         const paint = Math.floor(random() * PAINT_COUNT);
         const home = laneFor(lanes, cruiseSpeed, random);
         cars.push({
@@ -272,14 +290,14 @@ export const createTraffic = (
   const carriers = track.carrierStarts.map((s) =>
     carrierAt(s, lane, Math.floor(random() * PAINT_COUNT), patienceOf(patience))
   );
-  const convoys = convoysOf(
+  const drawn = convoysOf(
     track,
     conditions.slowConvoys,
     convoyRandom,
     patience
   );
-  seatCars(convoys, track);
-  moveConvoysBehindCarriers(convoys, carriers, track);
+  seatCars(drawn, track);
+  const convoys = placeConvoys(drawn, carriers, track);
   const kept = cars.filter((car) => clearOfConvoys(car, convoys));
   moveOutOfCarriers(kept, carriers, convoys, track);
   return [...kept, ...convoys, ...carriers];
