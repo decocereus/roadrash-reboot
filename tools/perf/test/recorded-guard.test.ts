@@ -77,22 +77,22 @@ const caughtFrom: ReadonlyMap<string, ReadonlyMap<string, number>> = new Map([
     "node-darwin-arm64",
     new Map([
       ["lobby.tick.p95|-", 18],
-      ["roadLife.tick.p95|-", 19],
+      ["roadLife.tick.p95|-", 18],
       ["room.checkpoint.p50|pack-riding-v1", 22],
       ["room.checkpoint.p50|reference-v1", 29],
       ["room.confirm.p95|pack-riding-v1", 18],
       ["room.confirm.p95|reference-v1", 18],
       ["room.rollback.p95|pack-riding-v1", 21],
-      ["room.rollback.p95|reference-v1", 18],
+      ["room.rollback.p95|reference-v1", 19],
       ["room.tick.p95|pack-riding-v1", 18],
       ["room.tick.p95|reference-v1", 18],
       ["sim.tick.p99|pack-riding-v1", 18],
       ["sim.tick.p99|reference-v1", 19],
       ["snapshot.hash.p95|pack-riding-v1", 21],
-      ["snapshot.hash.p95|reference-v1", 20],
+      ["snapshot.hash.p95|reference-v1", 19],
       ["snapshot.restore.p95|pack-riding-v1", 23],
       ["snapshot.restore.p95|reference-v1", 28],
-      ["snapshot.write.p95|pack-riding-v1", 23],
+      ["snapshot.write.p95|pack-riding-v1", 22],
       ["snapshot.write.p95|reference-v1", 21],
       ["timing.stamp.trimmedMean|pack-riding-v1", 28],
       ["timing.stamp.trimmedMean|reference-v1", 21],
@@ -239,7 +239,7 @@ describe("measurement protocol", () => {
   );
 });
 
-const NEWEST_MAC_RUN = "gate-2026-11-24T20-43-43-042Z-9f67ba9-3201f6e";
+const NEWEST_MAC_RUN = "gate-2026-11-24T21-30-32-229Z-9f67ba9-3e91d6b";
 
 const macRecording = recordingOf("node-darwin-arm64");
 

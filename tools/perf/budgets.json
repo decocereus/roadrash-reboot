@@ -91,11 +91,11 @@
       },
       {
         "file": "tools/perf/baselines/recorded.node-darwin-arm64.json.gz",
-        "sha256": "d5f60d32127a71d3aacfe07c834e9946fbcbc48fec6d07b01a00615760cefb65"
+        "sha256": "6d99ebee337204fd988add03921fe055595be15761143a271b18fbf7a0afaa59"
       },
       {
         "file": "tools/perf/baselines/recorded.node-linux-x64.json.gz",
-        "sha256": "887eaa3b1d03d2658f9fe2c3b3607cb0c0f80b6a84cc33035449cd84a4a6d235"
+        "sha256": "fa71d4285e857b663ad246b9c63da5ac4e00de4c1712aed26c85e06180e92ad9"
       },
       {
         "file": "tools/perf/baselines/tiers.node-darwin-arm64.json.gz",
@@ -1632,16 +1632,16 @@
       "value": 0.2725008216277461
     },
     {
-      "baseline": 0.34090898117976554,
+      "baseline": 0.33885924093546504,
       "derivation": "1.15 x the worst of 8 recorded runs on 1 runner CPU",
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "snapshot.hash.p95",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "gate-2026-11-24T16-08-38-267Z-9f67ba9-396357f",
+      "source": "gate-2026-11-24T18-39-30-649Z-9f67ba9-0bdbc4f",
       "unit": "x side-A sim.tick.p95",
-      "value": 0.39204532835673034
+      "value": 0.38968812707578476
     },
     {
       "baseline": 0.3068923681319833,
@@ -1704,16 +1704,16 @@
       "value": 0.23986142328406898
     },
     {
-      "baseline": 0.19439872440349237,
+      "baseline": 0.19271329614710705,
       "derivation": "1.15 x the worst of 8 recorded runs on 1 runner CPU",
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "snapshot.write.p95",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "gate-2026-11-24T16-08-38-267Z-9f67ba9-396357f",
+      "source": "gate-2026-11-24T18-43-47-609Z-9f67ba9-c22b4bb",
       "unit": "x side-A sim.tick.p95",
-      "value": 0.2235585330640162
+      "value": 0.2216202905691731
     },
     {
       "baseline": 0.19800156184539447,
