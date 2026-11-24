@@ -13,6 +13,7 @@ import { lookOf } from "../src/game/looks.ts";
 import { createPipeline } from "../src/game/post.ts";
 import { createRiderFigure } from "../src/game/rider-figure.ts";
 import type { Stance } from "../src/game/rider-figure.ts";
+import { seatedStance } from "./seated-contacts.ts";
 
 const LOOK = lookOf("salt-coast");
 const CELL_WIDTH = 300;
@@ -60,21 +61,6 @@ const poses: readonly Pose[] = [
   { name: "punch", roll: 0, stance: { pose: "punch", reach: 1 } },
   { name: "kick", roll: 0, stance: { pose: "kick", reach: 1, rise: 1 } },
 ];
-
-const stanceOf = (pose: Pose): Stance => ({
-  flinch: 0,
-  flinchSide: 1,
-  lean: 0,
-  pose: "seated",
-  reach: 0,
-  rise: 0,
-  side: 1,
-  speed: 0,
-  time: 0,
-  tuck: 0,
-  weapon: "none",
-  ...pose.stance,
-});
 
 const acquire = async (
   notes: string[]
@@ -199,7 +185,7 @@ export const run = async (
         bike.rotation.set(0, 0, -pose.roll, "YXZ");
         bike.updateMatrixWorld();
         figure.mount(bike, fit, 0);
-        const stance = stanceOf(pose);
+        const stance = seatedStance(pose.stance);
         for (let step = 0; step < SETTLE_STEPS; step += 1) {
           figure.animate(stance, 1);
         }

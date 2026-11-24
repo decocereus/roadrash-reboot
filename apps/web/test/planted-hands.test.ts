@@ -14,7 +14,7 @@ import { lookOf } from "../src/game/looks.ts";
 import { createRiderFigure } from "../src/game/rider-figure.ts";
 import type { Stance } from "../src/game/rider-figure.ts";
 import { artFile } from "./art-files.ts";
-import { bodyOf, placesOf } from "./seated-contacts.ts";
+import { bodyOf, placesOf, seatedStance } from "./seated-contacts.ts";
 
 const CONTACT = 0.005;
 const FREE = 0.2;
@@ -154,21 +154,6 @@ const struckInLeans: readonly Held[] = strikes.flatMap(({ limb, pose, rise }) =>
   )
 );
 
-const stanceOf = (stance: Partial<Stance>): Stance => ({
-  flinch: 0,
-  flinchSide: 1,
-  lean: 0,
-  pose: "seated",
-  reach: 0,
-  rise: 0,
-  side: 1,
-  speed: 0,
-  time: 0,
-  tuck: 0,
-  weapon: "none",
-  ...stance,
-});
-
 const fitOf = async (model: BikeModelId): Promise<BikeFit> => {
   const url = modelUrls.bikes[model];
   const { value } = await assetParsers.bike(artFile(url), url);
@@ -181,7 +166,7 @@ const mountedOf = async (url: string, fit: BikeFit) => {
   const { value } = await assetParsers.rider(artFile(url), url);
   const figure = createRiderFigure(value, shading, paletteOf(0));
   figure.mount(bike, fit, 0);
-  figure.animate(stanceOf({}), SETTLED);
+  figure.animate(seatedStance({}), SETTLED);
   figure.root.updateMatrixWorld(true);
   return { contacts: contactsOf(bodyOf(figure.root), figure.root), figure };
 };
@@ -231,7 +216,7 @@ describe("planted hands and feet on every shipped rider and bike", () => {
       const { contacts, figure } = await mountedOf(url, fit);
       const misses: string[] = [];
       for (const { free, name, stance } of [...held, ...struckInLeans]) {
-        figure.animate(stanceOf(stance), SETTLED);
+        figure.animate(seatedStance(stance), SETTLED);
         const places = placesOf(figure.root, contacts);
         for (const contact of contactNames) {
           const off = places[contact].distanceTo(fit[contact]);
@@ -282,10 +267,10 @@ describe("planted hands and feet on every shipped rider and bike", () => {
     async (url, model, _, frames) => {
       const fit = await fitOf(model);
       const { contacts, figure } = await mountedOf(url, fit);
-      figure.animate(stanceOf(frames[0] ?? {}), SETTLED);
+      figure.animate(seatedStance(frames[0] ?? {}), SETTLED);
       let worst = 0;
       for (const frame of frames) {
-        figure.animate(stanceOf(frame), FRAME);
+        figure.animate(seatedStance(frame), FRAME);
         const places = placesOf(figure.root, contacts);
         worst = Math.max(
           worst,
@@ -316,7 +301,7 @@ describe("planted hands and feet on every shipped rider and bike", () => {
         return bone.getWorldPosition(new THREE.Vector3());
       };
       const seated = kneeAt();
-      const stance = stanceOf({ lean, speed: RIDING_SPEED });
+      const stance = seatedStance({ lean, speed: RIDING_SPEED });
       for (let frame = 0; frame < KNEE_SETTLE_FRAMES; frame += 1) {
         figure.animate(stance, FRAME);
       }
