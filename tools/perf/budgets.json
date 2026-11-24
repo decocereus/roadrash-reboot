@@ -124,8 +124,8 @@
   },
   "limits": [
     {
-      "derivation": "measured 122336 B: the five fit points, seat, both grips and both pegs, that every rider is seated by add 228 B",
-      "value": 122336,
+      "derivation": "measured 124524 B: rebuilt for the deep tuck, seat moved forward, a shorter and flatter tank, a padded seat with a step to the tail, lower bars and rearset pegs, adds 2188 B",
+      "value": 124524,
       "baseline": 122108,
       "direction": "max",
       "environment": "build",
@@ -148,8 +148,8 @@
       "unit": "B"
     },
     {
-      "derivation": "measured 117212 B: the five fit points, seat, both grips and both pegs, that every rider is seated by add 264 B",
-      "value": 117212,
+      "derivation": "measured 120032 B: rebuilt for the deep tuck, seat moved forward, a shorter and flatter tank, a padded seat with a step to the tail, lower bars and rearset pegs, adds 2820 B",
+      "value": 120032,
       "baseline": 116948,
       "direction": "max",
       "environment": "build",
@@ -160,8 +160,8 @@
       "unit": "B"
     },
     {
-      "derivation": "measured 126532 B: the five fit points, seat, both grips and both pegs, that every rider is seated by add 260 B",
-      "value": 126532,
+      "derivation": "measured 129356 B: rebuilt for the deep tuck, seat moved forward, a shorter and flatter tank, a padded seat with a step to the tail, lower bars and rearset pegs, adds 2824 B",
+      "value": 129356,
       "baseline": 126272,
       "direction": "max",
       "environment": "build",
@@ -304,8 +304,8 @@
       "unit": "B"
     },
     {
-      "derivation": "measured 119148 B: the five fit points, seat, both grips and both pegs, that every rider is seated by add 264 B",
-      "value": 119148,
+      "derivation": "measured 122012 B: rebuilt for the deep tuck, seat moved forward, a shorter and flatter tank, a padded seat with a step to the tail, lower bars and rearset pegs, adds 2864 B",
+      "value": 122012,
       "baseline": 118884,
       "direction": "max",
       "environment": "build",
@@ -328,8 +328,8 @@
       "unit": "B"
     },
     {
-      "derivation": "measured 3603428 B: the four bikes' fit points, seat, both grips and both pegs, that every rider is seated by add 1016 B",
-      "value": 3603428,
+      "derivation": "measured 3614124 B: the four bikes rebuilt for the deep tuck, seat moved forward, a shorter and flatter tank, a padded seat with a step to the tail, lower bars and rearset pegs, add 10696 B",
+      "value": 3614124,
       "baseline": 3602412,
       "direction": "max",
       "environment": "build",
