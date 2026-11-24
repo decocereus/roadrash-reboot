@@ -82,7 +82,7 @@ const riding = (
       handed.push({
         bloom: grade.bloom,
         grade: [grade.grade[0], grade.grade[1], grade.grade[2]],
-        ink: new THREE.Color(grade.ink).getHexString(),
+        ink: `#${new THREE.Color(grade.ink).getHexString()}`,
       });
     },
   };
