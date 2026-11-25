@@ -317,35 +317,40 @@ describe("gpu frame lane", () => {
     expect(evaluation.ok).toBeFalsy();
   });
 
-  it("fails a B window whose riders take longer than the committed budget", () => {
-    const budget = limits.find(
-      (each) =>
-        each.environment === METAL &&
-        each.metric === "riders.cpu.p95" &&
-        each.scenario === packRiding?.id
-    );
-    if (!budget) {
-      throw new Error("budgets.json has no pack-riding riders budget.");
+  it.each(["riders", "tower"] as const)(
+    "fails a B window whose %s part takes longer than the committed budget",
+    (part) => {
+      const budget = limits.find(
+        (each) =>
+          each.environment === METAL &&
+          each.metric === `${part}.cpu.p95` &&
+          each.scenario === packRiding?.id
+      );
+      if (!budget) {
+        throw new Error(`budgets.json has no pack-riding ${part} budget.`);
+      }
+      const slow = budget.value * 2;
+      const evaluation = evaluateGpu(
+        campaign((scenario, side, pair) =>
+          isPack(scenario) && side === "B" && pair === 0
+            ? {
+                ...steady,
+                [part]: (index: number) =>
+                  index % 10 === 0 ? slow : steady[part](index),
+              }
+            : steady
+        ),
+        steadyBar,
+        limits,
+        METAL,
+        null
+      );
+      expect(
+        failing(evaluation.lines).map((line) => line.split(" observed=")[0])
+      ).toStrictEqual([`FAIL gpu pack-riding-v1 ${part}.cpu.p95 [${METAL}]`]);
+      expect(evaluation.ok).toBeFalsy();
     }
-    const slow = budget.value * 2;
-    const evaluation = evaluateGpu(
-      campaign((scenario, side, pair) =>
-        isPack(scenario) && side === "B" && pair === 0
-          ? { ...steady, riders: (index) => (index % 10 === 0 ? slow : 0.2) }
-          : steady
-      ),
-      steadyBar,
-      limits,
-      METAL,
-      null
-    );
-    expect(
-      failing(evaluation.lines).map((line) => line.split(" observed=")[0])
-    ).toStrictEqual([
-      "FAIL gpu pack-riding-v1 riders.cpu.p95 [gpu-helium-metal]",
-    ]);
-    expect(evaluation.ok).toBeFalsy();
-  });
+  );
 
   it("fails a B race that creates a program or texture after its first frame", () => {
     const compiled = rideOf(

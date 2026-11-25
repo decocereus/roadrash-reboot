@@ -41,6 +41,7 @@ const PARTS = [
   "line",
   "bloom",
   "grade",
+  "tower",
 ];
 
 type Ride = Extract<GpuSample, { side: "B" }>["capture"]["ride"];
@@ -49,6 +50,7 @@ export interface Playback {
   readonly interval: (index: number) => number;
   readonly extraCalls: (index: number) => number;
   readonly riders: (index: number) => number;
+  readonly tower: (index: number) => number;
   readonly shadowTriangles: (index: number) => number;
   readonly longTasks: GpuSample["capture"]["longTasks"];
   readonly discardedAt: number;
@@ -79,6 +81,7 @@ export const steady: Playback = {
   ),
   riders: () => 0.2,
   shadowTriangles: () => SHADOW_TRIANGLES,
+  tower: () => 0.05,
   viewport: { dpr: 2, height: 790, width: 1504 },
 };
 
@@ -97,6 +100,7 @@ const frameOf = (scenario: Scenario, playback: Playback, index: number) => ({
     1,
     13,
     1,
+    0,
   ],
   cpu: [
     1,
@@ -112,6 +116,7 @@ const frameOf = (scenario: Scenario, playback: Playback, index: number) => ({
     0.1,
     0.1,
     0.1,
+    playback.tower(index),
   ],
   discarded: index === playback.discardedAt ? 40 : 0,
   drawnEpoch: 1,
@@ -138,6 +143,7 @@ const frameOf = (scenario: Scenario, playback: Playback, index: number) => ({
     600_000,
     1,
     13,
+    1,
     1,
   ],
 });

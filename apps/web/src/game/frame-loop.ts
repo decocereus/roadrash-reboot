@@ -146,6 +146,7 @@ interface LoopParts {
   readonly noteDisplay: (now: number) => void;
   readonly pace: () => number;
   readonly player: () => RiderView;
+  readonly presentHalted: () => void;
   readonly quality: Quality;
   readonly recorder: Pick<
     Recorder,
@@ -171,6 +172,7 @@ export const installFrameLoop = ({
   noteDisplay,
   pace,
   player,
+  presentHalted,
   quality,
   recorder,
   renderer,
@@ -196,6 +198,7 @@ export const installFrameLoop = ({
     const seconds = clamp(interval / 1000, 0, MAX_FRAME_SECONDS);
     frame.last = now;
     if (halted()) {
+      presentHalted();
       return;
     }
     recorder.beginFrame(frame.frameId);

@@ -66,6 +66,7 @@ import {
   unprepared,
 } from "./game-session.ts";
 import type { Attract, Countdown, InRace, Session } from "./game-session.ts";
+import { createTowerPass } from "./hud-tower-pass.ts";
 import type { GameEvents, GameHandle, RacePlan } from "./hud.ts";
 import { createControls } from "./input.ts";
 import { createPipeline } from "./post.ts";
@@ -172,7 +173,11 @@ const startGame = (
     bench?.dispose();
   });
   const lap = lapOf(frame);
-  const pipeline = createPipeline(renderer, lap, quality.preset);
+  const towerPass = createTowerPass(renderer);
+  owners.push(() => {
+    towerPass.dispose();
+  });
+  const pipeline = createPipeline(renderer, lap, quality.preset, towerPass);
   owners.push(() => {
     pipeline.dispose();
   });
@@ -237,7 +242,7 @@ const startGame = (
     stage,
   });
   owners.push(cancelPreparation);
-  const { quiet, react, report, say, toggleMute } = bindFeedback({
+  const { bakeTower, quiet, react, report, say, toggleMute } = bindFeedback({
     chase,
     drawnSpeed: () => player().speed + (cast.views[stage.me]?.drift.along ?? 0),
     events,
@@ -247,6 +252,7 @@ const startGame = (
     session: () => session,
     sound,
     stage,
+    towerPass,
   });
 
   const clearNoticeAndClock = () => {
@@ -457,6 +463,7 @@ const startGame = (
     checkPresented,
     noteDisplay,
     present,
+    presentHalted,
     resize,
     skipsVsync,
     stateOf,
@@ -580,6 +587,7 @@ const startGame = (
       return room && !autopilot ? room.pace() : 1;
     },
     player,
+    presentHalted,
     quality,
     recorder,
     renderer,
@@ -621,7 +629,9 @@ const startGame = (
     }
     let release: () => void;
     try {
-      release = build(setup, dressing, true, room);
+      release = build(setup, dressing, true, room, (race) => {
+        bakeTower(next, race);
+      });
     } catch (error) {
       session = unprepared;
       return { cause: errorOf(error), kind: "failed", stage: "build" };

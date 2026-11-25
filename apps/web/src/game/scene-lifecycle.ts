@@ -78,12 +78,14 @@ interface StageParts {
   readonly devRide: DevRide | undefined;
   readonly pipeline: Pick<
     Pipeline,
-    "compile" | "prepare" | "render" | "setLook"
+    "compile" | "prepare" | "render" | "setLook" | "stageOverlay"
   >;
   readonly quality: Pick<Quality, "preset">;
   readonly showCast: (actors: Actors) => void;
   readonly stage: Stage;
 }
+
+const unready = (): void => undefined;
 
 interface Replacement {
   readonly actors: Actors;
@@ -147,6 +149,7 @@ export const bindStage = ({
     at: player().s,
     camera: chase.camera,
     figures: cast.views.map((view) => view.figure),
+    overlay: pipeline.stageOverlay,
     prepare: pipeline.prepare,
     puffs: cast.puffs,
     world: stage.world,
@@ -208,7 +211,8 @@ export const bindStage = ({
     dressing: Dressing,
     forRace: boolean,
     room: RoomRun | null,
-    owners: (() => void)[]
+    owners: (() => void)[],
+    ready: (candidate: Pick<Stage, "me" | "race">) => void
   ): Replacement => {
     const world =
       setup.track === stage.track
@@ -221,6 +225,7 @@ export const bindStage = ({
     }
     const colours = room?.riderColours ?? new Map<RiderId, number>();
     const race = room ?? localRace(setup, forRace);
+    ready({ me: room?.me ?? PLAYER_RIDER, race });
     const { cars, crossCars } = race.view;
     const fleet = createFleet(assets, world.shading, cars, crossCars);
     owners.push(() => {
@@ -234,12 +239,13 @@ export const bindStage = ({
     setup: RaceSetup,
     dressing: Dressing,
     forRace: boolean,
-    room: RoomRun | null = null
+    room: RoomRun | null = null,
+    ready: (candidate: Pick<Stage, "me" | "race">) => void = unready
   ): (() => void) => {
     const owners: (() => void)[] = [];
     let next: Replacement;
     try {
-      next = replacementFor(setup, dressing, forRace, room, owners);
+      next = replacementFor(setup, dressing, forRace, room, owners, ready);
     } catch (error) {
       releaseAll(owners);
       throw error;

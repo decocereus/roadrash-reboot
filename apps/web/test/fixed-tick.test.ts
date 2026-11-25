@@ -178,6 +178,28 @@ describe("the frame loop's clock", () => {
     expect(host.digests.length - paused).toBe(1);
   });
 
+  it("a paused race keeps presenting while the tower slides, steps nothing, and stops presenting once it settles", () => {
+    const host = createHost();
+    host.at(VSYNC_MS);
+    host.halt(true);
+    host.slide(true);
+    const stepped = host.digests.length;
+    const before = host.seen.presents;
+    for (let frame = 2; frame <= 4; frame += 1) {
+      host.at(frame * VSYNC_MS);
+    }
+    const sliding = host.seen.presents - before;
+    host.slide(false);
+    for (let frame = 5; frame <= 60; frame += 1) {
+      host.at(frame * VSYNC_MS);
+    }
+    expect({
+      settled: host.seen.presents - before - sliding,
+      sliding,
+      stepped: host.digests.length - stepped,
+    }).toStrictEqual({ settled: 0, sliding: 3, stepped: 0 });
+  });
+
   it("runs the race at the pace a room asks for", () => {
     const slowed = createHost({ pace: 0.9 });
     const steady = createHost();

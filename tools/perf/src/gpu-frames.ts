@@ -310,6 +310,7 @@ const judgedPerWindow: ReadonlySet<string> = new Set([
   "frame.interval.p99",
   "frame.missedFraction",
   "riders.cpu.p95",
+  "tower.cpu.p95",
 ]);
 
 const isCount = (metric: string): metric is keyof typeof frameReaders =>
@@ -336,6 +337,9 @@ export const valueOf = (
   }
   if (metric === "riders.cpu.p95") {
     return quantile(partTimesOf(samples, "riders"), 0.95);
+  }
+  if (metric === "tower.cpu.p95") {
+    return quantile(partTimesOf(samples, "tower"), 0.95);
   }
   const share =
     metric === "frame.interval.p50" ||
