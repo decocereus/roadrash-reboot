@@ -38,6 +38,7 @@ const DEFAULT_BUDGETS = path.join(REPO_ROOT, "tools/perf/budgets.json");
 const DEFAULT_OUT = path.join(REPO_ROOT, "tools/perf/results");
 
 const WARM_TICKS = 120;
+const SIDE_ORDER = ["B", "A"] as const satisfies readonly SideName[];
 const DOCTOR_CHECKS = [
   "server process",
   "server answers",
@@ -365,14 +366,12 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
     return { code: 1, lines: [pages.line, `evidence ${dir}`] };
   }
   const { page } = pages;
-  yield* warm(options.runs.A);
   yield* warm(options.runs.B);
+  yield* warm(options.runs.A);
   const samples: GpuSample[] = [];
   for (let pair = 0; pair < GPU_PAIRS; pair += 1) {
-    for (const [index, scenario] of scenarios.entries()) {
-      const order: readonly SideName[] =
-        (pair + index) % 2 === 0 ? ["A", "B"] : ["B", "A"];
-      for (const [position, side] of order.entries()) {
+    for (const scenario of scenarios) {
+      for (const [position, side] of SIDE_ORDER.entries()) {
         const sample = yield* sampleOnce(
           bench,
           {

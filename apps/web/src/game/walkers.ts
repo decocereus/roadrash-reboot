@@ -10,7 +10,7 @@ import { crowdAt } from "./bazaar-crowd.ts";
 import type { Shading } from "./cel.ts";
 import { disposeTree } from "./dispose.ts";
 import { placeOnGround } from "./ground.ts";
-import { castersFirst } from "./shadow-reach.ts";
+import { CASTS, castersFirst, HIDDEN, SHOWN } from "./shadow-reach.ts";
 import type { CasterCounts, ShadowReach } from "./shadow-reach.ts";
 import { uploadSpan } from "./uploads.ts";
 import { WALKER_OUTFITS, walkerBodies, walkerFrameOf } from "./walker-clips.ts";
@@ -21,9 +21,6 @@ const BEHIND = 40;
 const AHEAD = 300;
 const BODY_HEIGHT = 1.7;
 const FIGURE_REACH = 1.3;
-const HIDDEN = 0;
-const CASTS = 1;
-const SHOWN = 2;
 const QUARTER = Math.PI / 2;
 const OUTFIT_SALT = 7919;
 

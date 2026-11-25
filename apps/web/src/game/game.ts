@@ -67,7 +67,6 @@ import {
 } from "./game-session.ts";
 import type { Attract, Countdown, InRace, Session } from "./game-session.ts";
 import { createTowerPass } from "./hud-tower-pass.ts";
-import { towerNames } from "./hud-tower.ts";
 import type { GameEvents, GameHandle, RacePlan } from "./hud.ts";
 import { createControls } from "./input.ts";
 import { createPipeline } from "./post.ts";
@@ -243,7 +242,7 @@ const startGame = (
     stage,
   });
   owners.push(cancelPreparation);
-  const { quiet, react, report, say, toggleMute } = bindFeedback({
+  const { bakeTower, quiet, react, report, say, toggleMute } = bindFeedback({
     chase,
     drawnSpeed: () => player().speed + (cast.views[stage.me]?.drift.along ?? 0),
     events,
@@ -505,10 +504,6 @@ const startGame = (
       }
     }
     roomOf(session)?.frameDrawn(ownOff, rivalOff);
-    const lead = cast.views[stage.me];
-    if (cast.bikes && lead) {
-      cast.bikes.commit(lead.bike.position);
-    }
     cast.puffs?.update(seconds);
     frame.profiler?.lap("riders");
 
@@ -520,6 +515,11 @@ const startGame = (
     stage.world.follow(chase.camera, cast.subject.s);
     stage.world.showRoadLife(stage.race.view, cast.subject.s);
     frame.profiler?.lap("world");
+    const lead = cast.views[stage.me];
+    if (cast.bikes && lead) {
+      cast.bikes.commit(lead.bike.position, stage.world.shadows);
+    }
+    frame.profiler?.lap("riders");
     placeFleet(blend);
     frame.profiler?.lap("fleet");
     present();
@@ -630,7 +630,7 @@ const startGame = (
     let release: () => void;
     try {
       release = build(setup, dressing, true, room, (race) => {
-        towerPass.bake(towerNames(next, race));
+        bakeTower(next, race);
       });
     } catch (error) {
       session = unprepared;

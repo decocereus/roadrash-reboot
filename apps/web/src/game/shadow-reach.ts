@@ -4,6 +4,11 @@ export interface ShadowReach {
   reaches: (at: THREE.Vector3, radius: number) => boolean;
 }
 
+export const HIDDEN = 0;
+export const CASTS = 1;
+export const SHOWN = 2;
+export const CASTERS_FIRST = [CASTS, SHOWN] as const;
+
 export interface CasterCounts {
   casting: number;
   drawn: number;

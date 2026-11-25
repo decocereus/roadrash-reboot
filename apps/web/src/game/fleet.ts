@@ -12,15 +12,17 @@ import { disposeTree } from "./dispose.ts";
 import { freeze, placeOnGround, whiteInstances } from "./ground.ts";
 import { paintPrimitives } from "./model-slots.ts";
 import type { Palette, Primitive } from "./model-slots.ts";
-import { castersFirst } from "./shadow-reach.ts";
+import {
+  CASTERS_FIRST,
+  CASTS,
+  castersFirst,
+  HIDDEN,
+  SHOWN,
+} from "./shadow-reach.ts";
 import type { CasterCounts, ShadowReach } from "./shadow-reach.ts";
 import { uploadSpan } from "./uploads.ts";
 
 const BOXY_HEIGHT = 1.8;
-const HIDDEN = 0;
-const CASTS = 1;
-const SHOWN = 2;
-const CASTERS_FIRST = [CASTS, SHOWN] as const;
 const WHITE: Palette = new Map([["body", "#ffffff"]]);
 const SIDE_STRIPE: Palette = new Map([["accent", "#ff00ff"]]);
 

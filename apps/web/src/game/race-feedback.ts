@@ -11,8 +11,8 @@ import type { ChaseCamera } from "./chase-camera.ts";
 import { hudCountdown, roomOf } from "./game-session.ts";
 import type { Session } from "./game-session.ts";
 import type { TowerPass } from "./hud-tower-pass.ts";
-import { createTower } from "./hud-tower.ts";
-import type { GameEvents, Notice } from "./hud.ts";
+import { createTower, towerNames } from "./hud-tower.ts";
+import type { GameEvents, Notice, RacePlan } from "./hud.ts";
 import type { Stage } from "./scene-lifecycle.ts";
 
 const NOTICE_SECONDS = 0.8;
@@ -63,7 +63,7 @@ interface FeedbackParts {
   readonly session: () => Session;
   readonly sound: Sound;
   readonly stage: Pick<Stage, "colours" | "me" | "race" | "track">;
-  readonly towerPass: Pick<TowerPass, "show">;
+  readonly towerPass: Pick<TowerPass, "bake" | "show">;
 }
 
 export const bindFeedback = ({
@@ -225,5 +225,9 @@ export const bindFeedback = ({
     });
   };
 
-  return { quiet, react, report, say, toggleMute };
+  const bakeTower = (plan: RacePlan, race: Pick<Stage, "me" | "race">) => {
+    towerPass.bake(towerNames(plan, race));
+  };
+
+  return { bakeTower, quiet, react, report, say, toggleMute };
 };
