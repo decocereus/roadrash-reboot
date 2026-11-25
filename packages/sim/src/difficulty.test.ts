@@ -11,6 +11,7 @@ import { frameOf, player, rivalNamed, scripted } from "./race-fixtures.ts";
 import { createRace, defaultSetup, stepRace, validateSetup } from "./race.ts";
 import { TICK_RATE } from "./state.ts";
 import type { RaceState } from "./state.ts";
+import { CONVOY_CRUISE } from "./traffic.ts";
 
 const slagRow = compileTrack(roads["slag-row"]);
 
@@ -19,8 +20,6 @@ const raceAt = (tier: Tier): RaceState =>
     ...defaultSetup(slagRow, 7),
     conditions: difficulties[tier].conditions,
   });
-
-const CONVOY_CRUISE = 15;
 
 const hitsToDrop = (tier: Tier, kicking: boolean): number => {
   const flat = compileTrack({

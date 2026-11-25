@@ -23,7 +23,7 @@ import type {
   RiderState,
   TrafficCar,
 } from "./state.ts";
-import { carSlant } from "./traffic.ts";
+import { CONVOY_CRUISE, carSlant } from "./traffic.ts";
 
 const NARROW_FROM = 2000;
 const WIDE_AGAIN_FROM = 2600;
@@ -361,7 +361,6 @@ describe("a pilot field on Breakwater Run's districts", () => {
 });
 
 describe("a convoy on Breakwater Run in a full race", () => {
-  const CONVOY_CRUISE = 15;
   const CONVOY_CARS = 6;
   const CLEAR_METRES = 30;
   const track = compileTrack(roads["breakwater-run"]);

@@ -124,6 +124,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
     kind: "feature",
     owns: [
       "packages/sim/src/carrier.ts",
+      "packages/sim/src/carrier-roads.test.ts",
       "packages/sim/src/carrier.test.ts",
       "packages/sim/src/traffic.ts",
       "packages/sim/src/lanes.test.ts",

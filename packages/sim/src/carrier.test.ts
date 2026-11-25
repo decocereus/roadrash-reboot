@@ -1,6 +1,5 @@
 import { clothoids } from "@racer/track/alignment";
 import { roadHalfWidthAt } from "@racer/track/districts";
-import { trackFor } from "@racer/track/roads";
 import { compileTrack, curvatureAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 import { breakwaterRun } from "@racer/track/tracks/breakwater-run";
@@ -9,7 +8,6 @@ import { describe, expect, it } from "vitest";
 import { bikes, streetBike } from "./bikes.ts";
 import type { BikeId } from "./bikes.ts";
 import { carrierAt, frontOf, lipOf, toeOf } from "./carrier.ts";
-import { difficulties, tiers } from "./difficulty.ts";
 import { alone, frameOf, player, truckRoad } from "./race-fixtures.ts";
 import { createRace, defaultSetup, neutralInput, stepRace } from "./race.ts";
 import { HARD_LANDING } from "./rider-flight.ts";
@@ -204,43 +202,6 @@ describe("the moving carrier jump", () => {
     expect(truck.s).toBeGreaterThan(TRUCK_AT);
     expect(truck.speed).toBeCloseTo(20, 0);
   });
-});
-
-describe("trucks on the roads", () => {
-  it.each(tiers)(
-    "at tier %i the trucks are the last cars, where the ramp and the pilot look for them",
-    (tier) => {
-      const track = trackFor("slag-row");
-      const { cars } = createRace({
-        ...defaultSetup(track, 1),
-        conditions: difficulties[tier].conditions,
-      });
-      expect(
-        cars.slice(-track.carrierStarts.length).map((car) => car.carrier)
-      ).toStrictEqual(track.carrierStarts.map(() => true));
-    }
-  );
-
-  it.each([
-    ["breakwater-run", [1750, 3650]],
-    ["slag-row", [2600, 4100]],
-    ["ridge-road", [4500]],
-  ] as const)(
-    "%s starts its trucks at the plan's stretches, in the first lane the same way, first among the cars",
-    (road, starts) => {
-      const track = trackFor(road);
-      const { cars } = createRace(defaultSetup(track, 1));
-      const trucks = cars.slice(cars.length - starts.length);
-      expect(trucks.map((car) => car.s)).toStrictEqual([...starts]);
-      expect(trucks.every((car) => car.carrier)).toBeTruthy();
-      expect(
-        trucks.every((car) => car.x === track.sameWayLanes[0])
-      ).toBeTruthy();
-      expect(
-        cars.slice(0, cars.length - starts.length).some((car) => car.carrier)
-      ).toBeFalsy();
-    }
-  );
 });
 
 describe("a pilot and a truck", () => {

@@ -1597,7 +1597,7 @@
     },
     {
       "baseline": 17006,
-      "derivation": "exact baseline",
+      "derivation": "measured 17054 B at 651c2b98 on the Linux runner: truck clearance moves the 2 cars it used to delete ahead of the truck, 24 B each",
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "snapshot.bytes.max",
@@ -1605,11 +1605,11 @@
       "scenario": "reference-v1",
       "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
       "unit": "B",
-      "value": 17006
+      "value": 17054
     },
     {
       "baseline": 17006,
-      "derivation": "exact baseline",
+      "derivation": "measured 17054 B at 651c2b98 on the Linux runner: truck clearance moves the 2 cars it used to delete ahead of the truck, 24 B each",
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "snapshot.bytes.max",
@@ -1617,7 +1617,7 @@
       "scenario": "reference-v1",
       "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
       "unit": "B",
-      "value": 17006
+      "value": 17054
     },
     {
       "baseline": 0.24333604392672914,
