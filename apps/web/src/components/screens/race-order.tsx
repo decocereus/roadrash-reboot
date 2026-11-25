@@ -7,13 +7,15 @@ const standingOf = (row: TowerRow): string => {
     case "lead": {
       return "Lead";
     }
+    case "gap": {
+      return `+${(row.tenths / 10).toFixed(1)}`;
+    }
     case "wrecked": {
       return "Wrecked";
     }
     case "busted": {
       return "Busted";
     }
-    case "gap":
     case "blank": {
       return "";
     }
@@ -23,38 +25,29 @@ const standingOf = (row: TowerRow): string => {
   }
 };
 
-const sameOrder = (
-  { rows: before }: { readonly rows: readonly TowerRow[] },
-  { rows: after }: { readonly rows: readonly TowerRow[] }
-): boolean =>
+const lineOf = (row: TowerRow): string =>
+  [row.place, row.name, row.finished ? "Finished" : "", standingOf(row)]
+    .filter((part) => part !== "")
+    .join(" ");
+
+interface Order {
+  readonly rows: readonly TowerRow[];
+}
+
+export const sameLines = ({ rows: before }: Order, { rows: after }: Order) =>
   before.length === after.length &&
   before.every((row, at) => {
     const next = after[at];
-    return (
-      next !== undefined &&
-      next.id === row.id &&
-      next.name === row.name &&
-      next.finished === row.finished &&
-      standingOf(next) === standingOf(row)
-    );
+    return next?.id === row.id && lineOf(next) === lineOf(row);
   });
 
 export const RaceOrder = memo(
-  ({ rows }: { readonly rows: readonly TowerRow[] }) => (
+  ({ rows }: Order) => (
     <ol aria-label="Race order" className="sr-only">
       {rows.map((row) => (
-        <li key={row.id}>
-          {[
-            row.place,
-            row.name,
-            row.finished ? "Finished" : "",
-            standingOf(row),
-          ]
-            .filter((part) => part !== "")
-            .join(" ")}
-        </li>
+        <li key={row.id}>{lineOf(row)}</li>
       ))}
     </ol>
   ),
-  sameOrder
+  sameLines
 );

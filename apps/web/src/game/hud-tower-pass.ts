@@ -91,7 +91,12 @@ const indexFor = (): THREE.BufferAttribute => {
 const dynamic = (array: Float32Array, size: number): THREE.BufferAttribute =>
   new THREE.BufferAttribute(array, size).setUsage(THREE.DynamicDrawUsage);
 
-export const createTowerPass = (renderer: THREE.WebGLRenderer) => {
+export type TowerRenderer = Pick<
+  THREE.WebGLRenderer,
+  "autoClear" | "compile" | "render" | "setRenderTarget"
+>;
+
+export const createTowerPass = (renderer: TowerRenderer) => {
   const reducedMotion = globalThis.matchMedia(
     "(prefers-reduced-motion: reduce)"
   );
@@ -153,6 +158,11 @@ export const createTowerPass = (renderer: THREE.WebGLRenderer) => {
   let moving = false;
   let staged = false;
 
+  const snapSlides = () => {
+    laid = null;
+  };
+  reducedMotion.addEventListener("change", snapSlides);
+
   const measureFor = (font: number) => {
     measuring ??= document.createElement("canvas").getContext("2d");
     if (!measuring) {
@@ -161,11 +171,12 @@ export const createTowerPass = (renderer: THREE.WebGLRenderer) => {
     return canvasMeasure(measuring, font);
   };
 
-  const paint = (at: Placement) => {
+  const paint = (at: Placement, from: ReadonlyMap<RiderId, string>) => {
     const font = at.frame.font * at.scaleX;
-    const next = planAtlas(names, at.frame, at.scaleX, measureFor(font));
+    const next = planAtlas(from, at.frame, at.scaleX, measureFor(font));
     paintAtlas(next, at.frame, pixels);
     texture.needsUpdate = true;
+    names = from;
     plan = next;
     laid = null;
   };
@@ -177,9 +188,10 @@ export const createTowerPass = (renderer: THREE.WebGLRenderer) => {
     if (plan !== null && sameNames(names, next)) {
       return;
     }
-    names = next;
     if (placement) {
-      paint(placement);
+      paint(placement, next);
+    } else {
+      names = next;
     }
   };
 
@@ -198,21 +210,21 @@ export const createTowerPass = (renderer: THREE.WebGLRenderer) => {
     bufferSize.set(wide, tall);
     laid = null;
     if (plan !== null && !baked(placement)) {
-      paint(placement);
+      paint(placement, names);
     }
   };
 
   const write = (at: Placement, ready: AtlasPlan) => {
-    const now = performance.now();
+    quads.clock[0] = performance.now();
     const fresh = laid !== rows;
     if (fresh) {
-      quads.layout(rows, ready, at, now, reducedMotion.matches);
+      quads.layout(rows, ready, at, reducedMotion.matches);
       laid = rows;
     }
     if (!fresh && !moving) {
       return;
     }
-    moving = quads.place(now);
+    moving = quads.place();
     const vertices = quads.quadCount() * 4;
     uploadSpan(positions, 0, vertices);
     if (fresh) {
@@ -228,22 +240,24 @@ export const createTowerPass = (renderer: THREE.WebGLRenderer) => {
       return;
     }
     if (!plan || !baked(placement)) {
-      paint(placement);
+      paint(placement, names);
     }
     if (plan && laid !== rows && !covers(plan, rows)) {
-      names = namesOf(rows);
-      paint(placement);
+      paint(placement, namesOf(rows));
     }
     if (plan) {
       write(placement, plan);
     }
-    mesh.visible = true;
     const { autoClear } = renderer;
+    mesh.visible = true;
     renderer.autoClear = false;
-    renderer.setRenderTarget(null);
-    renderer.render(scene, camera);
-    renderer.autoClear = autoClear;
-    mesh.visible = staged;
+    try {
+      renderer.setRenderTarget(null);
+      renderer.render(scene, camera);
+    } finally {
+      renderer.autoClear = autoClear;
+      mesh.visible = staged;
+    }
   };
 
   return {
@@ -252,6 +266,7 @@ export const createTowerPass = (renderer: THREE.WebGLRenderer) => {
       renderer.compile(scene, camera);
     },
     dispose() {
+      reducedMotion.removeEventListener("change", snapSlides);
       geometry.dispose();
       material.dispose();
       texture.dispose();

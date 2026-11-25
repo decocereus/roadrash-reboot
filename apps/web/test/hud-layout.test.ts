@@ -13,7 +13,13 @@ import {
   warningFont,
 } from "../src/hud-layout.ts";
 import type { TowerRows, Viewport } from "../src/hud-layout.ts";
-import { drawnRows, placementFor, planFor } from "./tower-drawn.ts";
+import {
+  drawnRows,
+  layoutAt,
+  placeAt,
+  placementFor,
+  planFor,
+} from "./tower-drawn.ts";
 
 const phone: Viewport = { height: 844, width: 390 };
 const smallPhone: Viewport = { height: 568, width: 320 };
@@ -44,8 +50,8 @@ const drawnPlaces = (rows: readonly TowerRow[], shown: TowerRows): number[] => {
     placement
   );
   const quads = createTowerQuads();
-  quads.layout(rows, plan, placement, 0, false);
-  quads.place(0);
+  layoutAt(quads, rows, plan, placement, 0, false);
+  placeAt(quads, 0);
   return drawnRows(quads, plan).map((row) => Number(row.text.split(" ")[0]));
 };
 

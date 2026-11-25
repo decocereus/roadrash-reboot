@@ -11,6 +11,7 @@ import {
 } from "../src/game/hud-tower-atlas.ts";
 import type { AtlasPlan, GlyphMeasure } from "../src/game/hud-tower-atlas.ts";
 import type { Placement, TowerQuads } from "../src/game/hud-tower-quads.ts";
+import type { TowerRow } from "../src/game/hud.ts";
 import { towerFrame } from "../src/hud-layout.ts";
 import type { TowerRows, Viewport } from "../src/hud-layout.ts";
 
@@ -49,6 +50,23 @@ export const planFor = (
     placement.scaleX,
     measureAt(placement.frame.font * placement.scaleX)
   );
+
+export const layoutAt = (
+  quads: TowerQuads,
+  rows: readonly TowerRow[],
+  plan: AtlasPlan,
+  placement: Placement,
+  now: number,
+  reduced: boolean
+): void => {
+  quads.clock[0] = now;
+  quads.layout(rows, plan, placement, reduced);
+};
+
+export const placeAt = (quads: TowerQuads, now: number): boolean => {
+  quads.clock[0] = now;
+  return quads.place();
+};
 
 export interface DrawnRow {
   readonly slot: number;

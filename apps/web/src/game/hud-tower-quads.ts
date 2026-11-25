@@ -89,29 +89,6 @@ export interface Placement {
   readonly deviceRatio: number;
 }
 
-const bezier = (t: number, middle: number): number =>
-  3 * (1 - t) * t * t * middle + t * t * t;
-
-export const easeOut = (share: number): number => {
-  if (share <= 0) {
-    return 0;
-  }
-  if (share >= 1) {
-    return 1;
-  }
-  let low = 0;
-  let high = 1;
-  for (let step = 0; step < EASE_STEPS; step += 1) {
-    const middle = (low + high) / 2;
-    if (bezier(middle, EASE_X2) < share) {
-      low = middle;
-    } else {
-      high = middle;
-    }
-  }
-  return bezier((low + high) / 2, 1);
-};
-
 const digitsOf = (value: number): number => {
   let digits = 1;
   for (let rest = value; rest >= 10; rest = Math.floor(rest / 10)) {
@@ -197,6 +174,7 @@ export const createTowerQuads = () => {
   const reals = new Float64Array(REALS);
   const ints = new Int32Array(INTS);
   const counts = new Int32Array(3);
+  const clock = new Float64Array(1);
 
   const snap = (column: number): number => {
     ints[END] = Math.round(
@@ -398,10 +376,23 @@ export const createTowerQuads = () => {
   const slideAt = (id: number) => {
     const target = to[id] ?? 0;
     const start = from[id] ?? target;
-    reals[SLID] =
-      start +
-      (target - start) *
-        easeOut(((reals[NOW] ?? 0) - (started[id] ?? 0)) / SLIDE_MS);
+    const share = ((reals[NOW] ?? 0) - (started[id] ?? 0)) / SLIDE_MS;
+    let eased = share <= 0 ? 0 : 1;
+    if (share > 0 && share < 1) {
+      let low = 0;
+      let high = 1;
+      for (let step = 0; step < EASE_STEPS; step += 1) {
+        const t = (low + high) / 2;
+        if (3 * (1 - t) * t * t * EASE_X2 + t * t * t < share) {
+          low = t;
+        } else {
+          high = t;
+        }
+      }
+      const t = (low + high) / 2;
+      eased = 3 * (1 - t) * t * t + t * t * t;
+    }
+    reals[SLID] = start + (target - start) * eased;
   };
 
   const slideTo = (slot: number, id: number, reduced: boolean) => {
@@ -427,11 +418,10 @@ export const createTowerQuads = () => {
     rows: readonly TowerRow[],
     plan: AtlasPlan,
     placement: Placement,
-    now: number,
     reduced: boolean
   ): void => {
     const { frame, shown } = placement;
-    reals[NOW] = now;
+    reals[NOW] = clock[0] ?? 0;
     counts[LAYOUTS] = (counts[LAYOUTS] ?? 0) + 1;
     const slots = Math.min(ROWS, windowLength(rows.length, shown));
     counts[SLOTS] = slots;
@@ -499,8 +489,8 @@ export const createTowerQuads = () => {
     positions[at + 7] = y1;
   };
 
-  const place = (now: number): boolean => {
-    reals[NOW] = now;
+  const place = (): boolean => {
+    reals[NOW] = clock[0] ?? 0;
     const quads = counts[QUADS] ?? 0;
     for (let quad = 0; quad < quads; quad += 1) {
       const slot = slotOf[quad] ?? PANEL;
@@ -518,13 +508,16 @@ export const createTowerQuads = () => {
     const slots = counts[SLOTS] ?? 0;
     for (let slot = 0; slot < slots; slot += 1) {
       const id = slotRider[slot] ?? 0;
-      moving ||= from[id] !== to[id] && now - (started[id] ?? now) < SLIDE_MS;
+      moving ||=
+        from[id] !== to[id] &&
+        (reals[NOW] ?? 0) - (started[id] ?? 0) < SLIDE_MS;
     }
     return moving;
   };
 
   return {
     cellOf,
+    clock,
     edges,
     fills,
     layout,

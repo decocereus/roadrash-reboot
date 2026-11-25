@@ -79,7 +79,6 @@ import { bindCast, createCast, pickFarRiders } from "./rider-views.ts";
 import { bindStage, createStage } from "./scene-lifecycle.ts";
 
 const LAST_STRETCH = 1000;
-const unbuilt = (): void => undefined;
 const MARKER_KEY = "KeyB";
 
 const autopilot =
@@ -626,12 +625,12 @@ const startGame = (
     if (dressing === null || preparation?.kind !== "dressing") {
       return notPrepared;
     }
-    let release = unbuilt;
+    let release: () => void;
     try {
-      release = build(setup, dressing, true, room);
-      towerPass.bake(towerNames(next, stage));
+      release = build(setup, dressing, true, room, (race) => {
+        towerPass.bake(towerNames(next, race));
+      });
     } catch (error) {
-      release();
       session = unprepared;
       return { cause: errorOf(error), kind: "failed", stage: "build" };
     }

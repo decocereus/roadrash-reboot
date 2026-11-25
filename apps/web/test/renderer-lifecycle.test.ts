@@ -421,6 +421,21 @@ describe("buffer attribute uploads", () => {
       version: 2,
     });
   });
+
+  it("rewrites one range record in place across uploads and the renderer's clears", () => {
+    const colours = new THREE.BufferAttribute(new Float32Array(10 * 3), 3);
+    uploadSpan(colours, 0, 2);
+    const [record] = colours.updateRanges;
+    colours.clearUpdateRanges();
+    uploadSpan(colours, 4, 6);
+    uploadSpan(colours, 1, 2);
+    colours.clearUpdateRanges();
+    uploadSpan(colours, 7, 9);
+    expect({
+      ranges: colours.updateRanges,
+      same: colours.updateRanges.every((range) => range === record),
+    }).toStrictEqual({ ranges: [{ count: 6, start: 21 }], same: true });
+  });
 });
 
 interface Staging {

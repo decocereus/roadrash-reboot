@@ -5,6 +5,7 @@ export class FontReadinessFailed extends TaggedErrorClass<FontReadinessFailed>()
   "FontReadinessFailed",
   {
     cause: Schema.Defect(),
+    font: Schema.String,
     message: Schema.String,
   }
 ) {}

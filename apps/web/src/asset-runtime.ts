@@ -84,9 +84,9 @@ export const createAssetRuntime = (
   const mount = (request: AssetRequest): void => {
     hold(loadAssets(cache, urls), {
       ...request,
-      loaded: ({ assets, fontFallback }, release) => {
-        if (fontFallback !== null) {
-          request.fontFallback(fontFallback);
+      loaded: ({ assets, fontFallbacks }, release) => {
+        for (const failure of fontFallbacks) {
+          request.fontFallback(failure);
         }
         request.loaded(assets, release);
       },

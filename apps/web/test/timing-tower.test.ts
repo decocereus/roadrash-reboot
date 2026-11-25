@@ -10,15 +10,26 @@ import { describe, expect, it } from "vitest";
 import type { Dressing } from "../src/game/figure-wardrobe.ts";
 import { countdownFor, racingFrom } from "../src/game/game-session.ts";
 import {
-  SLIDE_MS,
-  createTowerQuads,
-  easeOut,
-} from "../src/game/hud-tower-quads.ts";
-import type { Placement } from "../src/game/hud-tower-quads.ts";
+  CELL_FIELDS,
+  CELL_ORIGIN_X,
+  CHIP_CELL,
+  FIRST_NAME_CELL,
+  FLAG_CELL,
+} from "../src/game/hud-tower-atlas.ts";
+import type { AtlasPlan } from "../src/game/hud-tower-atlas.ts";
+import { SLIDE_MS, createTowerQuads } from "../src/game/hud-tower-quads.ts";
+import type { Placement, TowerQuads } from "../src/game/hud-tower-quads.ts";
 import { createTower, towerNames } from "../src/game/hud-tower.ts";
 import type { RacePlan, TowerRow } from "../src/game/hud.ts";
 import { roomRunStub } from "./room-run-stub.ts";
-import { drawnRows, placementFor, planFor, wideView } from "./tower-drawn.ts";
+import {
+  drawnRows,
+  layoutAt,
+  placeAt,
+  placementFor,
+  planFor,
+  wideView,
+} from "./tower-drawn.ts";
 import type { DrawnRow } from "./tower-drawn.ts";
 import { noControls, rideFor, soloPlan } from "./tower-ride.ts";
 import type { Ride } from "./tower-ride.ts";
@@ -26,6 +37,8 @@ import type { Ride } from "./tower-ride.ts";
 const TEXT = 0xf2_ee_e6;
 const YELLOW = 0xff_c5_31;
 const CLOSE_TICKS = 600;
+const CSS_EASE_OUT_AT_QUARTER = 0.3781;
+const CSS_EASE_OUT_AT_HALF = 0.6846;
 
 const roomPlan: RacePlan = {
   ...soloPlan,
@@ -67,8 +80,8 @@ const drawOf = (
     new Map(rows.map((row) => [row.id, row.name])),
     placement
   );
-  quads.layout(rows, plan, placement, now, false);
-  quads.place(now);
+  layoutAt(quads, rows, plan, placement, now, false);
+  placeAt(quads, now);
   return drawnRows(quads, plan);
 };
 
@@ -90,6 +103,40 @@ const fieldOf = (youAt: number, order: readonly number[]): TowerRow[] =>
 const markOf = (row: DrawnRow | undefined): string => {
   const mark = row?.text.split(" ").at(-1) ?? "";
   return /^(?:LEAD|\+\d+\.\d)$/u.test(mark) ? "timed" : mark;
+};
+
+interface Span {
+  nameEnd: number;
+  markStart: number;
+  markEnd: number;
+}
+
+const spansOf = (quads: TowerQuads, plan: AtlasPlan): readonly Span[] => {
+  const spans: Span[] = [];
+  for (let quad = 0; quad < quads.quadCount(); quad += 1) {
+    const slot = quads.slotOf[quad] ?? -1;
+    const cell = quads.cellOf[quad] ?? -1;
+    const pen =
+      (quads.positions[quad * 8] ?? 0) +
+      (plan.cells[cell * CELL_FIELDS + CELL_ORIGIN_X] ?? 0);
+    const end = pen + (plan.advances[cell] ?? 0);
+    const span = spans[slot] ?? {
+      markEnd: Number.NEGATIVE_INFINITY,
+      markStart: Number.POSITIVE_INFINITY,
+      nameEnd: Number.NaN,
+    };
+    spans[slot] = span;
+    if (slot < 0 || (quads.fills[quad * 16 + 3] ?? 0) === 0) {
+      continue;
+    }
+    if (cell >= FIRST_NAME_CELL) {
+      span.nameEnd = quads.positions[quad * 8 + 2] ?? 0;
+    } else if (!Number.isNaN(span.nameEnd) && cell !== FLAG_CELL) {
+      span.markStart = Math.min(span.markStart, quads.positions[quad * 8] ?? 0);
+      span.markEnd = Math.max(span.markEnd, Math.round(end));
+    }
+  }
+  return spans;
 };
 
 const topOf = (rows: readonly DrawnRow[], name: string): number =>
@@ -188,6 +235,28 @@ describe("the timing tower", () => {
     ]);
   });
 
+  it("rings each chip in the text colour at 70%, halved with the row when a rider is out", () => {
+    const rows = fieldOf(0, [0, 1]).map((row, at) =>
+      at === 1 ? { ...row, mark: "wrecked" as const } : row
+    );
+    const quads = createTowerQuads();
+    const plan = planFor(new Map(rows.map((row) => [row.id, row.name])), wide);
+    layoutAt(quads, rows, plan, wide, 0, false);
+    placeAt(quads, 0);
+    const rings = Array.from({ length: quads.quadCount() }, (_, quad) => quad)
+      .filter((quad) => quads.cellOf[quad] === CHIP_CELL)
+      .map((quad) => ({
+        alpha: Math.round((quads.edges[quad * 16 + 3] ?? 0) * 100) / 100,
+        colour: [0, 1, 2].map((channel) =>
+          Math.round((quads.edges[quad * 16 + channel] ?? 0) * 255)
+        ),
+      }));
+    expect(rings).toStrictEqual([
+      { alpha: 0.7, colour: [0xf2, 0xee, 0xe6] },
+      { alpha: 0.35, colour: [0xf2, 0xee, 0xe6] },
+    ]);
+  });
+
   it("draws a dropped room rider like any other rider", () => {
     const ride = rideFor(roomPlan, 30);
     const rival = riderAtPlace(ride.state, 2);
@@ -218,15 +287,17 @@ describe("the timing tower", () => {
     const shift = (slots: number) =>
       Math.round(rowsTop + (4 - slots) * wide.frame.row) -
       Math.round(rowsTop + 4 * wide.frame.row);
-    quads.layout(before, plan, wide, 0, false);
-    quads.place(0);
+    layoutAt(quads, before, plan, wide, 0, false);
+    placeAt(quads, 0);
     const settled = drawnRows(quads, plan);
     const startAt = 1000;
-    quads.layout(after, plan, wide, startAt, false);
-    const frames = [0, SLIDE_MS / 2, SLIDE_MS, SLIDE_MS + 1].map((ms) => ({
-      moving: quads.place(startAt + ms),
-      rows: drawnRows(quads, plan),
-    }));
+    layoutAt(quads, after, plan, wide, startAt, false);
+    const frames = [0, SLIDE_MS / 4, SLIDE_MS / 2, SLIDE_MS, SLIDE_MS + 1].map(
+      (ms) => ({
+        moving: placeAt(quads, startAt + ms),
+        rows: drawnRows(quads, plan),
+      })
+    );
     const youFrom = topOf(settled, "RIDER 5");
     expect(
       frames.map(({ moving, rows }) => ({
@@ -243,7 +314,12 @@ describe("the timing tower", () => {
       {
         moving: true,
         others: [0, 1, 2, 5].map((slot) => settled[slot]?.top),
-        you: shift(easeOut(0.5)),
+        you: shift(CSS_EASE_OUT_AT_QUARTER),
+      },
+      {
+        moving: true,
+        others: [0, 1, 2, 5].map((slot) => settled[slot]?.top),
+        you: shift(CSS_EASE_OUT_AT_HALF),
       },
       {
         moving: false,
@@ -265,12 +341,12 @@ describe("the timing tower", () => {
       new Map(before.map((row) => [row.id, row.name])),
       wide
     );
-    quads.layout(before, plan, wide, 0, true);
-    quads.place(0);
+    layoutAt(quads, before, plan, wide, 0, true);
+    placeAt(quads, 0);
     const settled = drawnRows(quads, plan);
-    quads.layout(fieldOf(4, [0, 1, 2, 4, 3]), plan, wide, 1000, true);
+    layoutAt(quads, fieldOf(4, [0, 1, 2, 4, 3]), plan, wide, 1000, true);
     expect({
-      moving: quads.place(1000),
+      moving: placeAt(quads, 1000),
       tops: drawnRows(quads, plan).map((row) => row.top),
     }).toStrictEqual({
       moving: false,
@@ -330,17 +406,45 @@ describe("the timing tower", () => {
 
   it("cuts a long name with an ellipsis so the interval column never moves", () => {
     const long = "A".repeat(80);
-    const rows: TowerRow[] = fieldOf(0, [0, 1]).map((row, at) => ({
+    const rows: TowerRow[] = fieldOf(0, [0, 1, 2, 3, 4]).map((row, at) => ({
       ...row,
-      finished: at === 1,
-      name: at === 0 ? long : `${long}B`,
+      finished: at === 3,
+      mark: at === 4 ? "blank" : row.mark,
+      name: at < 2 ? row.name : `${long}${at}`,
     }));
-    const drawn = textsOf(rows);
-    const names = drawn.map((text) => text.split(" ")[1] ?? "");
+    const quads = createTowerQuads();
+    const plan = planFor(new Map(rows.map((row) => [row.id, row.name])), wide);
+    layoutAt(quads, rows, plan, wide, 0, false);
+    placeAt(quads, 0);
+    const spans = spansOf(quads, plan);
+    const panelRight = Math.round(
+      (wide.frame.left + wide.frame.width) * wide.scaleX
+    );
+    const [, short, cut, finished, unknown] = spans;
     expect({
-      cut: names.map((name) => name.endsWith("…")),
-      shorter: (names[1]?.length ?? 0) < (names[0]?.length ?? 0),
-    }).toStrictEqual({ cut: [true, true], shorter: true });
+      clear: spans.every((span) => span.nameEnd <= span.markStart),
+      cut: drawnRows(quads, plan)
+        .slice(2)
+        .map((row) => row.text.split(" ")[1]?.endsWith("…")),
+      finishedShorter: (finished?.nameEnd ?? 0) < (cut?.nameEnd ?? 0),
+      inside: (short?.markEnd ?? 0) <= panelRight,
+      rights: [cut, finished].map((span) => span?.markEnd),
+      unknown: unknown?.markEnd,
+    }).toStrictEqual({
+      clear: true,
+      cut: [true, true, true],
+      finishedShorter: true,
+      inside: true,
+      rights: [short?.markEnd, short?.markEnd],
+      unknown: Number.NEGATIVE_INFINITY,
+    });
+  });
+
+  it("draws nothing after the name while a rider's interval is unknown", () => {
+    const rows = fieldOf(0, [0, 1]).map((row, at) =>
+      at === 1 ? { ...row, mark: "blank" as const } : row
+    );
+    expect(textsOf(rows)).toStrictEqual(["1 RIDER 1 LEAD", "2 RIDER 2"]);
   });
 });
 

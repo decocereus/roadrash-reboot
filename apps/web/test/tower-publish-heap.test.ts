@@ -38,4 +38,15 @@ describe("the race tower's publish and draw paths", () => {
     },
     BUDGET_MS
   );
+
+  it(
+    "shows, writes, uploads and draws changed and sliding rows through the real pass without allocating once warm",
+    () => {
+      expect(outputOf([PUBLISHES, "pass"])).toStrictEqual({
+        output: JSON.stringify({ passed: 0, uploaded: true }),
+        status: 0,
+      });
+    },
+    BUDGET_MS
+  );
 });
