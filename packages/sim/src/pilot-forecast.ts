@@ -60,7 +60,7 @@ const OIL_BEND_PUSH = 1.2;
 const OIL_SCAN_STEP = 5;
 const GIVE_WAY_MARGIN = 0.3;
 
-export const forecastCosts = {
+const forecastCosts = {
   crash: 10,
   giveWay: 2,
   giveWayPerShare: 3,
