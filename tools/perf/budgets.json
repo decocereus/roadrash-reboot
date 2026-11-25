@@ -132,7 +132,7 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "e19234fdbc78768645b80fabdd63421893277fb46b6693cc8ba569678ffbfad7"
+    "summarySha256": "4ae359e6297e5c71230c6509b8811d0bd44eb4994d0c0a3a20d070d624a67817"
   },
   "limits": [
     {
@@ -436,28 +436,28 @@
       "value": 634014
     },
     {
-      "baseline": 242389,
-      "derivation": "baseline + max(4096, ceil(0.02 x baseline)); the on-foot gait, gait.ts, strider.ts, foot-lock.ts and rider-moves.ts, adds 3971 B gzip over main 7eac830",
+      "baseline": 248684,
+      "derivation": "baseline + max(4096, ceil(0.02 x baseline)); the in-canvas timing tower, hud-tower-atlas.ts, hud-tower-quads.ts and hud-tower-pass.ts, adds 5567 B gzip over main b5658e33",
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.incremental.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-24T09-25-12-732Z-4f4f6aa-4f4f6aa",
+      "source": "baseline-2026-11-25T03-04-39-637Z-21b6fd2-21b6fd2",
       "unit": "B",
-      "value": 247237
+      "value": 253658
     },
     {
-      "baseline": 844748,
-      "derivation": "baseline + max(4096, ceil(0.02 x baseline)); the on-foot gait adds 9821 B raw over main 7eac830",
+      "baseline": 859490,
+      "derivation": "baseline + max(4096, ceil(0.02 x baseline)); the in-canvas timing tower adds 12816 B raw over main b5658e33",
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.incremental.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-24T09-25-12-732Z-4f4f6aa-4f4f6aa",
+      "source": "baseline-2026-11-25T03-04-39-637Z-21b6fd2-21b6fd2",
       "unit": "B",
-      "value": 861643
+      "value": 876680
     },
     {
       "baseline": 1746653,
