@@ -4738,6 +4738,22 @@
       "value": 0.13365047459479634
     },
     {
+      "environment": "build",
+      "metric": "bytes.game.incremental.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-24T20-00-53-824Z-890794a-890794a",
+      "value": 248789
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.incremental.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-24T20-00-53-824Z-890794a-890794a",
+      "value": 865558
+    },
+    {
       "environment": "gpu-helium-metal",
       "metric": "render.shadowTriangles.max",
       "scenario": "pack-riding-v1",
@@ -4850,6 +4866,22 @@
       "value": 0.1
     },
     {
+      "environment": "build",
+      "metric": "bytes.game.incremental.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-25T11-01-52-394Z-68a0cd3-68a0cd3",
+      "value": 255357
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.incremental.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-25T11-01-52-394Z-68a0cd3-68a0cd3",
+      "value": 880757
+    },
+    {
       "environment": "gpu-chromium-nvidia",
       "metric": "world.cpu.p95",
       "scenario": "reference-v1",
@@ -4912,6 +4944,22 @@
       "side": "B",
       "source": "gpu-2026-11-24T08-52-03-778Z-c6be25b-a1b16b0",
       "value": 0.10000002384185791
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.incremental.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-25T12-54-05-220Z-fdda22e-fdda22e",
+      "value": 257815
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.incremental.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-25T12-54-05-220Z-fdda22e-fdda22e",
+      "value": 887631
     },
     {
       "environment": "gpu-chromium-intel",
@@ -7449,6 +7497,29 @@
       }
     },
     {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 890375, \"bytes.route.root.gzip\": 373320, \"bytes.route.kit.raw\": 565291, \"bytes.route.kit.gzip\": 256185, \"bytes.game.raw\": 1755933, \"bytes.game.gzip\": 622109, \"bytes.game.incremental.raw\": 865558, \"bytes.game.incremental.gzip\": 248789, \"bytes.worker.raw\": 668434, \"bytes.worker.gzip\": 168361, \"bytes.client.raw\": 2050312, \"bytes.client.gzip\": 832451}",
+        "builtB": "{\"bytes.route.root.raw\": 890375, \"bytes.route.root.gzip\": 373320, \"bytes.route.kit.raw\": 565291, \"bytes.route.kit.gzip\": 256185, \"bytes.game.raw\": 1755933, \"bytes.game.gzip\": 622109, \"bytes.game.incremental.raw\": 865558, \"bytes.game.incremental.gzip\": 248789, \"bytes.worker.raw\": 668524, \"bytes.worker.gzip\": 168369, \"bytes.client.raw\": 2050312, \"bytes.client.gzip\": 832451}",
+        "harnessDigest": "192d98e60cf6a6653fb82ac24d0487fda088c18fc1a53f50a52f92214d459c61",
+        "lockfileSha256": "77c8e6e3d12c228040bf14967c83c703ecf744fbf90d7ef9b77c41f64e29a992",
+        "machine": "Mac16,8",
+        "node": "v26.13.1",
+        "os": "macOS 26.7.3 (25G342)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "b3679e62716ac4452aa36ca0fadb95d0396695dcc4cf1eea3116185afcdb586b",
+        "sideBSourceDigest": "b3679e62716ac4452aa36ca0fadb95d0396695dcc4cf1eea3116185afcdb586b",
+        "why": "The seated rider, a lighter chest over the tank, a seat that slides and turns per bike and a jacket that gives at the hip, adds 6,192 B gzip and 20,132 B raw to the game chunk loaded after the menus over main at deefebb1 (248,789 B against 242,597 B gzip). About 2.8 KB gzip of it is seat-table.json, the fit baked per bike and rider so the race does not fit seats while it loads, held to six decimal places; the rest is the seat, chest and pose code in figure-seating.ts, figure-chest.ts, figure-pose.ts and rider-figure.ts; bike-deck.ts reaches the chunk only as a type, so it adds nothing. Both bytes.game.incremental rows were over their limits, so both re-pin on this run with the usual headroom."
+      },
+      "id": "baseline-2026-11-24T20-00-53-824Z-890794a-890794a",
+      "lanes": ["build"],
+      "sides": {
+        "A": "890794aad5f5cdc287d1c6ba3dfef1bb73a7e2bf",
+        "B": "890794aad5f5cdc287d1c6ba3dfef1bb73a7e2bf"
+      }
+    },
+    {
       "environment": "gpu-helium-metal",
       "facts": {
         "machine": "this Mac, Apple M4 Pro",
@@ -7627,6 +7698,29 @@
       }
     },
     {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 887569, \"bytes.route.root.gzip\": 372547, \"bytes.route.kit.raw\": 563720, \"bytes.route.kit.gzip\": 255855, \"bytes.game.raw\": 1768326, \"bytes.game.gzip\": 627904, \"bytes.game.incremental.raw\": 880757, \"bytes.game.incremental.gzip\": 255357, \"bytes.worker.raw\": 664604, \"bytes.worker.gzip\": 167122, \"bytes.client.raw\": 2062831, \"bytes.client.gzip\": 838309}",
+        "builtB": "{\"bytes.route.root.raw\": 887569, \"bytes.route.root.gzip\": 372547, \"bytes.route.kit.raw\": 563720, \"bytes.route.kit.gzip\": 255855, \"bytes.game.raw\": 1768326, \"bytes.game.gzip\": 627904, \"bytes.game.incremental.raw\": 880757, \"bytes.game.incremental.gzip\": 255357, \"bytes.worker.raw\": 664604, \"bytes.worker.gzip\": 167122, \"bytes.client.raw\": 2062831, \"bytes.client.gzip\": 838309}",
+        "harnessDigest": "2240aa901d1bef01e2cfc1d0c7da5cfdb830ebf0c6ee2e8dcd4b75126813540d",
+        "lockfileSha256": "77c8e6e3d12c228040bf14967c83c703ecf744fbf90d7ef9b77c41f64e29a992",
+        "machine": "Mac16,8",
+        "node": "v26.13.1",
+        "os": "macOS 26.7.3 (25G342)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "e381735931e6352be6b93fc071cd25a95644abfd0fa058727b25c940688f783a",
+        "sideBSourceDigest": "e381735931e6352be6b93fc071cd25a95644abfd0fa058727b25c940688f783a",
+        "why": "Main 356a8fb1, with the timing tower drawn in the game canvas, merged into the seated rider. The game chunk loaded after the menus is 255,357 B gzip and 880,757 B raw, which is main at 356a8fb1 (249,202 B gzip, 860,732 B raw on this lane) plus the seated rider's 6,155 B gzip and 20,025 B raw; the seated rider alone measured 6,159 B gzip and 20,013 B raw over its main at 89c8eee9. Both bytes.game.incremental rows were over their limits, so both re-pin on this run with the usual headroom."
+      },
+      "id": "baseline-2026-11-25T11-01-52-394Z-68a0cd3-68a0cd3",
+      "lanes": ["build"],
+      "sides": {
+        "A": "68a0cd384beb9cee7f18a81a2226d88ce01e6dc9",
+        "B": "68a0cd384beb9cee7f18a81a2226d88ce01e6dc9"
+      }
+    },
+    {
       "environment": "gpu-chromium-nvidia",
       "facts": {
         "machine": "vimaan, Intel Core i7-9750H, NVIDIA GeForce GTX 1650 Ti with Max-Q Design 4 GiB, 8 GiB of RAM",
@@ -7716,6 +7810,29 @@
       "sides": {
         "A": "c6be25bc6b008206614dbe4d5de2a674e3e14f54",
         "B": "a1b16b0c4fe94783e710b3dc412db6564506ced9"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 887569, \"bytes.route.root.gzip\": 372548, \"bytes.route.kit.raw\": 563720, \"bytes.route.kit.gzip\": 255859, \"bytes.game.raw\": 1775200, \"bytes.game.gzip\": 630363, \"bytes.game.incremental.raw\": 887631, \"bytes.game.incremental.gzip\": 257815, \"bytes.worker.raw\": 664604, \"bytes.worker.gzip\": 167131, \"bytes.client.raw\": 2069315, \"bytes.client.gzip\": 840601}",
+        "builtB": "{\"bytes.route.root.raw\": 887569, \"bytes.route.root.gzip\": 372548, \"bytes.route.kit.raw\": 563720, \"bytes.route.kit.gzip\": 255859, \"bytes.game.raw\": 1775200, \"bytes.game.gzip\": 630363, \"bytes.game.incremental.raw\": 887631, \"bytes.game.incremental.gzip\": 257815, \"bytes.worker.raw\": 664604, \"bytes.worker.gzip\": 167131, \"bytes.client.raw\": 2069315, \"bytes.client.gzip\": 840601}",
+        "harnessDigest": "f18e490661dc4feceaa0c8016700a1170fbb37c35998383029a2ed852f62437b",
+        "lockfileSha256": "77c8e6e3d12c228040bf14967c83c703ecf744fbf90d7ef9b77c41f64e29a992",
+        "machine": "Mac16,8",
+        "node": "v26.13.1",
+        "os": "macOS 26.7.3 (25G342)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "ca654e5a68411f98dc79b5bc060ca9e12881520ab0d3fcfca1e775c16a908a4a",
+        "sideBSourceDigest": "ca654e5a68411f98dc79b5bc060ca9e12881520ab0d3fcfca1e775c16a908a4a",
+        "why": "Main 93a8352d, with the time of day, merged into the seated rider. The game chunk loaded after the menus is 257,815 B gzip and 887,631 B raw: main at 93a8352d measured 251,622 B gzip and 867,609 B raw on this lane, so the seated rider adds 6,193 B gzip and 20,022 B raw, against 6,155 B gzip and 20,025 B raw over 356a8fb1. Both bytes.game.incremental rows were over their limits, so both re-pin on this run with the usual headroom."
+      },
+      "id": "baseline-2026-11-25T12-54-05-220Z-fdda22e-fdda22e",
+      "lanes": ["build"],
+      "sides": {
+        "A": "fdda22efbf53ae1290c0fb2dd1dc94f2e05730af",
+        "B": "fdda22efbf53ae1290c0fb2dd1dc94f2e05730af"
       }
     },
     {

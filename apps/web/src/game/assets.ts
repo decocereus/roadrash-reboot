@@ -51,6 +51,7 @@ export interface RiderAsset {
   readonly bones: readonly string[];
   readonly poses: ReadonlyMap<PoseName, number[]>;
   readonly standHeight: number;
+  readonly url: string;
 }
 
 export interface WalkerAsset {
@@ -273,7 +274,7 @@ export type Parse<Value> = (
 ) => Promise<Decoded<Value>>;
 
 export interface AssetParsers {
-  readonly bike: Parse<BikeModel>;
+  readonly bike: (model: BikeModelId) => Parse<BikeModel>;
   readonly parts: Parse<ModelParts>;
   readonly whole: Parse<readonly Primitive[]>;
   readonly rider: Parse<RiderAsset>;
@@ -393,6 +394,7 @@ const rider: Parse<RiderAsset> = async (bytes, url) => {
     primitives,
     scene: gltf.scene,
     standHeight: stand.y,
+    url,
   });
 };
 
@@ -416,19 +418,22 @@ const parts: Parse<ModelParts> = async (bytes, url) => {
   return decoded(gltf.scene, [...byName.values()].flat(), byName);
 };
 
-const bike: Parse<BikeModel> = async (bytes, url) => {
-  const gltf = await parsed(bytes);
-  const refused = refuser(gltf.scene, `bike model ${url}`);
-  const fit = fitOf(gltf.scene, refused);
-  const byName = partsOf(
-    gltf.scene.children.filter((child) => !isFitNode(child)),
-    refused
-  );
-  return decoded(gltf.scene, [...byName.values()].flat(), {
-    fit,
-    parts: byName,
-  });
-};
+const bike =
+  (model: BikeModelId): Parse<BikeModel> =>
+  async (bytes, url) => {
+    const gltf = await parsed(bytes);
+    const refused = refuser(gltf.scene, `bike model ${url}`);
+    const byName = partsOf(
+      gltf.scene.children.filter((child) => !isFitNode(child)),
+      refused
+    );
+    const primitives = [...byName.values()].flat();
+    const fit = fitOf(gltf.scene, model, refused);
+    return decoded(gltf.scene, primitives, {
+      fit,
+      parts: byName,
+    });
+  };
 
 const whole: Parse<readonly Primitive[]> = async (bytes, url) => {
   const gltf = await parsed(bytes);

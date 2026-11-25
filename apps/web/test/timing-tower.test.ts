@@ -66,6 +66,7 @@ const paintedBody = {
   scene: new THREE.Object3D(),
   seat: new THREE.Vector3(),
   standHeight: 0,
+  url: "/models/painted.glb",
 };
 
 const wide = placementFor(wideView, "all");

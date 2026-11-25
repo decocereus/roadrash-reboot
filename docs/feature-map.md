@@ -563,20 +563,24 @@ The riders, bikes and traffic cars drawn from the race each frame: placement on 
 - Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/design/art-direction.md#riders-and-bikes](design/art-direction.md#riders-and-bikes), [docs/design/art-direction.md#budget-and-build](design/art-direction.md#budget-and-build)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`, `riders.cpu.p95`
-- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/fleet.ts`, `apps/web/src/game/shadow-reach.ts`, `apps/web/src/game/cross-car-pose.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/src/game/bike-fit.ts`, `apps/web/test/actor-tables.test.ts`, `apps/web/test/bike-contact.ts`, `apps/web/test/shadow-casters*.ts`, `apps/web/test/every-caster.ts`, `apps/web/test/bike-shadow-pass.test.ts`, `apps/web/test/figure-wear.test.ts`, `apps/web/test/figure-shadow.test.ts`, `apps/web/test/planted-hands.test.ts`, `apps/web/test/rider-gait.test.ts`, `apps/web/test/rider-poses.test.ts`, `apps/web/test/seated-callers.test.ts`, `apps/web/test/seated-contacts.ts`, `apps/web/test/rider-shade.ts`, `apps/web/test/shade-flats.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`, `apps/web/src/game/gait.ts`, `apps/web/src/game/strider.ts`, `apps/web/src/game/foot-lock.ts`
+- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/fleet.ts`, `apps/web/src/game/shadow-reach.ts`, `apps/web/src/game/cross-car-pose.ts`, `apps/web/src/game/bike-*.ts`, `apps/web/test/actor-tables.test.ts`, `apps/web/test/bike-*.ts`, `apps/web/test/shadow-casters*.ts`, `apps/web/test/every-caster.ts`, `apps/web/test/figure-*.ts`, `apps/web/test/planted-hands.test.ts`, `apps/web/test/rider-*.ts`, `apps/web/test/seat*.ts`, `apps/web/test/turned-from.test.ts`, `apps/web/test/shade-flats.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`, `apps/web/src/game/gait.ts`, `apps/web/src/game/strider.ts`, `apps/web/src/game/foot-lock.ts`
 
 Source files:
 
 - `apps/web/src/game/actors.ts`
+- `apps/web/src/game/bike-deck.ts`
 - `apps/web/src/game/bike-fit.ts`
 - `apps/web/src/game/bike-models.ts`
+- `apps/web/src/game/bike-posture.ts`
 - `apps/web/src/game/cross-car-pose.ts`
 - `apps/web/src/game/figure-bounds.ts`
+- `apps/web/src/game/figure-chest.ts`
 - `apps/web/src/game/figure-contacts.ts`
 - `apps/web/src/game/figure-cycle.ts`
 - `apps/web/src/game/figure-ik.ts`
 - `apps/web/src/game/figure-pose.ts`
 - `apps/web/src/game/figure-rig.ts`
+- `apps/web/src/game/figure-seating.ts`
 - `apps/web/src/game/figure-wardrobe.ts`
 - `apps/web/src/game/figure-weapons.ts`
 - `apps/web/src/game/figure-wear.ts`
@@ -598,19 +602,23 @@ Test files:
 - `apps/web/src/game/rider-fight.test.ts`
 - `apps/web/test/actor-tables.test.ts`
 - `apps/web/test/bike-contact.ts`
+- `apps/web/test/bike-posture.test.ts`
 - `apps/web/test/bike-shadow-pass.test.ts`
 - `apps/web/test/every-caster.ts`
 - `apps/web/test/figure-shadow.test.ts`
 - `apps/web/test/figure-wear.test.ts`
 - `apps/web/test/planted-hands.test.ts`
+- `apps/web/test/rider-clearance.test.ts`
 - `apps/web/test/rider-gait.test.ts`
 - `apps/web/test/rider-poses.test.ts`
 - `apps/web/test/rider-shade.ts`
 - `apps/web/test/seated-callers.test.ts`
 - `apps/web/test/seated-contacts.ts`
+- `apps/web/test/seating.ts`
 - `apps/web/test/shade-flats.ts`
 - `apps/web/test/shadow-casters.test.ts`
 - `apps/web/test/shadow-casters.ts`
+- `apps/web/test/turned-from.test.ts`
 
 ### Frame rate and quality
 
@@ -925,7 +933,7 @@ Booting the game module with a dynamic import, downloading and decoding the nine
 - Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/errors.md#asset-loading](errors.md#asset-loading)
 - Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
 - Perf: none yet
-- Owns: `apps/web/src/asset-*.ts`, `apps/web/src/assets/load.ts`, `apps/web/src/assets/model-*.ts`, `apps/web/src/assets/font-readiness-failed.ts`, `apps/web/src/game/assets.ts`, `apps/web/src/game/model-slots.ts`, `apps/web/test/asset-load.test.ts`, `apps/web/test/asset-parsing.ts`, `apps/web/test/asset-summary.ts`, `apps/web/test/celebrity-load.test.ts`, `apps/web/test/model-slots.test.ts`, `apps/web/test/node-images.ts`, `apps/web/test/pinned-assets.ts`
+- Owns: `apps/web/src/asset-*.ts`, `apps/web/src/assets/load.ts`, `apps/web/src/assets/model-*.ts`, `apps/web/src/assets/font-readiness-failed.ts`, `apps/web/src/game/assets.ts`, `apps/web/src/game/model-slots.ts`, `apps/web/test/asset-load.test.ts`, `apps/web/test/asset-parsing.ts`, `apps/web/test/fake-bike.ts`, `apps/web/test/asset-summary.ts`, `apps/web/test/celebrity-load.test.ts`, `apps/web/test/model-slots.test.ts`, `apps/web/test/node-images.ts`, `apps/web/test/pinned-assets.ts`
 
 Source files:
 
@@ -946,6 +954,7 @@ Test files:
 - `apps/web/test/asset-parsing.ts`
 - `apps/web/test/asset-summary.ts`
 - `apps/web/test/celebrity-load.test.ts`
+- `apps/web/test/fake-bike.ts`
 - `apps/web/test/model-slots.test.ts`
 - `apps/web/test/node-images.ts`
 - `apps/web/test/pinned-assets.ts`

@@ -11,12 +11,15 @@ import { createMembers } from "./bar-members.ts";
 import type { BarSpeech } from "./bar-speech.ts";
 import type { BarWalker } from "./bar-walker.ts";
 import type { BikeFit } from "./bike-fit.ts";
+import { bikePostures } from "./bike-posture.ts";
 
 const seatedFit = (): BikeFit => ({
   foot_l: new THREE.Vector3(-0.2, 0.4, 0.2),
   foot_r: new THREE.Vector3(0.2, 0.4, 0.2),
   hand_l: new THREE.Vector3(-0.3, 0.95, -0.37),
   hand_r: new THREE.Vector3(0.3, 0.95, -0.37),
+  model: "ghost",
+  posture: bikePostures.ghost,
   seat: new THREE.Vector3(0, 0.9, 0.36),
 });
 

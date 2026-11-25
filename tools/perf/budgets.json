@@ -160,12 +160,12 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "bcbd08aeb40e5eff34da1881f58eba4970965716118a3b1ee3374917b1a15fd9"
+    "summarySha256": "9ca28b7f1f663c601f64046602ac7e3d55eb34b315a85aa107d6350f949f49bd"
   },
   "limits": [
     {
       "baseline": 122108,
-      "derivation": "measured 122336 B: the five fit points, seat, both grips and both pegs, that every rider is seated by add 228 B",
+      "derivation": "measured 124524 B: rebuilt for the deep tuck, seat moved forward, a shorter and flatter tank, a padded seat with a step to the tail, lower bars and rearset pegs, adds 2188 B",
       "direction": "max",
       "environment": "build",
       "metric": "assets.glb.bike",
@@ -173,7 +173,7 @@
       "scenario": null,
       "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B",
-      "value": 122336
+      "value": 124524
     },
     {
       "baseline": 53048,
@@ -189,7 +189,7 @@
     },
     {
       "baseline": 116948,
-      "derivation": "measured 117212 B: the five fit points, seat, both grips and both pegs, that every rider is seated by add 264 B",
+      "derivation": "measured 120032 B: rebuilt for the deep tuck, seat moved forward, a shorter and flatter tank, a padded seat with a step to the tail, lower bars and rearset pegs, adds 2820 B",
       "direction": "max",
       "environment": "build",
       "metric": "assets.glb.ghost",
@@ -197,11 +197,11 @@
       "scenario": null,
       "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B",
-      "value": 117212
+      "value": 120032
     },
     {
       "baseline": 126272,
-      "derivation": "measured 126532 B: the five fit points, seat, both grips and both pegs, that every rider is seated by add 260 B",
+      "derivation": "measured 129356 B: rebuilt for the deep tuck, seat moved forward, a shorter and flatter tank, a padded seat with a step to the tail, lower bars and rearset pegs, adds 2824 B",
       "direction": "max",
       "environment": "build",
       "metric": "assets.glb.oni",
@@ -209,7 +209,7 @@
       "scenario": null,
       "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B",
-      "value": 126532
+      "value": 129356
     },
     {
       "baseline": 327348,
@@ -345,7 +345,7 @@
     },
     {
       "baseline": 118884,
-      "derivation": "measured 119148 B: the five fit points, seat, both grips and both pegs, that every rider is seated by add 264 B",
+      "derivation": "measured 122012 B: rebuilt for the deep tuck, seat moved forward, a shorter and flatter tank, a padded seat with a step to the tail, lower bars and rearset pegs, adds 2864 B",
       "direction": "max",
       "environment": "build",
       "metric": "assets.glb.seraph",
@@ -353,7 +353,7 @@
       "scenario": null,
       "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B",
-      "value": 119148
+      "value": 122012
     },
     {
       "baseline": 55976,
@@ -369,7 +369,7 @@
     },
     {
       "baseline": 3602412,
-      "derivation": "measured 3603428 B: the four bikes' fit points, seat, both grips and both pegs, that every rider is seated by add 1016 B",
+      "derivation": "measured 3614124 B: the four bikes rebuilt for the deep tuck, seat moved forward, a shorter and flatter tank, a padded seat with a step to the tail, lower bars and rearset pegs, add 10696 B",
       "direction": "max",
       "environment": "build",
       "metric": "assets.glb.total",
@@ -377,7 +377,7 @@
       "scenario": null,
       "source": "baseline-2026-11-23T10-29-05-736Z-68344ba-68344ba",
       "unit": "B",
-      "value": 3603428
+      "value": 3614124
     },
     {
       "baseline": 67640,
@@ -464,28 +464,28 @@
       "value": 634014
     },
     {
-      "baseline": 248684,
-      "derivation": "baseline + max(4096, ceil(0.02 x baseline)); the in-canvas timing tower, hud-tower-atlas.ts, hud-tower-quads.ts and hud-tower-pass.ts, adds 5567 B gzip over main b5658e33",
+      "baseline": 257815,
+      "derivation": "baseline + max(4096, ceil(0.02 x baseline)); the seated rider adds 6193 B gzip over main 93a8352d, which draws the time of day",
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.incremental.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-25T03-04-39-637Z-21b6fd2-21b6fd2",
+      "source": "baseline-2026-11-25T12-54-05-220Z-fdda22e-fdda22e",
       "unit": "B",
-      "value": 253658
+      "value": 262972
     },
     {
-      "baseline": 859490,
-      "derivation": "baseline + max(4096, ceil(0.02 x baseline)); the in-canvas timing tower adds 12816 B raw over main b5658e33",
+      "baseline": 887631,
+      "derivation": "baseline + max(4096, ceil(0.02 x baseline)); the seated rider adds 20022 B raw over main 93a8352d, which draws the time of day",
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.incremental.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-25T03-04-39-637Z-21b6fd2-21b6fd2",
+      "source": "baseline-2026-11-25T12-54-05-220Z-fdda22e-fdda22e",
       "unit": "B",
-      "value": 876680
+      "value": 905384
     },
     {
       "baseline": 1746653,

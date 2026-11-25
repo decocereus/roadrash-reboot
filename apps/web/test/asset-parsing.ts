@@ -1,12 +1,8 @@
 import * as THREE from "three";
 
-import type {
-  AssetParsers,
-  BikeModel,
-  Decoded,
-  RiderAsset,
-} from "../src/game/assets.ts";
+import type { AssetParsers, Decoded, RiderAsset } from "../src/game/assets.ts";
 import type { Primitive } from "../src/game/model-slots.ts";
+import { fakeBike } from "./fake-bike.ts";
 import { fakeRiderMoves, fakeWalkerAsset } from "./walker-asset.ts";
 
 export type Decode = () => Promise<null>;
@@ -17,18 +13,6 @@ interface Parsing {
   readonly releases: Map<string, number>;
 }
 
-const nowhere = new THREE.Vector3();
-const fakeBike = (): BikeModel => ({
-  fit: {
-    foot_l: nowhere,
-    foot_r: nowhere,
-    hand_l: nowhere,
-    hand_r: nowhere,
-    seat: nowhere,
-  },
-  parts: new Map<string, readonly Primitive[]>(),
-});
-
 const fakeRider = (): RiderAsset => ({
   atlas: null,
   bones: [],
@@ -36,6 +20,7 @@ const fakeRider = (): RiderAsset => ({
   primitives: [],
   scene: new THREE.Object3D(),
   standHeight: 0,
+  url: "/models/rider_a.glb",
 });
 
 export const parsingOf = (
@@ -60,7 +45,7 @@ export const parsingOf = (
   return {
     decodes,
     parsers: {
-      bike: async (_, url) => await decoded(url, fakeBike()),
+      bike: () => async (_, url) => await decoded(url, fakeBike()),
       moves: async (_, url) => await decoded(url, fakeRiderMoves()),
       parts: async (_, url) =>
         await decoded(url, new Map<string, readonly Primitive[]>()),

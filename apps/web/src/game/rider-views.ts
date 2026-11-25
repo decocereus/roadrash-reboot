@@ -279,6 +279,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
         if (!fit) {
           throw new Error(`The race drew no bike for rider ${rider.id}.`);
         }
+        figure.seatOn(fit);
         const view: RiderActor = {
           after: emptyPose(),
           before: emptyPose(),
