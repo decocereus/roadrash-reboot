@@ -222,7 +222,7 @@ describe("trucks on the roads", () => {
   );
 
   it.each([
-    ["breakwater-run", [3900, 4650]],
+    ["breakwater-run", [1750, 3650]],
     ["slag-row", [2600, 4100]],
     ["ridge-road", [4500]],
   ] as const)(

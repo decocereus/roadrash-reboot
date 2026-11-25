@@ -4,7 +4,7 @@ import type { TrackPlan } from "../track.ts";
 
 export const breakwaterRun: TrackPlan = {
   bazaars: [{ from: 1300, to: 1740 }],
-  carriers: [3900, 4650],
+  carriers: [1750, 3650],
   chevrons: chevronRuns["breakwater-run"],
   crossings: [
     {
@@ -14,9 +14,28 @@ export const breakwaterRun: TrackPlan = {
         arms: "both",
         carsPerMinute: 14,
         laneWidth: 3.4,
-        lanesEachWay: 2,
+        lanesEachWay: 1,
       },
       s: 560,
+      walk: "zebra",
+    },
+    {
+      id: "plaza-cross",
+      lights: { offsetTicks: 900 },
+      road: {
+        arms: "both",
+        carsPerMinute: 10,
+        laneWidth: 3.4,
+        lanesEachWay: 1,
+      },
+      s: 2000,
+      walk: "zebra",
+    },
+    {
+      id: "pier-lights",
+      lights: { offsetTicks: 0 },
+      road: null,
+      s: 3650,
       walk: "zebra",
     },
     {
@@ -39,7 +58,10 @@ export const breakwaterRun: TrackPlan = {
       walk: "zebra",
     },
   ],
-  crowds: [{ from: 1300, sites: 11, to: 1740 }],
+  crowds: [
+    { from: 1300, sites: 11, to: 1740 },
+    { from: 6480, sites: 4, to: 7140 },
+  ],
   districts: [
     { from: 0, lanesEachWay: 3, shoulderWidth: 0.7, vergeWidth: 7 },
     { from: 1300, lanesEachWay: 1, shoulderWidth: 0.4, vergeWidth: 7 },

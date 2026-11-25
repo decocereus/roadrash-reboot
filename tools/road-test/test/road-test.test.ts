@@ -31,6 +31,7 @@ const track = compileTrack({
   carriers: [],
   chevrons: [],
   crossings: [],
+  crowds: [],
   districts,
   hazardsPerKilometre: 0,
   pieces: eased([[ROAD_LENGTH, 0, 0]]),

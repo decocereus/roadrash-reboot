@@ -33,6 +33,7 @@ const flat = (over: Partial<TrackPlan>): TrackPlan => ({
   carriers: [],
   chevrons: [],
   crossings: [],
+  crowds: [],
   districts: [{ from: 0, lanesEachWay: 2, shoulderWidth: 0.9, vergeWidth: 7 }],
   pieces: eased([[3000, 0, 0]]),
   ...over,

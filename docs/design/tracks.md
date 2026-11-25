@@ -131,7 +131,7 @@ Nearly all of Breakwater Run is tight bends, where a rock is barred, so with the
 
 The seed salt, 0x4bc2, was picked from 400 when there were five roads, as the one that kept the old hazard counts and gave every road two or more oil slicks. Breakwater Run has 15 at tier 1 (5 oil, 5 rock, 5 pothole), Slag Row 6 (3 oil, 2 rock, 1 pothole) and Ridge Road 6 (4 oil, 2 potholes).
 
-Tier 1 places these hazards, by id, kind, setting, position along the road, and position across it. A compiled road holds more candidates, ranked per road by a seeded roll, and a tier places the share of them its table gives (`game-design.md` section 4): 15, 20 and 24 on Breakwater Run, 6, 8 and 9 on Slag Row, and 5, 7 and 8 on Ridge Road. Breakwater Run's tier 2 adds oil at 3,620, 4,230 and 7,410 m and potholes at 1,500 and 5,610 m. Its tier 3 adds potholes at 820, 2,242, 6,790 and 7,980 m. On its one-lane stretches it has potholes at 1,361, 1,500, 1,720 and 4,117 m and one oil slick at 4,230 m, on the straight where the Arcades open out.
+Tier 1 places these hazards, by id, kind, setting, position along the road, and position across it. A compiled road holds more candidates, ranked per road by a seeded roll, and a tier places the share of them its table gives (`game-design.md` section 4): 15, 20 and 24 on Breakwater Run, 6, 8 and 9 on Slag Row, and 5, 7 and 8 on Ridge Road. Breakwater Run's tier 2 adds oil at 3,864, 4,230 and 7,410 m and potholes at 1,500 and 5,610 m. Its tier 3 adds potholes at 820, 2,242, 6,790 and 7,980 m. On its one-lane stretches it has potholes at 1,361, 1,500, 1,720 and 4,117 m and two oil slicks: at 3,864 m, in the narrowing into the Arcades, and at 4,230 m, on the straight where the Arcades open out. The one at 3,864 m sits at x 0.12 and leaves 2.38 m of its own lane clear.
 
 | Road | Hazards |
 | --- | --- |
@@ -154,15 +154,17 @@ No hazard lies in a reserved stretch, and no tree, pole or rock stands within 3 
 
 The lights run main green 9 s, main amber 2.5 s, all red 1 s, cross green 7 s, cross amber 2.5 s and all red 1 s, a 23 s cycle, so a rider meets a red about half the time. A pedestrian crossing runs main green 10 s, amber 2.5 s, all red 1 s, walk 6 s, flashing 2 s and all red 1 s. The phase is a function of the race tick and the entry's offset, so it needs no race state and replays exactly.
 
-A region's `footfall` sets how many unmarked crossings and jaywalkers it seeds per kilometre. Lowtown is city scenery, at 1 unmarked crossing and 1.5 jaywalkers per kilometre, the Salt Coast is busier at 2 and 2.5, and every other region has none. A plan's `crowds` seats extra unmarked crossings along a stretch, evenly with a seeded jitter, with no lights, where a crossing could not go because the road bends. Breakwater Run seats 11 along the market squeeze, from 1,300 to 1,740 m. Sites keep their places in every race. A road gets them without declaring anything.
+A region's `footfall` sets how many unmarked crossings and jaywalkers it seeds per kilometre. Lowtown is city scenery, at 1 unmarked crossing and 1.5 jaywalkers per kilometre, the Salt Coast is busier at 2 and 2.5, and every other region has none. A plan's `crowds` seats extra unmarked crossings along a stretch, evenly with a seeded jitter, with no lights, where a crossing could not go because the road bends. Breakwater Run seats 11 along the market squeeze, from 1,300 to 1,740 m, and 4 along the battery from 6,480 to 7,140 m, where the hill falls into the docks. Sites keep their places in every race. A road gets them without declaring anything.
 
-Cars come down the cross roads at the rate each one declares: Breakwater Run has 14 a minute at `harbour-cross` and 8 at `market-cross`. They obey the lights and queue at the stop line, and at a give-way they wait for a five-second gap. A car on a through junction drives across the main road and off the far arm. A car on a T turns into a main-road lane and drops out once no rider can see it go. A car crossing at speed throws a rider it reaches; a rider who reaches it at speed crashes the same way as into main-road traffic, so a slow, upright rider can glance off or clear it.
+Cars come down the cross roads at the rate each one declares: Breakwater Run has 14 a minute at `harbour-cross`, 10 at `plaza-cross` and 8 at `market-cross`. They obey the lights and queue at the stop line, and at a give-way they wait for a five-second gap. A car on a through junction drives across the main road and off the far arm. A car on a T turns into a main-road lane and drops out once no rider can see it go. A car crossing at speed throws a rider it reaches; a rider who reaches it at speed crashes the same way as into main-road traffic, so a slow, upright rider can glance off or clear it.
 
 Main-road traffic obeys the lights. On a red, and on an amber it can stop for at its normal 7 m/s² braking, a car stops with its nose a metre short of its stop line, and the cars behind it queue 2 m apart. A car too close to stop runs the amber, so no car stops inside the box. Riders and the pilot ignore the lights. They meet the queue as slow or stopped cars.
 
 | Road | Id | At (m) | Lights | Cross road | Walk |
 | --- | --- | --: | --- | --- | --- |
-| Breakwater Run | `harbour-cross` | 560 | offset 0 | two lanes each way, both arms | zebra |
+| Breakwater Run | `harbour-cross` | 560 | offset 0 | one lane each way, both arms | zebra |
+| Breakwater Run | `plaza-cross` | 2,000 | offset 900 | one lane each way, both arms | zebra |
+| Breakwater Run | `pier-lights` | 3,650 | offset 0 | none | zebra |
 | Breakwater Run | `market-cross` | 6,000 | offset 540 | one lane each way, right arm | zebra |
 | Breakwater Run | `pier-crossing` | 7,850 | offset 300 | none | zebra |
 
@@ -242,7 +244,7 @@ Eight straights over 250 m remain: 0 to 307, 474 to 756, 1,691 to 2,249 (the pla
 | 9 | 1,480 | 80 | 0 | 0 | Squeeze, between the bends |
 | 10 | 1,560 | 140 | -58 | 0 | Squeeze, left; 129 km/h on a Sesta 600, 155 on a Wren |
 | 11 | 1,700 | 240 | 0 | 0 | Out of the squeeze, widening to the plaza at 1,740 m |
-| 12 | 1,940 | 300 | 0 | 0 | The plaza |
+| 12 | 1,940 | 300 | 0 | 0 | The plaza, over `plaza-cross` at 2,000 m |
 | 13 | 2,240 | 140 | -68 | 0 | Lighthouse Kink as the plaza closes; 118 km/h on a Sesta 600, 142 on a Wren |
 | 14 | 2,380 | 160 | 62 | 2 | Right, recovering; 134 km/h on a Sesta 600, 161 on a Wren |
 | 15 | 2,540 | 360 | 0 | 8 | Seawall climb |
@@ -250,7 +252,7 @@ Eight straights over 250 m remain: 0 to 307, 474 to 756, 1,691 to 2,249 (the pla
 | 17 | 3,000 | 100 | 0 | -9 | Seawall hump, drop; launches at 169 km/h |
 | 18 | 3,100 | 300 | -26 | -5 | Sweeping left down to the pier |
 | 19 | 3,400 | 200 | 30 | 0 | Pier approach, narrowing to two lanes |
-| 20 | 3,600 | 120 | 0 | 0 | Along the pier |
+| 20 | 3,600 | 120 | 0 | 0 | Along the pier, over `pier-lights` at 3,650 m |
 | 21 | 3,720 | 40 | 0 | 1.4 | Pier hump, rise |
 | 22 | 3,760 | 40 | 0 | -1.4 | Pier hump, drop; launches at 172 km/h |
 | 23 | 3,800 | 100 | 0 | 0 | Along the pier, the old finish, closing to one lane |
@@ -386,10 +388,19 @@ No crest on Breakwater Run launches below 160 km/h. The hill's fall into the doc
 
 | Starts at (m) | Median meeting, tier 1 | Median meeting, tier 3 | Where |
 | --: | --: | --: | --- |
-| 3,900 | 7,248 m at 172 s | 7,263 m at 178 s | Where the docks open to three lanes |
-| 4,650 | 7,887 m at 189 s | 7,957 m at 197 s | The quay, into the Crane Kink |
+| 1,750 | 2,553 m at 64 s | 2,557 m at 61 s | The seawall climb, after the Lighthouse Kink |
+| 3,650 | 6,732 m at 160 s | 6,818 m at 165 s | Along the battery |
 
-A truck runs in the inner same-way lane. The first starts at the mouth of the Arcades and has left them about a minute before the pack arrives, and both reach the pack in the docks, where three lanes leave a way round. Every meeting in eight seeds of a full pilot field fell between 6,665 and 8,517 m. A start at 3,750 m put the first truck at `market-cross`'s red as the pack arrived. The pilots rode 12 of 89 ramps at tier 1 and 8 of 85 at tier 3.
+A truck runs in the inner same-way lane. The first starts as the squeeze opens into the plaza and meets the pack on the seawall climb, where the plaza's three lanes have just closed to two. The second starts on the pier, past `pier-lights`, and has left the pier before the pack arrives, so it meets them on the battery, after the hilltop and its `market-cross`. In 30 seeds of a full pilot field the leader met the first truck between 2,285 and 2,948 m (10th to 90th percentile) and the second between 6,109 and 7,584 m.
+
+| Truck | Tier | Ramp rides | Soft | Hard | Crashes                       |
+| ----: | ---: | ---------: | ---: | ---: | ----------------------------- |
+| 1,750 |    1 |         43 |   35 |    6 | 2: one traffic, one landing   |
+| 1,750 |    3 |         24 |   19 |    3 | 2: one traffic, one prop      |
+| 3,650 |    1 |         71 |   46 |   21 | 4: three landing, one traffic |
+| 3,650 |    3 |         18 |   14 |    3 | 1: landing                    |
+
+The second truck's landing crashes all come down at 7,500 to 7,515 m, in the 48° right onto the quay, from riders who meet it late, after it has passed the battery crest. A start at 3,750 m had six of them at tier 1; 3,550 m had none in that bend but moved the median meeting to 6,027 m, out of the battery. A first truck at 2,000 m landed riders in the Lighthouse Kink and crashed 15 at tier 1 and 27 at tier 3, mostly into traffic.
 
 Traffic per km: 5.
 

@@ -47,10 +47,16 @@ describe("crossings", () => {
     }
   });
 
-  it("Breakwater Run has its three crossings", () => {
+  it("Breakwater Run has its five crossings, in road order", () => {
     expect(
       trackFor("breakwater-run").crossings.map(({ id }) => id)
-    ).toStrictEqual(["harbour-cross", "market-cross", "pier-crossing"]);
+    ).toStrictEqual([
+      "harbour-cross",
+      "plaza-cross",
+      "pier-lights",
+      "market-cross",
+      "pier-crossing",
+    ]);
   });
 
   it("a junction on a bend, on a crest or near the start is refused", () => {

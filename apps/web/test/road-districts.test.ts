@@ -17,6 +17,7 @@ const WIDTHS = { shoulderWidth: 0.9, vergeWidth: 7 };
 
 const threeOneTwo: Track = compileTrack({
   ...roads["breakwater-run"],
+  crossings: [],
   districts: [
     { ...WIDTHS, from: 0, lanesEachWay: 3 },
     { ...WIDTHS, from: 3000, lanesEachWay: 1 },
