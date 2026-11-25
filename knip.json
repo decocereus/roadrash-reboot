@@ -24,6 +24,7 @@
         "test/renderer-lifecycle.ts",
         "test/session-transcript.ts",
         "test/shadow-casters.ts",
+        "test/sky-last.ts",
         "test/replay-bundle.ts"
       ],
       "ignoreDependencies": ["cloudflare"],

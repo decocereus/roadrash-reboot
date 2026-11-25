@@ -542,8 +542,6 @@ Source files:
 - `apps/web/src/game/sky.ts`
 - `apps/web/src/game/texture-canvas.ts`
 - `apps/web/src/game/world.ts`
-- `apps/web/src/game/world.ts`
-- `apps/web/src/game/world.ts`
 
 Test files:
 
@@ -870,8 +868,6 @@ Source files:
 - `apps/web/src/game/dispose.ts`
 - `apps/web/src/game/fixed-tick.ts`
 - `apps/web/src/game/frame-loop.ts`
-- `apps/web/src/game/game.ts`
-- `apps/web/src/game/game.ts`
 - `apps/web/src/game/game.ts`
 - `apps/web/src/game/meshes.ts`
 - `apps/web/src/game/post.ts`
@@ -1290,8 +1286,6 @@ Source files:
 - `tools/perf/src/gpu-bar.ts`
 - `tools/perf/src/gpu-frame-reads.ts`
 - `tools/perf/src/gpu-frames.ts`
-- `tools/perf/src/gpu-frames.ts`
-- `tools/perf/src/gpu-frames.ts`
 - `tools/perf/src/gpu-rv.ts`
 - `tools/perf/src/gpu.ts`
 - `tools/perf/src/load.ts`
@@ -1330,8 +1324,6 @@ Test files:
 - `tools/perf/test/gpu-fixture.ts`
 - `tools/perf/test/gpu-page.test.ts`
 - `tools/perf/test/gpu-parts.test.ts`
-- `tools/perf/test/gpu.test.ts`
-- `tools/perf/test/gpu.test.ts`
 - `tools/perf/test/gpu.test.ts`
 - `tools/perf/test/load.test.ts`
 - `tools/perf/test/measure-page.test.ts`
