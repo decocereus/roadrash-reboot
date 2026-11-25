@@ -78,8 +78,8 @@ const steady: Playback = {
     () => 30
   ),
   riders: () => 0.2,
-  tower: () => 0.05,
   shadowTriangles: () => SHADOW_TRIANGLES,
+  tower: () => 0.05,
   viewport: { dpr: 2, height: 790, width: 1504 },
 };
 
