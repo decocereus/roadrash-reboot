@@ -16,6 +16,7 @@ import { readBudgets } from "./approved.ts";
 import type { ConfigInvalid } from "./config-invalid.ts";
 import { measureBar } from "./gpu-bar-capture.ts";
 import { probeClock, sourceText } from "./gpu-clock.ts";
+import type { ClockSource } from "./gpu-clock.ts";
 import { evaluateGpu, FRAME_RATE, GPU_PAIRS } from "./gpu-frames.ts";
 import type { GpuSample } from "./gpu-frames.ts";
 import { failed, OPEN_TIMEOUT_S, PARK, REPO_ROOT, rv, RV } from "./gpu-rv.ts";
@@ -26,7 +27,7 @@ import {
   sampleOnce,
   SETTINGS_KEY,
 } from "./gpu-sample.ts";
-import { clockStatesOf, windowClockLine } from "./gpu-states.ts";
+import { clockStatesOf, parkLines, windowText } from "./gpu-states.ts";
 import { MeasurementFailed } from "./measurement-failed.ts";
 import { sha256Of } from "./result.ts";
 import { scenarios } from "./scenarios.ts";
@@ -133,6 +134,8 @@ const PREPARE = `(async () => {
     width: innerWidth,
   };
 })()`;
+
+const withText = (text: string): string => (text === "" ? "" : `, ${text}`);
 
 const say = (line: string) =>
   Effect.sync(() => {
@@ -348,9 +351,14 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
     )
   );
   const source = yield* probeClock().pipe(
-    Effect.mapError(failed("probing the CPU clock"))
+    Effect.catch((error) => {
+      const absent: ClockSource = {
+        kind: "absent",
+        reason: `probing the CPU clock failed: ${error.message}`,
+      };
+      return Effect.succeed(absent);
+    })
   );
-  yield* say(sourceText(source));
   const bench = { dir, host, source };
   const pages = yield* readPages(options.runs, host);
   if (pages.kind === "refused") {
@@ -380,7 +388,7 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
           JSON.stringify(samples)
         );
         yield* say(
-          `gpu ${scenario.id} pair ${pair} ${side} captured at position ${samples.length - 1}, ${windowClockLine(sample)}`
+          `gpu ${scenario.id} pair ${pair} ${side} captured at position ${samples.length - 1}${withText(windowText(sample))}`
         );
       }
     }
@@ -390,7 +398,9 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
     measured: options.runs.B,
   });
   for (const sample of bar) {
-    yield* say(`gpu ${sample.file} captured on B, ${windowClockLine(sample)}`);
+    yield* say(
+      `gpu ${sample.file} captured on B${withText(windowText(sample))}`
+    );
   }
   const after = yield* doctorAll(options, dir, "doctor-after");
   const evaluation = evaluateGpu(
@@ -415,6 +425,7 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
     ...evaluation.lines,
     sourceText(source),
     ...clock.lines,
+    ...parkLines(samples, bar),
   ];
   const ok = after.length === 0 && evaluation.ok;
   const resultFile = path.join(dir, "result.json");
@@ -432,7 +443,7 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
           windows: [...samples, ...bar].map((sample, position) => ({
             clock: sample.clock,
             file: sample.file,
-            parkTries: sample.parkTries,
+            park: sample.park,
             position,
           })),
         },

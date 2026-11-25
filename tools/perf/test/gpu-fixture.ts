@@ -1,10 +1,25 @@
+import type * as Clock from "effect/Clock";
+import * as Duration from "effect/Duration";
+import * as Effect from "effect/Effect";
+
 import { BAR_BENCH } from "../src/gpu-bar.ts";
 import type { BarSample } from "../src/gpu-bar.ts";
 import { FRAME_RATE, GPU_PAIRS } from "../src/gpu-frames.ts";
 import type { GpuSample } from "../src/gpu-frames.ts";
+import type { ParkReading } from "../src/gpu-rv.ts";
 import { scenarios, WINDOW_TICKS } from "../src/scenarios.ts";
 import type { Scenario } from "../src/scenarios.ts";
 import { validRows } from "./red-cases.ts";
+
+export const QUIET: ParkReading = {
+  page: '"/kit"',
+  reason: null,
+  renderers: [],
+  run: "run-idle-s0",
+  slot: "0",
+  state: "quiet",
+  tries: 1,
+};
 
 export const SLOT = 1000 / 60;
 const MAIN_CALLS = 130;
@@ -164,7 +179,7 @@ const sampleOf = (
     file: `${scenario.id}-pair${pair}-${side}.json`,
     installed: { tick: 6, visibility: "visible" },
     pair,
-    parkTries: 1,
+    park: QUIET,
     position: side === "A" ? 0 : 1,
     run: side === "A" ? "run-a-s0" : "run-b-s1",
     scenario: scenario.id,
@@ -226,7 +241,7 @@ export const barSampleOf = (
   clock: null,
   consoleErrors: 0,
   file: `bar-${index}.json`,
-  parkTries: 1,
+  park: QUIET,
 });
 
 export const barOf = (
@@ -238,3 +253,23 @@ export const barOf = (
   );
 
 export const steadyBar = barOf(() => 16.7);
+
+export const scriptedClock = () => {
+  const now = { ns: 0n };
+  const advance = (ms: number) => {
+    now.ns += BigInt(Math.round(ms * 1e6));
+  };
+  const clock: Clock.Clock = {
+    currentTimeMillis: Effect.sync(() => Number(now.ns / 1_000_000n)),
+    currentTimeMillisUnsafe: () => Number(now.ns / 1_000_000n),
+    currentTimeNanos: Effect.sync(() => now.ns),
+    currentTimeNanosUnsafe: () => now.ns,
+    monotonicTimeNanos: Effect.sync(() => now.ns),
+    monotonicTimeNanosUnsafe: () => now.ns,
+    sleep: (duration) =>
+      Effect.sync(() => {
+        advance(Duration.toMillis(duration));
+      }),
+  };
+  return { advance, clock };
+};

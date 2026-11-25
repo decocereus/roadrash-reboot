@@ -14,6 +14,7 @@ import {
   total,
 } from "./gpu-frame-reads.ts";
 import type { GpuFrame } from "./gpu-frame-reads.ts";
+import { parkReading } from "./gpu-rv.ts";
 import { median, quantile } from "./result.ts";
 import {
   scenarios,
@@ -90,7 +91,7 @@ const sampleFields = {
     visibility: Schema.String,
   }),
   pair: Schema.Number,
-  parkTries: Schema.Number,
+  park: parkReading,
   position: Schema.Number,
   run: Schema.String,
   scenario: Schema.String,

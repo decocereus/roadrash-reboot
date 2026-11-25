@@ -23,13 +23,17 @@ export type ClockState = (typeof clockStates)[number];
 
 const celsius = Schema.Struct({ max: Schema.Number, mean: Schema.Number });
 
-export const windowClock = Schema.Struct({
-  meanMhz: Schema.Number,
-  packageC: Schema.NullOr(celsius),
-  readings: Schema.Number,
-  slowShare: Schema.Number,
-  state: Schema.Literals(clockStates),
-});
+export const windowClock = Schema.Union([
+  Schema.Struct({
+    kind: Schema.Literal("read"),
+    meanMhz: Schema.Number,
+    packageC: Schema.NullOr(celsius),
+    readings: Schema.Number,
+    slowShare: Schema.Number,
+    state: Schema.Literals(clockStates),
+  }),
+  Schema.Struct({ kind: Schema.Literal("unread"), reason: Schema.String }),
+]);
 
 export type WindowClock = typeof windowClock.Type;
 
@@ -46,6 +50,11 @@ export interface ClockReading {
   readonly at: number;
   readonly mhz: number;
   readonly packageC: number | null;
+}
+
+export interface Sampled {
+  readonly failure: string | null;
+  readonly readings: readonly ClockReading[];
 }
 
 interface ClockLog {
@@ -166,13 +175,11 @@ export const whileSampling = <A, E, R>(
         yield* Effect.forkScoped(sampling(source, log));
       }
       const result = yield* work;
-      if (log.failure !== null) {
-        return yield* new MeasurementFailed({
-          lane: "gpu",
-          message: `reading the CPU clock failed during the window: ${log.failure}`,
-        });
-      }
-      return { readings: [...log.readings], result };
+      const sampled: Sampled = {
+        failure: log.failure,
+        readings: [...log.readings],
+      };
+      return { result, sampled };
     })
   );
 
@@ -193,12 +200,15 @@ export const windowClockOf = (
   readings: readonly ClockReading[],
   span: { readonly from: number; readonly to: number },
   maxMhz: number
-): WindowClock | null => {
+): WindowClock => {
   const inside = readings.filter(
     (reading) => reading.at >= span.from && reading.at <= span.to
   );
   if (inside.length === 0) {
-    return null;
+    return {
+      kind: "unread",
+      reason: "no clock reading fell inside the window",
+    };
   }
   const slowShare =
     inside.filter((reading) => reading.mhz < SLOW_BELOW_OF_MAX * maxMhz)
@@ -207,6 +217,7 @@ export const windowClockOf = (
     reading.packageC === null ? [] : [reading.packageC]
   );
   return {
+    kind: "read",
     meanMhz: meanOf(inside.map((reading) => reading.mhz)),
     packageC:
       temperatures.length === 0
@@ -225,13 +236,19 @@ interface Timed {
 
 export const clockOfCapture = (
   source: ClockSource,
-  readings: readonly ClockReading[],
+  { failure, readings }: Sampled,
   { frames, timeOrigin }: Timed
 ): WindowClock | null => {
+  if (source.kind === "absent") {
+    return null;
+  }
+  if (failure !== null) {
+    return { kind: "unread", reason: `clock read failed: ${failure}` };
+  }
   const [first] = frames;
   const last = frames.at(-1);
-  if (source.kind === "absent" || first === undefined || last === undefined) {
-    return null;
+  if (first === undefined || last === undefined) {
+    return { kind: "unread", reason: "the window has no frames" };
   }
   return windowClockOf(
     readings,
@@ -243,9 +260,9 @@ export const clockOfCapture = (
   );
 };
 
-export const clockText = (clock: WindowClock | null): string => {
-  if (clock === null) {
-    return "clock unread";
+export const clockText = (clock: WindowClock): string => {
+  if (clock.kind === "unread") {
+    return `clock unread: ${clock.reason}`;
   }
   const heat =
     clock.packageC === null
@@ -257,4 +274,4 @@ export const clockText = (clock: WindowClock | null): string => {
 export const sourceText = (source: ClockSource): string =>
   source.kind === "absent"
     ? `info clock not recorded: ${source.reason}`
-    : `info clock read once a second from ${source.cores.length} cores' scaling_cur_freq, slow below ${(SLOW_BELOW_OF_MAX * source.maxMhz).toFixed(0)} MHz (${SLOW_BELOW_OF_MAX} x cpuinfo_max_freq ${source.maxMhz.toFixed(0)} MHz); a window is fast at a slow share of ${FAST_AT_MOST} or less, slow at ${SLOW_AT_LEAST} or more, mixed otherwise; package temperature ${source.packageTemp ?? `unread: no ${PACKAGE_ZONE} thermal zone`}`;
+    : `info clock read once a second from ${source.cores.length} cores' scaling_cur_freq, slow below ${(SLOW_BELOW_OF_MAX * source.maxMhz).toFixed(0)} MHz (${SLOW_BELOW_OF_MAX} x the first core's cpuinfo_max_freq ${source.maxMhz.toFixed(0)} MHz, so the cores must share one maximum); a window is fast at a slow share of ${FAST_AT_MOST} or less, slow at ${SLOW_AT_LEAST} or more, mixed otherwise; a failed read leaves that window unread; package temperature ${source.packageTemp ?? `unread: no ${PACKAGE_ZONE} thermal zone`}`;

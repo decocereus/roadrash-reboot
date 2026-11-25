@@ -8,7 +8,7 @@ import { BAR_BENCH, barCapture } from "./gpu-bar.ts";
 import type { BarSample } from "./gpu-bar.ts";
 import { clockOfCapture, whileSampling } from "./gpu-clock.ts";
 import {
-  assertParked,
+  readPark,
   consoleErrors,
   failed,
   OPEN_TIMEOUT_S,
@@ -62,9 +62,9 @@ const sampleBar = Effect.fnUntraced(function* sampleBar(
 ) {
   const fs = yield* FileSystem.FileSystem;
   const run = runs.measured;
-  const parkTries = yield* assertParked(runs.idle, bench.host.platform);
+  const park = yield* readPark(runs.idle, bench.host.platform);
   const errorsBefore = yield* consoleErrors(run);
-  const { readings, result: text } = yield* whileSampling(
+  const { result: text, sampled } = yield* whileSampling(
     bench.source,
     rideWindow(run).pipe(Effect.andThen(rv(["js", "--run", run, COLLECT])))
   );
@@ -77,10 +77,10 @@ const sampleBar = Effect.fnUntraced(function* sampleBar(
   );
   const sample: BarSample = {
     capture,
-    clock: clockOfCapture(bench.source, readings, capture),
+    clock: clockOfCapture(bench.source, sampled, capture),
     consoleErrors: errorsAfter - errorsBefore,
     file,
-    parkTries,
+    park,
   };
   return sample;
 });

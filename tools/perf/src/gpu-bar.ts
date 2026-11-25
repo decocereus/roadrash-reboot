@@ -10,6 +10,7 @@ import {
   peakOf,
   total,
 } from "./gpu-frame-reads.ts";
+import type { ParkReading } from "./gpu-rv.ts";
 import { quantile } from "./result.ts";
 
 export const BAR_BENCH = {
@@ -38,7 +39,7 @@ export interface BarSample {
   readonly clock: WindowClock | null;
   readonly consoleErrors: number;
   readonly file: string;
-  readonly parkTries: number;
+  readonly park: ParkReading;
 }
 
 const intervalAt = (share: number) => (sample: BarSample) =>

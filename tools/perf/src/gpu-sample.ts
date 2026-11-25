@@ -10,7 +10,7 @@ import type { ClockSource } from "./gpu-clock.ts";
 import { pageCapture, racedCapture } from "./gpu-frames.ts";
 import type { GpuSample } from "./gpu-frames.ts";
 import {
-  assertParked,
+  readPark,
   consoleErrors,
   failed,
   OPEN_TIMEOUT_S,
@@ -101,7 +101,7 @@ export const sampleOnce = Effect.fnUntraced(function* sampleOnce(
 ) {
   const fs = yield* FileSystem.FileSystem;
   const run = runs.measured;
-  const parkTries = yield* assertParked(runs.idle, bench.host.platform);
+  const park = yield* readPark(runs.idle, bench.host.platform);
   const errorsBefore = yield* consoleErrors(run);
   yield* rv([
     "open",
@@ -117,7 +117,7 @@ export const sampleOnce = Effect.fnUntraced(function* sampleOnce(
     Effect.flatMap(decodeInstalled),
     Effect.mapError(failed(`long-task observer on ${run}`))
   );
-  const { readings, result: text } = yield* whileSampling(
+  const { result: text, sampled } = yield* whileSampling(
     bench.source,
     rv([
       "wait",
@@ -139,7 +139,7 @@ export const sampleOnce = Effect.fnUntraced(function* sampleOnce(
     file,
     installed,
     pair: where.pair,
-    parkTries,
+    park,
     position: where.position,
     run,
     scenario: scenario.id,
@@ -152,7 +152,7 @@ export const sampleOnce = Effect.fnUntraced(function* sampleOnce(
     const sample: GpuSample = {
       ...fields,
       capture,
-      clock: clockOfCapture(bench.source, readings, capture),
+      clock: clockOfCapture(bench.source, sampled, capture),
       side: "A",
     };
     return sample;
@@ -161,7 +161,7 @@ export const sampleOnce = Effect.fnUntraced(function* sampleOnce(
   const sample: GpuSample = {
     ...fields,
     capture,
-    clock: clockOfCapture(bench.source, readings, capture),
+    clock: clockOfCapture(bench.source, sampled, capture),
     side: "B",
   };
   return sample;
