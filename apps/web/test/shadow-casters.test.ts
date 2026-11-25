@@ -11,8 +11,10 @@ import { createFleet, INK_REACH } from "../src/game/fleet.ts";
 import { placeOnGround } from "../src/game/ground.ts";
 import { lookOf } from "../src/game/looks.ts";
 import { isInstancedMesh } from "../src/game/meshes.ts";
+import { createPipeline } from "../src/game/post.ts";
 import { shadowReachOf } from "../src/game/shadow-reach.ts";
 import { pinnedAssets } from "./pinned-assets.ts";
+import { shadowPass } from "./shadow-pass.ts";
 
 const track = trackFor("breakwater-run");
 const HALF_BOX = 5;
@@ -128,13 +130,117 @@ describe("the fleet's shadow casters", () => {
   });
 });
 
-const isRenderer = (renderer: {
-  readonly autoClear: boolean;
-}): renderer is { readonly autoClear: boolean } & THREE.WebGLRenderer =>
-  "autoClear" in renderer;
+type Renderer = THREE.WebGLRenderer;
+
+type Pass = "colour" | "normal" | "shadow";
+
+interface Framing extends Pick<
+  Renderer,
+  | "autoClear"
+  | "autoClearColor"
+  | "autoClearDepth"
+  | "autoClearStencil"
+  | "clear"
+  | "getClearAlpha"
+  | "getClearColor"
+  | "render"
+  | "setClearColor"
+  | "setOpaqueSort"
+  | "setRenderTarget"
+> {
+  readonly shadowMap: Pick<Renderer["shadowMap"], "needsUpdate">;
+}
+
+const PIPELINE_CALLS = [
+  "autoClear",
+  "autoClearColor",
+  "autoClearDepth",
+  "autoClearStencil",
+  "clear",
+  "getClearAlpha",
+  "getClearColor",
+  "render",
+  "setClearColor",
+  "setOpaqueSort",
+  "setRenderTarget",
+  "shadowMap",
+] as const;
+
+const drawsFrames = (renderer: Framing): renderer is Framing & Renderer =>
+  PIPELINE_CALLS.every((member) => member in renderer);
+
+const nothing = (): void => undefined;
+
+const passesOf = (
+  mesh: THREE.InstancedMesh,
+  light: THREE.DirectionalLight,
+  scene: THREE.Scene,
+  camera: THREE.PerspectiveCamera
+): [Pass, number][] => {
+  const passes: [Pass, number][] = [];
+  const drawGroup = new THREE.Group();
+  const framing: Framing = {
+    autoClear: true,
+    autoClearColor: true,
+    autoClearDepth: true,
+    autoClearStencil: true,
+    clear: nothing,
+    getClearAlpha: () => 1,
+    getClearColor: (target) => target,
+    render: nothing,
+    setClearColor: nothing,
+    setOpaqueSort: nothing,
+    setRenderTarget: nothing,
+    shadowMap: { needsUpdate: false },
+  };
+  if (!drawsFrames(framing)) {
+    throw new Error("the counting renderer lacks a member the pipeline calls");
+  }
+  const renderer = framing;
+  renderer.render = (drawn, viewer) => {
+    if (!(drawn instanceof THREE.Scene)) {
+      return;
+    }
+    if (renderer.shadowMap.needsUpdate) {
+      renderer.shadowMap.needsUpdate = false;
+      for (const count of shadowPass(drawn, light).get(mesh) ?? []) {
+        passes.push(["shadow", count]);
+      }
+    }
+    if (!mesh.layers.test(viewer.layers)) {
+      return;
+    }
+    const materials = drawn.overrideMaterial
+      ? [drawn.overrideMaterial]
+      : [mesh.material].flat();
+    for (const material of materials) {
+      mesh.onBeforeRender(
+        renderer,
+        drawn,
+        viewer,
+        mesh.geometry,
+        material,
+        drawGroup
+      );
+      passes.push([drawn.overrideMaterial ? "normal" : "colour", mesh.count]);
+      mesh.onAfterRender(
+        renderer,
+        drawn,
+        viewer,
+        mesh.geometry,
+        material,
+        drawGroup
+      );
+    }
+  };
+  const pipeline = createPipeline(renderer);
+  pipeline.render(scene, camera);
+  pipeline.dispose();
+  return passes;
+};
 
 describe("the fleet's outline pass", () => {
-  it("inks the casters and the cars within reach, leaves the farther cars to the colour pass, and restores the count", async () => {
+  it("draws the casters in the shadow pass, the casters and the cars within reach in the normal pass, and every car in the colour pass", async () => {
     const assets = await pinnedAssets();
     const shading = createShading(lookOf(track.plan.region));
     const race = createRaceRun(defaultSetup(track, 3));
@@ -164,37 +270,6 @@ describe("the fleet's outline pass", () => {
     if (!body || !isInstancedMesh(body)) {
       throw new Error("The fleet drew no car.");
     }
-    const renderer = { autoClear: true };
-    if (!isRenderer(renderer)) {
-      throw new Error("The stub renderer has no autoClear.");
-    }
-    const camera = new THREE.PerspectiveCamera();
-    const group = new THREE.Group();
-    const colour = new THREE.Scene();
-    const outline = new THREE.Scene();
-    outline.overrideMaterial = new THREE.MeshNormalMaterial();
-    const countIn = (scene: THREE.Scene): number => {
-      body.onBeforeRender(
-        renderer,
-        scene,
-        camera,
-        body.geometry,
-        outline.overrideMaterial ?? new THREE.MeshBasicMaterial(),
-        group
-      );
-      return body.count;
-    };
-    const after = (): number => {
-      body.onAfterRender(
-        renderer,
-        outline,
-        camera,
-        body.geometry,
-        outline.overrideMaterial ?? new THREE.MeshBasicMaterial(),
-        group
-      );
-      return body.count;
-    };
     const matrix = new THREE.Matrix4();
     const written = Array.from({ length: body.count }, (_, slot) => {
       body.getMatrixAt(slot, matrix);
@@ -205,9 +280,16 @@ describe("the fleet's outline pass", () => {
     });
     expect(written[0]).toBe(2);
     expect(written.slice(1, 3).toSorted((a, b) => a - b)).toStrictEqual([3, 4]);
-    expect([countIn(colour), countIn(outline), after()]).toStrictEqual([
-      5, 3, 5,
+    const scene = new THREE.Scene();
+    scene.add(fleet.group, light, light.target);
+    expect(
+      passesOf(body, light, scene, new THREE.PerspectiveCamera())
+    ).toStrictEqual([
+      ["shadow", 1],
+      ["normal", 3],
+      ["colour", 5],
     ]);
+    expect(body.count).toBe(5);
     fleet.dispose();
     shading.dispose();
   });

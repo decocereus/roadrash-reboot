@@ -8,7 +8,8 @@ export const HIDDEN = 0;
 export const CASTS = 1;
 export const SHOWN = 2;
 export const UNINKED = 3;
-export const CASTERS_FIRST = [CASTS, SHOWN, UNINKED] as const;
+export const CASTERS_FIRST = [CASTS, SHOWN] as const;
+export const CASTERS_THEN_INKED = [...CASTERS_FIRST, UNINKED] as const;
 
 export interface CasterCounts {
   casting: number;

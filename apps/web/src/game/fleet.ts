@@ -13,7 +13,7 @@ import { freeze, placeOnGround, whiteInstances } from "./ground.ts";
 import { paintPrimitives } from "./model-slots.ts";
 import type { Palette, Primitive } from "./model-slots.ts";
 import {
-  CASTERS_FIRST,
+  CASTERS_THEN_INKED,
   CASTS,
   castersFirst,
   HIDDEN,
@@ -260,7 +260,7 @@ export const createFleet = (
     let slot = 0;
     let firstRecoloured = part.cars.length;
     let lastRecoloured = -1;
-    for (const wanted of CASTERS_FIRST) {
+    for (const wanted of CASTERS_THEN_INKED) {
       for (const member of part.cars) {
         const matrix = placed[member.index];
         if (matrix && state[member.index] === wanted) {
