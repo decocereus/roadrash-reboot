@@ -1,38 +1,32 @@
 import { describe, expect, it } from "vitest";
 
 import { duskLook, nightLook } from "../src/game/bar-light.ts";
-import { figureFloorOf, figureShadowOf } from "../src/game/cel.ts";
-import { lookOf } from "../src/game/looks.ts";
+import { figureDepthOf, figureFloorOf } from "../src/game/cel.ts";
+import { lookOf, night, sunset } from "../src/game/looks.ts";
 
 const FLOOR = 0.93;
 
 describe("a rider's shadow band", () => {
   it.each(["salt-coast", "lowtown"] as const)(
-    "stays readable under the %s tones, at full chroma",
+    "stays readable under the %s tones",
     (region) => {
-      expect(figureShadowOf(lookOf(region))).toStrictEqual({
-        chroma: 1,
-        depth: FLOOR,
-      });
+      expect(figureDepthOf(lookOf(region))).toBe(FLOOR);
     }
   );
 
   it("keeps a look's own depth when its shadow tone is already shallower", () => {
-    const { depth } = figureShadowOf({
-      lit: [1, 1, 1],
-      shadow: [0.98, 0.98, 0.98],
-    });
-    expect(depth).toBeGreaterThan(FLOOR);
+    expect(
+      figureDepthOf({ lit: [1, 1, 1], shadow: [0.98, 0.98, 0.98] })
+    ).toBeGreaterThan(FLOOR);
   });
 
   it.each([
-    ["salt-coast", 0.282],
-    ["lowtown", 0.1824],
-    ["stonepeak", 0.282],
+    ["sunset", sunset.ink, 0.282],
+    ["night", night.ink, 0.1824],
   ] as const)(
     "stops a rider in world shadow 0.05 above the %s ink",
-    (region, floor) => {
-      expect(figureFloorOf(lookOf(region).ink)).toBeCloseTo(floor, 3);
+    (_hour, ink, floor) => {
+      expect(figureFloorOf(ink)).toBeCloseTo(floor, 3);
     }
   );
 

@@ -25,6 +25,7 @@ import { createHazardMarks } from "./hazards.ts";
 import { buildJunctions } from "./junctions.ts";
 import { lookOf } from "./looks.ts";
 import type { Look } from "./looks.ts";
+import type { Grade } from "./post.ts";
 import {
   buildRibbon,
   districtPieces,
@@ -41,21 +42,19 @@ import { boulderParts, buildRoadside, pineParts } from "./roadside.ts";
 import { shadowReachOf } from "./shadow-reach.ts";
 import type { ShadowReach } from "./shadow-reach.ts";
 import { bannerTexture, chevronTexture } from "./sign-textures.ts";
-import { skyTexture } from "./sky-texture.ts";
+import { hourOf, skyClock } from "./sky-clock.ts";
+import type { SkyClock } from "./sky-clock.ts";
+import { buildSky } from "./sky.ts";
 import { owned } from "./texture-canvas.ts";
 import { createWalkerMarks } from "./walkers.ts";
 
 const CHUNK_LENGTH = 200;
 const CHUNK_BEHIND = 260;
 const CHUNK_MARGIN = 200;
-const SKY_RADIUS = 4000;
 const SHADOW_SPAN = 70;
 export const SHADOW_MAP = 4096;
 const SHADOW_AHEAD = 42;
 const SHADOW_DISTANCE = 300;
-const SUN_ELEVATION = 0.08;
-const MOON_ELEVATION = 0.2;
-const MOON_BEARING = new THREE.Vector3(0.35, 0, -0.92).normalize();
 const POLE = "#221a30";
 
 const point: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
@@ -217,38 +216,9 @@ const buildScenery = (
   return scenery;
 };
 
-const buildSky = (
-  look: Look,
-  shading: Shading,
-  seed: number,
-  textures: Set<THREE.Texture>
-): THREE.Mesh => {
-  const mark =
-    look.sun === null
-      ? MOON_BEARING.clone()
-      : shading.key.clone().setY(0).normalize();
-  const turn = Math.atan2(mark.z, -mark.x) / (Math.PI * 2);
-  const elevation = look.sun === null ? MOON_ELEVATION : SUN_ELEVATION;
-  const sky = new THREE.Mesh(
-    new THREE.SphereGeometry(SKY_RADIUS, 48, 24),
-    new THREE.MeshBasicMaterial({
-      depthWrite: false,
-      fog: false,
-      map: owned(
-        textures,
-        skyTexture(createRandom(seed), look, [
-          ((turn % 1) + 1) % 1,
-          0.5 - elevation / Math.PI,
-        ])
-      ),
-      side: THREE.BackSide,
-    })
-  );
-  sky.renderOrder = -2;
-  return onFxLayer(sky);
-};
-
-const buildMountains = (look: Look): THREE.InstancedMesh => {
+const buildMountains = (
+  look: Look
+): THREE.InstancedMesh<THREE.ConeGeometry, THREE.MeshBasicMaterial> => {
   const count = 44;
   const mountains = new THREE.InstancedMesh(
     new THREE.ConeGeometry(1, 1, 5),
@@ -289,14 +259,16 @@ const createSunRig = (shading: Shading, mapSize: number): SunRig => {
   light.shadow.camera.far = SHADOW_DISTANCE * 2;
   light.shadow.bias = -0.0008;
   light.shadow.normalBias = 0.04;
-  const across = new THREE.Vector3(0, 1, 0).cross(shading.key).normalize();
-  const upward = shading.key.clone().cross(across).normalize();
+  const across = new THREE.Vector3();
+  const upward = new THREE.Vector3();
   const texel = (SHADOW_SPAN * 2) / mapSize;
   const forward = new THREE.Vector3();
   const focus = new THREE.Vector3();
   const snapped = new THREE.Vector3();
   return {
     follow(camera) {
+      across.set(0, 1, 0).cross(shading.key).normalize();
+      upward.copy(shading.key).cross(across).normalize();
       camera.getWorldDirection(forward);
       forward.setY(0).normalize();
       focus.copy(camera.position).addScaledVector(forward, SHADOW_AHEAD);
@@ -321,7 +293,9 @@ const createSunRig = (shading: Shading, mapSize: number): SunRig => {
 export interface World {
   readonly scene: THREE.Scene;
   readonly shading: Shading;
+  readonly clock: SkyClock;
   readonly shadows: ShadowReach;
+  light: (tick: number, pinned: number | null) => boolean;
   follow: (camera: THREE.Camera, s: number) => void;
   showRoadLife: (
     view: Pick<RaceView, "hazards" | "pedestrians" | "tick">,
@@ -330,6 +304,17 @@ export interface World {
   samples: () => THREE.Group;
   dispose: () => void;
 }
+
+export const lightRace = (
+  world: Pick<World, "clock" | "light">,
+  post: { readonly setLook: (grade: Grade) => void },
+  view: Pick<RaceView, "tick">,
+  pinned: number | null
+): void => {
+  if (world.light(view.tick, pinned)) {
+    post.setLook(world.clock.hour);
+  }
+};
 
 export const createWorld = (
   track: Track,
@@ -340,9 +325,12 @@ export const createWorld = (
   const shading = createShading(look);
   const random = createRandom(track.plan.seed + 5);
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(look.fog);
-  scene.fog = new THREE.Fog(look.fog, look.fogNear, look.fogFar);
-  scene.add(new THREE.AmbientLight(shading.ambient, 1));
+  const background = new THREE.Color(look.fog);
+  scene.background = background;
+  const fog = new THREE.Fog(look.fog, look.fogNear, look.fogFar);
+  scene.fog = fog;
+  const ambient = new THREE.AmbientLight(shading.ambient, 1);
+  scene.add(ambient);
   const rig = createSunRig(shading, shadowMap);
   scene.add(rig.light, rig.light.target);
   const stretches: Stretch[] = [];
@@ -455,20 +443,38 @@ export const createWorld = (
   for (const height of track.worldY) {
     lowest = Math.min(lowest, height);
   }
+  const plainMaterial = new THREE.MeshBasicMaterial({ color: look.ground });
   const plain = onFxLayer(
-    new THREE.Mesh(
-      new THREE.CircleGeometry(4200, 32),
-      new THREE.MeshBasicMaterial({ color: look.ground })
-    )
+    new THREE.Mesh(new THREE.CircleGeometry(4200, 32), plainMaterial)
   );
   plain.rotation.x = -Math.PI / 2;
   plain.position.y = lowest - 24;
-  const sky = buildSky(look, shading, track.plan.seed + 3, textures);
+  const clock = skyClock(look);
+  const sky = buildSky(createRandom(track.plan.seed + 3), clock.hour);
+  textures.add(sky.texture);
   const backdrop = buildMountains(look);
   backdrop.visible = city === null;
-  scene.add(plain, sky, backdrop);
+  scene.add(plain, sky.mesh, backdrop);
+
+  const light = (tick: number, pinned: number | null): boolean => {
+    if (!clock.at(pinned ?? hourOf(look.nightTick, tick))) {
+      return false;
+    }
+    const { hour } = clock;
+    shading.relight(hour);
+    ambient.color.copy(shading.ambient);
+    rig.light.color.copy(shading.sun);
+    fog.color.copy(hour.fog);
+    background.copy(hour.fog);
+    plainMaterial.color.copy(hour.ground);
+    backdrop.material.color.copy(hour.backdrop);
+    sky.setHour(shading.key);
+    return true;
+  };
+  light(0, null);
 
   return {
+    clock,
     dispose() {
       city?.group.removeFromParent();
       city?.dispose();
@@ -485,7 +491,7 @@ export const createWorld = (
     follow(camera, s) {
       plain.position.x = camera.position.x;
       plain.position.z = camera.position.z;
-      sky.position.copy(camera.position);
+      sky.mesh.position.copy(camera.position);
       backdrop.position.set(camera.position.x, 0, camera.position.z);
       const reach = look.fogFar + CHUNK_MARGIN;
       city?.follow(s, reach);
@@ -496,6 +502,7 @@ export const createWorld = (
       rig.follow(camera);
       shading.aim(camera);
     },
+    light,
     samples() {
       return city?.samples() ?? new THREE.Group();
     },

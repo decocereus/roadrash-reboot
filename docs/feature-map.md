@@ -30,6 +30,7 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 - [Frame rate and quality](#frame-rate-and-quality): `frame-pacing`
 - [Market stalls and their crowd](#market-stalls-and-their-crowd): `bazaar`
 - [The roads](#the-roads): `roads`
+- [Dusk to night](#dusk-to-night): `time-of-day`
 - [Walkable bar lobby](#walkable-bar-lobby): `bar-lobby`
 
 ### Platform
@@ -529,7 +530,7 @@ The road, terrain, sky, city blocks, signs and roadside props drawn from the com
 - Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/design/art-direction.md#palette](design/art-direction.md#palette), [docs/design/art-direction.md#regions](design/art-direction.md#regions)
 - Verify: [roadside-clearance.md](../.claude/skills/verify-rushline/features/roadside-clearance.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`
-- Owns: `apps/web/src/game/world.ts`, `apps/web/src/game/city-blocks.ts`, `apps/web/src/game/road-strips.ts`, `apps/web/src/game/city.ts`, `apps/web/src/game/clearance.ts`, `apps/web/src/game/ground.ts`, `apps/web/src/game/roadside.ts`, `apps/web/src/game/looks.ts`, `apps/web/src/game/facade-texture.ts`, `apps/web/src/game/road-texture.ts`, `apps/web/src/game/shop-texture.ts`, `apps/web/src/game/sky-texture.ts`, `apps/web/src/game/sign-*.ts`, `apps/web/src/game/texture-canvas.ts`, `apps/web/test/roadside-clearance.test.ts`, `apps/web/test/road-districts.test.ts`
+- Owns: `apps/web/src/game/world.ts`, `apps/web/src/game/city-blocks.ts`, `apps/web/src/game/road-strips.ts`, `apps/web/src/game/city.ts`, `apps/web/src/game/clearance.ts`, `apps/web/src/game/ground.ts`, `apps/web/src/game/roadside.ts`, `apps/web/src/game/looks.ts`, `apps/web/src/game/facade-texture.ts`, `apps/web/src/game/road-texture.ts`, `apps/web/src/game/shop-texture.ts`, `apps/web/src/game/sign-*.ts`, `apps/web/src/game/texture-canvas.ts`, `apps/web/test/roadside-clearance.test.ts`, `apps/web/test/road-districts.test.ts`
 
 Source files:
 
@@ -545,7 +546,6 @@ Source files:
 - `apps/web/src/game/shop-texture.ts`
 - `apps/web/src/game/sign-atlas.ts`
 - `apps/web/src/game/sign-textures.ts`
-- `apps/web/src/game/sky-texture.ts`
 - `apps/web/src/game/texture-canvas.ts`
 - `apps/web/src/game/world.ts`
 
@@ -693,6 +693,28 @@ Test files:
 - `packages/track/src/roads.test.ts`
 - `tools/road-test/test/road-test.test.ts`
 - `tools/road-test/test/variant-plan.ts`
+
+### Dusk to night
+
+Dusk to night over a race: each look's later hours at shares of the road's nightTick, the sky clock that turns the race tick into one blended hour, the sky shader's gradient, sun, moon, stars and clouds, and lightRace, which steps the world's light and the grade when the hour moves. `?hour=<0..1>` pins it in a development build.
+
+- Id: `time-of-day`
+- Start: `apps/web/src/game/sky-clock.ts`, `apps/web/src/game/sky.ts`
+- Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/design/art-direction.md#region-skies](design/art-direction.md#region-skies)
+- Verify: [time-of-day.md](../.claude/skills/verify-rushline/features/time-of-day.md)
+- Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`, `world.cpu.p95`
+- Owns: `apps/web/src/game/sky*.ts`, `apps/web/test/sky-*.ts`, `apps/web/test/world-light.test.ts`
+
+Source files:
+
+- `apps/web/src/game/sky-clock.ts`
+- `apps/web/src/game/sky.ts`
+
+Test files:
+
+- `apps/web/test/sky-clock.test.ts`
+- `apps/web/test/sky-last.ts`
+- `apps/web/test/world-light.test.ts`
 
 ### Walkable bar lobby
 
@@ -889,6 +911,8 @@ Test files:
 - `apps/web/test/outline-sides.ts`
 - `apps/web/test/preparation.test.ts`
 - `apps/web/test/renderer-lifecycle-build.test.ts`
+- `apps/web/test/renderer-lifecycle-glow.test.ts`
+- `apps/web/test/renderer-lifecycle-owners.ts`
 - `apps/web/test/renderer-lifecycle.test.ts`
 - `apps/web/test/renderer-lifecycle.ts`
 
@@ -1270,7 +1294,7 @@ Test files:
 - Docs: [docs/observability.md#frame-profiles](observability.md#frame-profiles), [docs/standards/tooling.md#the-checks](standards/tooling.md#the-checks)
 - Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
 - Perf: none yet
-- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/record.ts`, `tools/perf/room.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/load.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/gpu*.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane*.ts`, `tools/perf/src/node-room.ts`, `tools/perf/src/protocol.ts`, `tools/perf/src/record.ts`, `tools/perf/src/recorded.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/bench-queue*.ts`, `tools/perf/test/budget-verdicts.test.ts`, `tools/perf/test/load.test.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu-clock.test.ts`, `tools/perf/test/gpu-fixture.ts`, `tools/perf/test/gpu-page.test.ts`, `tools/perf/test/gpu-observe.test.ts`, `tools/perf/test/gpu-park.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`, `tools/perf/test/recorded-guard.test.ts`, `tools/perf/test/side-a-missing.test.ts`, `tools/perf/test/steady.test.ts`
+- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/record.ts`, `tools/perf/room.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/load.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/gpu*.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane*.ts`, `tools/perf/src/node-room.ts`, `tools/perf/src/protocol.ts`, `tools/perf/src/record.ts`, `tools/perf/src/recorded.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/bench-queue*.ts`, `tools/perf/test/budget-verdicts.test.ts`, `tools/perf/test/load.test.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu-clock.test.ts`, `tools/perf/test/gpu-fixture.ts`, `tools/perf/test/gpu-page.test.ts`, `tools/perf/test/gpu-observe.test.ts`, `tools/perf/test/gpu-park.test.ts`, `tools/perf/test/gpu-parts.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`, `tools/perf/test/recorded-guard.test.ts`, `tools/perf/test/side-a-missing.test.ts`, `tools/perf/test/steady.test.ts`
 
 Source files:
 
@@ -1335,6 +1359,7 @@ Test files:
 - `tools/perf/test/gpu-observe.test.ts`
 - `tools/perf/test/gpu-page.test.ts`
 - `tools/perf/test/gpu-park.test.ts`
+- `tools/perf/test/gpu-parts.test.ts`
 - `tools/perf/test/gpu.test.ts`
 - `tools/perf/test/load.test.ts`
 - `tools/perf/test/measure-page.test.ts`

@@ -51,6 +51,7 @@ export interface Playback {
   readonly extraCalls: (index: number) => number;
   readonly riders: (index: number) => number;
   readonly tower: (index: number) => number;
+  readonly world: (index: number) => number;
   readonly shadowTriangles: (index: number) => number;
   readonly longTasks: GpuSample["capture"]["longTasks"];
   readonly discardedAt: number;
@@ -83,6 +84,7 @@ export const steady: Playback = {
   shadowTriangles: () => SHADOW_TRIANGLES,
   tower: () => 0.05,
   viewport: { dpr: 2, height: 790, width: 1504 },
+  world: () => 0.05,
 };
 
 const frameOf = (scenario: Scenario, playback: Playback, index: number) => ({
@@ -108,7 +110,7 @@ const frameOf = (scenario: Scenario, playback: Playback, index: number) => ({
     playback.riders(index),
     0.5,
     0.1,
-    0.4,
+    playback.world(index),
     0.3,
     0.6,
     0.4,

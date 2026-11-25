@@ -15,7 +15,7 @@ import { createCast } from "./bar-cast.ts";
 import { buildGarage } from "./bar-garage.ts";
 import { createBarInput } from "./bar-input.ts";
 import { createKit } from "./bar-kit.ts";
-import { duskLook, nightLook, toneAt } from "./bar-light.ts";
+import { barLook, duskLook, nightLook } from "./bar-light.ts";
 import { createMembers } from "./bar-members.ts";
 import type { BarMembers } from "./bar-members.ts";
 import { createOutside } from "./bar-outside.ts";
@@ -48,6 +48,7 @@ import { createProfiler, profileModeOf } from "./profile.ts";
 import type { FrameEnd } from "./profile.ts";
 import { createPuffs } from "./puffs.ts";
 import { shadowReachOf } from "./shadow-reach.ts";
+import { skyClock } from "./sky-clock.ts";
 
 export { assetParsers } from "./assets.ts";
 
@@ -383,7 +384,6 @@ const openRoom = (
   let held = false;
   const viewSize = { height: 1, width: 1 };
   let clock = 0;
-  let neonNow = 1;
   let spinAt = 0;
 
   const resize = (): void => {
@@ -444,7 +444,7 @@ const openRoom = (
   let last = 0;
   let handle = 0;
   let frameId = 0;
-  let timeStep = -1;
+  const sky = skyClock(barLook);
   const frameEnd: FrameEnd = {
     discarded: 0,
     drawnEpoch: 0,
@@ -457,19 +457,16 @@ const openRoom = (
   };
 
   const setTime = (time: number): void => {
-    const tone = toneAt(time);
-    shading.relight(tone);
+    if (!sky.at(time)) {
+      return;
+    }
+    const { hour } = sky;
+    shading.relight(hour);
     ambient.color.copy(shading.ambient);
     key.color.copy(shading.sun);
-    pipeline.setLook({
-      ...duskLook,
-      bloom: tone.bloom,
-      grade: tone.grade,
-      ink: tone.ink,
-    });
-    neonNow = tone.neon;
+    pipeline.setLook(hour);
     outside.setTime(time);
-    pools.setTime(time, tone.neon);
+    pools.setTime(time, hour.glow);
   };
 
   const openDoor = (): void => {
@@ -539,11 +536,7 @@ const openRoom = (
 
     const cycle =
       pins.time ?? 0.5 - 0.5 * Math.cos((clock / CYCLE_SECONDS) * Math.PI * 2);
-    const step = Math.round(cycle * 240);
-    if (step !== timeStep) {
-      timeStep = step;
-      setTime(cycle);
-    }
+    setTime(cycle);
 
     runDoor();
     const left = msToDoor();
@@ -559,7 +552,6 @@ const openRoom = (
     revving = Math.max(0, revving - seconds * 0.8);
     spinAt += seconds * ((Math.PI * 2) / TURN_SECONDS);
     bikes.spin(0, revving * seconds * 60);
-    glowMaterial.color.setScalar(neonNow);
     if (doorOpenedAt === null) {
       heroBike.rotation.y = spinAt;
     } else {

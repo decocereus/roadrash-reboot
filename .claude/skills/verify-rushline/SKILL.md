@@ -125,6 +125,7 @@ These work in the development build `rv up` serves and in `pnpm dev`; the produc
 | `?fps` | An overlay with fps, frame time, worst frame, pixel ratio, preset, pace, refresh, draw calls, triangles. Settings → Frame meter turns on the same overlay. |
 | `?ratio=<n>`, `?hz=<n>` | Pin the pixel ratio or the detected refresh rate. |
 | `?preset=full\|balanced\|lean` | Pin a quality preset instead of the one the device check picks. |
+| `?hour=<0..1>` (DEV) | Pin the race clock: 0 is the green light's hour, 1 is full night. [features/time-of-day.md](features/time-of-day.md) has the recipe. |
 | `?time=dusk\|night\|<0..1>`, `?lean`, `?ratio`, `?samples`, `?bloom`, `?shadow`, `?riders=<n>` | In the bar: hold the clock, take the lean preset, pin one render setting, or draw fewer riders. `pnpm perf:gpu` uses `/bar?prof&time=dusk`. |
 | `?tester` | Settings gains the recorder rows: Recording, Automatic upload, Test device and Send report. |
 | `?room=<id>`, `&via=` | A race room's invite and how the rider arrived; [features/race-room.md](features/race-room.md) has them. |
