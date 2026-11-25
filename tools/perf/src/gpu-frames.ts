@@ -4,6 +4,7 @@ import { judge, metricKinds, requiredRows } from "./budgets.ts";
 import type { Limit, MetricKind, Observation } from "./budgets.ts";
 import { barResult } from "./gpu-bar.ts";
 import type { BarSample } from "./gpu-bar.ts";
+import { windowClock } from "./gpu-clock.ts";
 import {
   frameReaders,
   gpuFrame,
@@ -13,6 +14,7 @@ import {
   total,
 } from "./gpu-frame-reads.ts";
 import type { GpuFrame } from "./gpu-frame-reads.ts";
+import { parkReading } from "./gpu-rv.ts";
 import { median, quantile } from "./result.ts";
 import {
   scenarios,
@@ -64,6 +66,7 @@ export const pageCapture = Schema.Struct({
     ...workloadRows.fields,
     times: Schema.Array(Schema.Number),
   }),
+  timeOrigin: Schema.Number,
   viewport: Schema.Struct({
     dpr: Schema.Number,
     height: Schema.Number,
@@ -80,6 +83,7 @@ export const racedCapture = Schema.Struct({
 type RacedCapture = typeof racedCapture.Type;
 
 const sampleFields = {
+  clock: Schema.NullOr(windowClock),
   consoleErrors: Schema.Number,
   file: Schema.String,
   installed: Schema.Struct({
@@ -87,6 +91,7 @@ const sampleFields = {
     visibility: Schema.String,
   }),
   pair: Schema.Number,
+  park: parkReading,
   position: Schema.Number,
   run: Schema.String,
   scenario: Schema.String,
@@ -310,7 +315,10 @@ const judgedPerWindow: ReadonlySet<string> = new Set([
 const isCount = (metric: string): metric is keyof typeof frameReaders =>
   Object.hasOwn(frameReaders, metric);
 
-const valueOf = (metric: string, samples: readonly GpuSample[]): number => {
+export const valueOf = (
+  metric: string,
+  samples: readonly GpuSample[]
+): number => {
   if (isCount(metric)) {
     return peakOf(samples, frameReaders[metric]);
   }

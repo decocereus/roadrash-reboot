@@ -15,28 +15,22 @@ import * as Schema from "effect/Schema";
 import { readBudgets } from "./approved.ts";
 import type { ConfigInvalid } from "./config-invalid.ts";
 import { measureBar } from "./gpu-bar-capture.ts";
-import {
-  evaluateGpu,
-  FRAME_RATE,
-  GPU_PAIRS,
-  pageCapture,
-  racedCapture,
-} from "./gpu-frames.ts";
+import { probeClock, sourceText } from "./gpu-clock.ts";
+import type { ClockSource } from "./gpu-clock.ts";
+import { evaluateGpu, FRAME_RATE, GPU_PAIRS } from "./gpu-frames.ts";
 import type { GpuSample } from "./gpu-frames.ts";
+import { failed, OPEN_TIMEOUT_S, PARK, REPO_ROOT, rv, RV } from "./gpu-rv.ts";
 import {
-  consoleErrors,
-  failed,
-  OPEN_TIMEOUT_S,
-  PARK,
-  REPO_ROOT,
-  rv,
-  RV,
-  WINDOW_TIMEOUT_S,
-} from "./gpu-rv.ts";
+  racePath,
+  reached,
+  READY,
+  sampleOnce,
+  SETTINGS_KEY,
+} from "./gpu-sample.ts";
+import { clockStatesOf, parkLines, windowText } from "./gpu-states.ts";
 import { MeasurementFailed } from "./measurement-failed.ts";
 import { sha256Of } from "./result.ts";
 import { scenarios } from "./scenarios.ts";
-import type { Scenario } from "./scenarios.ts";
 import { checkoutAt, currentSide, revisionOf } from "./sides.ts";
 import type { Side, SideName } from "./sides.ts";
 
@@ -44,9 +38,6 @@ const DEFAULT_BUDGETS = path.join(REPO_ROOT, "tools/perf/budgets.json");
 const DEFAULT_OUT = path.join(REPO_ROOT, "tools/perf/results");
 
 const WARM_TICKS = 120;
-const SETTINGS_KEY = "rushline.settings.v1";
-const READY =
-  "globalThis.__rushlineBench !== undefined && globalThis.__rushlineProfile !== undefined";
 const DOCTOR_CHECKS = [
   "server process",
   "server answers",
@@ -102,20 +93,6 @@ const readGpuOptions = (args: readonly string[]) =>
     })
   );
 
-const decodeInstalled = Schema.decodeUnknownEffect(
-  Schema.fromJsonString(
-    Schema.Struct({ tick: Schema.Number, visibility: Schema.String })
-  )
-);
-
-const decodeCapture = Schema.decodeUnknownEffect(
-  Schema.fromJsonString(pageCapture)
-);
-
-const decodeRaced = Schema.decodeUnknownEffect(
-  Schema.fromJsonString(racedCapture)
-);
-
 const pageFacts = Schema.Struct({
   dpr: Schema.Number,
   frameRate: Schema.NullOr(Schema.String),
@@ -158,52 +135,7 @@ const PREPARE = `(async () => {
   };
 })()`;
 
-const INSTALL = `(() => {
-  const store = [];
-  const observer = new PerformanceObserver((list) => {
-    for (const entry of list.getEntries()) {
-      store.push({ duration: entry.duration, name: entry.name, start: entry.startTime });
-    }
-  });
-  observer.observe({ buffered: true, type: "longtask" });
-  globalThis.__perfLongTasks = { observer, store };
-  return { tick: globalThis.__rushlineBench.info().lastTick, visibility: document.visibilityState };
-})()`;
-
-const rideTo = (to: number) => `
-    ride: profile
-      .window(0, ${to})
-      .filter((frame) => frame.race === info.race)
-      .map(({ created, frame, tick }) => ({ created, frame, tick })),`;
-
-const collect = ({ window }: Scenario, side: SideName) => `(() => {
-  const tasks = globalThis.__perfLongTasks;
-  for (const entry of tasks.observer.takeRecords()) {
-    tasks.store.push({ duration: entry.duration, name: entry.name, start: entry.startTime });
-  }
-  tasks.observer.disconnect();
-  const bench = globalThis.__rushlineBench;
-  const info = bench.info();
-  const profile = globalThis.__rushlineProfile;
-  return {
-    bench: info,
-    frameRate: JSON.parse(localStorage.getItem("${SETTINGS_KEY}") ?? "{}").frameRate ?? null,
-    frames: profile.window(${window.from}, ${window.to}),
-    longTasks: tasks.store,${side === "B" ? rideTo(window.to) : ""}
-    parts: profile.info().parts,
-    rows: bench.window(${window.from}, ${window.to}),
-    viewport: { dpr: devicePixelRatio, height: innerHeight, width: innerWidth },
-    visibility: document.visibilityState,
-  };
-})()`;
-
-const racePath = (scenario: Scenario): string =>
-  scenario.bench === "reference"
-    ? "/?stress=reference&rung=0"
-    : "/?stress&rung=0";
-
-const reached = (tick: number): string =>
-  `globalThis.__rushlineBench.info().lastTick >= ${tick}`;
+const withText = (text: string): string => (text === "" ? "" : `, ${text}`);
 
 const say = (line: string) =>
   Effect.sync(() => {
@@ -304,66 +236,6 @@ const doctorAll = Effect.fnUntraced(function* doctorAll(
     );
   }
   return problems;
-});
-
-const sampleOnce = Effect.fnUntraced(function* sampleOnce(
-  dir: string,
-  run: string,
-  where: Pick<GpuSample, "pair" | "position" | "side">,
-  scenario: Scenario
-) {
-  const fs = yield* FileSystem.FileSystem;
-  const errorsBefore = yield* consoleErrors(run);
-  yield* rv([
-    "open",
-    "--run",
-    run,
-    racePath(scenario),
-    "--until",
-    READY,
-    "--timeout",
-    String(OPEN_TIMEOUT_S),
-  ]);
-  const installed = yield* rv(["js", "--run", run, INSTALL]).pipe(
-    Effect.flatMap(decodeInstalled),
-    Effect.mapError(failed(`long-task observer on ${run}`))
-  );
-  yield* rv([
-    "wait",
-    "--run",
-    run,
-    reached(scenario.window.to),
-    "--timeout",
-    String(WINDOW_TIMEOUT_S),
-  ]);
-  const text = yield* rv(["js", "--run", run, collect(scenario, where.side)]);
-  const errorsAfter = yield* consoleErrors(run);
-  yield* rv(["open", "--run", run, PARK]);
-  const file = `${scenario.id}-pair${where.pair}-${where.side}.json`;
-  yield* fs.writeFileString(path.join(dir, "gpu", file), text);
-  const fields = {
-    consoleErrors: errorsAfter - errorsBefore,
-    file,
-    installed,
-    pair: where.pair,
-    position: where.position,
-    run,
-    scenario: scenario.id,
-  };
-  const notCapture = failed(`${file} is not a frame capture`);
-  const sample: GpuSample =
-    where.side === "A"
-      ? {
-          ...fields,
-          capture: yield* decodeCapture(text).pipe(Effect.mapError(notCapture)),
-          side: "A",
-        }
-      : {
-          ...fields,
-          capture: yield* decodeRaced(text).pipe(Effect.mapError(notCapture)),
-          side: "B",
-        };
-  return sample;
 });
 
 const warm = Effect.fnUntraced(function* warm(run: string) {
@@ -478,6 +350,16 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
       )
     )
   );
+  const source = yield* probeClock().pipe(
+    Effect.catch((error) => {
+      const absent: ClockSource = {
+        kind: "absent",
+        reason: `probing the CPU clock failed: ${error.message}`,
+      };
+      return Effect.succeed(absent);
+    })
+  );
+  const bench = { dir, host, source };
   const pages = yield* readPages(options.runs, host);
   if (pages.kind === "refused") {
     return { code: 1, lines: [pages.line, `evidence ${dir}`] };
@@ -492,8 +374,11 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
         (pair + index) % 2 === 0 ? ["A", "B"] : ["B", "A"];
       for (const [position, side] of order.entries()) {
         const sample = yield* sampleOnce(
-          dir,
-          options.runs[side],
+          bench,
+          {
+            idle: options.runs[side === "A" ? "B" : "A"],
+            measured: options.runs[side],
+          },
           { pair, position, side },
           scenario
         );
@@ -502,12 +387,21 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
           path.join(dir, "samples.json"),
           JSON.stringify(samples)
         );
-        yield* say(`gpu ${scenario.id} pair ${pair} ${side} captured`);
+        yield* say(
+          `gpu ${scenario.id} pair ${pair} ${side} captured at position ${samples.length - 1}${withText(windowText(sample))}`
+        );
       }
     }
   }
-  const bar = yield* measureBar(dir, options.runs.B);
-  yield* say(`gpu bar captured ${bar.length} windows on B`);
+  const bar = yield* measureBar(bench, {
+    idle: options.runs.A,
+    measured: options.runs.B,
+  });
+  for (const sample of bar) {
+    yield* say(
+      `gpu ${sample.file} captured on B${withText(windowText(sample))}`
+    );
+  }
   const after = yield* doctorAll(options, dir, "doctor-after");
   const evaluation = evaluateGpu(
     samples,
@@ -525,7 +419,14 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
         )
     )
   );
-  const lines = [...after, ...evaluation.lines];
+  const clock = clockStatesOf(source, samples, bar);
+  const lines = [
+    ...after,
+    ...evaluation.lines,
+    sourceText(source),
+    ...clock.lines,
+    ...parkLines(samples, bar),
+  ];
   const ok = after.length === 0 && evaluation.ok;
   const resultFile = path.join(dir, "result.json");
   yield* fs.writeFileString(
@@ -535,6 +436,16 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
         budgets: {
           file: path.relative(REPO_ROOT, options.budgets),
           sha256: approved.sha256,
+        },
+        clock: {
+          source,
+          states: clock.states,
+          windows: [...samples, ...bar].map((sample, position) => ({
+            clock: sample.clock,
+            file: sample.file,
+            park: sample.park,
+            position,
+          })),
         },
         comparisonId,
         counts: evaluation.counts,

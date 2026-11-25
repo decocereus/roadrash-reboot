@@ -8,247 +8,33 @@ import { describe, expect, it } from "vitest";
 import { budgetsFile } from "../src/budgets.ts";
 import { BAR_BENCH } from "../src/gpu-bar.ts";
 import type { BarSample } from "../src/gpu-bar.ts";
-import { evaluateGpu, FRAME_RATE, GPU_PAIRS } from "../src/gpu-frames.ts";
-import type { GpuSample } from "../src/gpu-frames.ts";
+import { evaluateGpu, GPU_PAIRS } from "../src/gpu-frames.ts";
 import { scenarios, WINDOW_TICKS } from "../src/scenarios.ts";
 import type { Scenario } from "../src/scenarios.ts";
-import { validRows } from "./red-cases.ts";
+import {
+  BAR_FRAMES,
+  barOf,
+  barSampleOf,
+  campaign,
+  DRAWN_CALLS,
+  failing,
+  rideOf,
+  SHADOW_TRIANGLES,
+  SLOT,
+  START_MS,
+  steady,
+  steadyBar,
+} from "./gpu-fixture.ts";
+import type { Playback } from "./gpu-fixture.ts";
 
 const { limits } = Schema.decodeUnknownSync(Schema.fromJsonString(budgetsFile))(
   readFileSync(path.join(import.meta.dirname, "../budgets.json"), "utf-8")
 );
 
 const METAL = browserHosts["macos-metal"].perfEnvironment;
-const SLOT = 1000 / 60;
-const MAIN_CALLS = 130;
-const DRAWN_CALLS = 350;
-const SHADOW_TRIANGLES = 300_000;
-const START_MS = 5000;
-const RACE = 1;
-const PARTS = [
-  "sim",
-  "other",
-  "riders",
-  "fleet",
-  "camera",
-  "world",
-  "matrices",
-  "normal",
-  "shadow",
-  "main",
-  "line",
-  "bloom",
-  "grade",
-];
-
-type Ride = Extract<GpuSample, { side: "B" }>["capture"]["ride"];
-
-interface Playback {
-  readonly interval: (index: number) => number;
-  readonly extraCalls: (index: number) => number;
-  readonly riders: (index: number) => number;
-  readonly shadowTriangles: (index: number) => number;
-  readonly longTasks: GpuSample["capture"]["longTasks"];
-  readonly discardedAt: number;
-  readonly viewport: GpuSample["capture"]["viewport"];
-  readonly ride: Ride;
-}
-
-const RIDE_STEP = 300;
-
-const rideOf = (
-  programsAt: (index: number) => number,
-  texturesAt: (index: number) => number
-): Ride =>
-  Array.from({ length: 10 }, (_, index) => ({
-    created: { programs: programsAt(index), textures: texturesAt(index) },
-    frame: 20 + index * RIDE_STEP,
-    tick: index * RIDE_STEP,
-  }));
-
-const steady: Playback = {
-  discardedAt: -1,
-  extraCalls: () => 0,
-  interval: () => 16.7,
-  longTasks: [],
-  ride: rideOf(
-    () => 40,
-    () => 30
-  ),
-  riders: () => 0.2,
-  shadowTriangles: () => SHADOW_TRIANGLES,
-  viewport: { dpr: 2, height: 790, width: 1504 },
-};
-
-const frameOf = (scenario: Scenario, playback: Playback, index: number) => ({
-  calls: [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    MAIN_CALLS + playback.extraCalls(index),
-    70,
-    135,
-    1,
-    13,
-    1,
-  ],
-  cpu: [
-    1,
-    0.2,
-    playback.riders(index),
-    0.5,
-    0.1,
-    0.4,
-    0.3,
-    0.6,
-    0.4,
-    0.5,
-    0.1,
-    0.1,
-    0.1,
-  ],
-  discarded: index === playback.discardedAt ? 40 : 0,
-  drawnEpoch: 1,
-  frame: 100 + index,
-  interval: playback.interval(index),
-  pixelRatio: 2,
-  programs: 40,
-  race: RACE,
-  sizeEpoch: 1,
-  start: START_MS + index * SLOT,
-  textures: 30,
-  tick: scenario.window.from + index,
-  ticks: 1,
-  triangles: [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1_000_000,
-    playback.shadowTriangles(index),
-    600_000,
-    1,
-    13,
-    1,
-  ],
-});
-
-const sampleOf = (
-  scenario: Scenario,
-  side: GpuSample["side"],
-  pair: number,
-  playback: Playback
-): GpuSample => {
-  const capture = {
-    bench: {
-      bench: scenario.bench,
-      overflowed: false,
-      police: scenario.police,
-      race: RACE,
-      riders: scenario.racers + scenario.police,
-    },
-    frameRate: FRAME_RATE,
-    frames: Array.from({ length: WINDOW_TICKS }, (_, index) =>
-      frameOf(scenario, playback, index)
-    ),
-    longTasks: playback.longTasks,
-    parts: PARTS,
-    rows: {
-      ...validRows(scenario),
-      times: Array.from(
-        { length: WINDOW_TICKS },
-        (_, index) => START_MS + index * SLOT
-      ),
-    },
-    viewport: playback.viewport,
-    visibility: "visible",
-  };
-  const fields = {
-    consoleErrors: 0,
-    file: `${scenario.id}-pair${pair}-${side}.json`,
-    installed: { tick: 6, visibility: "visible" },
-    pair,
-    position: side === "A" ? 0 : 1,
-    run: side === "A" ? "run-a-s0" : "run-b-s1",
-    scenario: scenario.id,
-  };
-  return side === "A"
-    ? { ...fields, capture, side }
-    : { ...fields, capture: { ...capture, ride: playback.ride }, side };
-};
-
-const campaign = (
-  playbackOf: (
-    scenario: Scenario,
-    side: GpuSample["side"],
-    pair: number
-  ) => Playback
-): GpuSample[] =>
-  scenarios.flatMap((scenario) =>
-    Array.from({ length: GPU_PAIRS }, (_, pair) =>
-      (["A", "B"] as const).map((side) =>
-        sampleOf(scenario, side, pair, playbackOf(scenario, side, pair))
-      )
-    ).flat()
-  );
-
-const failing = (lines: readonly string[]) =>
-  lines.filter((line) => line.startsWith("FAIL"));
-
 const [reference, packRiding] = scenarios;
 
 const isPack = (scenario: Scenario): boolean => scenario.id === packRiding?.id;
-
-const BAR_FRAMES = BAR_BENCH.to - BAR_BENCH.from;
-
-const barSampleOf = (
-  index: number,
-  interval: (frame: number) => number,
-  capture: Partial<BarSample["capture"]> = {}
-): BarSample => ({
-  capture: {
-    camera: BAR_BENCH.camera,
-    frames: Array.from({ length: BAR_FRAMES }, (_, frame) => ({
-      calls: [90],
-      cpu: [1],
-      discarded: 0,
-      drawnEpoch: 0,
-      frame,
-      interval: interval(frame),
-      pixelRatio: 2,
-      programs: 40,
-      race: 0,
-      sizeEpoch: 0,
-      start: frame * SLOT,
-      textures: 30,
-      tick: frame,
-      ticks: 1,
-      triangles: [600_000],
-    })),
-    viewport: steady.viewport,
-    visibility: "visible",
-    ...capture,
-  },
-  consoleErrors: 0,
-  file: `bar-${index}.json`,
-});
-
-const barOf = (
-  interval: (frame: number) => number,
-  capture: Partial<BarSample["capture"]> = {}
-): BarSample[] =>
-  Array.from({ length: BAR_BENCH.samples }, (_, index) =>
-    barSampleOf(index, interval, capture)
-  );
-
-const steadyBar = barOf(() => 16.7);
 
 const judged = (bar: readonly BarSample[]) =>
   failing(

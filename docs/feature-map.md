@@ -1260,7 +1260,7 @@ Test files:
 - Docs: [docs/observability.md#frame-profiles](observability.md#frame-profiles), [docs/standards/tooling.md#the-checks](standards/tooling.md#the-checks)
 - Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
 - Perf: none yet
-- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/record.ts`, `tools/perf/room.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/load.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/gpu*.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane*.ts`, `tools/perf/src/node-room.ts`, `tools/perf/src/protocol.ts`, `tools/perf/src/record.ts`, `tools/perf/src/recorded.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/bench-queue*.ts`, `tools/perf/test/budget-verdicts.test.ts`, `tools/perf/test/load.test.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu-page.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`, `tools/perf/test/recorded-guard.test.ts`, `tools/perf/test/side-a-missing.test.ts`, `tools/perf/test/steady.test.ts`
+- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/record.ts`, `tools/perf/room.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/load.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/gpu*.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane*.ts`, `tools/perf/src/node-room.ts`, `tools/perf/src/protocol.ts`, `tools/perf/src/record.ts`, `tools/perf/src/recorded.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/bench-queue*.ts`, `tools/perf/test/budget-verdicts.test.ts`, `tools/perf/test/load.test.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu-clock.test.ts`, `tools/perf/test/gpu-fixture.ts`, `tools/perf/test/gpu-page.test.ts`, `tools/perf/test/gpu-observe.test.ts`, `tools/perf/test/gpu-park.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`, `tools/perf/test/recorded-guard.test.ts`, `tools/perf/test/side-a-missing.test.ts`, `tools/perf/test/steady.test.ts`
 
 Source files:
 
@@ -1280,9 +1280,12 @@ Source files:
 - `tools/perf/src/glb-textures.ts`
 - `tools/perf/src/gpu-bar-capture.ts`
 - `tools/perf/src/gpu-bar.ts`
+- `tools/perf/src/gpu-clock.ts`
 - `tools/perf/src/gpu-frame-reads.ts`
 - `tools/perf/src/gpu-frames.ts`
 - `tools/perf/src/gpu-rv.ts`
+- `tools/perf/src/gpu-sample.ts`
+- `tools/perf/src/gpu-states.ts`
 - `tools/perf/src/gpu.ts`
 - `tools/perf/src/load.ts`
 - `tools/perf/src/measure-model.ts`
@@ -1317,7 +1320,11 @@ Test files:
 - `tools/perf/test/evaluate.test.ts`
 - `tools/perf/test/fixture-build.ts`
 - `tools/perf/test/gate.test.ts`
+- `tools/perf/test/gpu-clock.test.ts`
+- `tools/perf/test/gpu-fixture.ts`
+- `tools/perf/test/gpu-observe.test.ts`
 - `tools/perf/test/gpu-page.test.ts`
+- `tools/perf/test/gpu-park.test.ts`
 - `tools/perf/test/gpu.test.ts`
 - `tools/perf/test/load.test.ts`
 - `tools/perf/test/measure-page.test.ts`
