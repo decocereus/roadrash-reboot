@@ -97,10 +97,16 @@ void main() {
 
 const FRAGMENT = `
 uniform sampler2D detail;
-uniform float stops[5];
-uniform float spans[4];
-uniform vec3 colours[5];
-uniform vec3 clouds[3];
+uniform vec4 stops;
+uniform vec4 spans;
+uniform vec3 colour0;
+uniform vec3 colour1;
+uniform vec3 colour2;
+uniform vec3 colour3;
+uniform vec3 colour4;
+uniform vec3 cloud0;
+uniform vec3 cloud1;
+uniform vec3 cloud2;
 uniform vec3 fogColour;
 uniform vec3 sunColour;
 uniform vec2 sunAt;
@@ -120,10 +126,10 @@ float reach(vec2 sky, vec2 centre) {
 void main() {
   vec2 sky = vec2(vUv.x * WIDTH, (1.0 - vUv.y) * ${SKY_HEIGHT.toFixed(1)});
   float along = clamp((sky.y - BAND_TOP) * ${(1 / (SKY_HEIGHT / 4)).toFixed(8)}, 0.0, 1.0);
-  vec3 colour = mix(colours[0], colours[1], clamp((along - stops[0]) * spans[0], 0.0, 1.0));
-  colour = mix(colour, colours[2], clamp((along - stops[1]) * spans[1], 0.0, 1.0));
-  colour = mix(colour, colours[3], clamp((along - stops[2]) * spans[2], 0.0, 1.0));
-  colour = mix(colour, colours[4], clamp((along - stops[3]) * spans[3], 0.0, 1.0));
+  vec3 colour = mix(colour0, colour1, clamp((along - stops.x) * spans.x, 0.0, 1.0));
+  colour = mix(colour, colour2, clamp((along - stops.y) * spans.y, 0.0, 1.0));
+  colour = mix(colour, colour3, clamp((along - stops.z) * spans.z, 0.0, 1.0));
+  colour = mix(colour, colour4, clamp((along - stops.w) * spans.w, 0.0, 1.0));
   float above = step(sky.y, HORIZON);
   if (night > 0.0) {
     vec2 cell = floor(sky * 0.5);
@@ -139,9 +145,9 @@ void main() {
   }
   vec4 detail = texture2D(detail, vUv);
   colour = mix(colour, fogColour, 1.0 - above);
-  colour = mix(colour, clouds[2], detail.b);
-  colour = mix(colour, clouds[1], detail.g);
-  colour = mix(colour, clouds[0], detail.r);
+  colour = mix(colour, cloud2, detail.b);
+  colour = mix(colour, cloud1, detail.g);
+  colour = mix(colour, cloud0, detail.r);
   gl_FragColor = vec4(colour, 1.0);
   #include <colorspace_fragment>
 }`;
@@ -167,16 +173,22 @@ const placeOf = (
 export const buildSky = (random: Random, hour: LiveHour): Sky => {
   const texture = detailTexture(random);
   const uniforms = {
-    clouds: { value: hour.clouds },
-    colours: { value: hour.sky },
+    cloud0: { value: hour.clouds[0] },
+    cloud1: { value: hour.clouds[1] },
+    cloud2: { value: hour.clouds[2] },
+    colour0: { value: hour.sky[0] },
+    colour1: { value: hour.sky[1] },
+    colour2: { value: hour.sky[2] },
+    colour3: { value: hour.sky[3] },
+    colour4: { value: hour.sky[4] },
     detail: { value: texture },
     fogColour: { value: hour.fog },
     moonAt: {
       value: placeOf(MOON_BEARING, MOON_ELEVATION, new THREE.Vector2()),
     },
     night: { value: 0 },
-    spans: { value: new Float32Array(4) },
-    stops: { value: hour.stops },
+    spans: { value: new THREE.Vector4() },
+    stops: { value: new THREE.Vector4() },
     sunAt: { value: new THREE.Vector2() },
     sunColour: { value: hour.sun },
   };
@@ -196,10 +208,13 @@ export const buildSky = (random: Random, hour: LiveHour): Sky => {
     mesh: onFxLayer(mesh),
     setHour(key) {
       const [s0, s1, s2, s3, s4] = hour.stops;
-      uniforms.spans.value[0] = 1 / Math.max(s1 - s0, 1e-4);
-      uniforms.spans.value[1] = 1 / Math.max(s2 - s1, 1e-4);
-      uniforms.spans.value[2] = 1 / Math.max(s3 - s2, 1e-4);
-      uniforms.spans.value[3] = 1 / Math.max(s4 - s3, 1e-4);
+      uniforms.stops.value.set(s0, s1, s2, s3);
+      uniforms.spans.value.set(
+        1 / Math.max(s1 - s0, 1e-4),
+        1 / Math.max(s2 - s1, 1e-4),
+        1 / Math.max(s3 - s2, 1e-4),
+        1 / Math.max(s4 - s3, 1e-4)
+      );
       uniforms.night.value = hour.night;
       bearing.copy(key).setY(0).normalize();
       placeOf(bearing, hour.sunElevation, uniforms.sunAt.value);
