@@ -209,6 +209,9 @@ describe("the per-state table beside the verdict", () => {
     expect(lines).toContain(
       "info clock bar side=B fast 0 slow 0 mixed 0 unread 5 (information only, not judged)"
     );
+    expect(lines.at(-1)).toMatch(
+      /^info clock by position after warm-up: 0 reference-v1 A fast, 1 reference-v1 B fast, .*, 7 reference-v1 B slow, 8 reference-v1 A slow, 9 reference-v1 B slow, 10 pack-riding-v1 A fast, .*, 20 bar B unread, .*, 24 bar B unread \(information only, not judged\)$/u
+    );
   });
 
   it("prints nothing per state on a host without cpufreq", () => {
@@ -218,7 +221,7 @@ describe("the per-state table beside the verdict", () => {
         slowAtPairThree,
         steadyBar
       )
-    ).toStrictEqual({ lines: [], states: [] });
+    ).toStrictEqual({ lines: [], order: [], states: [] });
   });
 
   it("leaves today's verdict lines exactly as they were", () => {

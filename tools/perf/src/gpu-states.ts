@@ -120,11 +120,21 @@ export const clockStatesOf = (
   bar: readonly BarSample[]
 ) => {
   if (source.kind === "absent") {
-    return { lines: [], states: [] };
+    return { lines: [], order: [], states: [] };
   }
   const states = scenarios.map((scenario) =>
     stateOfScenario(scenario.id, samples)
   );
+  const order = [
+    ...samples.map(
+      (sample, index) =>
+        `${index} ${sample.scenario} ${sample.side} ${sample.clock?.state ?? "unread"}`
+    ),
+    ...bar.map(
+      (sample, index) =>
+        `${samples.length + index} bar B ${sample.clock?.state ?? "unread"}`
+    ),
+  ];
   const lines = states.flatMap(({ paired, scenario, windows }) => [
     `info clock ${scenario} windows A ${tallyText(windows.A)}; B ${tallyText(windows.B)} (${NOTE})`,
     ...paired.map(
@@ -136,7 +146,9 @@ export const clockStatesOf = (
     lines: [
       ...lines,
       `info clock bar side=B ${tallyText(tallyOf(bar))} (${NOTE})`,
+      `info clock by position after warm-up: ${order.join(", ")} (${NOTE})`,
     ],
+    order,
     states,
   };
 };

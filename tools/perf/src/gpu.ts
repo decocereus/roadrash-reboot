@@ -429,10 +429,11 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
         clock: {
           source,
           states: clock.states,
-          windows: [...samples, ...bar].map((sample) => ({
+          windows: [...samples, ...bar].map((sample, position) => ({
             clock: sample.clock,
             file: sample.file,
             parkTries: sample.parkTries,
+            position,
           })),
         },
         comparisonId,
