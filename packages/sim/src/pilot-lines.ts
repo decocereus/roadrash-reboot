@@ -530,6 +530,21 @@ const weighOnce = (
   line.x = x;
 };
 
+const keepsLine = (rider: RiderState, x: number): boolean =>
+  Math.abs(x - rider.pilotLine) < LINE_MATCH;
+
+const cannotWin = (
+  plan: LinePlan,
+  rider: RiderState,
+  x: number,
+  cost: number
+): boolean => {
+  const before = cost + MOVE_COST * Math.abs(x - rider.x);
+  return (
+    (keepsLine(rider, x) ? before - HYSTERESIS : before) >= plan.choice.cost
+  );
+};
+
 const offer = (
   plan: LinePlan,
   history: PilotHistory,
@@ -547,10 +562,13 @@ const offer = (
   toll.slickMetres = Number.POSITIVE_INFINITY;
   toll.slickSpeed = Number.POSITIVE_INFINITY;
   if (plan.weighing) {
+    if (cannotWin(plan, rider, x, cost)) {
+      return;
+    }
     weighOnce(plan, history, track, rider, x, braking);
     total += toll.cost;
     lineSpeed = Math.min(speed, toll.speed, toll.through);
-    if (Math.abs(x - rider.pilotLine) < LINE_MATCH) {
+    if (keepsLine(rider, x)) {
       total -= HYSTERESIS;
     }
   }
@@ -601,19 +619,11 @@ const offerBetweenLanes = (
   cruise: number,
   furthest: number
 ): void => {
-  if (Math.abs(x) <= furthest) {
+  const cost = LANE_RANK_COST * nearestLaneIndex(plan.lanes, x) + OFF_LANE_COST;
+  if (Math.abs(x) <= furthest && !cannotWin(plan, rider, x, cost)) {
     laneThreat(plan, state, rider, x, plan.found);
     if (!threatened(plan.found) && !crossesBlocked(plan, rider, x)) {
-      offer(
-        plan,
-        history,
-        track,
-        rider,
-        x,
-        cruise,
-        LANE_RANK_COST * nearestLaneIndex(plan.lanes, x) + OFF_LANE_COST,
-        false
-      );
+      offer(plan, history, track, rider, x, cruise, cost, false);
     }
   }
 };
