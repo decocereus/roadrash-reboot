@@ -52,20 +52,24 @@ import { weapons } from "./weapons.ts";
 
 const DODGE_MARGIN = 0.45;
 const ROCK_THROUGH_SPEED = 150 / 3.6;
-const POTHOLE_COST = 0.6;
-const OIL_COST = 1;
-const ROCK_COST = 2;
-const ROCK_COST_PER_SPEED = 2;
 const ROCK_FAST = 55.6;
 const CONTACT_MARGIN = 0.1;
-const CRASH_COST = 10;
 export const SLIPPING = 0.2;
 export const SLIPPING_STEER = 0.45;
 const OIL_BEND_PUSH = 1.2;
 const OIL_SCAN_STEP = 5;
 const GIVE_WAY_MARGIN = 0.3;
-const GIVE_WAY_COST = 2;
-const GIVE_WAY_COST_PER_SHARE = 3;
+
+export const forecastCosts = {
+  crash: 10,
+  giveWay: 2,
+  giveWayPerShare: 3,
+  oil: 1,
+  pothole: 0.6,
+  rock: 2,
+  rockPerSpeed: 2,
+  walkerShare: WALKER_BUMP.upset,
+} as const;
 
 const hazardRoll = (state: RaceState): number => {
   state.hazardDice = nextSeed(state.hazardDice);
@@ -221,14 +225,14 @@ const contactReach = (hazard: Hazard): number =>
 
 const rockCost = (speed: number): number => {
   const ratio = speed / ROCK_FAST;
-  return ROCK_COST + ROCK_COST_PER_SPEED * (ratio * ratio);
+  return forecastCosts.rock + forecastCosts.rockPerSpeed * (ratio * ratio);
 };
 
 const hazardCost = (hazard: Hazard, speed: number): number => {
   if (hazard.kind === "rock") {
     return rockCost(speed);
   }
-  return hazard.kind === "oil" ? OIL_COST : POTHOLE_COST;
+  return hazard.kind === "oil" ? forecastCosts.oil : forecastCosts.pothole;
 };
 
 export const measureHorizons = (outlook: Outlook): void => {
@@ -340,7 +344,7 @@ const obstructWithCar = (
     const obstruction = nextObstruction(outlook);
     obstruction.ahead = car.s - rider.s;
     obstruction.along = car.halfLength + BIKE_HALF_LENGTH;
-    obstruction.cost = CRASH_COST;
+    obstruction.cost = forecastCosts.crash;
     obstruction.crossing = false;
     obstruction.curvature = 0;
     obstruction.drift = 0;
@@ -368,7 +372,7 @@ const obstructWithCrosser = (
   outlook.crosserMoving = true;
   obstruction.ahead = 0;
   obstruction.along = 0;
-  obstruction.cost = CRASH_COST;
+  obstruction.cost = forecastCosts.crash;
   obstruction.crossing = true;
   obstruction.curvature = 0;
   obstruction.drift = crosser.drift;
@@ -439,7 +443,7 @@ export const gatherObstructions = (
   for (const pedestrian of pedestrians) {
     if (walkerInSight(track, rider, pedestrian)) {
       const obstruction = obstructWithCrosser(outlook, rider, pedestrian);
-      obstruction.cost = WALKER_BUMP.upset * rockCost(rider.speed);
+      obstruction.cost = forecastCosts.walkerShare * rockCost(rider.speed);
       obstruction.reach += CONTACT_MARGIN;
       obstruction.bump = WALKER_BUMP;
     }
@@ -471,7 +475,7 @@ const landOnBump = (
     rider.speed * rider.speed - landing * landing >
     2 * PLANNED_BRAKING * obstruction.metres
   ) {
-    toll.cost += CRASH_COST;
+    toll.cost += forecastCosts.crash;
   }
   toll.speed = Math.min(toll.speed, landing);
   toll.speedMetres = Math.min(toll.speedMetres, obstruction.metres);
@@ -490,7 +494,7 @@ const crossOil = (
   );
   const need = neededToSlow(rider.speed, settled, obstruction.metres);
   if (need > deceleration.capacity) {
-    toll.cost += CRASH_COST;
+    toll.cost += forecastCosts.crash;
   }
   if (
     !Number.isFinite(toll.slickSpeed) ||
@@ -708,7 +712,8 @@ export const weigh = (
     const slowAt =
       slowTo === toll.slickSpeed ? toll.slickMetres : toll.speedMetres;
     toll.cost = outlook.gaveWay
-      ? GIVE_WAY_COST + GIVE_WAY_COST_PER_SHARE * (1 - slowTo / rider.speed)
+      ? forecastCosts.giveWay +
+        forecastCosts.giveWayPerShare * (1 - slowTo / rider.speed)
       : 0;
     forecast(history, outlook, track, rider, line, braking, slowTo, slowAt);
   }
