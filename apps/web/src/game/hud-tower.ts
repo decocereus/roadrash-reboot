@@ -1,3 +1,4 @@
+import { createRaceLog } from "@racer/career/outcome";
 import type { RaceLog } from "@racer/career/outcome";
 import type { RiderView } from "@racer/sim/race-view";
 import { riderOf } from "@racer/sim/state";
@@ -8,13 +9,13 @@ import type { TimingView } from "@racer/sim/timing";
 import { shortNames } from "../career/copy.ts";
 import { suitOf } from "./figure-rig.ts";
 import type { Session } from "./game-session.ts";
-import type { TowerMark, TowerRow } from "./hud.ts";
+import type { RacePlan, TowerMark, TowerRow } from "./hud.ts";
 import { blocksOf } from "./rider-blocks.ts";
 import type { Stage } from "./scene-lifecycle.ts";
 
 interface Entry {
   readonly name: string;
-  readonly chip: string;
+  readonly chip: number;
 }
 
 const MS_PER_TENTH = 100;
@@ -29,30 +30,49 @@ export const nearestTenth = (ms: number): number => {
 
 const noRows: readonly TowerRow[] = [];
 
-const cssOf = (colour: number): string =>
-  `#${colour.toString(16).padStart(6, "0")}`;
-
 type OnRoad = Extract<Session, { readonly log: RaceLog }>;
+
+const nameOf = (
+  rider: RiderView,
+  plan: RacePlan,
+  entrants: RaceLog["entrants"],
+  me: RiderId
+): string => {
+  if (rider.id === me) {
+    return "You";
+  }
+  const entrant = entrants.find((one) => one.rider === rider.id);
+  return entrant
+    ? (plan.room?.names.get(entrant.rival) ?? shortNames[entrant.rival])
+    : rider.profile.name;
+};
 
 const entriesOf = (
   session: OnRoad,
   stage: Pick<Stage, "colours" | "me" | "race">
 ): ReadonlyMap<RiderId, Entry> => {
-  const names = session.plan.room?.names;
   const entries = new Map<RiderId, Entry>();
   for (const rider of stage.race.view.riders) {
-    const entrant = session.log.entrants.find((one) => one.rider === rider.id);
-    const named = entrant
-      ? (names?.get(entrant.rival) ?? shortNames[entrant.rival])
-      : rider.profile.name;
     entries.set(rider.id, {
-      chip: cssOf(
-        suitOf(rider, blocksOf(stage.colours, rider.id), session.dressing)
-      ),
-      name: rider.id === stage.me ? "You" : named,
+      chip: suitOf(rider, blocksOf(stage.colours, rider.id), session.dressing),
+      name: nameOf(rider, session.plan, session.log.entrants, stage.me),
     });
   }
   return entries;
+};
+
+export const towerNames = (
+  plan: RacePlan,
+  stage: Pick<Stage, "me" | "race">
+): ReadonlyMap<RiderId, string> => {
+  const { entrants } = createRaceLog(plan.setup, stage.me);
+  const names = new Map<RiderId, string>();
+  for (const rider of stage.race.view.riders) {
+    if (rider.profile.role === "racer") {
+      names.set(rider.id, nameOf(rider, plan, entrants, stage.me));
+    }
+  }
+  return names;
 };
 
 interface Mark {

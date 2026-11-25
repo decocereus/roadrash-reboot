@@ -66,6 +66,8 @@ import {
   unprepared,
 } from "./game-session.ts";
 import type { Attract, Countdown, InRace, Session } from "./game-session.ts";
+import { createTowerPass } from "./hud-tower-pass.ts";
+import { towerNames } from "./hud-tower.ts";
 import type { GameEvents, GameHandle, RacePlan } from "./hud.ts";
 import { createControls } from "./input.ts";
 import { createPipeline } from "./post.ts";
@@ -77,6 +79,7 @@ import { bindCast, createCast, pickFarRiders } from "./rider-views.ts";
 import { bindStage, createStage } from "./scene-lifecycle.ts";
 
 const LAST_STRETCH = 1000;
+const unbuilt = (): void => undefined;
 const MARKER_KEY = "KeyB";
 
 const autopilot =
@@ -172,7 +175,11 @@ const startGame = (
     bench?.dispose();
   });
   const lap = lapOf(frame);
-  const pipeline = createPipeline(renderer, lap, quality.preset);
+  const towerPass = createTowerPass(renderer);
+  owners.push(() => {
+    towerPass.dispose();
+  });
+  const pipeline = createPipeline(renderer, lap, quality.preset, towerPass);
   owners.push(() => {
     pipeline.dispose();
   });
@@ -247,6 +254,7 @@ const startGame = (
     session: () => session,
     sound,
     stage,
+    towerPass,
   });
 
   const clearNoticeAndClock = () => {
@@ -619,10 +627,12 @@ const startGame = (
     if (dressing === null || preparation?.kind !== "dressing") {
       return notPrepared;
     }
-    let release: () => void;
+    let release = unbuilt;
     try {
       release = build(setup, dressing, true, room);
+      towerPass.bake(towerNames(next, stage));
     } catch (error) {
+      release();
       session = unprepared;
       return { cause: errorOf(error), kind: "failed", stage: "build" };
     }

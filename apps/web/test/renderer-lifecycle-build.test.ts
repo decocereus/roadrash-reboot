@@ -72,6 +72,7 @@ describe("rebuilding the race on screen", () => {
           setLook: (look) => {
             looks.push(look);
           },
+          stageOverlay: neverCompiled,
         },
         quality: { preset: presets.lean },
         showCast,

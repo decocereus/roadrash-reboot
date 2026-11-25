@@ -4736,6 +4736,22 @@
       "side": "B",
       "source": "gate-2026-11-24T16-08-38-267Z-9f67ba9-396357f",
       "value": 0.13365047459479634
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "tower.cpu.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-25T02-01-44-313Z-89c8eee-89c8eee",
+      "value": 0.10000002384185791
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "tower.cpu.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-25T02-01-44-313Z-89c8eee-89c8eee",
+      "value": 0.10000002384185791
     }
   ],
   "revisions": {
@@ -7078,6 +7094,30 @@
       "sides": {
         "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
         "B": "0bdbc4f7120c2e85194c418f0b867b602f656c1b"
+      }
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "facts": {
+        "machine": "Mac16,8, Apple M4 Pro, 12 CPU cores, 24 GiB",
+        "os": "macOS 26.7.3 (25G342)",
+        "power": "AC power",
+        "display": "Chipset Model: Apple M4 Pro; Resolution: 1920 x 1080 (1080p FHD - Full High Definition); UI Looks like: 1920 x 1080 @ 144.00Hz; Main Display: Yes; requestAnimationFrame measured 145 Hz on both sides; display settings untouched",
+        "frameRate": "game setting 60 (rushline.settings.v1)",
+        "browser": "Helium 0.22.2.1, windowed, rv slots 0 and 1, --use-angle=metal --enable-gpu --ignore-gpu-blocklist",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)",
+        "build": "rv up: production build served by vite preview; doctor build is current on both sides",
+        "page": "1504x790 CSS at device pixel ratio 1, ?stress&rung=0 and ?stress=reference&rung=0, governor off, rung 0, cpu x1, network off",
+        "pairs": "5 alternating pairs per scenario after one warm-up per scenario and side; the idle side parked on /kit",
+        "wallMs": "1374426",
+        "order": "reference-v1 pair0 A, reference-v1 pair0 B, pack-riding-v1 pair0 B, pack-riding-v1 pair0 A, reference-v1 pair1 B, reference-v1 pair1 A, pack-riding-v1 pair1 A, pack-riding-v1 pair1 B, reference-v1 pair2 A, reference-v1 pair2 B, pack-riding-v1 pair2 B, pack-riding-v1 pair2 A, reference-v1 pair3 B, reference-v1 pair3 A, pack-riding-v1 pair3 A, pack-riding-v1 pair3 B, reference-v1 pair4 A, reference-v1 pair4 B, pack-riding-v1 pair4 B, pack-riding-v1 pair4 A",
+        "sourceDigestB": "f5e4a9eeabd4d931f09eef9fd635fd03fb27d6c48159fef70c6bd50c39a0618a"
+      },
+      "id": "gpu-2026-11-25T02-01-44-313Z-89c8eee-89c8eee",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "89c8eee95adfbc2f4b8074e320fb343950ecd740 (rv 20261125-073018-s0)",
+        "B": "89c8eee95adfbc2f4b8074e320fb343950ecd740 with the glyph-atlas timing tower, uncommitted (rv 20261125-073028-s1)"
       }
     }
   ],

@@ -10,7 +10,10 @@ import { ModelRequestFailed } from "./model-request-failed.ts";
 import { ModelResponseRejected } from "./model-response-rejected.ts";
 import type { ModelUrls } from "./model-urls.ts";
 
-const DISPLAY_FONT = '800 40px "Saira Extra Condensed"';
+const DISPLAY_FONTS = [
+  '800 40px "Saira Extra Condensed"',
+  '700 40px "Saira Extra Condensed"',
+] as const;
 
 export interface Transport {
   readonly fetch: (
@@ -118,7 +121,10 @@ const displayFont = Effect.gen(function* loadDisplayFont() {
   yield* Effect.tryPromise({
     catch: (cause) =>
       new FontReadinessFailed({ cause, message: messageOf(cause) }),
-    try: async () => await fonts.load(DISPLAY_FONT),
+    try: async () =>
+      await Promise.all(
+        DISPLAY_FONTS.map(async (font) => await fonts.load(font))
+      ),
   });
   return null;
 }).pipe(

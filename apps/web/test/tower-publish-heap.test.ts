@@ -9,15 +9,30 @@ const PUBLISHES = fileURLToPath(
 );
 const BUDGET_MS = 60_000;
 
-describe("the race tower's publish path", () => {
+const outputOf = (flags: readonly string[]) => {
+  const run = spawnSync(process.execPath, [...flags], { encoding: "utf-8" });
+  return { output: run.stdout, status: run.status };
+};
+
+describe("the race tower's publish and draw paths", () => {
   it(
-    "publishes an unchanged tower without allocating, before V8 optimizes the publish path",
+    "publishes an unchanged tower without allocating, before V8 optimizes the read",
     () => {
-      const run = spawnSync(process.execPath, [BASELINE_TIER_ONLY, PUBLISHES], {
-        encoding: "utf-8",
-      });
-      expect({ output: run.stdout, status: run.status }).toStrictEqual({
+      expect(
+        outputOf([BASELINE_TIER_ONLY, PUBLISHES, "publish"])
+      ).toStrictEqual({
         output: JSON.stringify({ built: 0, unchanged: true }),
+        status: 0,
+      });
+    },
+    BUDGET_MS
+  );
+
+  it(
+    "writes changed rows and slides into vertex data without allocating once the draw path is warm",
+    () => {
+      expect(outputOf([PUBLISHES, "draw"])).toStrictEqual({
+        output: JSON.stringify({ drawn: 0, slid: true }),
         status: 0,
       });
     },

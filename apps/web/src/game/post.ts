@@ -167,8 +167,19 @@ const watchPrograms = (renderer: THREE.WebGLRenderer): Compiling => {
   };
 };
 
+export interface Overlay {
+  readonly compile: () => void;
+  readonly render: () => void;
+  readonly resize: (width: number, height: number, pixelRatio: number) => void;
+  readonly stage: () => () => void;
+}
+
+const unstage = (): void => undefined;
+const unstaged = (): (() => void) => unstage;
+
 export interface Pipeline {
   prepare: (scene: THREE.Scene) => void;
+  stageOverlay: () => () => void;
   compile: (scene: THREE.Scene, camera: THREE.PerspectiveCamera) => Compiling;
   setLook: (look: Look) => void;
   resize: (width: number, height: number, pixelRatio: number) => void;
@@ -229,7 +240,8 @@ const copyDepth = (
 export const createPipeline = (
   renderer: THREE.WebGLRenderer,
   lap?: (part: Part) => void,
-  { bloomScale, samples }: Picture = fullPicture
+  { bloomScale, samples }: Picture = fullPicture,
+  overlay: Overlay | null = null
 ): Pipeline => {
   renderer.setOpaqueSort(byVariantThenMaterial);
   const normalTarget = new THREE.WebGLRenderTarget(4, 4);
@@ -312,6 +324,7 @@ export const createPipeline = (
       renderer.setRenderTarget(sceneTarget);
       try {
         renderer.compile(scene, camera);
+        overlay?.compile();
         return watchPrograms(renderer);
       } finally {
         renderer.setRenderTarget(null);
@@ -379,6 +392,10 @@ export const createPipeline = (
       lap?.("bloom");
       grade.render(renderer, inkTarget, inkTarget, 0, false);
       lap?.("grade");
+      if (overlay) {
+        overlay.render();
+        lap?.("tower");
+      }
     },
     resize(width, height, pixelRatio) {
       const wide = Math.max(1, Math.floor(width * pixelRatio));
@@ -390,11 +407,13 @@ export const createPipeline = (
       uniformValue(line, "resolution", THREE.Vector2).set(wide, tall);
       uniform(line, "width").value =
         LINE_WIDTH * Math.max(1, tall / LINE_REFERENCE_HEIGHT);
+      overlay?.resize(width, height, pixelRatio);
     },
     setLook(look) {
       uniformValue(line, "ink", THREE.Color).set(look.ink);
       uniformValue(grade, "grade", THREE.Vector3).set(...look.grade);
       bloom.strength = look.bloom;
     },
+    stageOverlay: overlay?.stage ?? unstaged,
   };
 };

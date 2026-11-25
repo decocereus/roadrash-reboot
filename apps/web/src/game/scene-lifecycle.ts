@@ -78,7 +78,7 @@ interface StageParts {
   readonly devRide: DevRide | undefined;
   readonly pipeline: Pick<
     Pipeline,
-    "compile" | "prepare" | "render" | "setLook"
+    "compile" | "prepare" | "render" | "setLook" | "stageOverlay"
   >;
   readonly quality: Pick<Quality, "preset">;
   readonly showCast: (actors: Actors) => void;
@@ -147,6 +147,7 @@ export const bindStage = ({
     at: player().s,
     camera: chase.camera,
     figures: cast.views.map((view) => view.figure),
+    overlay: pipeline.stageOverlay,
     prepare: pipeline.prepare,
     puffs: cast.puffs,
     world: stage.world,

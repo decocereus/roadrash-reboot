@@ -443,7 +443,13 @@ const stagingOf = ({ prepareThrows = false } = {}): Staging => {
   const sampleGeometry = new THREE.BoxGeometry();
   const samples = new THREE.Group();
   samples.add(new THREE.Mesh(sampleGeometry, new THREE.MeshBasicMaterial()));
-  const state = { armed: 0, followed: 0, primed: 0, samplesReleased: 0 };
+  const state = {
+    armed: 0,
+    followed: 0,
+    overlaid: 0,
+    primed: 0,
+    samplesReleased: 0,
+  };
   sampleGeometry.addEventListener("dispose", () => {
     state.samplesReleased += 1;
   });
@@ -460,6 +466,12 @@ const stagingOf = ({ prepareThrows = false } = {}): Staging => {
       at: 0,
       camera: new THREE.PerspectiveCamera(),
       figures: [{ holdEveryWeapon: arm }, { holdEveryWeapon: arm }],
+      overlay: () => {
+        state.overlaid += 1;
+        return () => {
+          state.overlaid -= 1;
+        };
+      },
       prepare: () => {
         if (prepareThrows) {
           throw new Error("The depth materials could not be set.");
@@ -496,6 +508,7 @@ const restored = {
   armed: 0,
   culled: true,
   followed: 1,
+  overlaid: 0,
   primed: 0,
   sampled: false,
   samplesReleased: 1,
@@ -503,13 +516,14 @@ const restored = {
 };
 
 describe("staging for shader warm-up", () => {
-  it("reveals and arms everything while staged and restores it all afterwards", () => {
+  it("reveals and arms everything, the timing tower too, while staged and restores it all afterwards", () => {
     const staging = stagingOf();
     const unstage = stageEverything(staging.staged);
     expect(restoredOf(staging)).toStrictEqual({
       armed: 2,
       culled: false,
       followed: 1,
+      overlaid: 1,
       primed: 1,
       sampled: true,
       samplesReleased: 0,

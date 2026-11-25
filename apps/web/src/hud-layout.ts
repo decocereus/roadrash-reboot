@@ -41,7 +41,7 @@ const DIAL_ASPECT = 1.08;
 const TOWER_PAD_EM = 0.3;
 const TOWER_WINDOW = 5;
 
-export const ROW_EM = 1.3;
+const ROW_EM = 1.3;
 
 export const warningFont: Fluid = { maxRem: 2.5, rem: 1.375, vmin: 3.89 };
 const towerFont: Fluid = { maxRem: 1.5, rem: 0.875, vmin: 2.5 };
@@ -61,21 +61,9 @@ const pxOf = ({ maxRem, rem, vmin }: Fluid, view: Viewport): number =>
 
 const percent = (share: number): string => `${share * PERCENT}%`;
 
-const underWarning = `calc(${percent(EDGE)} + ${cssOf(warningFont)} + ${2 * WARNING_PAD_REM + BAND_GAP_REM}rem)`;
-
 export const hudEdge = percent(EDGE);
 export const noticeTop = percent(NOTICE_TOP);
 export const warningPad = `${WARNING_PAD_REM}rem ${WARNING_SIDE_PAD_REM}rem`;
-
-export const towerBox = (rows: TowerRows, drawn: number) => ({
-  contain: "layout size",
-  fontSize: cssOf(towerFont),
-  height: `${2 * TOWER_PAD_EM + drawn * ROW_EM}em`,
-  padding: `${TOWER_PAD_EM}em`,
-  right: percent(TOWER_RIGHT),
-  top: rows === "all" ? hudEdge : underWarning,
-  width: cssOf(towerWidth),
-});
 
 const warningBottomPx = (view: Viewport): number =>
   EDGE * view.height + pxOf(warningFont, view) + 2 * WARNING_PAD_REM * ROOT_PX;
@@ -135,24 +123,58 @@ export const hudBands = (
   };
 };
 
-export const windowOf = <Row extends { readonly you: boolean }>(
-  rows: readonly Row[],
-  shown: TowerRows
-): readonly Row[] => {
-  if (shown === "all" || rows.length <= shown) {
-    return rows;
+export interface TowerFrame {
+  readonly font: number;
+  readonly left: number;
+  readonly pad: number;
+  readonly row: number;
+  readonly top: number;
+  readonly width: number;
+}
+
+export const towerFrame = (view: Viewport, rows: TowerRows): TowerFrame => {
+  const font = pxOf(towerFont, view);
+  return {
+    font,
+    left: towerLeftPx(view),
+    pad: TOWER_PAD_EM * font,
+    row: ROW_EM * font,
+    top: towerTopPx(view, rows),
+    width: pxOf(towerWidth, view),
+  };
+};
+
+export const windowLength = (count: number, shown: TowerRows): number =>
+  shown === "all" ? count : Math.min(count, shown);
+
+const youAt = (rows: readonly { readonly you: boolean }[]): number => {
+  for (let at = 0; at < rows.length; at += 1) {
+    if (rows[at]?.you === true) {
+      return at;
+    }
   }
-  const you = Math.max(
-    0,
-    rows.findIndex((row) => row.you)
-  );
+  return 0;
+};
+
+export const windowRow = <Row extends { readonly you: boolean }>(
+  rows: readonly Row[],
+  shown: TowerRows,
+  slot: number
+): Row | undefined => {
+  if (shown === "all" || rows.length <= shown) {
+    return rows[slot];
+  }
+  const you = youAt(rows);
   const around = shown - 1;
   if (around === 0) {
-    return rows.slice(you, you + 1);
+    return slot === 0 ? rows[you] : undefined;
+  }
+  if (slot === 0) {
+    return rows[0];
   }
   const first = Math.min(
     Math.max(1, you - Math.floor(around / 2)),
     rows.length - around
   );
-  return [...rows.slice(0, 1), ...rows.slice(first, first + around)];
+  return slot < shown ? rows[first + slot - 1] : undefined;
 };

@@ -39,6 +39,7 @@ const PARTS = [
   "line",
   "bloom",
   "grade",
+  "tower",
 ];
 
 type Ride = Extract<GpuSample, { side: "B" }>["capture"]["ride"];
@@ -47,6 +48,7 @@ interface Playback {
   readonly interval: (index: number) => number;
   readonly extraCalls: (index: number) => number;
   readonly riders: (index: number) => number;
+  readonly tower: (index: number) => number;
   readonly longTasks: GpuSample["capture"]["longTasks"];
   readonly discardedAt: number;
   readonly viewport: GpuSample["capture"]["viewport"];
@@ -75,6 +77,7 @@ const steady: Playback = {
     () => 30
   ),
   riders: () => 0.2,
+  tower: () => 0.05,
   viewport: { dpr: 2, height: 790, width: 1504 },
 };
 
@@ -93,6 +96,7 @@ const frameOf = (scenario: Scenario, playback: Playback, index: number) => ({
     1,
     13,
     1,
+    1,
   ],
   cpu: [
     1,
@@ -108,6 +112,7 @@ const frameOf = (scenario: Scenario, playback: Playback, index: number) => ({
     0.1,
     0.1,
     0.1,
+    playback.tower(index),
   ],
   discarded: index === playback.discardedAt ? 40 : 0,
   drawnEpoch: 1,
@@ -121,7 +126,7 @@ const frameOf = (scenario: Scenario, playback: Playback, index: number) => ({
   textures: 30,
   tick: scenario.window.from + index,
   ticks: 1,
-  triangles: [0, 0, 0, 0, 0, 0, 0, 1_000_000, 700_000, 600_000, 1, 13, 1],
+  triangles: [0, 0, 0, 0, 0, 0, 0, 1_000_000, 700_000, 600_000, 1, 13, 1, 1],
 });
 
 const sampleOf = (
@@ -481,35 +486,40 @@ describe("gpu frame lane", () => {
     expect(evaluation.ok).toBeFalsy();
   });
 
-  it("fails a B window whose riders take longer than the committed budget", () => {
-    const budget = limits.find(
-      (each) =>
-        each.environment === METAL &&
-        each.metric === "riders.cpu.p95" &&
-        each.scenario === packRiding?.id
-    );
-    if (!budget) {
-      throw new Error("budgets.json has no pack-riding riders budget.");
+  it.each(["riders", "tower"] as const)(
+    "fails a B window whose %s part takes longer than the committed budget",
+    (part) => {
+      const budget = limits.find(
+        (each) =>
+          each.environment === METAL &&
+          each.metric === `${part}.cpu.p95` &&
+          each.scenario === packRiding?.id
+      );
+      if (!budget) {
+        throw new Error(`budgets.json has no pack-riding ${part} budget.`);
+      }
+      const slow = budget.value * 2;
+      const evaluation = evaluateGpu(
+        campaign((scenario, side, pair) =>
+          isPack(scenario) && side === "B" && pair === 0
+            ? {
+                ...steady,
+                [part]: (index: number) =>
+                  index % 10 === 0 ? slow : steady[part](index),
+              }
+            : steady
+        ),
+        steadyBar,
+        limits,
+        METAL,
+        null
+      );
+      expect(
+        failing(evaluation.lines).map((line) => line.split(" observed=")[0])
+      ).toStrictEqual([`FAIL gpu pack-riding-v1 ${part}.cpu.p95 [${METAL}]`]);
+      expect(evaluation.ok).toBeFalsy();
     }
-    const slow = budget.value * 2;
-    const evaluation = evaluateGpu(
-      campaign((scenario, side, pair) =>
-        isPack(scenario) && side === "B" && pair === 0
-          ? { ...steady, riders: (index) => (index % 10 === 0 ? slow : 0.2) }
-          : steady
-      ),
-      steadyBar,
-      limits,
-      METAL,
-      null
-    );
-    expect(
-      failing(evaluation.lines).map((line) => line.split(" observed=")[0])
-    ).toStrictEqual([
-      "FAIL gpu pack-riding-v1 riders.cpu.p95 [gpu-helium-metal]",
-    ]);
-    expect(evaluation.ok).toBeFalsy();
-  });
+  );
 
   it("fails a B race that creates a program or texture after its first frame", () => {
     const compiled = rideOf(

@@ -7,9 +7,8 @@ import { ordinal } from "../../career/format.ts";
 import type { HudState } from "../../game/hud.ts";
 import { idleHud } from "../../hud-feed.ts";
 import type { HudFeed } from "../../hud-feed.ts";
-import { hudEdge, noticeTop, towerRowsAt, warningPad } from "./hud-layout.ts";
-import type { TowerRows } from "./hud-layout.ts";
-import { RaceTower } from "./race-tower.tsx";
+import { hudEdge, noticeTop, warningPad } from "../../hud-layout.ts";
+import { RaceOrder } from "./race-order.tsx";
 
 const COP_ON_YOU = 15;
 const DIAL_TOP_KMH = 300;
@@ -72,21 +71,6 @@ const Speedometer = ({ hud }: { readonly hud: HudState }) => (
   </>
 );
 
-const onResize = (changed: () => void): (() => void) => {
-  globalThis.addEventListener("resize", changed);
-  return () => {
-    globalThis.removeEventListener("resize", changed);
-  };
-};
-
-const towerRows = (): TowerRows =>
-  towerRowsAt({
-    height: globalThis.innerHeight,
-    width: globalThis.innerWidth,
-  });
-
-const wholeField = (): TowerRows => "all";
-
 export const RaceHud = ({
   feed,
   settled,
@@ -96,7 +80,6 @@ export const RaceHud = ({
 }) => {
   const hud = useSyncExternalStore(feed.subscribe, feed.read, () => idleHud);
   const racing = hud.phase === "racing" || hud.phase === "countdown";
-  const shown = useSyncExternalStore(onResize, towerRows, wholeField);
   return (
     <Screen className="pointer-events-none bg-transparent select-none">
       {settled ? (
@@ -107,9 +90,7 @@ export const RaceHud = ({
       ) : (
         <>
           {racing && hud.copGap !== null && <CopWarning gap={hud.copGap} />}
-          {racing && hud.tower.length > 0 && (
-            <RaceTower rows={hud.tower} shown={shown} />
-          )}
+          {racing && hud.tower.length > 0 && <RaceOrder rows={hud.tower} />}
           <Speedometer hud={hud} />
           {hud.countdown > 0 && (
             <p
