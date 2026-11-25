@@ -92,9 +92,6 @@ export const runIdFor = (slot: number, at: Date): string => {
   return `${day}-${time}-s${slot}`;
 };
 
-export const profileFor = (runId: string): string =>
-  path.join(toolStateDir, `profile-${runId}`);
-
 export class SlotStore extends Context.Service<
   SlotStore,
   {

@@ -6,7 +6,9 @@ import * as Schema from "effect/Schema";
 
 import { BAR_BENCH, barCapture } from "./gpu-bar.ts";
 import type { BarSample } from "./gpu-bar.ts";
+import { clockOfCapture, whileSampling } from "./gpu-clock.ts";
 import {
+  assertParked,
   consoleErrors,
   failed,
   OPEN_TIMEOUT_S,
@@ -14,6 +16,7 @@ import {
   rv,
   WINDOW_TIMEOUT_S,
 } from "./gpu-rv.ts";
+import type { SampleBench } from "./gpu-sample.ts";
 
 const READY =
   "globalThis.__rushlineBar !== undefined && globalThis.__rushlineProfile !== undefined";
@@ -22,6 +25,7 @@ const SET_CAMERA = `void localStorage.setItem("${BAR_BENCH.cameraKey}", "${BAR_B
 const COLLECT = `(() => ({
   camera: localStorage.getItem("${BAR_BENCH.cameraKey}"),
   frames: globalThis.__rushlineProfile.window(${BAR_BENCH.from}, ${BAR_BENCH.to}),
+  timeOrigin: performance.timeOrigin,
   viewport: { dpr: devicePixelRatio, height: innerHeight, width: innerWidth },
   visibility: document.visibilityState,
 }))()`;
@@ -46,40 +50,53 @@ const rideWindow = (run: string) =>
     )
   );
 
+interface BarRuns {
+  readonly idle: string;
+  readonly measured: string;
+}
+
 const sampleBar = Effect.fnUntraced(function* sampleBar(
-  dir: string,
-  run: string,
+  bench: SampleBench,
+  runs: BarRuns,
   index: number
 ) {
   const fs = yield* FileSystem.FileSystem;
+  const run = runs.measured;
+  const parkTries = yield* assertParked(runs.idle, bench.host.platform);
   const errorsBefore = yield* consoleErrors(run);
-  yield* rideWindow(run);
-  const text = yield* rv(["js", "--run", run, COLLECT]);
+  const { readings, result: text } = yield* whileSampling(
+    bench.source,
+    rideWindow(run).pipe(Effect.andThen(rv(["js", "--run", run, COLLECT])))
+  );
   const errorsAfter = yield* consoleErrors(run);
   yield* rv(["open", "--run", run, PARK]);
   const file = `bar-${index}.json`;
-  yield* fs.writeFileString(path.join(dir, "gpu", file), text);
+  yield* fs.writeFileString(path.join(bench.dir, "gpu", file), text);
+  const capture = yield* decodeCapture(text).pipe(
+    Effect.mapError(failed(`${file} is not a frame capture`))
+  );
   const sample: BarSample = {
-    capture: yield* decodeCapture(text).pipe(
-      Effect.mapError(failed(`${file} is not a frame capture`))
-    ),
+    capture,
+    clock: clockOfCapture(bench.source, readings, capture),
     consoleErrors: errorsAfter - errorsBefore,
     file,
+    parkTries,
   };
   return sample;
 });
 
 export const measureBar = Effect.fnUntraced(function* measureBar(
-  dir: string,
-  run: string
+  bench: SampleBench,
+  runs: BarRuns
 ) {
+  const run = runs.measured;
   yield* rv(["open", "--run", run, PARK]);
   yield* rv(["js", "--run", run, SET_CAMERA]);
   yield* rideWindow(run);
   yield* rv(["open", "--run", run, PARK]);
   const samples: BarSample[] = [];
   for (let index = 0; index < BAR_BENCH.samples; index += 1) {
-    samples.push(yield* sampleBar(dir, run, index));
+    samples.push(yield* sampleBar(bench, runs, index));
   }
   return samples;
 });
