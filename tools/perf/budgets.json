@@ -148,7 +148,7 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "33cd452436a15608f5bbfca00acae5ca8905b06b3c9d3d71db9457bf589a2cab"
+    "summarySha256": "3ea548a27f26b8ac1461339cd97bdd8d4c169463f9f625ce26ce438e647bb6de"
   },
   "limits": [
     {
@@ -452,28 +452,28 @@
       "value": 634014
     },
     {
-      "baseline": 255357,
-      "derivation": "baseline + max(4096, ceil(0.02 x baseline)); the seated rider adds 6155 B gzip over main 356a8fb1, which draws the timing tower in the canvas",
+      "baseline": 257815,
+      "derivation": "baseline + max(4096, ceil(0.02 x baseline)); the seated rider adds 6193 B gzip over main 93a8352d, which draws the time of day",
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.incremental.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-25T11-01-52-394Z-68a0cd3-68a0cd3",
+      "source": "baseline-2026-11-25T12-54-05-220Z-fdda22e-fdda22e",
       "unit": "B",
-      "value": 260465
+      "value": 262972
     },
     {
-      "baseline": 880757,
-      "derivation": "baseline + max(4096, ceil(0.02 x baseline)); the seated rider adds 20025 B raw over main 356a8fb1, which draws the timing tower in the canvas",
+      "baseline": 887631,
+      "derivation": "baseline + max(4096, ceil(0.02 x baseline)); the seated rider adds 20022 B raw over main 93a8352d, which draws the time of day",
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.incremental.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-25T11-01-52-394Z-68a0cd3-68a0cd3",
+      "source": "baseline-2026-11-25T12-54-05-220Z-fdda22e-fdda22e",
       "unit": "B",
-      "value": 898373
+      "value": 905384
     },
     {
       "baseline": 1746653,

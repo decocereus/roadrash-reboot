@@ -4944,6 +4944,22 @@
       "side": "B",
       "source": "gpu-2026-11-24T08-52-03-778Z-c6be25b-a1b16b0",
       "value": 0.10000002384185791
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.incremental.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-25T12-54-05-220Z-fdda22e-fdda22e",
+      "value": 257815
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.incremental.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-25T12-54-05-220Z-fdda22e-fdda22e",
+      "value": 887631
     }
   ],
   "revisions": {
@@ -7602,6 +7618,29 @@
       "sides": {
         "A": "c6be25bc6b008206614dbe4d5de2a674e3e14f54",
         "B": "a1b16b0c4fe94783e710b3dc412db6564506ced9"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 887569, \"bytes.route.root.gzip\": 372548, \"bytes.route.kit.raw\": 563720, \"bytes.route.kit.gzip\": 255859, \"bytes.game.raw\": 1775200, \"bytes.game.gzip\": 630363, \"bytes.game.incremental.raw\": 887631, \"bytes.game.incremental.gzip\": 257815, \"bytes.worker.raw\": 664604, \"bytes.worker.gzip\": 167131, \"bytes.client.raw\": 2069315, \"bytes.client.gzip\": 840601}",
+        "builtB": "{\"bytes.route.root.raw\": 887569, \"bytes.route.root.gzip\": 372548, \"bytes.route.kit.raw\": 563720, \"bytes.route.kit.gzip\": 255859, \"bytes.game.raw\": 1775200, \"bytes.game.gzip\": 630363, \"bytes.game.incremental.raw\": 887631, \"bytes.game.incremental.gzip\": 257815, \"bytes.worker.raw\": 664604, \"bytes.worker.gzip\": 167131, \"bytes.client.raw\": 2069315, \"bytes.client.gzip\": 840601}",
+        "harnessDigest": "f18e490661dc4feceaa0c8016700a1170fbb37c35998383029a2ed852f62437b",
+        "lockfileSha256": "77c8e6e3d12c228040bf14967c83c703ecf744fbf90d7ef9b77c41f64e29a992",
+        "machine": "Mac16,8",
+        "node": "v26.13.1",
+        "os": "macOS 26.7.3 (25G342)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "ca654e5a68411f98dc79b5bc060ca9e12881520ab0d3fcfca1e775c16a908a4a",
+        "sideBSourceDigest": "ca654e5a68411f98dc79b5bc060ca9e12881520ab0d3fcfca1e775c16a908a4a",
+        "why": "Main 93a8352d, with the time of day, merged into the seated rider. The game chunk loaded after the menus is 257,815 B gzip and 887,631 B raw: main at 93a8352d measured 251,622 B gzip and 867,609 B raw on this lane, so the seated rider adds 6,193 B gzip and 20,022 B raw, against 6,155 B gzip and 20,025 B raw over 356a8fb1. Both bytes.game.incremental rows were over their limits, so both re-pin on this run with the usual headroom."
+      },
+      "id": "baseline-2026-11-25T12-54-05-220Z-fdda22e-fdda22e",
+      "lanes": ["build"],
+      "sides": {
+        "A": "fdda22efbf53ae1290c0fb2dd1dc94f2e05730af",
+        "B": "fdda22efbf53ae1290c0fb2dd1dc94f2e05730af"
       }
     }
   ],
