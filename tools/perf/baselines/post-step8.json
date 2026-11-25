@@ -4960,6 +4960,198 @@
       "side": "B",
       "source": "baseline-2026-11-25T12-54-05-220Z-fdda22e-fdda22e",
       "value": 887631
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.interval.p50",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-25T11-21-48-128Z-356a8fb-356a8fb",
+      "value": 18.299999237060547
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.interval.p95",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-25T11-21-48-128Z-356a8fb-356a8fb",
+      "value": 22.200000762939453
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.interval.p99",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-25T11-21-48-128Z-356a8fb-356a8fb",
+      "value": 24.299999237060547
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.missedFraction",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-25T11-21-48-128Z-356a8fb-356a8fb",
+      "value": 0.00718132854578097
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.interval.p50",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-25T11-21-48-128Z-356a8fb-356a8fb",
+      "value": 19.399999618530273
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.interval.p95",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-25T11-21-48-128Z-356a8fb-356a8fb",
+      "value": 23.700000762939453
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.interval.p99",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-25T11-21-48-128Z-356a8fb-356a8fb",
+      "value": 33.29999923706055
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.missedFraction",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-25T11-21-48-128Z-356a8fb-356a8fb",
+      "value": 0.026415094339622643
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.interval.p50",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-25T11-49-53-415Z-356a8fb-356a8fb",
+      "value": 17.600000381469727
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.interval.p95",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-25T11-49-53-415Z-356a8fb-356a8fb",
+      "value": 21.899999618530273
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.interval.p99",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-25T11-49-53-415Z-356a8fb-356a8fb",
+      "value": 23.600000381469727
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.missedFraction",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-25T11-49-53-415Z-356a8fb-356a8fb",
+      "value": 0.005309734513274336
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.interval.p50",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-25T11-49-53-415Z-356a8fb-356a8fb",
+      "value": 19.600000381469727
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.interval.p95",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-25T11-49-53-415Z-356a8fb-356a8fb",
+      "value": 22.5
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.interval.p99",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-25T11-49-53-415Z-356a8fb-356a8fb",
+      "value": 37.29999923706055
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.missedFraction",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-25T11-49-53-415Z-356a8fb-356a8fb",
+      "value": 0.033962264150943396
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.interval.p50",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-25T12-17-50-168Z-356a8fb-356a8fb",
+      "value": 17.799999237060547
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.interval.p95",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-25T12-17-50-168Z-356a8fb-356a8fb",
+      "value": 22.200000762939453
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.interval.p99",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-25T12-17-50-168Z-356a8fb-356a8fb",
+      "value": 23.700000762939453
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.missedFraction",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-25T12-17-50-168Z-356a8fb-356a8fb",
+      "value": 0.005405405405405406
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.interval.p50",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-25T12-17-50-168Z-356a8fb-356a8fb",
+      "value": 19.600000381469727
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.interval.p95",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-25T12-17-50-168Z-356a8fb-356a8fb",
+      "value": 22.799999237060547
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.interval.p99",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-25T12-17-50-168Z-356a8fb-356a8fb",
+      "value": 36.5
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.missedFraction",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-25T12-17-50-168Z-356a8fb-356a8fb",
+      "value": 0.02495201535508637
     }
   ],
   "revisions": {
@@ -7641,6 +7833,84 @@
       "sides": {
         "A": "fdda22efbf53ae1290c0fb2dd1dc94f2e05730af",
         "B": "fdda22efbf53ae1290c0fb2dd1dc94f2e05730af"
+      }
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "facts": {
+        "machine": "vimaan, Intel Core i7-9750H, Intel UHD Graphics 630 (CFL GT2), 8 GiB of RAM",
+        "os": "Linux 7.2.8-9-omarchy, Mesa 26.2.5, Hyprland 0.56.2, Chromium 155.0.8059.84",
+        "power": "AC power, battery not charging",
+        "display": "Built-in panel eDP-1 at 1920x1080, 60.056 Hz, driven by the Hyprland session rv started; requestAnimationFrame measured 60 Hz on both sides",
+        "frameRate": "game setting 60 (rushline.settings.v1), so every vsync is drawn",
+        "browser": "/usr/lib/chromium/chromium, windowed through Xwayland on the Intel GPU, rv slots 0 and 1, RUSHLINE_BROWSER_HOST=linux-intel; the sandbox stays on",
+        "renderer": "ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)",
+        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview",
+        "page": "1919x992 CSS at device pixel ratio 1, ?stress&rung=0 and ?stress=reference&rung=0, the lean preset, cpu x1, network off",
+        "pairs": "5 strictly alternating pairs per scenario, B first in every pair, after one warm-up per scenario and side; the idle side parked on /kit",
+        "wallMs": "1668413",
+        "order": "[\"reference-v1 pair0 B\", \"reference-v1 pair0 A\", \"pack-riding-v1 pair0 B\", \"pack-riding-v1 pair0 A\", \"reference-v1 pair1 B\", \"reference-v1 pair1 A\", \"pack-riding-v1 pair1 B\", \"pack-riding-v1 pair1 A\", \"reference-v1 pair2 B\", \"reference-v1 pair2 A\", \"pack-riding-v1 pair2 B\", \"pack-riding-v1 pair2 A\", \"reference-v1 pair3 B\", \"reference-v1 pair3 A\", \"pack-riding-v1 pair3 B\", \"pack-riding-v1 pair3 A\", \"reference-v1 pair4 B\", \"reference-v1 pair4 A\", \"pack-riding-v1 pair4 B\", \"pack-riding-v1 pair4 A\"]",
+        "quiet": "booking gpu-step2-56 held vimaan as an rv bench job; every idle slot read quiet and every window had a clock reading",
+        "clock": "race and bar windows by clock state: fast 3, slow 19, mixed 3; package throttle count 1755838 to 1757379",
+        "why": "re-pin of the Intel pack-riding frame rows and the reference missed share: the worst level window over all 30 race windows per scenario of these three campaigns"
+      },
+      "id": "gpu-2026-11-25T11-21-48-128Z-356a8fb-356a8fb",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "356a8fb1a7d85fc0b4a2daae317d1a9ad1ff94b1",
+        "B": "356a8fb1a7d85fc0b4a2daae317d1a9ad1ff94b1"
+      }
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "facts": {
+        "machine": "vimaan, Intel Core i7-9750H, Intel UHD Graphics 630 (CFL GT2), 8 GiB of RAM",
+        "os": "Linux 7.2.8-9-omarchy, Mesa 26.2.5, Hyprland 0.56.2, Chromium 155.0.8059.84",
+        "power": "AC power, battery not charging",
+        "display": "Built-in panel eDP-1 at 1920x1080, 60.056 Hz, driven by the Hyprland session rv started; requestAnimationFrame measured 60 Hz on both sides",
+        "frameRate": "game setting 60 (rushline.settings.v1), so every vsync is drawn",
+        "browser": "/usr/lib/chromium/chromium, windowed through Xwayland on the Intel GPU, rv slots 0 and 1, RUSHLINE_BROWSER_HOST=linux-intel; the sandbox stays on",
+        "renderer": "ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)",
+        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview",
+        "page": "1919x992 CSS at device pixel ratio 1, ?stress&rung=0 and ?stress=reference&rung=0, the lean preset, cpu x1, network off",
+        "pairs": "5 strictly alternating pairs per scenario, B first in every pair, after one warm-up per scenario and side; the idle side parked on /kit",
+        "wallMs": "1660588",
+        "order": "[\"reference-v1 pair0 B\", \"reference-v1 pair0 A\", \"pack-riding-v1 pair0 B\", \"pack-riding-v1 pair0 A\", \"reference-v1 pair1 B\", \"reference-v1 pair1 A\", \"pack-riding-v1 pair1 B\", \"pack-riding-v1 pair1 A\", \"reference-v1 pair2 B\", \"reference-v1 pair2 A\", \"pack-riding-v1 pair2 B\", \"pack-riding-v1 pair2 A\", \"reference-v1 pair3 B\", \"reference-v1 pair3 A\", \"pack-riding-v1 pair3 B\", \"pack-riding-v1 pair3 A\", \"reference-v1 pair4 B\", \"reference-v1 pair4 A\", \"pack-riding-v1 pair4 B\", \"pack-riding-v1 pair4 A\"]",
+        "quiet": "booking gpu-step2-56 held vimaan as an rv bench job; every idle slot read quiet and every window had a clock reading",
+        "clock": "race and bar windows by clock state: slow 21, fast 4; package throttle count 1757379 to 1759516",
+        "why": "re-pin of the Intel pack-riding frame rows and the reference missed share: the worst level window over all 30 race windows per scenario of these three campaigns"
+      },
+      "id": "gpu-2026-11-25T11-49-53-415Z-356a8fb-356a8fb",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "356a8fb1a7d85fc0b4a2daae317d1a9ad1ff94b1",
+        "B": "356a8fb1a7d85fc0b4a2daae317d1a9ad1ff94b1"
+      }
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "facts": {
+        "machine": "vimaan, Intel Core i7-9750H, Intel UHD Graphics 630 (CFL GT2), 8 GiB of RAM",
+        "os": "Linux 7.2.8-9-omarchy, Mesa 26.2.5, Hyprland 0.56.2, Chromium 155.0.8059.84",
+        "power": "AC power, battery not charging",
+        "display": "Built-in panel eDP-1 at 1920x1080, 60.056 Hz, driven by the Hyprland session rv started; requestAnimationFrame measured 60 Hz on both sides",
+        "frameRate": "game setting 60 (rushline.settings.v1), so every vsync is drawn",
+        "browser": "/usr/lib/chromium/chromium, windowed through Xwayland on the Intel GPU, rv slots 0 and 1, RUSHLINE_BROWSER_HOST=linux-intel; the sandbox stays on",
+        "renderer": "ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)",
+        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview",
+        "page": "1919x992 CSS at device pixel ratio 1, ?stress&rung=0 and ?stress=reference&rung=0, the lean preset, cpu x1, network off",
+        "pairs": "5 strictly alternating pairs per scenario, B first in every pair, after one warm-up per scenario and side; the idle side parked on /kit",
+        "wallMs": "1657051",
+        "order": "[\"reference-v1 pair0 B\", \"reference-v1 pair0 A\", \"pack-riding-v1 pair0 B\", \"pack-riding-v1 pair0 A\", \"reference-v1 pair1 B\", \"reference-v1 pair1 A\", \"pack-riding-v1 pair1 B\", \"pack-riding-v1 pair1 A\", \"reference-v1 pair2 B\", \"reference-v1 pair2 A\", \"pack-riding-v1 pair2 B\", \"pack-riding-v1 pair2 A\", \"reference-v1 pair3 B\", \"reference-v1 pair3 A\", \"pack-riding-v1 pair3 B\", \"pack-riding-v1 pair3 A\", \"reference-v1 pair4 B\", \"reference-v1 pair4 A\", \"pack-riding-v1 pair4 B\", \"pack-riding-v1 pair4 A\"]",
+        "quiet": "booking gpu-step2-56 held vimaan as an rv bench job; every idle slot read quiet and every window had a clock reading",
+        "clock": "race and bar windows by clock state: fast 9, slow 12, mixed 4; package throttle count 1759516 to 1762208",
+        "why": "re-pin of the Intel pack-riding frame rows and the reference missed share: the worst level window over all 30 race windows per scenario of these three campaigns"
+      },
+      "id": "gpu-2026-11-25T12-17-50-168Z-356a8fb-356a8fb",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "356a8fb1a7d85fc0b4a2daae317d1a9ad1ff94b1",
+        "B": "356a8fb1a7d85fc0b4a2daae317d1a9ad1ff94b1"
       }
     }
   ],

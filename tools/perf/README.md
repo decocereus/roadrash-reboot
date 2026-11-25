@@ -294,7 +294,19 @@ Campaign `gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a`, setting 60, `ANGLE (Int
 | `reference-v1` | 56.0 / 55.7 | 18.2 / 18.0 | 21.8 / 21.9 | 23.2 / 22.9 | 0.18% / 0.36% | 508 | 1,605,457 |
 | `pack-riding-v1` | 50.3 / 50.6 | 19.9 / 19.8 | 23.1 / 22.5 | 39.9 / 24.9 | 2.18% / 1.18% | 522 | 2,066,211 |
 
-One B window on `pack-riding-v1` read 39.9 ms at p99 where the pooled figure is 25.3 ms, so that row's limit of 47.88 ms is loose.
+One B window on `pack-riding-v1` read 39.9 ms at p99 where the pooled figure is 25.3 ms, so that row's limit of 47.88 ms was loose.
+
+The four `pack-riding-v1` frame rows and `reference-v1`'s missed share now come from three campaigns of main `356a8fb1` against itself on 2026-11-25, on the strict B A order, `intel-floor-1` to `intel-floor-3.vimaan.gpu-chromium-intel.json.gz`. Each limit is its multiplier times the worst window of either side over all 30 windows of the scenario, because A's windows are level code too and held the worst window in all four pack rows. The other `reference-v1` frame rows keep the campaign above. The campaigns ran mostly with the CPU in its slow clock state, 42 of 60 race windows:
+
+| Row | Worst window | Campaign, pair, side, clock | Limit |
+| --- | --- | --- | --- |
+| `pack-riding-v1` p50 | 19.6 ms | 2, pair 4, A, fast | 21.56 ms |
+| `pack-riding-v1` p95 | 23.7 ms | 1, pair 3, A, slow | 27.255 ms |
+| `pack-riding-v1` p99 | 37.3 ms | 2, pair 3, A, slow | 44.76 ms |
+| `pack-riding-v1` missed | 3.40%, 18 frames | 2, pair 3, A, slow | 4.08% |
+| `reference-v1` missed | 0.72%, 4 frames | 1, pair 0, A, slow | 0.862% |
+
+The old `reference-v1` missed-share limit of 0.433% failed level code in two of the three campaigns, on 3 missed frames in about 555.
 
 In a stress race and a whole Breakwater Run, before and after the lean preset and shared depth, three capped runs of the stress window and one of the road, the frame rate went from 37.7 to 52.5 fps and from 37.7 to 49.9 fps. The time over 36 ms went from 3.5% to 0.6% and from 2.1% to 0.6%. These runs were on a fullscreen page, so don't compare them with the campaign above.
 
