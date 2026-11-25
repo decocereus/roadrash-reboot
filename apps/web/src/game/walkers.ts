@@ -293,6 +293,7 @@ export const createWalkerMarks = (
       writeWhere(SHOWN, walkers, tick);
       for (const { casters, count, frames, mesh, outfits } of bodies) {
         mesh.count = count;
+        casters.inked = count;
         casters.drawn = count;
         mesh.visible = count > 0;
         if (count > 0) {

@@ -7,7 +7,7 @@ import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
 import { createShading } from "../src/game/cel.ts";
-import { createFleet } from "../src/game/fleet.ts";
+import { createFleet, INK_REACH } from "../src/game/fleet.ts";
 import { placeOnGround } from "../src/game/ground.ts";
 import { lookOf } from "../src/game/looks.ts";
 import { isInstancedMesh } from "../src/game/meshes.ts";
@@ -123,6 +123,91 @@ describe("the fleet's shadow casters", () => {
     );
     expect(written.slice(0, 2).toSorted((a, b) => a - b)).toStrictEqual([1, 2]);
     expect(written[2]).toBe(0);
+    fleet.dispose();
+    shading.dispose();
+  });
+});
+
+const isRenderer = (renderer: {
+  readonly autoClear: boolean;
+}): renderer is { readonly autoClear: boolean } & THREE.WebGLRenderer =>
+  "autoClear" in renderer;
+
+describe("the fleet's outline pass", () => {
+  it("inks the casters and the cars within reach, leaves the farther cars to the colour pass, and restores the count", async () => {
+    const assets = await pinnedAssets();
+    const shading = createShading(lookOf(track.plan.region));
+    const race = createRaceRun(defaultSetup(track, 3));
+    const template = race.view.cars.find(
+      (car) => !car.carrier && car.height <= 1.8
+    );
+    if (!template) {
+      throw new Error("The race has no plain car.");
+    }
+    const light = sunOver(groundAt(STRAIGHT_AT, template.x));
+    const places = [
+      STRAIGHT_AT + INK_REACH * 2,
+      STRAIGHT_AT + INK_REACH + 1,
+      STRAIGHT_AT,
+      STRAIGHT_AT + INK_REACH - 1,
+      STRAIGHT_AT + INK_REACH / 2,
+    ];
+    const cars: TrafficView[] = places.map((s) => ({ ...template, s }));
+    const fleet = createFleet(assets, shading, cars, []);
+    for (const [index, s] of places.entries()) {
+      fleet.place(track, index, s);
+    }
+    fleet.commit(STRAIGHT_AT, shadowReachOf(light));
+    const body = fleet.group.children.find(
+      (node) => isInstancedMesh(node) && node.castShadow && node.count > 0
+    );
+    if (!body || !isInstancedMesh(body)) {
+      throw new Error("The fleet drew no car.");
+    }
+    const renderer = { autoClear: true };
+    if (!isRenderer(renderer)) {
+      throw new Error("The stub renderer has no autoClear.");
+    }
+    const camera = new THREE.PerspectiveCamera();
+    const group = new THREE.Group();
+    const colour = new THREE.Scene();
+    const outline = new THREE.Scene();
+    outline.overrideMaterial = new THREE.MeshNormalMaterial();
+    const countIn = (scene: THREE.Scene): number => {
+      body.onBeforeRender(
+        renderer,
+        scene,
+        camera,
+        body.geometry,
+        outline.overrideMaterial ?? new THREE.MeshBasicMaterial(),
+        group
+      );
+      return body.count;
+    };
+    const after = (): number => {
+      body.onAfterRender(
+        renderer,
+        outline,
+        camera,
+        body.geometry,
+        outline.overrideMaterial ?? new THREE.MeshBasicMaterial(),
+        group
+      );
+      return body.count;
+    };
+    const matrix = new THREE.Matrix4();
+    const written = Array.from({ length: body.count }, (_, slot) => {
+      body.getMatrixAt(slot, matrix);
+      const at = new THREE.Vector3().setFromMatrixPosition(matrix);
+      return places.findIndex(
+        (s) => groundAt(s, template.x).distanceTo(at) < 0.01
+      );
+    });
+    expect(written[0]).toBe(2);
+    expect(written.slice(1, 3).toSorted((a, b) => a - b)).toStrictEqual([3, 4]);
+    expect([countIn(colour), countIn(outline), after()]).toStrictEqual([
+      5, 3, 5,
+    ]);
     fleet.dispose();
     shading.dispose();
   });

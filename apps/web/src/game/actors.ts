@@ -437,6 +437,7 @@ export const createBikes = (
         for (const { casters, mesh } of fleet.parts) {
           showPrefix(mesh, fleet.count);
           if (casters) {
+            casters.inked = fleet.count;
             casters.drawn = fleet.count;
           }
         }
