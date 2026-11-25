@@ -5,234 +5,36 @@ import { browserHosts } from "@racer/devtools/browser-host";
 import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 
-import { budgetsFile, judge, metricKinds } from "../src/budgets.ts";
-import type { Limit } from "../src/budgets.ts";
+import { budgetsFile } from "../src/budgets.ts";
 import { BAR_BENCH } from "../src/gpu-bar.ts";
 import type { BarSample } from "../src/gpu-bar.ts";
-import { evaluateGpu, FRAME_RATE, GPU_PAIRS } from "../src/gpu-frames.ts";
-import type { GpuSample } from "../src/gpu-frames.ts";
+import { evaluateGpu, GPU_PAIRS } from "../src/gpu-frames.ts";
 import { scenarios, WINDOW_TICKS } from "../src/scenarios.ts";
 import type { Scenario } from "../src/scenarios.ts";
-import { validRows } from "./red-cases.ts";
+import {
+  BAR_FRAMES,
+  barOf,
+  barSampleOf,
+  campaign,
+  DRAWN_CALLS,
+  failing,
+  rideOf,
+  SHADOW_TRIANGLES,
+  SLOT,
+  START_MS,
+  steady,
+  steadyBar,
+} from "./gpu-fixture.ts";
+import type { Playback } from "./gpu-fixture.ts";
 
 const { limits } = Schema.decodeUnknownSync(Schema.fromJsonString(budgetsFile))(
   readFileSync(path.join(import.meta.dirname, "../budgets.json"), "utf-8")
 );
 
 const METAL = browserHosts["macos-metal"].perfEnvironment;
-const SLOT = 1000 / 60;
-const MAIN_CALLS = 130;
-const DRAWN_CALLS = 350;
-const START_MS = 5000;
-const RACE = 1;
-const PARTS = [
-  "sim",
-  "other",
-  "riders",
-  "fleet",
-  "camera",
-  "world",
-  "matrices",
-  "normal",
-  "shadow",
-  "main",
-  "line",
-  "bloom",
-  "grade",
-];
-
-type Ride = Extract<GpuSample, { side: "B" }>["capture"]["ride"];
-
-interface Playback {
-  readonly interval: (index: number) => number;
-  readonly extraCalls: (index: number) => number;
-  readonly riders: (index: number) => number;
-  readonly longTasks: GpuSample["capture"]["longTasks"];
-  readonly discardedAt: number;
-  readonly viewport: GpuSample["capture"]["viewport"];
-  readonly ride: Ride;
-}
-
-const RIDE_STEP = 300;
-
-const rideOf = (
-  programsAt: (index: number) => number,
-  texturesAt: (index: number) => number
-): Ride =>
-  Array.from({ length: 10 }, (_, index) => ({
-    created: { programs: programsAt(index), textures: texturesAt(index) },
-    frame: 20 + index * RIDE_STEP,
-    tick: index * RIDE_STEP,
-  }));
-
-const steady: Playback = {
-  discardedAt: -1,
-  extraCalls: () => 0,
-  interval: () => 16.7,
-  longTasks: [],
-  ride: rideOf(
-    () => 40,
-    () => 30
-  ),
-  riders: () => 0.2,
-  viewport: { dpr: 2, height: 790, width: 1504 },
-};
-
-const frameOf = (scenario: Scenario, playback: Playback, index: number) => ({
-  calls: [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    MAIN_CALLS + playback.extraCalls(index),
-    70,
-    135,
-    1,
-    13,
-    1,
-  ],
-  cpu: [
-    1,
-    0.2,
-    playback.riders(index),
-    0.5,
-    0.1,
-    0.4,
-    0.3,
-    0.6,
-    0.4,
-    0.5,
-    0.1,
-    0.1,
-    0.1,
-  ],
-  discarded: index === playback.discardedAt ? 40 : 0,
-  drawnEpoch: 1,
-  frame: 100 + index,
-  interval: playback.interval(index),
-  pixelRatio: 2,
-  programs: 40,
-  race: RACE,
-  sizeEpoch: 1,
-  start: START_MS + index * SLOT,
-  textures: 30,
-  tick: scenario.window.from + index,
-  ticks: 1,
-  triangles: [0, 0, 0, 0, 0, 0, 0, 1_000_000, 700_000, 600_000, 1, 13, 1],
-});
-
-const sampleOf = (
-  scenario: Scenario,
-  side: GpuSample["side"],
-  pair: number,
-  playback: Playback
-): GpuSample => {
-  const capture = {
-    bench: {
-      bench: scenario.bench,
-      overflowed: false,
-      police: scenario.police,
-      race: RACE,
-      riders: scenario.racers + scenario.police,
-    },
-    frameRate: FRAME_RATE,
-    frames: Array.from({ length: WINDOW_TICKS }, (_, index) =>
-      frameOf(scenario, playback, index)
-    ),
-    longTasks: playback.longTasks,
-    parts: PARTS,
-    rows: {
-      ...validRows(scenario),
-      times: Array.from(
-        { length: WINDOW_TICKS },
-        (_, index) => START_MS + index * SLOT
-      ),
-    },
-    viewport: playback.viewport,
-    visibility: "visible",
-  };
-  const fields = {
-    consoleErrors: 0,
-    file: `${scenario.id}-pair${pair}-${side}.json`,
-    installed: { tick: 6, visibility: "visible" },
-    pair,
-    position: side === "A" ? 0 : 1,
-    run: side === "A" ? "run-a-s0" : "run-b-s1",
-    scenario: scenario.id,
-  };
-  return side === "A"
-    ? { ...fields, capture, side }
-    : { ...fields, capture: { ...capture, ride: playback.ride }, side };
-};
-
-const campaign = (
-  playbackOf: (
-    scenario: Scenario,
-    side: GpuSample["side"],
-    pair: number
-  ) => Playback
-): GpuSample[] =>
-  scenarios.flatMap((scenario) =>
-    Array.from({ length: GPU_PAIRS }, (_, pair) =>
-      (["A", "B"] as const).map((side) =>
-        sampleOf(scenario, side, pair, playbackOf(scenario, side, pair))
-      )
-    ).flat()
-  );
-
-const failing = (lines: readonly string[]) =>
-  lines.filter((line) => line.startsWith("FAIL"));
-
 const [reference, packRiding] = scenarios;
 
 const isPack = (scenario: Scenario): boolean => scenario.id === packRiding?.id;
-
-const BAR_FRAMES = BAR_BENCH.to - BAR_BENCH.from;
-
-const barSampleOf = (
-  index: number,
-  interval: (frame: number) => number,
-  capture: Partial<BarSample["capture"]> = {}
-): BarSample => ({
-  capture: {
-    camera: BAR_BENCH.camera,
-    frames: Array.from({ length: BAR_FRAMES }, (_, frame) => ({
-      calls: [90],
-      cpu: [1],
-      discarded: 0,
-      drawnEpoch: 0,
-      frame,
-      interval: interval(frame),
-      pixelRatio: 2,
-      programs: 40,
-      race: 0,
-      sizeEpoch: 0,
-      start: frame * SLOT,
-      textures: 30,
-      tick: frame,
-      ticks: 1,
-      triangles: [600_000],
-    })),
-    viewport: steady.viewport,
-    visibility: "visible",
-    ...capture,
-  },
-  consoleErrors: 0,
-  file: `bar-${index}.json`,
-});
-
-const barOf = (
-  interval: (frame: number) => number,
-  capture: Partial<BarSample["capture"]> = {}
-): BarSample[] =>
-  Array.from({ length: BAR_BENCH.samples }, (_, index) =>
-    barSampleOf(index, interval, capture)
-  );
-
-const steadyBar = barOf(() => 16.7);
 
 const judged = (bar: readonly BarSample[]) =>
   failing(
@@ -481,21 +283,27 @@ describe("gpu frame lane", () => {
     expect(evaluation.ok).toBeFalsy();
   });
 
-  it("fails a B window whose riders take longer than the committed budget", () => {
+  it("fails a B window whose shadow pass draws more triangles than the committed budget", () => {
     const budget = limits.find(
       (each) =>
         each.environment === METAL &&
-        each.metric === "riders.cpu.p95" &&
+        each.metric === "render.shadowTriangles.max" &&
         each.scenario === packRiding?.id
     );
     if (!budget) {
-      throw new Error("budgets.json has no pack-riding riders budget.");
+      throw new Error(
+        "budgets.json has no pack-riding shadow triangle budget."
+      );
     }
-    const slow = budget.value * 2;
+    const over = budget.value + 1;
     const evaluation = evaluateGpu(
-      campaign((scenario, side, pair) =>
-        isPack(scenario) && side === "B" && pair === 0
-          ? { ...steady, riders: (index) => (index % 10 === 0 ? slow : 0.2) }
+      campaign((scenario, side) =>
+        isPack(scenario) && side === "B"
+          ? {
+              ...steady,
+              shadowTriangles: (index) =>
+                index === 9 ? over : SHADOW_TRIANGLES,
+            }
           : steady
       ),
       steadyBar,
@@ -503,13 +311,46 @@ describe("gpu frame lane", () => {
       METAL,
       null
     );
-    expect(
-      failing(evaluation.lines).map((line) => line.split(" observed=")[0])
-    ).toStrictEqual([
-      "FAIL gpu pack-riding-v1 riders.cpu.p95 [gpu-helium-metal]",
+    expect(failing(evaluation.lines)).toStrictEqual([
+      `FAIL gpu pack-riding-v1 render.shadowTriangles.max [gpu-helium-metal] observed=${over} triangles limit <= ${budget.value} triangles A=${SHADOW_TRIANGLES.toPrecision(5)}`,
     ]);
     expect(evaluation.ok).toBeFalsy();
   });
+
+  it.each(["riders", "tower"] as const)(
+    "fails a B window whose %s part takes longer than the committed budget",
+    (part) => {
+      const budget = limits.find(
+        (each) =>
+          each.environment === METAL &&
+          each.metric === `${part}.cpu.p95` &&
+          each.scenario === packRiding?.id
+      );
+      if (!budget) {
+        throw new Error(`budgets.json has no pack-riding ${part} budget.`);
+      }
+      const slow = budget.value * 2;
+      const evaluation = evaluateGpu(
+        campaign((scenario, side, pair) =>
+          isPack(scenario) && side === "B" && pair === 0
+            ? {
+                ...steady,
+                [part]: (index: number) =>
+                  index % 10 === 0 ? slow : steady[part](index),
+              }
+            : steady
+        ),
+        steadyBar,
+        limits,
+        METAL,
+        null
+      );
+      expect(
+        failing(evaluation.lines).map((line) => line.split(" observed=")[0])
+      ).toStrictEqual([`FAIL gpu pack-riding-v1 ${part}.cpu.p95 [${METAL}]`]);
+      expect(evaluation.ok).toBeFalsy();
+    }
+  );
 
   it("fails a B race that creates a program or texture after its first frame", () => {
     const compiled = rideOf(
@@ -600,60 +441,5 @@ describe("gpu frame lane", () => {
     expect(
       new Set(evaluation.observations.map((each) => each.environment))
     ).toStrictEqual(new Set([nvidia]));
-  });
-});
-
-const ENVIRONMENT = "gpu-chromium-intel";
-const SCENARIO = "pack-riding-v1";
-
-const overLimit = (metric: string) => {
-  const kind = metricKinds.find((each) => each.metric === metric);
-  if (!kind) {
-    throw new Error(`No kind named ${metric}.`);
-  }
-  const limit: Limit = {
-    baseline: 1,
-    derivation: "test",
-    direction: kind.direction,
-    environment: ENVIRONMENT,
-    metric,
-    paired: kind.paired,
-    scenario: SCENARIO,
-    source: "test",
-    unit: kind.unit,
-    value: 1,
-  };
-  const {
-    verdicts: [verdict],
-  } = judge(
-    [limit],
-    [
-      {
-        environment: ENVIRONMENT,
-        lane: "gpu",
-        metric,
-        note: "",
-        paired: 1,
-        runs: { a: [1], b: [2] },
-        scenario: SCENARIO,
-        value: 2,
-      },
-    ],
-    [{ environment: ENVIRONMENT, kind, scenario: SCENARIO }]
-  );
-  return verdict;
-};
-
-describe("budget verdicts", () => {
-  it("warns on triangles over their limit without failing", () => {
-    const verdict = overLimit("render.triangles.max");
-    expect(verdict?.ok).toBeTruthy();
-    expect(verdict?.text).toMatch(/^WARN /u);
-  });
-
-  it("fails frame time over its limit", () => {
-    const verdict = overLimit("frame.interval.p95");
-    expect(verdict?.ok).toBeFalsy();
-    expect(verdict?.text).toMatch(/^FAIL /u);
   });
 });

@@ -16,6 +16,7 @@ import { lookOf } from "../src/game/looks.ts";
 import { createPipeline } from "../src/game/post.ts";
 import { createRiderFigure } from "../src/game/rider-figure.ts";
 import type { Stance } from "../src/game/rider-figure.ts";
+import { everyCaster } from "./every-caster.ts";
 import {
   BACKGROUND,
   bandsOf,
@@ -309,7 +310,7 @@ const shoot = (
       figure.root.updateMatrixWorld(true);
     }
     bikes.show(sitter.kind === "bike" ? bikeModelIds.indexOf(sitter.model) : 1);
-    bikes.commit(new THREE.Vector3());
+    bikes.commit(new THREE.Vector3(), everyCaster);
     pipeline.prepare(scene);
     pipeline.setLook(look);
     light.castShadow = true;

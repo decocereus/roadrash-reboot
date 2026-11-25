@@ -7,6 +7,7 @@ const viteTests = [
   "apps/web/test/asset-load.test.ts",
   "apps/web/test/bazaar-kit.test.ts",
   "apps/web/test/bike-posture.test.ts",
+  "apps/web/test/bike-shadow-pass.test.ts",
   "apps/web/test/celebrity-load.test.ts",
   "apps/web/test/model-slots.test.ts",
   "apps/web/test/planted-hands.test.ts",
@@ -15,6 +16,7 @@ const viteTests = [
   "apps/web/test/rider-clearance.test.ts",
   "apps/web/test/rider-gait.test.ts",
   "apps/web/test/seated-callers.test.ts",
+  "apps/web/test/shadow-casters.test.ts",
   "apps/web/test/walker-model.test.ts",
 ];
 const policeTest = "packages/career/src/police.test.ts";

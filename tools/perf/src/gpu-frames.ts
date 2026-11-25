@@ -4,6 +4,7 @@ import { judge, metricKinds, requiredRows } from "./budgets.ts";
 import type { Limit, MetricKind, Observation } from "./budgets.ts";
 import { barResult } from "./gpu-bar.ts";
 import type { BarSample } from "./gpu-bar.ts";
+import { windowClock } from "./gpu-clock.ts";
 import {
   frameReaders,
   gpuFrame,
@@ -13,6 +14,7 @@ import {
   total,
 } from "./gpu-frame-reads.ts";
 import type { GpuFrame } from "./gpu-frame-reads.ts";
+import { parkReading } from "./gpu-rv.ts";
 import { median, quantile } from "./result.ts";
 import {
   scenarios,
@@ -64,6 +66,7 @@ export const pageCapture = Schema.Struct({
     ...workloadRows.fields,
     times: Schema.Array(Schema.Number),
   }),
+  timeOrigin: Schema.Number,
   viewport: Schema.Struct({
     dpr: Schema.Number,
     height: Schema.Number,
@@ -80,6 +83,7 @@ export const racedCapture = Schema.Struct({
 type RacedCapture = typeof racedCapture.Type;
 
 const sampleFields = {
+  clock: Schema.NullOr(windowClock),
   consoleErrors: Schema.Number,
   file: Schema.String,
   installed: Schema.Struct({
@@ -87,6 +91,7 @@ const sampleFields = {
     visibility: Schema.String,
   }),
   pair: Schema.Number,
+  park: parkReading,
   position: Schema.Number,
   run: Schema.String,
   scenario: Schema.String,
@@ -284,6 +289,15 @@ const partTimesOf = (samples: readonly GpuSample[], part: string): number[] =>
     })
     .toSorted((left, right) => left - right);
 
+const partTrianglesOf = (
+  samples: readonly GpuSample[],
+  part: string
+): number[] =>
+  samples.flatMap(({ capture }) => {
+    const column = capture.parts.indexOf(part);
+    return capture.frames.map((frame) => frame.triangles[column] ?? Number.NaN);
+  });
+
 const shares = {
   "frame.interval.p50": 0.5,
   "frame.interval.p95": 0.95,
@@ -296,12 +310,16 @@ const judgedPerWindow: ReadonlySet<string> = new Set([
   "frame.interval.p99",
   "frame.missedFraction",
   "riders.cpu.p95",
+  "tower.cpu.p95",
 ]);
 
 const isCount = (metric: string): metric is keyof typeof frameReaders =>
   Object.hasOwn(frameReaders, metric);
 
-const valueOf = (metric: string, samples: readonly GpuSample[]): number => {
+export const valueOf = (
+  metric: string,
+  samples: readonly GpuSample[]
+): number => {
   if (isCount(metric)) {
     return peakOf(samples, frameReaders[metric]);
   }
@@ -314,8 +332,14 @@ const valueOf = (metric: string, samples: readonly GpuSample[]): number => {
   if (metric === "main.longTask.blockingMs") {
     return total(samples.map(blockingOf));
   }
+  if (metric === "render.shadowTriangles.max") {
+    return Math.max(...partTrianglesOf(samples, "shadow"));
+  }
   if (metric === "riders.cpu.p95") {
     return quantile(partTimesOf(samples, "riders"), 0.95);
+  }
+  if (metric === "tower.cpu.p95") {
+    return quantile(partTimesOf(samples, "tower"), 0.95);
   }
   const share =
     metric === "frame.interval.p50" ||

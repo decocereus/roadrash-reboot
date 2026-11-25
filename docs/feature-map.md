@@ -407,7 +407,7 @@ Every screen React draws around a race: the first-visit card, the bar's Race, Ga
 - Docs: [docs/design/screens.md#flow](design/screens.md#flow), [docs/design/game-design.md#3-modes](design/game-design.md#3-modes), [DESIGN.md#components](../DESIGN.md#components)
 - Verify: [single-race.md](../.claude/skills/verify-rushline/features/single-race.md), [career.md](../.claude/skills/verify-rushline/features/career.md)
 - Perf: `bytes.route.root.gzip`, `bytes.route.root.raw`
-- Owns: `apps/web/src/components/screens/**`, `apps/web/test/escape-layers.test.ts`, `apps/web/test/hud-layout.test.tsx`, `apps/web/test/career-screens.test.tsx`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/solo-door.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/navigation.ts`, `apps/web/test/navigation.test.ts`, `apps/web/test/welcome-navigation.test.ts`, `apps/web/test/navigation-tabs.test.ts`, `apps/web/test/navigation-walk.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/garage-stand.ts`, `apps/web/src/career/garage-stand.test.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`
+- Owns: `apps/web/src/components/screens/**`, `apps/web/test/escape-layers.test.ts`, `apps/web/test/career-screens.test.tsx`, `apps/web/test/race-order.test.tsx`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/solo-door.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/navigation.ts`, `apps/web/test/navigation.test.ts`, `apps/web/test/welcome-navigation.test.ts`, `apps/web/test/navigation-tabs.test.ts`, `apps/web/test/navigation-walk.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/garage-stand.ts`, `apps/web/src/career/garage-stand.test.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`
 
 Source files:
 
@@ -422,12 +422,11 @@ Source files:
 - `apps/web/src/components/screens/escape-layers.ts`
 - `apps/web/src/components/screens/finish.tsx`
 - `apps/web/src/components/screens/garage-panel.tsx`
-- `apps/web/src/components/screens/hud-layout.ts`
 - `apps/web/src/components/screens/name-card.tsx`
 - `apps/web/src/components/screens/pause.tsx`
 - `apps/web/src/components/screens/race-hud.tsx`
+- `apps/web/src/components/screens/race-order.tsx`
 - `apps/web/src/components/screens/race-panel.tsx`
-- `apps/web/src/components/screens/race-tower.tsx`
 - `apps/web/src/components/screens/rejoin.tsx`
 - `apps/web/src/components/screens/results-panel.tsx`
 - `apps/web/src/components/screens/room-lobby.tsx`
@@ -443,37 +442,45 @@ Test files:
 - `apps/web/src/career/garage-stand.test.ts`
 - `apps/web/test/career-screens.test.tsx`
 - `apps/web/test/escape-layers.test.ts`
-- `apps/web/test/hud-layout.test.tsx`
 - `apps/web/test/navigation-tabs.test.ts`
 - `apps/web/test/navigation-walk.ts`
 - `apps/web/test/navigation.test.ts`
+- `apps/web/test/race-order.test.tsx`
 - `apps/web/test/welcome-navigation.test.ts`
 
 ### Race HUD and notices
 
-The race state the HUD shows and how often it is published: speed, gear, place, progress, the countdown, notices, the cop warning and the timing tower with each racer's interval to the rider ahead, read from the timing lines the race run and the room client keep beside the race; the React HUD screen and the tower sit with the menus.
+The race state the HUD shows and how often it is published: speed, gear, place, progress, the countdown, notices, the cop warning and the timing tower with each racer's interval to the rider ahead, read from the timing lines the race run and the room client keep beside the race. The tower is drawn inside the game canvas from a glyph atlas, after the colour grade, and the window it shows follows the layout rules in hud-layout.ts; the React HUD screen and the tower's offscreen screen-reader list sit with the menus.
 
 - Id: `hud`
-- Start: `apps/web/src/game/race-feedback.ts`, `apps/web/src/game/hud-tower.ts`, `packages/sim/src/timing.ts`
+- Start: `apps/web/src/game/race-feedback.ts`, `apps/web/src/game/hud-tower-pass.ts`, `packages/sim/src/timing.ts`
 - Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/design/screens.md#6-race-hud](design/screens.md#6-race-hud), [docs/design/art-direction.md#hud-style](design/art-direction.md#hud-style), [DESIGN.md#speedometer](../DESIGN.md#speedometer)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md), [single-race.md](../.claude/skills/verify-rushline/features/single-race.md)
 - Perf: `timing.stamp.trimmedMean`, `sim.tick.p95`, `room.rollback.p95`
-- Owns: `apps/web/src/game/hud*.ts`, `apps/web/src/game/race-feedback.ts`, `apps/web/src/hud-feed.ts`, `apps/web/test/hud-cadence.test.ts`, `apps/web/test/hud-tower-rounding.test.ts`, `apps/web/test/race-tower.test.tsx`, `apps/web/test/tower-publish-heap.test.ts`, `apps/web/test/tower-publish-heap.ts`, `apps/web/test/tower-ride.ts`, `packages/sim/src/timing*.ts`
+- Owns: `apps/web/src/game/hud*.ts`, `apps/web/src/game/race-feedback.ts`, `apps/web/src/hud-feed.ts`, `apps/web/src/hud-layout.ts`, `apps/web/test/hud-cadence.test.ts`, `apps/web/test/hud-layout.test.ts`, `apps/web/test/hud-tower-rounding.test.ts`, `apps/web/test/timing-tower.test.ts`, `apps/web/test/tower-drawn.ts`, `apps/web/test/tower-pass-stubs.ts`, `apps/web/test/tower-pass.test.ts`, `apps/web/test/tower-publish-heap.test.ts`, `apps/web/test/tower-publish-heap.ts`, `apps/web/test/tower-ride.ts`, `packages/sim/src/timing*.ts`
 
 Source files:
 
 - `apps/web/src/game/hud-cadence.ts`
+- `apps/web/src/game/hud-tower-atlas.ts`
+- `apps/web/src/game/hud-tower-pass.ts`
+- `apps/web/src/game/hud-tower-quads.ts`
 - `apps/web/src/game/hud-tower.ts`
 - `apps/web/src/game/hud.ts`
 - `apps/web/src/game/race-feedback.ts`
 - `apps/web/src/hud-feed.ts`
+- `apps/web/src/hud-layout.ts`
 - `packages/sim/src/timing.ts`
 
 Test files:
 
 - `apps/web/test/hud-cadence.test.ts`
+- `apps/web/test/hud-layout.test.ts`
 - `apps/web/test/hud-tower-rounding.test.ts`
-- `apps/web/test/race-tower.test.tsx`
+- `apps/web/test/timing-tower.test.ts`
+- `apps/web/test/tower-drawn.ts`
+- `apps/web/test/tower-pass-stubs.ts`
+- `apps/web/test/tower-pass.test.ts`
 - `apps/web/test/tower-publish-heap.test.ts`
 - `apps/web/test/tower-publish-heap.ts`
 - `apps/web/test/tower-ride.ts`
@@ -556,7 +563,7 @@ The riders, bikes and traffic cars drawn from the race each frame: placement on 
 - Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/design/art-direction.md#riders-and-bikes](design/art-direction.md#riders-and-bikes), [docs/design/art-direction.md#budget-and-build](design/art-direction.md#budget-and-build)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`, `riders.cpu.p95`
-- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/fleet.ts`, `apps/web/src/game/cross-car-pose.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/src/game/bike-fit.ts`, `apps/web/src/game/bike-posture.ts`, `apps/web/src/game/bike-deck.ts`, `apps/web/src/game/figure-chest.ts`, `apps/web/src/game/figure-seating.ts`, `apps/web/test/seating.ts`, `apps/web/test/actor-tables.test.ts`, `apps/web/test/bike-contact.ts`, `apps/web/test/bike-posture.test.ts`, `apps/web/test/figure-wear.test.ts`, `apps/web/test/figure-shadow.test.ts`, `apps/web/test/planted-hands.test.ts`, `apps/web/test/rider-clearance.test.ts`, `apps/web/test/rider-gait.test.ts`, `apps/web/test/rider-poses.test.ts`, `apps/web/test/seated-callers.test.ts`, `apps/web/test/seated-contacts.ts`, `apps/web/test/turned-from.test.ts`, `apps/web/test/rider-shade.ts`, `apps/web/test/shade-flats.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`, `apps/web/src/game/gait.ts`, `apps/web/src/game/strider.ts`, `apps/web/src/game/foot-lock.ts`
+- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/fleet.ts`, `apps/web/src/game/shadow-reach.ts`, `apps/web/src/game/cross-car-pose.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/src/game/bike-fit.ts`, `apps/web/src/game/bike-posture.ts`, `apps/web/src/game/bike-deck.ts`, `apps/web/src/game/figure-chest.ts`, `apps/web/src/game/figure-seating.ts`, `apps/web/test/seating.ts`, `apps/web/test/actor-tables.test.ts`, `apps/web/test/bike-contact.ts`, `apps/web/test/bike-posture.test.ts`, `apps/web/test/shadow-casters*.ts`, `apps/web/test/every-caster.ts`, `apps/web/test/bike-shadow-pass.test.ts`, `apps/web/test/figure-wear.test.ts`, `apps/web/test/figure-shadow.test.ts`, `apps/web/test/planted-hands.test.ts`, `apps/web/test/rider-clearance.test.ts`, `apps/web/test/rider-gait.test.ts`, `apps/web/test/rider-poses.test.ts`, `apps/web/test/seated-callers.test.ts`, `apps/web/test/seated-contacts.ts`, `apps/web/test/turned-from.test.ts`, `apps/web/test/rider-shade.ts`, `apps/web/test/shade-flats.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`, `apps/web/src/game/gait.ts`, `apps/web/src/game/strider.ts`, `apps/web/src/game/foot-lock.ts`
 
 Source files:
 
@@ -586,6 +593,7 @@ Source files:
 - `apps/web/src/game/rider-figure.ts`
 - `apps/web/src/game/rider-moves.ts`
 - `apps/web/src/game/rider-views.ts`
+- `apps/web/src/game/shadow-reach.ts`
 - `apps/web/src/game/strider.ts`
 
 Test files:
@@ -595,6 +603,8 @@ Test files:
 - `apps/web/test/actor-tables.test.ts`
 - `apps/web/test/bike-contact.ts`
 - `apps/web/test/bike-posture.test.ts`
+- `apps/web/test/bike-shadow-pass.test.ts`
+- `apps/web/test/every-caster.ts`
 - `apps/web/test/figure-shadow.test.ts`
 - `apps/web/test/figure-wear.test.ts`
 - `apps/web/test/planted-hands.test.ts`
@@ -606,6 +616,8 @@ Test files:
 - `apps/web/test/seated-contacts.ts`
 - `apps/web/test/seating.ts`
 - `apps/web/test/shade-flats.ts`
+- `apps/web/test/shadow-casters.test.ts`
+- `apps/web/test/shadow-casters.ts`
 - `apps/web/test/turned-from.test.ts`
 
 ### Frame rate and quality
@@ -897,7 +909,7 @@ Booting the game module with a dynamic import, downloading and decoding the nine
 - Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/errors.md#asset-loading](errors.md#asset-loading)
 - Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
 - Perf: none yet
-- Owns: `apps/web/src/asset-*.ts`, `apps/web/src/assets/load.ts`, `apps/web/src/assets/model-*.ts`, `apps/web/src/assets/font-readiness-failed.ts`, `apps/web/src/game/assets.ts`, `apps/web/src/game/model-slots.ts`, `apps/web/test/asset-load.test.ts`, `apps/web/test/fake-bike.ts`, `apps/web/test/asset-summary.ts`, `apps/web/test/celebrity-load.test.ts`, `apps/web/test/model-slots.test.ts`, `apps/web/test/node-images.ts`, `apps/web/test/pinned-assets.ts`
+- Owns: `apps/web/src/asset-*.ts`, `apps/web/src/assets/load.ts`, `apps/web/src/assets/model-*.ts`, `apps/web/src/assets/font-readiness-failed.ts`, `apps/web/src/game/assets.ts`, `apps/web/src/game/model-slots.ts`, `apps/web/test/asset-load.test.ts`, `apps/web/test/asset-parsing.ts`, `apps/web/test/fake-bike.ts`, `apps/web/test/asset-summary.ts`, `apps/web/test/celebrity-load.test.ts`, `apps/web/test/model-slots.test.ts`, `apps/web/test/node-images.ts`, `apps/web/test/pinned-assets.ts`
 
 Source files:
 
@@ -915,6 +927,7 @@ Source files:
 Test files:
 
 - `apps/web/test/asset-load.test.ts`
+- `apps/web/test/asset-parsing.ts`
 - `apps/web/test/asset-summary.ts`
 - `apps/web/test/celebrity-load.test.ts`
 - `apps/web/test/fake-bike.ts`
@@ -1266,7 +1279,7 @@ Test files:
 - Docs: [docs/observability.md#frame-profiles](observability.md#frame-profiles), [docs/standards/tooling.md#the-checks](standards/tooling.md#the-checks)
 - Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
 - Perf: none yet
-- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/record.ts`, `tools/perf/room.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/load.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/gpu*.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane*.ts`, `tools/perf/src/node-room.ts`, `tools/perf/src/protocol.ts`, `tools/perf/src/record.ts`, `tools/perf/src/recorded.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/bench-queue*.ts`, `tools/perf/test/load.test.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu-page.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`, `tools/perf/test/recorded-guard.test.ts`, `tools/perf/test/side-a-missing.test.ts`, `tools/perf/test/steady.test.ts`
+- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/record.ts`, `tools/perf/room.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/load.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/gpu*.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane*.ts`, `tools/perf/src/node-room.ts`, `tools/perf/src/protocol.ts`, `tools/perf/src/record.ts`, `tools/perf/src/recorded.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/bench-queue*.ts`, `tools/perf/test/budget-verdicts.test.ts`, `tools/perf/test/load.test.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu-clock.test.ts`, `tools/perf/test/gpu-fixture.ts`, `tools/perf/test/gpu-page.test.ts`, `tools/perf/test/gpu-observe.test.ts`, `tools/perf/test/gpu-park.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`, `tools/perf/test/recorded-guard.test.ts`, `tools/perf/test/side-a-missing.test.ts`, `tools/perf/test/steady.test.ts`
 
 Source files:
 
@@ -1286,9 +1299,12 @@ Source files:
 - `tools/perf/src/glb-textures.ts`
 - `tools/perf/src/gpu-bar-capture.ts`
 - `tools/perf/src/gpu-bar.ts`
+- `tools/perf/src/gpu-clock.ts`
 - `tools/perf/src/gpu-frame-reads.ts`
 - `tools/perf/src/gpu-frames.ts`
 - `tools/perf/src/gpu-rv.ts`
+- `tools/perf/src/gpu-sample.ts`
+- `tools/perf/src/gpu-states.ts`
 - `tools/perf/src/gpu.ts`
 - `tools/perf/src/load.ts`
 - `tools/perf/src/measure-model.ts`
@@ -1318,11 +1334,16 @@ Test files:
 - `tools/perf/test/bench-queue-rules.test.ts`
 - `tools/perf/test/bench-queue-worker.ts`
 - `tools/perf/test/bench-queue.test.ts`
+- `tools/perf/test/budget-verdicts.test.ts`
 - `tools/perf/test/check.test.ts`
 - `tools/perf/test/evaluate.test.ts`
 - `tools/perf/test/fixture-build.ts`
 - `tools/perf/test/gate.test.ts`
+- `tools/perf/test/gpu-clock.test.ts`
+- `tools/perf/test/gpu-fixture.ts`
+- `tools/perf/test/gpu-observe.test.ts`
 - `tools/perf/test/gpu-page.test.ts`
+- `tools/perf/test/gpu-park.test.ts`
 - `tools/perf/test/gpu.test.ts`
 - `tools/perf/test/load.test.ts`
 - `tools/perf/test/measure-page.test.ts`

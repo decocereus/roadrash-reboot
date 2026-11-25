@@ -98,6 +98,18 @@
         "sha256": "fa71d4285e857b663ad246b9c63da5ac4e00de4c1712aed26c85e06180e92ad9"
       },
       {
+        "file": "tools/perf/baselines/shadow.mac.gpu-helium-metal.json.gz",
+        "sha256": "54fbf7d3cd57115020704fe38da21b5bf04ed4ff22c6472c53a2663355a62883"
+      },
+      {
+        "file": "tools/perf/baselines/shadow.vimaan.gpu-chromium-intel.json.gz",
+        "sha256": "30e25004a42f5a9aa1e05ca9d6d785ce2e9699d74c55a9e980b3b73c5af9fede"
+      },
+      {
+        "file": "tools/perf/baselines/shadow.vimaan.gpu-chromium-nvidia.json.gz",
+        "sha256": "154337acf32a30ae6366e034bf08e8b6965e295f7ad4fd7ad3cc6dd923c6fa59"
+      },
+      {
         "file": "tools/perf/baselines/tiers.node-darwin-arm64.json.gz",
         "sha256": "04e49d7a716e1b697e070f51d8e98185aa38863bb3d2d815954d85faa4732698"
       },
@@ -110,13 +122,17 @@
         "sha256": "4f57a4f3763f5a136641e64b11e000f07ff364fdd77acd106470f5d55fcca012"
       },
       {
+        "file": "tools/perf/baselines/tower.mac.gpu-helium-metal.json.gz",
+        "sha256": "15f44597abebefd7938bc948c901b4af7e8aea83a18b46e507ebb66cd87379c5"
+      },
+      {
         "file": "tools/perf/baselines/uhd630.vimaan.gpu-chromium-intel.json.gz",
         "sha256": "fbd6ed619b13e9b5b48d776e6d974ae2aaeed0473c7c659b50613b4129874939"
       }
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "33697b70df7b0471acb5f032c8c0a6f9da6cb64de404b5e63b18dbd3c2347ea3"
+    "summarySha256": "75efe30a717b7bd3f0a92110178babb94c0ba3fca2dc02092509372e96ee8ad1"
   },
   "limits": [
     {
@@ -2040,6 +2056,30 @@
       "value": 2.799999952316284
     },
     {
+      "baseline": 0.10000002384185791,
+      "derivation": "2 x the worst B window at the first revision that draws the tower in the canvas",
+      "direction": "max",
+      "environment": "gpu-helium-metal",
+      "metric": "tower.cpu.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-25T02-01-44-313Z-89c8eee-89c8eee",
+      "unit": "ms",
+      "value": 0.20000004768371582
+    },
+    {
+      "baseline": 0.10000002384185791,
+      "derivation": "2 x the worst B window at the first revision that draws the tower in the canvas",
+      "direction": "max",
+      "environment": "gpu-helium-metal",
+      "metric": "tower.cpu.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-25T02-01-44-313Z-89c8eee-89c8eee",
+      "unit": "ms",
+      "value": 0.20000004768371582
+    },
+    {
       "baseline": 8.300000190734863,
       "derivation": "owner cap",
       "direction": "max",
@@ -2350,6 +2390,126 @@
       "source": "gate-2026-11-24T18-42-55-453Z-9f67ba9-135b3f6",
       "unit": "x side-A sim.tick.p95",
       "value": 0.0009760270329364747
+    },
+    {
+      "baseline": 685322,
+      "derivation": "ceil(1.05 x baseline maximum over side B's windows)",
+      "direction": "max",
+      "environment": "gpu-helium-metal",
+      "metric": "render.shadowTriangles.max",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-24T19-33-56-920Z-beea984-de0c4e1",
+      "unit": "triangles",
+      "value": 719589
+    },
+    {
+      "baseline": 500794,
+      "derivation": "ceil(1.05 x baseline maximum over side B's windows)",
+      "direction": "max",
+      "environment": "gpu-helium-metal",
+      "metric": "render.shadowTriangles.max",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-24T19-33-56-920Z-beea984-de0c4e1",
+      "unit": "triangles",
+      "value": 525834
+    },
+    {
+      "baseline": 685322,
+      "derivation": "ceil(1.05 x baseline maximum over side B's windows)",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.shadowTriangles.max",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-24T19-38-40-778Z-beea984-de0c4e1",
+      "unit": "triangles",
+      "value": 719589
+    },
+    {
+      "baseline": 500794,
+      "derivation": "ceil(1.05 x baseline maximum over side B's windows)",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.shadowTriangles.max",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-24T19-38-40-778Z-beea984-de0c4e1",
+      "unit": "triangles",
+      "value": 525834
+    },
+    {
+      "baseline": 438372,
+      "derivation": "ceil(1.05 x baseline maximum over side B's windows)",
+      "direction": "max",
+      "environment": "gpu-chromium-intel",
+      "metric": "render.shadowTriangles.max",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-24T20-11-38-121Z-beea984-de0c4e1",
+      "unit": "triangles",
+      "value": 460291
+    },
+    {
+      "baseline": 307020,
+      "derivation": "ceil(1.05 x baseline maximum over side B's windows)",
+      "direction": "max",
+      "environment": "gpu-chromium-intel",
+      "metric": "render.shadowTriangles.max",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-24T20-11-38-121Z-beea984-de0c4e1",
+      "unit": "triangles",
+      "value": 322371
+    },
+    {
+      "baseline": 0.3,
+      "derivation": "2 x the worst B window at the first revision that draws the tower in the canvas (windows 0.30, 0.20, 0.30, 0.20, 0.30 ms in gpu-2026-11-25T05-50-32-579Z-b5658e3-ea37fca)",
+      "direction": "max",
+      "environment": "gpu-chromium-intel",
+      "metric": "tower.cpu.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-25T05-50-32-579Z-b5658e3-ea37fca",
+      "unit": "ms",
+      "value": 0.6
+    },
+    {
+      "baseline": 0.3,
+      "derivation": "2 x the worst B window at the first revision that draws the tower in the canvas (windows 0.30, 0.30, 0.20, 0.20, 0.30 ms in gpu-2026-11-25T05-50-32-579Z-b5658e3-ea37fca)",
+      "direction": "max",
+      "environment": "gpu-chromium-intel",
+      "metric": "tower.cpu.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-25T05-50-32-579Z-b5658e3-ea37fca",
+      "unit": "ms",
+      "value": 0.6
+    },
+    {
+      "baseline": 0.2,
+      "derivation": "2 x the worst B window at the first revision that draws the tower in the canvas (windows 0.10, 0.20, 0.10, 0.10, 0.10 ms in gpu-2026-11-25T06-17-40-061Z-b5658e3-ea37fca and 0.10 x5 in gpu-2026-11-25T06-43-52-412Z-b5658e3-ea37fca)",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "tower.cpu.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-25T06-17-40-061Z-b5658e3-ea37fca",
+      "unit": "ms",
+      "value": 0.4
+    },
+    {
+      "baseline": 0.1,
+      "derivation": "2 x the worst B window at the first revision that draws the tower in the canvas (windows 0.10 x5 in gpu-2026-11-25T06-17-40-061Z-b5658e3-ea37fca and 0.10 x5 in gpu-2026-11-25T06-43-52-412Z-b5658e3-ea37fca)",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "tower.cpu.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-25T06-17-40-061Z-b5658e3-ea37fca",
+      "unit": "ms",
+      "value": 0.2
     }
   ],
   "nodeProfiles": {

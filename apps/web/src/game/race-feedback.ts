@@ -10,8 +10,9 @@ import type { Sound } from "./audio.ts";
 import type { ChaseCamera } from "./chase-camera.ts";
 import { hudCountdown, roomOf } from "./game-session.ts";
 import type { Session } from "./game-session.ts";
-import { createTower } from "./hud-tower.ts";
-import type { GameEvents, Notice } from "./hud.ts";
+import type { TowerPass } from "./hud-tower-pass.ts";
+import { createTower, towerNames } from "./hud-tower.ts";
+import type { GameEvents, Notice, RacePlan } from "./hud.ts";
 import type { Stage } from "./scene-lifecycle.ts";
 
 const NOTICE_SECONDS = 0.8;
@@ -62,6 +63,7 @@ interface FeedbackParts {
   readonly session: () => Session;
   readonly sound: Sound;
   readonly stage: Pick<Stage, "colours" | "me" | "race" | "track">;
+  readonly towerPass: Pick<TowerPass, "bake" | "show">;
 }
 
 export const bindFeedback = ({
@@ -74,6 +76,7 @@ export const bindFeedback = ({
   session,
   sound,
   stage,
+  towerPass,
 }: FeedbackParts) => {
   const say = (next: Notice, detail = "") => {
     feedback.notice = next;
@@ -188,6 +191,8 @@ export const bindFeedback = ({
     const order = standings(stage.race.view);
     const state = session();
     const room = roomOf(state);
+    const rows = tower.read(state, stage, order);
+    towerPass.show(rows);
     events.onHud({
       bikeName: me.bike.name,
       condition: me.condition / FULL_CONDITION,
@@ -213,12 +218,16 @@ export const bindFeedback = ({
       speedKmh: Math.abs(drawnSpeed()) * 3.6,
       stallLeftMs: room?.stallLeftMs() ?? null,
       stamina: me.stamina / MAX_STAMINA,
-      tower: tower.read(state, stage, order),
+      tower: rows,
       weaponCapacity: weaponCapacity(me),
       weaponHits: me.weaponHits,
       weaponName: weaponName(me),
     });
   };
 
-  return { quiet, react, report, say, toggleMute };
+  const bakeTower = (plan: RacePlan, race: Pick<Stage, "me" | "race">) => {
+    towerPass.bake(towerNames(plan, race));
+  };
+
+  return { bakeTower, quiet, react, report, say, toggleMute };
 };

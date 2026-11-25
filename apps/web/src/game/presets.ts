@@ -162,7 +162,7 @@ interface QualityParts {
   readonly chase: Pick<ChaseCamera, "camera" | "resize">;
   readonly frame: { readonly frameId: number };
   readonly halted: () => boolean;
-  readonly pipeline: Pick<Pipeline, "render" | "resize">;
+  readonly pipeline: Pick<Pipeline, "render" | "resize" | "sliding">;
   readonly quality: Quality;
   readonly recorder: Pick<
     Recorder,
@@ -203,6 +203,12 @@ export const bindQuality = ({
     quality.rendering = false;
     quality.drawnEpoch = quality.sizeEpoch;
     quality.drawnFrame = frame.frameId;
+  };
+
+  const presentHalted = () => {
+    if (!stage.warming && pipeline.sliding()) {
+      present();
+    }
   };
 
   const applySize = () => {
@@ -300,6 +306,7 @@ export const bindQuality = ({
     checkPresented,
     noteDisplay,
     present,
+    presentHalted,
     resize,
     skipsVsync,
     stateOf,

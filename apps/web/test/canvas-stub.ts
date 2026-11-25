@@ -10,11 +10,13 @@ const drawsNothing = new Proxy(
   }
 );
 
+export const drawnNowhere = {
+  createElement: () => ({ getContext: () => drawsNothing }),
+};
+
 export const stubCanvases = (): void => {
   beforeAll(() => {
-    vi.stubGlobal("document", {
-      createElement: () => ({ getContext: () => drawsNothing }),
-    });
+    vi.stubGlobal("document", drawnNowhere);
   });
 
   afterAll(() => {

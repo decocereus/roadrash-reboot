@@ -13,6 +13,7 @@ import { lookOf } from "../src/game/looks.ts";
 import { createPipeline } from "../src/game/post.ts";
 import { createRiderFigure } from "../src/game/rider-figure.ts";
 import type { Stance } from "../src/game/rider-figure.ts";
+import { everyCaster } from "./every-caster.ts";
 import { seatedStance } from "./seated-contacts.ts";
 
 const LOOK = lookOf("salt-coast");
@@ -62,7 +63,7 @@ const poses: readonly Pose[] = [
   { name: "kick", roll: 0, stance: { pose: "kick", reach: 1, rise: 1 } },
 ];
 
-const acquire = async (
+export const acquire = async (
   notes: string[]
 ): Promise<Pick<AcquiredAssets, "assets" | "release">> => {
   const { promise, reject, resolve } =
@@ -191,7 +192,7 @@ export const run = async (
         }
         figure.root.updateMatrixWorld(true);
         bikes.show(row);
-        bikes.commit(new THREE.Vector3());
+        bikes.commit(new THREE.Vector3(), everyCaster);
         pipeline.render(scene, camera);
         sheet.drawImage(
           renderer.domElement,

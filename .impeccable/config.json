@@ -16,6 +16,13 @@
         "files": ["apps/web/src/components/screens/rejoin.tsx"],
         "createdAt": "2026-11-06T10:49:05.112Z",
         "reason": "Owner approved rejoin mock v2 via master on 2026-11-06 (LGTM, final); the mock specifies this green left accent on the 'Your bike is up' note"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "face",
+        "files": ["tools/perf/test/fixture-build.ts"],
+        "createdAt": "2026-11-25T04:30:58.575Z",
+        "reason": "Coordinator approved 2026-11-25: Face is a made-up font name in the perf byte counter's test stylesheet, never rendered"
       }
     ]
   }

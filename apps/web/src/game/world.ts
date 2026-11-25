@@ -38,6 +38,8 @@ import {
   roadSurfacesOf,
 } from "./road-texture.ts";
 import { boulderParts, buildRoadside, pineParts } from "./roadside.ts";
+import { shadowReachOf } from "./shadow-reach.ts";
+import type { ShadowReach } from "./shadow-reach.ts";
 import { bannerTexture, chevronTexture } from "./sign-textures.ts";
 import { skyTexture } from "./sky-texture.ts";
 import { owned } from "./texture-canvas.ts";
@@ -309,6 +311,8 @@ const createSunRig = (shading: Shading, mapSize: number): SunRig => {
         .copy(snapped)
         .addScaledVector(shading.key, SHADOW_DISTANCE);
       light.target.updateMatrixWorld();
+      light.updateMatrixWorld();
+      light.shadow.updateMatrices(light);
     },
     light,
   };
@@ -317,6 +321,7 @@ const createSunRig = (shading: Shading, mapSize: number): SunRig => {
 export interface World {
   readonly scene: THREE.Scene;
   readonly shading: Shading;
+  readonly shadows: ShadowReach;
   follow: (camera: THREE.Camera, s: number) => void;
   showRoadLife: (
     view: Pick<RaceView, "hazards" | "pedestrians" | "tick">,
@@ -432,7 +437,8 @@ export const createWorld = (
   }
   const hazards = createHazardMarks(track, shading);
   scene.add(hazards.group);
-  const walkers = createWalkerMarks(track, shading, assets.walkers);
+  const shadows = shadowReachOf(rig.light);
+  const walkers = createWalkerMarks(track, shading, assets.walkers, shadows);
   scene.add(walkers.group);
   const junctions = buildJunctions(track, shading, clearance);
   scene.add(junctions.group);
@@ -495,6 +501,7 @@ export const createWorld = (
     },
     scene,
     shading,
+    shadows,
     showRoadLife(view, s) {
       hazards.show(view.hazards, s);
       walkers.show(view.pedestrians, s, view.tick);

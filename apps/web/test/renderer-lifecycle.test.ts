@@ -22,6 +22,7 @@ import { createRiderFigure } from "../src/game/rider-figure.ts";
 import { stageEverything, warmStaged } from "../src/game/staging.ts";
 import type { Staged } from "../src/game/staging.ts";
 import { uploadSpan } from "../src/game/uploads.ts";
+import { everyCaster } from "./every-caster.ts";
 import { pinnedAssets, pinnedCelebrities } from "./pinned-assets.ts";
 
 const HELMET_REACH = 0.4;
@@ -255,7 +256,7 @@ describe("bike models", () => {
     for (const [index] of field.entries()) {
       bikes.show(index);
     }
-    bikes.commit(new THREE.Vector3());
+    bikes.commit(new THREE.Vector3(), everyCaster);
     const modelOfBody = new Map(
       bikeModelIds.map((model) => [
         bodyVertices(assets.bikes[model].parts),
@@ -286,7 +287,7 @@ describe("traffic instance uploads", () => {
     const race = createRaceRun(defaultSetup(track, 3));
     const fleet = placedFleet(assets, shading, race.view.cars);
     const meshes = instancedIn(fleet.group);
-    fleet.commit(0);
+    fleet.commit(0, everyCaster);
     const drawn = meshes.filter((mesh) => mesh.count > 0);
     expect(drawn).not.toHaveLength(0);
     expect(
@@ -307,7 +308,7 @@ describe("traffic instance uploads", () => {
     ).toStrictEqual([]);
     const painted = meshes.map((mesh) => coloursOf(mesh).version);
     expect(painted.filter((version) => version > 0)).not.toHaveLength(0);
-    fleet.commit(1);
+    fleet.commit(1, everyCaster);
     expect(meshes.map((mesh) => coloursOf(mesh).version)).toStrictEqual(
       painted
     );
@@ -320,7 +321,7 @@ describe("traffic instance uploads", () => {
     const assets = await pinnedAssets();
     const race = createRaceRun(defaultSetup(track, 3));
     const riding = placedFleet(assets, shading, race.view.cars);
-    riding.commit(0);
+    riding.commit(0, everyCaster);
     const consumed = instancedIn(riding.group).map((mesh) => {
       const colours = coloursOf(mesh);
       colours.clearUpdateRanges();
@@ -331,7 +332,7 @@ describe("traffic instance uploads", () => {
         version: colours.version,
       };
     });
-    riding.commit(1000);
+    riding.commit(1000, everyCaster);
     const repainted = consumed
       .map(({ before, colours, mesh, version }) => {
         const changed = componentsChanged(before, colours.array);
@@ -361,7 +362,7 @@ describe("traffic instance uploads", () => {
       }))
     );
     const fresh = placedFleet(assets, shading, race.view.cars);
-    fresh.commit(1000);
+    fresh.commit(1000, everyCaster);
     expect(instancedIn(riding.group).map(drawnOf)).toStrictEqual(
       instancedIn(fresh.group).map(drawnOf)
     );
@@ -418,6 +419,21 @@ describe("buffer attribute uploads", () => {
       version: 2,
     });
   });
+
+  it("rewrites one range record in place across uploads and the renderer's clears", () => {
+    const colours = new THREE.BufferAttribute(new Float32Array(10 * 3), 3);
+    uploadSpan(colours, 0, 2);
+    const [record] = colours.updateRanges;
+    colours.clearUpdateRanges();
+    uploadSpan(colours, 4, 6);
+    uploadSpan(colours, 1, 2);
+    colours.clearUpdateRanges();
+    uploadSpan(colours, 7, 9);
+    expect({
+      ranges: colours.updateRanges,
+      same: colours.updateRanges.every((range) => range === record),
+    }).toStrictEqual({ ranges: [{ count: 6, start: 21 }], same: true });
+  });
 });
 
 interface Staging {
@@ -443,7 +459,13 @@ const stagingOf = ({ prepareThrows = false } = {}): Staging => {
   const sampleGeometry = new THREE.BoxGeometry();
   const samples = new THREE.Group();
   samples.add(new THREE.Mesh(sampleGeometry, new THREE.MeshBasicMaterial()));
-  const state = { armed: 0, followed: 0, primed: 0, samplesReleased: 0 };
+  const state = {
+    armed: 0,
+    followed: 0,
+    overlaid: 0,
+    primed: 0,
+    samplesReleased: 0,
+  };
   sampleGeometry.addEventListener("dispose", () => {
     state.samplesReleased += 1;
   });
@@ -460,6 +482,12 @@ const stagingOf = ({ prepareThrows = false } = {}): Staging => {
       at: 0,
       camera: new THREE.PerspectiveCamera(),
       figures: [{ holdEveryWeapon: arm }, { holdEveryWeapon: arm }],
+      overlay: () => {
+        state.overlaid += 1;
+        return () => {
+          state.overlaid -= 1;
+        };
+      },
       prepare: () => {
         if (prepareThrows) {
           throw new Error("The depth materials could not be set.");
@@ -496,6 +524,7 @@ const restored = {
   armed: 0,
   culled: true,
   followed: 1,
+  overlaid: 0,
   primed: 0,
   sampled: false,
   samplesReleased: 1,
@@ -503,13 +532,14 @@ const restored = {
 };
 
 describe("staging for shader warm-up", () => {
-  it("reveals and arms everything while staged and restores it all afterwards", () => {
+  it("reveals and arms everything, the timing tower too, while staged and restores it all afterwards", () => {
     const staging = stagingOf();
     const unstage = stageEverything(staging.staged);
     expect(restoredOf(staging)).toStrictEqual({
       armed: 2,
       culled: false,
       followed: 1,
+      overlaid: 1,
       primed: 1,
       sampled: true,
       samplesReleased: 0,

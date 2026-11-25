@@ -2,21 +2,24 @@ import { readFileSync } from "node:fs";
 
 import { MOST_RACERS } from "@racer/sim/race";
 import { riderIdAt } from "@racer/sim/state";
-import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import { createTowerQuads } from "../src/game/hud-tower-quads.ts";
+import type { TowerRow } from "../src/game/hud.ts";
 import {
   cssOf,
   hudBands,
   towerRowsAt,
   warningFont,
-} from "../src/components/screens/hud-layout.ts";
-import type {
-  TowerRows,
-  Viewport,
-} from "../src/components/screens/hud-layout.ts";
-import { RaceTower } from "../src/components/screens/race-tower.tsx";
-import type { TowerRow } from "../src/game/hud.ts";
+} from "../src/hud-layout.ts";
+import type { TowerRows, Viewport } from "../src/hud-layout.ts";
+import {
+  drawnRows,
+  layoutAt,
+  placeAt,
+  placementFor,
+  planFor,
+} from "./tower-drawn.ts";
 
 const phone: Viewport = { height: 844, width: 390 };
 const smallPhone: Viewport = { height: 568, width: 320 };
@@ -30,7 +33,7 @@ const wide: readonly Viewport[] = [
 
 const fieldWithYouAt = (you: number): readonly TowerRow[] =>
   Array.from({ length: MOST_RACERS }, (_, at) => ({
-    chip: "#ffffff",
+    chip: 0xff_ff_ff,
     finished: false,
     id: riderIdAt(at),
     mark: at === 0 ? "lead" : "gap",
@@ -40,12 +43,17 @@ const fieldWithYouAt = (you: number): readonly TowerRow[] =>
     you: at + 1 === you,
   }));
 
-const drawnPlaces = (rows: readonly TowerRow[], shown: TowerRows): number[] =>
-  [
-    ...renderToStaticMarkup(<RaceTower rows={rows} shown={shown} />).matchAll(
-      /<li[^>]*><span[^>]*>(?<place>\d+)<\/span>/gu
-    ),
-  ].map((match) => Number(match.groups?.place));
+const drawnPlaces = (rows: readonly TowerRow[], shown: TowerRows): number[] => {
+  const placement = placementFor(phone, shown);
+  const plan = planFor(
+    new Map(rows.map((row) => [row.id, row.name])),
+    placement
+  );
+  const quads = createTowerQuads();
+  layoutAt(quads, rows, plan, placement, 0, false);
+  placeAt(quads, 0);
+  return drawnRows(quads, plan).map((row) => Number(row.text.split(" ")[0]));
+};
 
 const clearOfWarningAndNotice = (view: Viewport): boolean => {
   const shown = towerRowsAt(view);

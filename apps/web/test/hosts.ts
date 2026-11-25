@@ -66,6 +66,7 @@ export interface Host {
   readonly halt: (halted: boolean) => void;
   readonly resize: () => void;
   readonly setDpr: (dpr: number) => void;
+  readonly slide: (sliding: boolean) => void;
   readonly stall: (leftMs: number | null) => void;
 }
 
@@ -151,7 +152,7 @@ export const createHost = (options: HostOptions = {}): Host => {
     sizes: [],
   };
   const canvas = { clientHeight: 720, clientWidth: 1280, height: 0, width: 0 };
-  const control = { dpr: options.dpr ?? 1, halted: false };
+  const control = { dpr: options.dpr ?? 1, halted: false, sliding: false };
   let stallLeftMs: number | null = null;
   const feed = createHudFeed();
   const loops: ((now: number) => void)[] = [];
@@ -218,6 +219,7 @@ export const createHost = (options: HostOptions = {}): Host => {
       resize: (width, height, ratio) => {
         seen.resizes.push(`${width}x${height}@${ratio}`);
       },
+      sliding: () => control.sliding,
     },
     quality,
     recorder,
@@ -244,6 +246,7 @@ export const createHost = (options: HostOptions = {}): Host => {
     noteDisplay: bound.noteDisplay,
     pace: () => (stallLeftMs === null ? (options.pace ?? 1) : 0),
     player: () => player,
+    presentHalted: bound.presentHalted,
     quality,
     recorder,
     renderer,
@@ -278,6 +281,9 @@ export const createHost = (options: HostOptions = {}): Host => {
     seen,
     setDpr: (next) => {
       control.dpr = next;
+    },
+    slide: (next) => {
+      control.sliding = next;
     },
     stall: (leftMs) => {
       stallLeftMs = leftMs;

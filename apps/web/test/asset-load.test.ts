@@ -1,7 +1,6 @@
 import { setImmediate as nextTurn } from "node:timers/promises";
 
 import { celebrityIds } from "@racer/sim/cast";
-import * as THREE from "three";
 import { describe, expect, it, vi } from "vitest";
 
 import { celebrityLoader } from "../src/asset-load.ts";
@@ -12,18 +11,12 @@ import { ModelDecodeFailed } from "../src/assets/model-decode-failed.ts";
 import { modelUrls } from "../src/assets/model-urls.ts";
 import type { ModelUrls } from "../src/assets/model-urls.ts";
 import { assetParsers } from "../src/game/assets.ts";
-import type {
-  AssetParsers,
-  Assets,
-  Decoded,
-  RiderAsset,
-} from "../src/game/assets.ts";
-import type { Primitive } from "../src/game/model-slots.ts";
+import type { AssetParsers, Assets } from "../src/game/assets.ts";
 import { artFile } from "./art-files.ts";
 import characterization from "./asset-characterization.json" with { type: "json" };
+import { parsingOf } from "./asset-parsing.ts";
+import type { Decode } from "./asset-parsing.ts";
 import { summary } from "./asset-summary.ts";
-import { fakeBike } from "./fake-bike.ts";
-import { fakeRiderMoves, fakeWalkerAsset } from "./walker-asset.ts";
 
 const urls: ModelUrls = {
   bikes: {
@@ -157,58 +150,6 @@ const loadedOf = async (mounted: Mounted) => {
     throw new Error(`The mount ended ${outcome.kind}.`);
   }
   return outcome;
-};
-
-type Decode = () => Promise<null>;
-
-interface Parsing {
-  readonly parsers: AssetParsers;
-  readonly decodes: Map<string, number>;
-  readonly releases: Map<string, number>;
-}
-
-const fakeRider = (): RiderAsset => ({
-  atlas: null,
-  bones: [],
-  poses: new Map(),
-  primitives: [],
-  scene: new THREE.Object3D(),
-  standHeight: 0,
-  url: "/models/rider_a.glb",
-});
-
-const parsingOf = (
-  script: ReadonlyMap<string, readonly Decode[]> = new Map()
-): Parsing => {
-  const decodes = new Map<string, number>();
-  const releases = new Map<string, number>();
-  const decoded = async <Value>(
-    url: string,
-    value: Value
-  ): Promise<Decoded<Value>> => {
-    const call = decodes.get(url) ?? 0;
-    decodes.set(url, call + 1);
-    await script.get(url)?.[call]?.();
-    return {
-      release: () => {
-        releases.set(url, (releases.get(url) ?? 0) + 1);
-      },
-      value,
-    };
-  };
-  return {
-    decodes,
-    parsers: {
-      bike: () => async (_, url) => await decoded(url, fakeBike()),
-      moves: async (_, url) => await decoded(url, fakeRiderMoves()),
-      parts: async (_, url) =>
-        await decoded(url, new Map<string, readonly Primitive[]>()),
-      rider: async (_, url) => await decoded(url, fakeRider()),
-      walkers: async (_, url) => await decoded(url, fakeWalkerAsset()),
-      whole: async (_, url) => await decoded<readonly Primitive[]>(url, []),
-    },
-    releases,
-  };
 };
 
 const failing =
@@ -465,9 +406,46 @@ describe("asset loading through the Effect boundary", () => {
       parsingOf().parsers
     );
     await expect(mounted.outcome).resolves.toHaveProperty("kind", "loaded");
-    expect(mounted.fallbacks).toHaveLength(1);
-    expect(mounted.fallbacks[0]).toHaveProperty("message", "The font is gone.");
-    expect(mounted.fallbacks[0]).toHaveProperty("cause", gone);
+    expect(
+      mounted.fallbacks.map((failure) => ({
+        cause: failure.cause,
+        font: "font" in failure ? failure.font : null,
+        message: failure.message,
+      }))
+    ).toStrictEqual(
+      ["800", "700"].map((weight) => ({
+        cause: gone,
+        font: `${weight} 40px "Saira Extra Condensed"`,
+        message: "The font is gone.",
+      }))
+    );
+  });
+
+  it("waits for the tower's 700 face to settle when the 800 face fails first", async () => {
+    const gone = new Error("The 800 face is gone.");
+    const tower = Promise.withResolvers<FontFace[]>();
+    const fonts: Fonts = {
+      load: async (font) => {
+        if (font.startsWith("800")) {
+          throw gone;
+        }
+        return await tower.promise;
+      },
+    };
+    const parsing = parsingOf();
+    const mounted = mount(
+      runtimeOf(fetchesOf(), new Map(), fonts),
+      parsing.parsers
+    );
+    await until(() => totalOf(parsing.decodes) === onceEach.length);
+    await nextTurn();
+    await nextTurn();
+    expect(mounted.settled).toStrictEqual([]);
+    tower.resolve([]);
+    await expect(mounted.outcome).resolves.toHaveProperty("kind", "loaded");
+    expect(mounted.fallbacks.map((failure) => failure.message)).toStrictEqual([
+      "The 800 face is gone.",
+    ]);
   });
 
   it("releases once when the owner and the unmount release in the same turn as the load", async () => {
