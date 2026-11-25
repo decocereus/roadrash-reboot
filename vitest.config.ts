@@ -13,6 +13,7 @@ const viteTests = [
   "apps/web/test/renderer-lifecycle.test.ts",
   "apps/web/test/rider-gait.test.ts",
   "apps/web/test/seated-callers.test.ts",
+  "apps/web/test/shadow-casters.test.ts",
   "apps/web/test/walker-model.test.ts",
 ];
 const policeTest = "packages/career/src/police.test.ts";
