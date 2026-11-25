@@ -66,6 +66,7 @@
         "lobby.ts",
         "measure.ts",
         "node.ts",
+        "plaza-pack.ts",
         "record.ts",
         "road-life.ts",
         "room.ts",

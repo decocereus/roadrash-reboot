@@ -80,6 +80,30 @@ const compatibleProtocols: readonly Compatibility[] = [
     reason:
       "no new low never stops later than two agreeing windows; of 2,158 recorded children 74 stop earlier, and their timed mean moves -2.8% to +1.2% off the AMD EPYC 9V45 and up to +5.6% on it, inside the spread the recorded limits already carry",
   },
+  {
+    change:
+      "plazaPack.tick.p95 joined the statistics, and sideBRuns.lobbyAndRoadLife became sideBRuns.windows with the same five runs",
+    evidence:
+      "PROVISIONAL: the first plaza-pack-v1 runs, still to be recorded",
+    judgedUnder:
+      "bfeb46eba63e70a90a4b84be411447eeb1cacb787dbd9486be6780f4da9fefd8",
+    measured:
+      "8cd726fdccd5d4c6735eb9306ba778e4b26db72c38cce2d57c3b4bb1098fdd23",
+    reason:
+      "a new row and a renamed key: every existing row is measured and summarised exactly as before",
+  },
+  {
+    change:
+      "plazaPack.tick.p95 joined the statistics, and sideBRuns.lobbyAndRoadLife became sideBRuns.windows with the same five runs",
+    evidence:
+      "PROVISIONAL: the first plaza-pack-v1 runs, still to be recorded",
+    judgedUnder:
+      "bfeb46eba63e70a90a4b84be411447eeb1cacb787dbd9486be6780f4da9fefd8",
+    measured:
+      "ca2dcefd8b88a6521b6d67faf37873ad98108f9b1461950208dfc353790dc5ae",
+    reason:
+      "a new row and a renamed key: every existing row is measured and summarised exactly as before",
+  },
 ];
 
 export const protocolAccepted = (measured: string, current: string): boolean =>

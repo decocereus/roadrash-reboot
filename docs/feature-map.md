@@ -189,8 +189,8 @@ Junctions, cross roads and pedestrian crossings a road declares, their lights, t
 - Start: `packages/track/src/crossings.ts`, `packages/sim/src/signals.ts`, `apps/web/src/game/junctions.ts`
 - Docs: [docs/architecture/tracks.md#junctions-and-crossings](architecture/tracks.md#junctions-and-crossings), [docs/design/tracks.md#junctions-and-crossings](design/tracks.md#junctions-and-crossings)
 - Verify: [junctions.md](../.claude/skills/verify-rushline/features/junctions.md)
-- Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`, `roadLife.tick.p95`
-- Owns: `packages/track/src/crossings*.ts`, `packages/sim/src/signals*.ts`, `packages/sim/src/junction-traffic*.ts`, `packages/sim/src/cross-traffic*.ts`, `packages/track/src/walk-sites*.ts`, `packages/sim/src/pedestrians*.ts`, `apps/web/src/game/junctions.ts`, `apps/web/src/game/road-sheet.ts`, `apps/web/src/game/walker*.ts`, `apps/web/test/walker-*.ts`, `tools/perf/road-life.ts`, `tools/perf/src/node-road-life.ts`, `tools/perf/src/road-life.ts`
+- Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`, `plazaPack.tick.p95`, `roadLife.tick.p95`
+- Owns: `packages/track/src/crossings*.ts`, `packages/sim/src/signals*.ts`, `packages/sim/src/junction-traffic*.ts`, `packages/sim/src/cross-traffic*.ts`, `packages/track/src/walk-sites*.ts`, `packages/sim/src/pedestrians*.ts`, `apps/web/src/game/junctions.ts`, `apps/web/src/game/road-sheet.ts`, `apps/web/src/game/walker*.ts`, `apps/web/test/walker-*.ts`, `tools/perf/plaza-pack.ts`, `tools/perf/road-life.ts`, `tools/perf/src/node-plaza-pack.ts`, `tools/perf/src/node-road-life.ts`, `tools/perf/src/plaza-pack.ts`, `tools/perf/src/road-life.ts`
 
 Source files:
 
@@ -204,8 +204,11 @@ Source files:
 - `packages/sim/src/signals.ts`
 - `packages/track/src/crossings.ts`
 - `packages/track/src/walk-sites.ts`
+- `tools/perf/plaza-pack.ts`
 - `tools/perf/road-life.ts`
+- `tools/perf/src/node-plaza-pack.ts`
 - `tools/perf/src/node-road-life.ts`
+- `tools/perf/src/plaza-pack.ts`
 - `tools/perf/src/road-life.ts`
 
 Test files:

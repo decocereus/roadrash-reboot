@@ -1096,6 +1096,30 @@
       "value": 5.215565487811005
     },
     {
+      "baseline": 10,
+      "derivation": "PROVISIONAL, scratch branch only: replaced by 1.15 x the worst of 8 recorded runs",
+      "direction": "max",
+      "environment": "node-darwin-arm64",
+      "metric": "plazaPack.tick.p95",
+      "paired": null,
+      "scenario": null,
+      "source": "provisional",
+      "unit": "x side-A sim.tick.p95",
+      "value": 20
+    },
+    {
+      "baseline": 10,
+      "derivation": "PROVISIONAL, scratch branch only: replaced by 1.15 x the worst of 8 recorded runs",
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "plazaPack.tick.p95",
+      "paired": null,
+      "scenario": null,
+      "source": "provisional",
+      "unit": "x side-A sim.tick.p95",
+      "value": 20
+    },
+    {
       "baseline": 93891.6605657238,
       "derivation": "1.1 x baseline median, uncalibrated",
       "direction": "max",
