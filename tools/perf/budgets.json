@@ -132,7 +132,7 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "75efe30a717b7bd3f0a92110178babb94c0ba3fca2dc02092509372e96ee8ad1"
+    "summarySha256": "a474047f29cfc9da8fbd5325150d58834353564f96ec5c4bd9127602d4e36306"
   },
   "limits": [
     {
@@ -436,28 +436,28 @@
       "value": 634014
     },
     {
-      "baseline": 248789,
-      "derivation": "baseline + max(4096, ceil(0.02 x baseline)); the seated rider's pose code and baked seat table add 6192 B gzip over main deefebb1",
+      "baseline": 255357,
+      "derivation": "baseline + max(4096, ceil(0.02 x baseline)); the seated rider adds 6155 B gzip over main 356a8fb1, which draws the timing tower in the canvas",
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.incremental.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-24T20-00-53-824Z-890794a-890794a",
+      "source": "baseline-2026-11-25T11-01-52-394Z-68a0cd3-68a0cd3",
       "unit": "B",
-      "value": 253765
+      "value": 260465
     },
     {
-      "baseline": 865558,
-      "derivation": "baseline + max(4096, ceil(0.02 x baseline)); the seated rider's pose code and baked seat table add 20132 B raw over main deefebb1",
+      "baseline": 880757,
+      "derivation": "baseline + max(4096, ceil(0.02 x baseline)); the seated rider adds 20025 B raw over main 356a8fb1, which draws the timing tower in the canvas",
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.incremental.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-24T20-00-53-824Z-890794a-890794a",
+      "source": "baseline-2026-11-25T11-01-52-394Z-68a0cd3-68a0cd3",
       "unit": "B",
-      "value": 882870
+      "value": 898373
     },
     {
       "baseline": 1746653,
