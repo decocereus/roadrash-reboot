@@ -47,6 +47,7 @@ import { pixelRatioFor, presetFor, presets } from "./presets.ts";
 import { createProfiler, profileModeOf } from "./profile.ts";
 import type { FrameEnd } from "./profile.ts";
 import { createPuffs } from "./puffs.ts";
+import { shadowReachOf } from "./shadow-reach.ts";
 
 export { assetParsers } from "./assets.ts";
 
@@ -171,6 +172,10 @@ const openRoom = (
   key.shadow.normalBias = 0.04;
   key.position.copy(shading.key).multiplyScalar(SHADOW_DISTANCE);
   scene.add(ambient, key, key.target);
+  key.updateMatrixWorld();
+  key.target.updateMatrixWorld();
+  key.shadow.updateMatrices(key);
+  const shadows = shadowReachOf(key);
   owners.push(() => {
     key.dispose();
   });
@@ -590,7 +595,7 @@ const openRoom = (
       eye.viewYaw(),
       clock
     );
-    bikes.commit(anchor);
+    bikes.commit(anchor, shadows);
 
     puffs.update(seconds);
     outside.tick(seconds);
