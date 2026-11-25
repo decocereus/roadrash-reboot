@@ -102,6 +102,7 @@ const childScripts = {
   alloc: NODE_CHILD,
   calibrate: NODE_CHILD,
   lobby: "tools/perf/lobby.ts",
+  plazaPack: "tools/perf/plaza-pack.ts",
   roadLife: "tools/perf/road-life.ts",
   room: "tools/perf/room.ts",
   snapshot: "tools/perf/snapshot.ts",

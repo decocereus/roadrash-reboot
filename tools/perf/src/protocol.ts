@@ -6,10 +6,12 @@ export const measurementProtocol = {
   pairs: { allocation: 3, timing: 5 },
   shares: { p95: 0.95, p99: 0.99, stampTrim: 0.05 },
   sideADivisor: "median of side A's sim.tick.p95 over the timing pairs",
-  sideBRuns: { lobbyAndRoadLife: 5, snapshotAndRoom: 3 },
+  sideBRuns: { windows: 5, snapshotAndRoom: 3 },
   statistics: {
     "lobby.tick.p95":
       "p95 of each run's lobby window, median of the side-B runs",
+    "plazaPack.tick.p95":
+      "p95 of each run's plaza-pack window, median of the side-B runs",
     "roadLife.tick.p95":
       "p95 of each run's road-life window, median of the side-B runs",
     "room.checkpoint.p50":

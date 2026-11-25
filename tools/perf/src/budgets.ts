@@ -82,6 +82,7 @@ const normalisedMetrics = [
   "snapshot.hash.p95",
   "timing.stamp.trimmedMean",
   "roadLife.tick.p95",
+  "plazaPack.tick.p95",
   "lobby.tick.p95",
   "room.tick.p95",
   "room.confirm.p95",
@@ -91,6 +92,7 @@ const normalisedMetrics = [
 
 const unscopedMetrics: ReadonlySet<string> = new Set([
   "roadLife.tick.p95",
+  "plazaPack.tick.p95",
   "lobby.tick.p95",
 ]);
 

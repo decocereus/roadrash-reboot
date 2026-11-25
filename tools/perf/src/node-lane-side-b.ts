@@ -12,6 +12,7 @@ import {
 } from "./node-lane.ts";
 import type { NodeSample } from "./node-lane.ts";
 import type { ChildRecord } from "./node.ts";
+import { PLAZA_PACK } from "./plaza-pack.ts";
 import { measurementProtocol } from "./protocol.ts";
 import { median, p95Of } from "./result.ts";
 import { ROAD_LIFE } from "./road-life.ts";
@@ -19,7 +20,7 @@ import { WINDOW_TICKS } from "./scenarios.ts";
 import type { Scenario } from "./scenarios.ts";
 import type { Side } from "./sides.ts";
 
-const SIDE_B_RUNS = measurementProtocol.sideBRuns.lobbyAndRoadLife;
+const SIDE_B_RUNS = measurementProtocol.sideBRuns.windows;
 
 export const sideBRecord = Schema.Struct({
   calibrations: Schema.Array(nodeSample),
@@ -32,7 +33,7 @@ interface SideBWindow {
   readonly id: string;
   readonly metric: string;
   readonly shortfall: (record: ChildRecord) => string | null;
-  readonly task: "lobby" | "roadLife";
+  readonly task: "lobby" | "plazaPack" | "roadLife";
 }
 
 export const lobbyWindow: SideBWindow = {
@@ -66,7 +67,25 @@ export const roadLifeWindow: SideBWindow = {
   task: "roadLife",
 };
 
-export const sideBWindows = [lobbyWindow, roadLifeWindow] as const;
+export const plazaPackWindow: SideBWindow = {
+  id: PLAZA_PACK.id,
+  metric: "plazaPack.tick.p95",
+  shortfall: ({ plazaPack }) => {
+    if (!plazaPack) {
+      return "wrote no plaza pack window";
+    }
+    return plazaPack.fewestRiders >= PLAZA_PACK.leastRiders
+      ? null
+      : `fewestRiders=${plazaPack.fewestRiders} from tick ${plazaPack.startTick} expected at least ${PLAZA_PACK.leastRiders}`;
+  },
+  task: "plazaPack",
+};
+
+export const sideBWindows = [
+  lobbyWindow,
+  roadLifeWindow,
+  plazaPackWindow,
+] as const;
 
 export const sideBLane = Effect.fn("node.sideB")(function* sideBLane(
   { id, task }: SideBWindow,

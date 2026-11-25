@@ -23,6 +23,7 @@ import type {
 import { CALIBRATION_ROUNDS, TIMED_WINDOWS } from "../src/node.ts";
 import type { ChildRecord } from "../src/node.ts";
 import { median } from "../src/result.ts";
+import { PLAZA_PACK } from "../src/plaza-pack.ts";
 import { ROAD_LIFE } from "../src/road-life.ts";
 import {
   roomPartSeeds,
@@ -354,12 +355,27 @@ export const syntheticLobby = (
     "lobby"
   );
 
+export const syntheticPlazaPack = (
+  slowdown: Slowdown,
+  fewestRiders: number = PLAZA_PACK.leastRiders
+): SideBLane =>
+  syntheticSideB(
+    PLAZA_PACK.id,
+    slowdown,
+    (durations) => ({
+      durations,
+      plazaPack: { fewestRiders, startTick: 2709 },
+    }),
+    "plazaPack"
+  );
+
 export const samplesOf = (
   comparisonId: string,
   node: readonly NodeLane[],
   build: { readonly A: BuildRecord; readonly B: BuildRecord },
   roadLife: SideBLane = syntheticRoadLife({ runner: 1, sim: 1 }),
-  lobby: SideBLane = syntheticLobby({ runner: 1, sim: 1 })
+  lobby: SideBLane = syntheticLobby({ runner: 1, sim: 1 }),
+  plazaPack: SideBLane = syntheticPlazaPack({ runner: 1, sim: 1 })
 ): Samples => ({
   build,
   comparisonId,
@@ -367,6 +383,7 @@ export const samplesOf = (
   lobby,
   mode: "gate",
   node,
+  plazaPack,
   roadLife,
   sides: { A: identity, B: identity },
   version: 1,

@@ -28,6 +28,7 @@ import {
   samplesOf,
   steadyLanes,
   syntheticLobby,
+  syntheticPlazaPack,
   syntheticRoadLife,
   syntheticBudgets,
   syntheticBuild,
@@ -182,6 +183,44 @@ describe("perf gate red cases", { timeout: 30_000 }, () => {
     );
     expect(result.ok).toBeFalsy();
     expect(result.lines.some((line) => line.includes("routed=0"))).toBeTruthy();
+  });
+
+  it("fails the plaza pack when its tick slows past its limit", () => {
+    const result = evaluateGate(
+      samplesOf(
+        "plaza-pack-slow",
+        steadyLanes(steady),
+        build,
+        syntheticRoadLife(steady),
+        syntheticLobby(steady),
+        syntheticPlazaPack({ runner: 1.6, sim: 1.3 })
+      ),
+      budgets
+    );
+    expect(result.ok).toBeFalsy();
+    expect(
+      result.lines.some(
+        (line) => line.startsWith("FAIL") && line.includes("plazaPack.tick.p95")
+      )
+    ).toBeTruthy();
+  });
+
+  it("fails the plaza pack when the pack leaves the plaza", () => {
+    const result = evaluateGate(
+      samplesOf(
+        "plaza-pack-empty",
+        steadyLanes(steady),
+        build,
+        syntheticRoadLife(steady),
+        syntheticLobby(steady),
+        syntheticPlazaPack(steady, 1)
+      ),
+      budgets
+    );
+    expect(result.ok).toBeFalsy();
+    expect(
+      result.lines.some((line) => line.includes("fewestRiders=1"))
+    ).toBeTruthy();
   });
 
   it("passes an unchanged synthetic A/B", () => {

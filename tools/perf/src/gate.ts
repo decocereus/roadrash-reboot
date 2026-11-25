@@ -22,7 +22,12 @@ import {
 import type { Evaluation, Samples } from "./evaluate.ts";
 import { guardedLoad } from "./load.ts";
 import type { LoadTooHigh } from "./load.ts";
-import { lobbyWindow, roadLifeWindow, sideBLane } from "./node-lane-side-b.ts";
+import {
+  lobbyWindow,
+  plazaPackWindow,
+  roadLifeWindow,
+  sideBLane,
+} from "./node-lane-side-b.ts";
 import { nodeLane } from "./node-lane.ts";
 import type { NodeLane } from "./node-lane.ts";
 import { currentProtocol } from "./protocol.ts";
@@ -177,6 +182,7 @@ const measure = Effect.fn("gate.measure")(function* measure(
     lobby: null,
     mode: options.mode,
     node: [],
+    plazaPack: null,
     roadLife: null,
     sides,
     version: 1,
@@ -204,12 +210,18 @@ const measure = Effect.fn("gate.measure")(function* measure(
       : null;
     load.note();
     yield* say(`node ${lobbyWindow.id} measured`);
+    const plazaPack = calibrator
+      ? yield* sideBLane(plazaPackWindow, B, calibrator, path.join(dir, "node"))
+      : null;
+    load.note();
+    yield* say(`node ${plazaPackWindow.id} measured`);
     nodeMs = (yield* Clock.currentTimeMillis) - startedNode;
     samples = yield* save({
       ...samples,
       lanes: ["node"],
       lobby,
       node,
+      plazaPack,
       roadLife,
     });
   }
