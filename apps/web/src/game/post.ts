@@ -4,7 +4,6 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 
 import type { Part } from "../profile-parts.ts";
 import { onFxLayer, seesFx } from "./cel.ts";
-import type { Look } from "./looks.ts";
 import { isMesh } from "./meshes.ts";
 import { contextOf } from "./profile.ts";
 import { skinWalkers } from "./walker-skin.ts";
@@ -128,6 +127,12 @@ const byVariantThenMaterial = (
   a.material.id - b.material.id ||
   a.z - b.z;
 
+export interface Grade {
+  readonly ink: THREE.ColorRepresentation;
+  readonly grade: readonly [number, number, number];
+  readonly bloom: number;
+}
+
 export interface Compiling {
   readonly ready: Promise<null>;
   readonly stop?: () => void;
@@ -182,7 +187,7 @@ export interface Pipeline {
   prepare: (scene: THREE.Scene) => void;
   stageOverlay: () => () => void;
   compile: (scene: THREE.Scene, camera: THREE.PerspectiveCamera) => Compiling;
-  setLook: (look: Look) => void;
+  setLook: (grade: Grade) => void;
   resize: (width: number, height: number, pixelRatio: number) => void;
   render: (scene: THREE.Scene, camera: THREE.PerspectiveCamera) => void;
   sliding: () => boolean;
@@ -413,7 +418,11 @@ export const createPipeline = (
     },
     setLook(look) {
       uniformValue(line, "ink", THREE.Color).set(look.ink);
-      uniformValue(grade, "grade", THREE.Vector3).set(...look.grade);
+      uniformValue(grade, "grade", THREE.Vector3).set(
+        look.grade[0],
+        look.grade[1],
+        look.grade[2]
+      );
       bloom.strength = look.bloom;
     },
     sliding: () => overlay?.sliding() ?? false,

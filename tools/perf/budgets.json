@@ -122,6 +122,22 @@
         "sha256": "4f57a4f3763f5a136641e64b11e000f07ff364fdd77acd106470f5d55fcca012"
       },
       {
+        "file": "tools/perf/baselines/time-of-day-2.mac.gpu-helium-metal.json.gz",
+        "sha256": "ee0952869df73b736b67b2fb121af9193b5314f45e94af4cd1eaa183ed2a3dcc"
+      },
+      {
+        "file": "tools/perf/baselines/time-of-day.mac.gpu-helium-metal.json.gz",
+        "sha256": "7650f0bfb6c21fdce04660094bc9e1a8cde7cef1f523381246685bf700566935"
+      },
+      {
+        "file": "tools/perf/baselines/time-of-day.vimaan.gpu-chromium-intel.json.gz",
+        "sha256": "162c2ffc6c87a654dc477d550436c6924ffa2872a24312c369e1acb77b4caefe"
+      },
+      {
+        "file": "tools/perf/baselines/time-of-day.vimaan.gpu-chromium-nvidia.json.gz",
+        "sha256": "3568f25ff943f06682d6d428692c5c12101ff6e8aeb4cc21177c7791386dfb15"
+      },
+      {
         "file": "tools/perf/baselines/tower.mac.gpu-helium-metal.json.gz",
         "sha256": "15f44597abebefd7938bc948c901b4af7e8aea83a18b46e507ebb66cd87379c5"
       },
@@ -132,7 +148,7 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "a474047f29cfc9da8fbd5325150d58834353564f96ec5c4bd9127602d4e36306"
+    "summarySha256": "33cd452436a15608f5bbfca00acae5ca8905b06b3c9d3d71db9457bf589a2cab"
   },
   "limits": [
     {
@@ -2510,6 +2526,78 @@
       "source": "gpu-2026-11-25T06-17-40-061Z-b5658e3-ea37fca",
       "unit": "ms",
       "value": 0.2
+    },
+    {
+      "baseline": 0.20000004768371582,
+      "derivation": "2 x the worst B window of its scenario, and at least 0.4 ms: four 0.1 ms steps of the profiler clock",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "world.cpu.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-24T00-25-31-611Z-c6be25b-97caafa",
+      "unit": "ms",
+      "value": 0.40000009536743164
+    },
+    {
+      "baseline": 0.20000004768371582,
+      "derivation": "2 x the worst B window of its scenario, and at least 0.4 ms: four 0.1 ms steps of the profiler clock",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "world.cpu.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-24T00-25-31-611Z-c6be25b-97caafa",
+      "unit": "ms",
+      "value": 0.40000009536743164
+    },
+    {
+      "baseline": 0.40000009536743164,
+      "derivation": "2 x the worst B window of its scenario, and at least 0.4 ms: four 0.1 ms steps of the profiler clock",
+      "direction": "max",
+      "environment": "gpu-chromium-intel",
+      "metric": "world.cpu.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-24T00-52-14-073Z-c6be25b-97caafa",
+      "unit": "ms",
+      "value": 0.8000001907348633
+    },
+    {
+      "baseline": 0.3000001907348633,
+      "derivation": "2 x the worst B window of its scenario, and at least 0.4 ms: four 0.1 ms steps of the profiler clock",
+      "direction": "max",
+      "environment": "gpu-chromium-intel",
+      "metric": "world.cpu.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-24T00-52-14-073Z-c6be25b-97caafa",
+      "unit": "ms",
+      "value": 0.6000003814697266
+    },
+    {
+      "baseline": 0.19999998807907104,
+      "derivation": "2 x the worst B window of its scenario, and at least 0.4 ms: four 0.1 ms steps of the profiler clock (over the two Mac campaigns)",
+      "direction": "max",
+      "environment": "gpu-helium-metal",
+      "metric": "world.cpu.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-24T08-52-03-778Z-c6be25b-a1b16b0",
+      "unit": "ms",
+      "value": 0.3999999761581421
+    },
+    {
+      "baseline": 0.10000002384185791,
+      "derivation": "2 x the worst B window of its scenario, and at least 0.4 ms: four 0.1 ms steps of the profiler clock (over the two Mac campaigns)",
+      "direction": "max",
+      "environment": "gpu-helium-metal",
+      "metric": "world.cpu.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-24T08-17-21-321Z-c6be25b-a1b16b0",
+      "unit": "ms",
+      "value": 0.3999999761581421
     }
   ],
   "nodeProfiles": {

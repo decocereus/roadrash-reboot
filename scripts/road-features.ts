@@ -59,4 +59,23 @@ export const roadFeatures: readonly FeatureEntry[] = [
     title: "The roads",
     verify: [],
   },
+  {
+    docs: [
+      "docs/architecture/browser-client.md#browser-client",
+      "docs/design/art-direction.md#region-skies",
+    ],
+    id: "time-of-day",
+    kind: "feature",
+    owns: [
+      "apps/web/src/game/sky*.ts",
+      "apps/web/test/sky-*.ts",
+      "apps/web/test/world-light.test.ts",
+    ],
+    perf: [...sceneCounts, "world.cpu.p95"],
+    start: ["apps/web/src/game/sky-clock.ts", "apps/web/src/game/sky.ts"],
+    summary:
+      "Dusk to night over a race: each look's later hours at shares of the road's nightTick, the sky clock that turns the race tick into one blended hour, the sky shader's gradient, sun, moon, stars and clouds, and lightRace, which steps the world's light and the grade when the hour moves. `?hour=<0..1>` pins it in a development build.",
+    title: "Dusk to night",
+    verify: ["time-of-day.md"],
+  },
 ];

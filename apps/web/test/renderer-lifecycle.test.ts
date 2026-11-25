@@ -24,23 +24,9 @@ import type { Staged } from "../src/game/staging.ts";
 import { uploadSpan } from "../src/game/uploads.ts";
 import { everyCaster } from "./every-caster.ts";
 import { pinnedAssets, pinnedCelebrities } from "./pinned-assets.ts";
+import { counted, rampOf } from "./renderer-lifecycle-owners.ts";
 
 const HELMET_REACH = 0.4;
-
-const counted = (target: THREE.EventDispatcher<{ dispose: object }>) => {
-  const seen = { count: 0 };
-  target.addEventListener("dispose", () => {
-    seen.count += 1;
-  });
-  return seen;
-};
-
-const rampOf = (material: THREE.Material): THREE.Texture => {
-  if (!(material instanceof THREE.MeshToonMaterial && material.gradientMap)) {
-    throw new Error("The material has no ramp.");
-  }
-  return material.gradientMap;
-};
 
 const track = trackFor("slag-row");
 

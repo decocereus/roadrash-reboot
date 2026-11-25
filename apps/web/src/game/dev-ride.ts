@@ -12,6 +12,8 @@ import type { Hazard, RiderInput } from "@racer/sim/state";
 import { curvatureAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
+import { hourPinOf } from "./sky-clock.ts";
+
 const SWERVE_METRES = 25;
 const HAZARD_LEAD = 150;
 const KMH = 3.6;
@@ -41,6 +43,7 @@ export interface DevRide {
     steerFrom: SteerSource
   ) => SteerSource;
   readonly holds: (race: RaceView) => boolean;
+  readonly hour: number | null;
   readonly whenReleased: (resume: () => void) => void;
 }
 
@@ -121,6 +124,7 @@ export const devRideFrom = (search: string): DevRide => {
       }
       return false;
     },
+    hour: hourPinOf(search),
     place: (run) => {
       if (!riderOf(run.view.riders, PLAYER_RIDER)) {
         return;

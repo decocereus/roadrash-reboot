@@ -22,7 +22,7 @@ import type { Quality } from "./presets.ts";
 import type { Actors, Cast, CastTarget } from "./rider-views.ts";
 import { stageEverything, warmStaged } from "./staging.ts";
 import type { Staged } from "./staging.ts";
-import { createWorld } from "./world.ts";
+import { createWorld, lightRace } from "./world.ts";
 import type { World } from "./world.ts";
 
 export interface Stage {
@@ -256,7 +256,7 @@ export const bindStage = ({
     stage.track = setup.track;
     stage.world = next.world;
     if (replaced) {
-      pipeline.setLook(next.world.shading.look);
+      pipeline.setLook(next.world.clock.hour);
     }
     stage.colours = next.colours;
     stage.race = next.race;
@@ -283,6 +283,9 @@ export const bindStage = ({
   return {
     build,
     cancelPreparation: preparation.cancel,
+    light: () => {
+      lightRace(stage.world, pipeline, stage.race.view, devRide?.hour ?? null);
+    },
     loseContext,
     player,
     restoreContext: preparation.restore,

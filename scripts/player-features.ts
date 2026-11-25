@@ -453,7 +453,6 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/facade-texture.ts",
       "apps/web/src/game/road-texture.ts",
       "apps/web/src/game/shop-texture.ts",
-      "apps/web/src/game/sky-texture.ts",
       "apps/web/src/game/sign-*.ts",
       "apps/web/src/game/texture-canvas.ts",
       "apps/web/test/roadside-clearance.test.ts",

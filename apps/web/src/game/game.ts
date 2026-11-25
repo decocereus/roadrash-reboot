@@ -191,7 +191,7 @@ const startGame = (
   owners.push(() => {
     stage.world.dispose();
   });
-  pipeline.setLook(stage.world.shading.look);
+  pipeline.setLook(stage.world.clock.hour);
   stage.world.scene.add(stage.fleet.group);
   const chase = createChaseCamera();
   const sound = createSound();
@@ -222,6 +222,7 @@ const startGame = (
   const {
     build,
     cancelPreparation,
+    light,
     loseContext,
     player,
     restoreContext,
@@ -514,6 +515,7 @@ const startGame = (
     frame.profiler?.lap("camera");
     stage.world.follow(chase.camera, cast.subject.s);
     stage.world.showRoadLife(stage.race.view, cast.subject.s);
+    light();
     frame.profiler?.lap("world");
     const lead = cast.views[stage.me];
     if (cast.bikes && lead) {

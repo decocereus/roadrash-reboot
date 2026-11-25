@@ -20,6 +20,8 @@ const EVENT_DEADLINE_MS = 10_000;
 const COUNTDOWN_FRAMES = 60;
 const ROAD_A: PracticePick["roadId"] = "ridge-road";
 const ROAD_B: PracticePick["roadId"] = "slag-row";
+const ROAD_C: PracticePick["roadId"] = "breakwater-run";
+const RACE_FRAMES = 900;
 
 interface Counts {
   readonly geometries: number;
@@ -229,6 +231,37 @@ const framesUntil = async (
   return await framesUntil(done, left - 1);
 };
 
+const sunHeightOf = (scene: THREE.Scene | null): number => {
+  const heights: number[] = [];
+  scene?.traverse((node) => {
+    if (
+      node instanceof THREE.Mesh &&
+      node.material instanceof THREE.ShaderMaterial
+    ) {
+      const value: unknown = node.material.uniforms.sunAt?.value;
+      if (value instanceof THREE.Vector2) {
+        heights.push(value.y);
+      }
+    }
+  });
+  return heights[0] ?? Number.NaN;
+};
+
+const skyProof = async (
+  game: GameHandle,
+  held: CapturedRenderer,
+  seen: Seen
+) => {
+  const plan = planOf(ROAD_C);
+  await kindOf(game.prepare(plan));
+  game.startRace(plan);
+  await framesUntil(() => seen.hud?.phase === "racing", COUNTDOWN_FRAMES * 6);
+  const start = sunHeightOf(held.scene);
+  await framesUntil(() => false, RACE_FRAMES);
+  const later = sunHeightOf(held.scene);
+  return { later, sinking: later > start, start };
+};
+
 const startDuringPreparation = async (game: GameHandle, seen: Seen) => {
   await kindOf(game.prepare(planOf(ROAD_A)));
   const before = seen.hud?.roadName ?? "";
@@ -368,6 +401,7 @@ export const run = async () => {
   const loss = await lossProof(game, renderer, canvas, tracks.warmed);
   const retirement = await retirementProof(game, held);
   const startedDuringPreparation = await startDuringPreparation(game, seen);
+  const sky = await skyProof(game, held, seen);
   const beforeDispose = countsOf(renderer);
   game.dispose();
   const afterDispose = countsOf(renderer);
@@ -385,6 +419,7 @@ export const run = async () => {
     loss,
     notes,
     retirement,
+    sky,
     startedDuringPreparation,
     tracks,
   };
