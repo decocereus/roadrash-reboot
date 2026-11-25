@@ -12,6 +12,7 @@ export const parts = [
   "line",
   "bloom",
   "grade",
+  "tower",
 ] as const;
 
 export type Part = (typeof parts)[number];

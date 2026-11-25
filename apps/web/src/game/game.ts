@@ -66,6 +66,7 @@ import {
   unprepared,
 } from "./game-session.ts";
 import type { Attract, Countdown, InRace, Session } from "./game-session.ts";
+import { createTowerPass } from "./hud-tower-pass.ts";
 import type { GameEvents, GameHandle, RacePlan } from "./hud.ts";
 import { createControls } from "./input.ts";
 import { createPipeline } from "./post.ts";
@@ -75,8 +76,6 @@ import { rendererOf } from "./profile.ts";
 import { bindFeedback, createFeedback, out } from "./race-feedback.ts";
 import { bindCast, createCast, pickFarRiders } from "./rider-views.ts";
 import { bindStage, createStage } from "./scene-lifecycle.ts";
-import { hourPinOf } from "./sky-clock.ts";
-import { lightRace } from "./world.ts";
 
 const LAST_STRETCH = 1000;
 const MARKER_KEY = "KeyB";
@@ -93,10 +92,6 @@ const devRide = import.meta.env.DEV
 const wearing = import.meta.env.DEV
   ? wearingFrom(globalThis.location.search)
   : wearingNothing;
-
-const pinnedHour = import.meta.env.DEV
-  ? hourPinOf(globalThis.location.search)
-  : null;
 
 const firstRoad = import.meta.env.DEV
   ? Number(new URLSearchParams(globalThis.location.search).get("road") ?? 0)
@@ -178,7 +173,11 @@ const startGame = (
     bench?.dispose();
   });
   const lap = lapOf(frame);
-  const pipeline = createPipeline(renderer, lap, quality.preset);
+  const towerPass = createTowerPass(renderer);
+  owners.push(() => {
+    towerPass.dispose();
+  });
+  const pipeline = createPipeline(renderer, lap, quality.preset, towerPass);
   owners.push(() => {
     pipeline.dispose();
   });
@@ -223,6 +222,7 @@ const startGame = (
   const {
     build,
     cancelPreparation,
+    light,
     loseContext,
     player,
     restoreContext,
@@ -243,7 +243,7 @@ const startGame = (
     stage,
   });
   owners.push(cancelPreparation);
-  const { quiet, react, report, say, toggleMute } = bindFeedback({
+  const { bakeTower, quiet, react, report, say, toggleMute } = bindFeedback({
     chase,
     drawnSpeed: () => player().speed + (cast.views[stage.me]?.drift.along ?? 0),
     events,
@@ -253,6 +253,7 @@ const startGame = (
     session: () => session,
     sound,
     stage,
+    towerPass,
   });
 
   const clearNoticeAndClock = () => {
@@ -463,6 +464,7 @@ const startGame = (
     checkPresented,
     noteDisplay,
     present,
+    presentHalted,
     resize,
     skipsVsync,
     stateOf,
@@ -513,7 +515,7 @@ const startGame = (
     frame.profiler?.lap("camera");
     stage.world.follow(chase.camera, cast.subject.s);
     stage.world.showRoadLife(stage.race.view, cast.subject.s);
-    lightRace(stage.world, pipeline, stage.race.view, pinnedHour);
+    light();
     frame.profiler?.lap("world");
     const lead = cast.views[stage.me];
     if (cast.bikes && lead) {
@@ -587,6 +589,7 @@ const startGame = (
       return room && !autopilot ? room.pace() : 1;
     },
     player,
+    presentHalted,
     quality,
     recorder,
     renderer,
@@ -628,7 +631,9 @@ const startGame = (
     }
     let release: () => void;
     try {
-      release = build(setup, dressing, true, room);
+      release = build(setup, dressing, true, room, (race) => {
+        bakeTower(next, race);
+      });
     } catch (error) {
       session = unprepared;
       return { cause: errorOf(error), kind: "failed", stage: "build" };

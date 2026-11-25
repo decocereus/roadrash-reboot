@@ -37,7 +37,7 @@ export interface TowerRow {
   readonly id: RiderId;
   readonly place: number;
   readonly name: string;
-  readonly chip: string;
+  readonly chip: number;
   readonly you: boolean;
   readonly finished: boolean;
   readonly mark: TowerMark;

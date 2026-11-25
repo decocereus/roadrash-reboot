@@ -4786,6 +4786,70 @@
       "value": 307020
     },
     {
+      "environment": "gpu-helium-metal",
+      "metric": "tower.cpu.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-25T02-01-44-313Z-89c8eee-89c8eee",
+      "value": 0.10000002384185791
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "tower.cpu.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-25T02-01-44-313Z-89c8eee-89c8eee",
+      "value": 0.10000002384185791
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.incremental.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-25T03-04-39-637Z-21b6fd2-21b6fd2",
+      "value": 248684
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.incremental.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-25T03-04-39-637Z-21b6fd2-21b6fd2",
+      "value": 859490
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "tower.cpu.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-25T05-50-32-579Z-b5658e3-ea37fca",
+      "value": 0.3
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "tower.cpu.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-25T05-50-32-579Z-b5658e3-ea37fca",
+      "value": 0.3
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "tower.cpu.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-25T06-17-40-061Z-b5658e3-ea37fca",
+      "value": 0.2
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "tower.cpu.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-25T06-17-40-061Z-b5658e3-ea37fca",
+      "value": 0.1
+    },
+    {
       "environment": "gpu-chromium-nvidia",
       "metric": "world.cpu.p95",
       "scenario": "reference-v1",
@@ -7258,6 +7322,116 @@
       "sides": {
         "A": "beea984d43be5bb4bcfd465667ffeab019ee2ceb",
         "B": "de0c4e1ab7aab733fb6ed5b3efa366a60233cf15"
+      }
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "facts": {
+        "machine": "Mac16,8, Apple M4 Pro, 12 CPU cores, 24 GiB",
+        "os": "macOS 26.7.3 (25G342)",
+        "power": "AC power",
+        "display": "Chipset Model: Apple M4 Pro; Resolution: 1920 x 1080 (1080p FHD - Full High Definition); UI Looks like: 1920 x 1080 @ 144.00Hz; Main Display: Yes; requestAnimationFrame measured 145 Hz on both sides; display settings untouched",
+        "frameRate": "game setting 60 (rushline.settings.v1)",
+        "browser": "Helium 0.22.2.1, windowed, rv slots 0 and 1, --use-angle=metal --enable-gpu --ignore-gpu-blocklist",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)",
+        "build": "rv up: production build served by vite preview; doctor build is current on both sides",
+        "page": "1504x790 CSS at device pixel ratio 1, ?stress&rung=0 and ?stress=reference&rung=0, governor off, rung 0, cpu x1, network off",
+        "pairs": "5 alternating pairs per scenario after one warm-up per scenario and side; the idle side parked on /kit",
+        "wallMs": "1374426",
+        "order": "reference-v1 pair0 A, reference-v1 pair0 B, pack-riding-v1 pair0 B, pack-riding-v1 pair0 A, reference-v1 pair1 B, reference-v1 pair1 A, pack-riding-v1 pair1 A, pack-riding-v1 pair1 B, reference-v1 pair2 A, reference-v1 pair2 B, pack-riding-v1 pair2 B, pack-riding-v1 pair2 A, reference-v1 pair3 B, reference-v1 pair3 A, pack-riding-v1 pair3 A, pack-riding-v1 pair3 B, reference-v1 pair4 A, reference-v1 pair4 B, pack-riding-v1 pair4 B, pack-riding-v1 pair4 A",
+        "sourceDigestB": "f5e4a9eeabd4d931f09eef9fd635fd03fb27d6c48159fef70c6bd50c39a0618a"
+      },
+      "id": "gpu-2026-11-25T02-01-44-313Z-89c8eee-89c8eee",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "89c8eee95adfbc2f4b8074e320fb343950ecd740 (rv 20261125-073018-s0)",
+        "B": "89c8eee95adfbc2f4b8074e320fb343950ecd740 with the glyph-atlas timing tower, uncommitted (rv 20261125-073028-s1)"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 887567, \"bytes.route.root.gzip\": 372513, \"bytes.route.kit.raw\": 563720, \"bytes.route.kit.gzip\": 255855, \"bytes.game.raw\": 1747057, \"bytes.game.gzip\": 621197, \"bytes.game.incremental.raw\": 859490, \"bytes.game.incremental.gzip\": 248684, \"bytes.worker.raw\": 664697, \"bytes.worker.gzip\": 167120, \"bytes.client.raw\": 2041446, \"bytes.client.gzip\": 831556}",
+        "builtB": "{\"bytes.route.root.raw\": 887567, \"bytes.route.root.gzip\": 372513, \"bytes.route.kit.raw\": 563720, \"bytes.route.kit.gzip\": 255855, \"bytes.game.raw\": 1747057, \"bytes.game.gzip\": 621197, \"bytes.game.incremental.raw\": 859490, \"bytes.game.incremental.gzip\": 248684, \"bytes.worker.raw\": 664697, \"bytes.worker.gzip\": 167120, \"bytes.client.raw\": 2041446, \"bytes.client.gzip\": 831556}",
+        "harnessDigest": "1b0483ec475b682bde2d0922577ea433b5d4944a0453892a87485cbca1ce06de",
+        "lockfileSha256": "77c8e6e3d12c228040bf14967c83c703ecf744fbf90d7ef9b77c41f64e29a992",
+        "machine": "Mac16,8",
+        "node": "v26.13.1",
+        "os": "macOS 26.7.3 (25G342)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "37f270466e208cd88231bdd1cbd62d9764feacd0f0efcf820946bb25b36bd93f",
+        "sideBSourceDigest": "37f270466e208cd88231bdd1cbd62d9764feacd0f0efcf820946bb25b36bd93f",
+        "why": "The timing tower is drawn in the game canvas from a glyph atlas through three new modules, hud-tower-atlas.ts, hud-tower-quads.ts and hud-tower-pass.ts, which add 5,567 B gzip and 12,816 B raw to the game chunk loaded after the menus over main at b5658e33 (248,684 B against 243,117 B gzip); the root route loses 804 B gzip with the DOM tower. The gzip row was 1,446 B over its limit, so both bytes.game.incremental rows re-pin on this run with the usual headroom."
+      },
+      "id": "baseline-2026-11-25T03-04-39-637Z-21b6fd2-21b6fd2",
+      "lanes": ["build"],
+      "sides": {
+        "A": "21b6fd275a1c8ce7a47e4a5ce4a13b95403c32aa",
+        "B": "21b6fd275a1c8ce7a47e4a5ce4a13b95403c32aa"
+      }
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "facts": {
+        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview",
+        "frameRate": "game setting 60 (rushline.settings.v1), so every vsync is drawn",
+        "pairs": "5 alternating pairs per scenario after one warm-up per scenario and side; the idle side parked on /kit",
+        "side": "side A was main b5658e33; side B was #246's head ea37fca7, which contains it",
+        "source": "the tower.cpu.p95 values are the per-window table in ~/.claude/orchestrate/rushline-launch/evidence/2026-11-25/tower-proof/REPORT.md on the coordinating Mac, at the profiler clock's 0.1 ms resolution; result.json and samples.json stay in /var/tmp/pr246-b/tools/perf/results on vimaan",
+        "verdict": "FAIL on pack-riding-v1 frame.missedFraction only (worst window 2.71% against 2.62%, side A 13.3%); every other row passed",
+        "machine": "vimaan, Intel Core i7-9750H, Intel UHD Graphics 630 (CFL GT2), 8 GiB of RAM",
+        "browser": "/usr/lib/chromium/chromium, windowed through Xwayland on the Intel GPU, RUSHLINE_BROWSER_HOST=linux-intel; the sandbox stays on",
+        "renderer": "ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)",
+        "page": "1919x992 CSS at device pixel ratio 1, the lean preset"
+      },
+      "id": "gpu-2026-11-25T05-50-32-579Z-b5658e3-ea37fca",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "b5658e33d3243371ab851b199b075b0379f3af36",
+        "B": "ea37fca7cc5e4ce599a0a2dea30373e3b09549ee"
+      }
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "facts": {
+        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview",
+        "frameRate": "game setting 60 (rushline.settings.v1), so every vsync is drawn",
+        "pairs": "5 alternating pairs per scenario after one warm-up per scenario and side; the idle side parked on /kit",
+        "side": "side A was main b5658e33; side B was #246's head ea37fca7, which contains it",
+        "source": "the tower.cpu.p95 values are the per-window table in ~/.claude/orchestrate/rushline-launch/evidence/2026-11-25/tower-proof/REPORT.md on the coordinating Mac, at the profiler clock's 0.1 ms resolution; result.json and samples.json stay in /var/tmp/pr246-b/tools/perf/results on vimaan",
+        "verdict": "PASS",
+        "machine": "vimaan, Intel Core i7-9750H, NVIDIA GeForce GTX 1650 Ti with Max-Q Design 4 GiB, 8 GiB of RAM",
+        "browser": "/usr/lib/chromium/chromium, windowed through Xwayland with PRIME offload; the sandbox stays on",
+        "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce GTX 1650 Ti with Max-Q Design/PCIe/SSE2, OpenGL 4.5.0)",
+        "page": "1512x773 CSS at device pixel ratio 2, ?stress&rung=0 and ?stress=reference&rung=0"
+      },
+      "id": "gpu-2026-11-25T06-17-40-061Z-b5658e3-ea37fca",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "b5658e33d3243371ab851b199b075b0379f3af36",
+        "B": "ea37fca7cc5e4ce599a0a2dea30373e3b09549ee"
+      }
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "facts": {
+        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview",
+        "frameRate": "game setting 60 (rushline.settings.v1), so every vsync is drawn",
+        "pairs": "5 alternating pairs per scenario after one warm-up per scenario and side; the idle side parked on /kit",
+        "side": "side A was main b5658e33; side B was #246's head ea37fca7, which contains it",
+        "source": "the tower.cpu.p95 values are the per-window table in ~/.claude/orchestrate/rushline-launch/evidence/2026-11-25/tower-proof/REPORT.md on the coordinating Mac, at the profiler clock's 0.1 ms resolution; result.json and samples.json stay in /var/tmp/pr246-b/tools/perf/results on vimaan",
+        "verdict": "PASS",
+        "machine": "vimaan, Intel Core i7-9750H, NVIDIA GeForce GTX 1650 Ti with Max-Q Design 4 GiB, 8 GiB of RAM",
+        "browser": "/usr/lib/chromium/chromium, windowed through Xwayland with PRIME offload; the sandbox stays on",
+        "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce GTX 1650 Ti with Max-Q Design/PCIe/SSE2, OpenGL 4.5.0)",
+        "page": "1512x773 CSS at device pixel ratio 2, ?stress&rung=0 and ?stress=reference&rung=0"
+      },
+      "id": "gpu-2026-11-25T06-43-52-412Z-b5658e3-ea37fca",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "b5658e33d3243371ab851b199b075b0379f3af36",
+        "B": "ea37fca7cc5e4ce599a0a2dea30373e3b09549ee"
       }
     },
     {

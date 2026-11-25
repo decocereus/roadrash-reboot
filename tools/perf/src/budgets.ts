@@ -159,6 +159,7 @@ const gpuKinds: readonly MetricKind[] = [
   gpuKind("frame.interval.p99", "ms", 1.2),
   gpuKind("frame.missedFraction", "share", null),
   gpuKind("riders.cpu.p95", "ms", null),
+  gpuKind("tower.cpu.p95", "ms", null),
   gpuKind("world.cpu.p95", "ms", null),
   gpuKind("main.longTask.count", "tasks", null),
   gpuKind("main.longTask.blockingMs", "ms", null),

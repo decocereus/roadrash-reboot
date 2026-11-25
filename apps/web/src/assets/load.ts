@@ -10,7 +10,10 @@ import { ModelRequestFailed } from "./model-request-failed.ts";
 import { ModelResponseRejected } from "./model-response-rejected.ts";
 import type { ModelUrls } from "./model-urls.ts";
 
-const DISPLAY_FONT = '800 40px "Saira Extra Condensed"';
+const DISPLAY_FONTS = [
+  '800 40px "Saira Extra Condensed"',
+  '700 40px "Saira Extra Condensed"',
+] as const;
 
 export interface Transport {
   readonly fetch: (
@@ -113,21 +116,30 @@ const riderModel = (parsers: AssetParsers) => parsers.rider;
 const walkerModel = (parsers: AssetParsers) => parsers.walkers;
 const movesModel = (parsers: AssetParsers) => parsers.moves;
 
-const displayFont = Effect.gen(function* loadDisplayFont() {
-  const fonts = yield* FontReadiness;
-  yield* Effect.tryPromise({
-    catch: (cause) =>
-      new FontReadinessFailed({ cause, message: messageOf(cause) }),
-    try: async () => await fonts.load(DISPLAY_FONT),
-  });
-  return null;
+const displayFace = (font: (typeof DISPLAY_FONTS)[number]) =>
+  Effect.gen(function* loadDisplayFace() {
+    const fonts = yield* FontReadiness;
+    yield* Effect.tryPromise({
+      catch: (cause) =>
+        new FontReadinessFailed({ cause, font, message: messageOf(cause) }),
+      try: async () => await fonts.load(font),
+    });
+    return null;
+  }).pipe(
+    Effect.catchTag("FontReadinessFailed", (failure) => Effect.succeed(failure))
+  );
+
+const displayFonts = Effect.all(DISPLAY_FONTS.map(displayFace), {
+  concurrency: "unbounded",
 }).pipe(
-  Effect.catchTag("FontReadinessFailed", (failure) => Effect.succeed(failure))
+  Effect.map((faces) =>
+    faces.filter((face): face is FontReadinessFailed => face !== null)
+  )
 );
 
 interface Loaded {
   readonly assets: Assets;
-  readonly fontFallback: FontReadinessFailed | null;
+  readonly fontFallbacks: readonly FontReadinessFailed[];
 }
 
 const bikeModels = (cache: ByteCache, { bikes }: ModelUrls) =>
@@ -158,7 +170,7 @@ export const loadAssets = Effect.fn("assets.load")(function* loadAssets(
     moves,
     stalls,
     walkers,
-    fontFallback,
+    fontFallbacks,
   ] = yield* Effect.all(
     [
       bikeModels(cache, urls),
@@ -171,7 +183,7 @@ export const loadAssets = Effect.fn("assets.load")(function* loadAssets(
       model(cache, urls.moves, movesModel),
       model(cache, urls.stalls, modelParts),
       model(cache, urls.walkers, walkerModel),
-      displayFont,
+      displayFonts,
     ],
     { concurrency: "unbounded" }
   );
@@ -186,7 +198,7 @@ export const loadAssets = Effect.fn("assets.load")(function* loadAssets(
       van,
       walkers,
     },
-    fontFallback,
+    fontFallbacks,
   };
   return loaded;
 });

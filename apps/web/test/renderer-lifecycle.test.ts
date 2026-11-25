@@ -24,23 +24,9 @@ import type { Staged } from "../src/game/staging.ts";
 import { uploadSpan } from "../src/game/uploads.ts";
 import { everyCaster } from "./every-caster.ts";
 import { pinnedAssets, pinnedCelebrities } from "./pinned-assets.ts";
+import { counted, rampOf } from "./renderer-lifecycle-owners.ts";
 
 const HELMET_REACH = 0.4;
-
-const counted = (target: THREE.EventDispatcher<{ dispose: object }>) => {
-  const seen = { count: 0 };
-  target.addEventListener("dispose", () => {
-    seen.count += 1;
-  });
-  return seen;
-};
-
-const rampOf = (material: THREE.Material): THREE.Texture => {
-  if (!(material instanceof THREE.MeshToonMaterial && material.gradientMap)) {
-    throw new Error("The material has no ramp.");
-  }
-  return material.gradientMap;
-};
 
 const track = trackFor("slag-row");
 
@@ -52,16 +38,6 @@ const instancedIn = (root: THREE.Object3D): THREE.InstancedMesh[] => {
     }
   });
   return meshes;
-};
-
-const glowsIn = (root: THREE.Object3D): THREE.MeshBasicMaterial[] => {
-  const found = new Set<THREE.MeshBasicMaterial>();
-  root.traverse((node) => {
-    if (isMesh(node) && node.material instanceof THREE.MeshBasicMaterial) {
-      found.add(node.material);
-    }
-  });
-  return [...found];
 };
 
 describe("renderer resource owners", () => {
@@ -103,55 +79,6 @@ describe("renderer resource owners", () => {
     expect(ramp.count).toBe(0);
     shading.dispose();
     expect(ramp.count).toBe(1);
-  });
-
-  it("stops lighting a retired fleet's and bike's glow when a race on the same road rebuilds its actors", async () => {
-    const look = lookOf(track.plan.region);
-    const shading = createShading(look);
-    const ramp = counted(rampOf(shading.paint(null)));
-    const assets = await pinnedAssets();
-    const race = createRaceRun(defaultSetup(track, 3));
-    const world = shading.lit();
-    const build = () => ({
-      bikes: createBikes(assets, shading, [
-        { model: bikeModelIds[0], paint: 0, police: true },
-      ]),
-      fleet: createFleet(assets, shading, race.view.cars, race.view.crossCars),
-    });
-    const first = build();
-    const retired = [
-      ...glowsIn(first.fleet.group),
-      ...glowsIn(first.bikes.group),
-    ];
-    const lit = shading.lit();
-    first.fleet.dispose();
-    first.bikes.dispose();
-    const afterRetiring = shading.lit();
-    for (const material of retired) {
-      material.color.setRGB(0.25, 0.5, 0.75);
-    }
-    const second = build();
-    const rebuilt = shading.lit();
-    shading.relight({ ...look, glow: 2 });
-    const marked = new THREE.Color(0.25, 0.5, 0.75).getHexString();
-    second.fleet.dispose();
-    second.bikes.dispose();
-    expect({
-      afterRetiring,
-      lit: lit > world && retired.length > 0,
-      rampReleases: ramp.count,
-      rebuilt,
-      retiredColours: retired.map((material) => material.color.getHexString()),
-      settled: shading.lit(),
-    }).toStrictEqual({
-      afterRetiring: world,
-      lit: true,
-      rampReleases: 0,
-      rebuilt: lit,
-      retiredColours: retired.map(() => marked),
-      settled: world,
-    });
-    shading.dispose();
   });
 
   it("detaches the hazard marks from the world and releases each of their meshes once", () => {
@@ -478,6 +405,21 @@ describe("buffer attribute uploads", () => {
       version: 2,
     });
   });
+
+  it("rewrites one range record in place across uploads and the renderer's clears", () => {
+    const colours = new THREE.BufferAttribute(new Float32Array(10 * 3), 3);
+    uploadSpan(colours, 0, 2);
+    const [record] = colours.updateRanges;
+    colours.clearUpdateRanges();
+    uploadSpan(colours, 4, 6);
+    uploadSpan(colours, 1, 2);
+    colours.clearUpdateRanges();
+    uploadSpan(colours, 7, 9);
+    expect({
+      ranges: colours.updateRanges,
+      same: colours.updateRanges.every((range) => range === record),
+    }).toStrictEqual({ ranges: [{ count: 6, start: 21 }], same: true });
+  });
 });
 
 interface Staging {
@@ -503,7 +445,13 @@ const stagingOf = ({ prepareThrows = false } = {}): Staging => {
   const sampleGeometry = new THREE.BoxGeometry();
   const samples = new THREE.Group();
   samples.add(new THREE.Mesh(sampleGeometry, new THREE.MeshBasicMaterial()));
-  const state = { armed: 0, followed: 0, primed: 0, samplesReleased: 0 };
+  const state = {
+    armed: 0,
+    followed: 0,
+    overlaid: 0,
+    primed: 0,
+    samplesReleased: 0,
+  };
   sampleGeometry.addEventListener("dispose", () => {
     state.samplesReleased += 1;
   });
@@ -520,6 +468,12 @@ const stagingOf = ({ prepareThrows = false } = {}): Staging => {
       at: 0,
       camera: new THREE.PerspectiveCamera(),
       figures: [{ holdEveryWeapon: arm }, { holdEveryWeapon: arm }],
+      overlay: () => {
+        state.overlaid += 1;
+        return () => {
+          state.overlaid -= 1;
+        };
+      },
       prepare: () => {
         if (prepareThrows) {
           throw new Error("The depth materials could not be set.");
@@ -556,6 +510,7 @@ const restored = {
   armed: 0,
   culled: true,
   followed: 1,
+  overlaid: 0,
   primed: 0,
   sampled: false,
   samplesReleased: 1,
@@ -563,13 +518,14 @@ const restored = {
 };
 
 describe("staging for shader warm-up", () => {
-  it("reveals and arms everything while staged and restores it all afterwards", () => {
+  it("reveals and arms everything, the timing tower too, while staged and restores it all afterwards", () => {
     const staging = stagingOf();
     const unstage = stageEverything(staging.staged);
     expect(restoredOf(staging)).toStrictEqual({
       armed: 2,
       culled: false,
       followed: 1,
+      overlaid: 1,
       primed: 1,
       sampled: true,
       samplesReleased: 0,

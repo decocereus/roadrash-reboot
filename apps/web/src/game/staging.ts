@@ -13,6 +13,7 @@ export interface Staged {
   readonly figures: readonly { readonly holdEveryWeapon: () => () => void }[];
   readonly puffs: { readonly prime: () => () => void } | null;
   readonly prepare: (scene: THREE.Scene) => void;
+  readonly overlay: () => () => void;
 }
 
 const revealAll = (root: THREE.Object3D): (() => void) => {
@@ -50,6 +51,7 @@ export const stageEverything = ({
   at,
   camera,
   figures,
+  overlay,
   prepare,
   puffs,
   world,
@@ -74,6 +76,7 @@ export const stageEverything = ({
     if (puffs) {
       undo.push(puffs.prime());
     }
+    undo.push(overlay());
     prepare(world.scene);
     undo.push(revealAll(world.scene));
   } catch (error) {

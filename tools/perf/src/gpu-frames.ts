@@ -306,6 +306,7 @@ const shares = {
 
 const partMetrics = {
   "riders.cpu.p95": "riders",
+  "tower.cpu.p95": "tower",
   "world.cpu.p95": "world",
 } as const;
 
