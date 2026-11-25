@@ -13,6 +13,7 @@ import { lookOf } from "../src/game/looks.ts";
 import { createPipeline } from "../src/game/post.ts";
 import { createRiderFigure } from "../src/game/rider-figure.ts";
 import type { Stance } from "../src/game/rider-figure.ts";
+import { everyCaster } from "./every-caster.ts";
 
 const LOOK = lookOf("salt-coast");
 const CELL_WIDTH = 300;
@@ -205,7 +206,7 @@ export const run = async (
         }
         figure.root.updateMatrixWorld(true);
         bikes.show(row);
-        bikes.commit(new THREE.Vector3());
+        bikes.commit(new THREE.Vector3(), everyCaster);
         pipeline.render(scene, camera);
         sheet.drawImage(
           renderer.domElement,
