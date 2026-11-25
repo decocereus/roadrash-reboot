@@ -13,6 +13,9 @@ import { alive } from "./process.ts";
 
 export const toolStateDir = path.join(tmpdir(), "rushline-verify");
 
+export const profileFor = (runId: string): string =>
+  path.join(toolStateDir, `profile-${runId}`);
+
 const CLAIM_POLL_MS = 50;
 const CLAIM_ATTEMPTS = 1200;
 
