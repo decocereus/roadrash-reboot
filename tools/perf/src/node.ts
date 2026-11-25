@@ -13,9 +13,11 @@ import * as Schema from "effect/Schema";
 import { TaggedError as TaggedErrorClass } from "effect/Schema";
 
 import { MeasurementFailed } from "./measurement-failed.ts";
+import { measurementProtocol } from "./protocol.ts";
 import { quantile } from "./result.ts";
 import {
   benchRun,
+  roomParts,
   rowsOf,
   scenarioHash,
   scenarios,
@@ -34,9 +36,10 @@ const INCREMENT = 1_013_904_223;
 const CALIBRATION_WARMUP = 5;
 export const CALIBRATION_ROUNDS = 10;
 const ALLOCATION_SAMPLING_BYTES = 4096;
-export const STEADY_TOLERANCE = 0.03;
-export const MAX_WARM_WINDOWS = 10;
-export const TIMED_WINDOWS = 4;
+export const STEADY_TOLERANCE = measurementProtocol.warmUp.tolerance;
+export const MIN_WARM_WINDOWS = measurementProtocol.warmUp.minWindows;
+export const MAX_WARM_WINDOWS = measurementProtocol.warmUp.maxWindows;
+export const TIMED_WINDOWS = measurementProtocol.timedWindows;
 
 const calibrationData = new Uint32Array(CALIBRATION_WORDS);
 
@@ -121,9 +124,15 @@ const timingOfWindow = (durations: readonly number[]): WindowTiming => {
   };
 };
 
-const settled = (before: WindowTiming, after: WindowTiming): boolean =>
-  Math.abs(after.mean - before.mean) / Math.min(after.mean, before.mean) <=
-  STEADY_TOLERANCE;
+const settled = (warmup: readonly WindowTiming[]): boolean => {
+  const latest = warmup.at(-1);
+  const fastest = Math.min(...warmup.slice(0, -1).map((each) => each.mean));
+  return (
+    warmup.length >= MIN_WARM_WINDOWS &&
+    latest !== undefined &&
+    latest.mean >= (1 - STEADY_TOLERANCE) * fastest
+  );
+};
 
 class WarmUpUnsettled extends TaggedErrorClass<WarmUpUnsettled>()(
   "WarmUpUnsettled",
@@ -141,13 +150,12 @@ export const settleWindows = Effect.fnUntraced(function* settleWindows(
   const warmup: WindowTiming[] = [];
   while (warmup.length < MAX_WARM_WINDOWS) {
     warmup.push(timingOfWindow(timeWindow()));
-    const [before, after] = warmup.slice(-2);
-    if (before && after && settled(before, after)) {
+    if (settled(warmup)) {
       return warmup;
     }
   }
   return yield* new WarmUpUnsettled({
-    message: `${scenario.id} did not settle in ${MAX_WARM_WINDOWS} warm windows: no two consecutive windows' mean ticks came within ${STEADY_TOLERANCE * 100}% (${warmup.map((each) => each.mean.toFixed(4)).join(", ")} ms), so it times nothing.`,
+    message: `${scenario.id} did not settle in ${MAX_WARM_WINDOWS} warm windows: each of windows ${MIN_WARM_WINDOWS} to ${MAX_WARM_WINDOWS} ran more than ${STEADY_TOLERANCE * 100}% faster than the fastest window before it (${warmup.map((each) => each.mean.toFixed(4)).join(", ")} ms), so it times nothing.`,
     scenario: scenario.id,
     windows: warmup,
   });
@@ -285,8 +293,10 @@ export const childRecord = Schema.Struct({
       checkpoint: Schema.Array(Schema.Number),
       checkpointBytes: Schema.Array(Schema.Number),
       confirm: Schema.Array(Schema.Number),
+      part: Schema.Literals(roomParts),
       resimulated: Schema.Array(Schema.Number),
       rollback: Schema.Array(Schema.Number),
+      seeds: Schema.Array(Schema.Number),
       tick: Schema.Array(Schema.Number),
     })
   ),

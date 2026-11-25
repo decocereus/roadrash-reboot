@@ -8,6 +8,7 @@ import { createRandom } from "@racer/track/random";
 import { placeOnTrack } from "@racer/track/track";
 import type { Track, TrackPoint, TrackProp } from "@racer/track/track";
 import * as THREE from "three";
+import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
 import type { Assets } from "./assets.ts";
 import { buildBazaar } from "./bazaar.ts";
@@ -38,6 +39,8 @@ import {
   roadSurfacesOf,
 } from "./road-texture.ts";
 import { boulderParts, buildRoadside, pineParts } from "./roadside.ts";
+import { shadowReachOf } from "./shadow-reach.ts";
+import type { ShadowReach } from "./shadow-reach.ts";
 import { bannerTexture, chevronTexture } from "./sign-textures.ts";
 import { skyTexture } from "./sky-texture.ts";
 import { owned } from "./texture-canvas.ts";
@@ -58,6 +61,20 @@ const POLE = "#221a30";
 
 const point: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
 const placer = new THREE.Object3D();
+
+const joined = (
+  geometries: readonly THREE.BufferGeometry[]
+): THREE.BufferGeometry | null => {
+  const [first, ...rest] = geometries;
+  if (!first || rest.length === 0) {
+    return first ?? null;
+  }
+  const merged = mergeGeometries([...geometries]);
+  for (const geometry of geometries) {
+    geometry.dispose();
+  }
+  return merged;
+};
 
 const walkEdgeAt = (track: Track, s: number): number =>
   widestVergeAlong(track, s - LONGEST_BLOCK, s + LONGEST_BLOCK) +
@@ -309,6 +326,8 @@ const createSunRig = (shading: Shading, mapSize: number): SunRig => {
         .copy(snapped)
         .addScaledVector(shading.key, SHADOW_DISTANCE);
       light.target.updateMatrixWorld();
+      light.updateMatrixWorld();
+      light.shadow.updateMatrices(light);
     },
     light,
   };
@@ -317,6 +336,7 @@ const createSunRig = (shading: Shading, mapSize: number): SunRig => {
 export interface World {
   readonly scene: THREE.Scene;
   readonly shading: Shading;
+  readonly shadows: ShadowReach;
   follow: (camera: THREE.Camera, s: number) => void;
   showRoadLife: (
     view: Pick<RaceView, "hazards" | "pedestrians" | "tick">,
@@ -415,9 +435,17 @@ export const createWorld = (
           ];
           return side > 0 ? rails : rails.toReversed();
         };
-        for (const piece of piecesBesideArms(track, span, side)) {
-          add(buildRibbon(track, piece, kerb, 2), kerbMaterial, span);
-          add(buildRibbon(track, piece, walk, 2), walkMaterial, span);
+        const pieces = piecesBesideArms(track, span, side);
+        for (const [rails, material] of [
+          [kerb, kerbMaterial],
+          [walk, walkMaterial],
+        ] as const) {
+          const ribbon = joined(
+            pieces.map((piece) => buildRibbon(track, piece, rails, 2))
+          );
+          if (ribbon) {
+            add(ribbon, material, span);
+          }
         }
       } else {
         add(buildTerrainChunk(track, span, side, look), terrainMaterial, span);
@@ -432,7 +460,8 @@ export const createWorld = (
   }
   const hazards = createHazardMarks(track, shading);
   scene.add(hazards.group);
-  const walkers = createWalkerMarks(track, shading, assets.walkers);
+  const shadows = shadowReachOf(rig.light);
+  const walkers = createWalkerMarks(track, shading, assets.walkers, shadows);
   scene.add(walkers.group);
   const junctions = buildJunctions(track, shading, clearance);
   scene.add(junctions.group);
@@ -495,6 +524,7 @@ export const createWorld = (
     },
     scene,
     shading,
+    shadows,
     showRoadLife(view, s) {
       hazards.show(view.hazards, s);
       walkers.show(view.pedestrians, s, view.tick);

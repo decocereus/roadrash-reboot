@@ -22,10 +22,25 @@ import type {
 } from "@racer/sim/state";
 import * as Schema from "effect/Schema";
 
+import { measurementProtocol } from "./protocol.ts";
 import { digestOf } from "./result.ts";
 
 const VALIDATOR_VERSION = 1;
-export const WINDOW_TICKS = 601;
+export const WINDOW_TICKS = measurementProtocol.windowTicks;
+
+export const roomParts = [0, 1, 2] as const;
+export type RoomPart = (typeof roomParts)[number];
+
+const pooledRoomSeeds = [
+  [1, 4, 7],
+  [2, 5],
+  [3, 6],
+] as const satisfies Readonly<Record<RoomPart, readonly number[]>>;
+
+export const roomPartSeeds = (bench: Bench, part: RoomPart): number[] => [
+  benchRaces[bench].seed,
+  ...pooledRoomSeeds[part],
+];
 const WARMUP_TICKS = 1800;
 export const SEARCH_TICKS = 7200;
 const SPEED_FLOOR = 20;
@@ -283,7 +298,7 @@ const raceTrack = (track: EitherSideTrack): RaceTrack => {
 };
 
 export const scenarioHash = (scenario: Scenario): string => {
-  const setup = benchSetup(scenario.bench);
+  const setup = benchSetup(scenario.bench, benchRaces[scenario.bench].seed);
   const track = raceTrack(setup.track);
   return digestOf({
     control: "pilot every rider in index order, then one step",
@@ -316,13 +331,13 @@ export const eitherSideFrame: InputFrame = Object.assign(
   }
 );
 
-export const benchStart = (bench: Bench): RaceSetup => {
-  const setup = benchSetup(bench);
+export const benchStart = (bench: Bench, seed: number): RaceSetup => {
+  const setup = benchSetup(bench, seed);
   return { ...setup, player: { ...setup.player, controller: "pilot" } };
 };
 
 export const benchRun = (bench: Bench): BenchRun => {
-  const run = createRaceRun(benchStart(bench));
+  const run = createRaceRun(benchStart(bench, benchRaces[bench].seed));
   return {
     step: () => {
       run.step(eitherSideFrame);

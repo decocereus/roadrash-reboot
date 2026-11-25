@@ -1,12 +1,17 @@
 import { slopeRateAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
-import { frontOf, passingLineOf, ridingOver, toeOf } from "./carrier.ts";
+import {
+  frontOf,
+  jumpClears,
+  passingLineOf,
+  ridingOver,
+  toeOf,
+} from "./carrier.ts";
 import { canBrakeAfterLanding, riding } from "./pilot-corners.ts";
 import { landed, landsOffLip } from "./pilot-landing.ts";
-import { LANE_REACH } from "./pilot-lines.ts";
 import type { Aim } from "./pilot-lines.ts";
-import { GRAVITY, sidewaysRate } from "./state.ts";
+import { GRAVITY, LANE_REACH, sidewaysRate } from "./state.ts";
 import type { RaceState, RiderState, TrafficCar } from "./state.ts";
 
 const JUDGE_SECONDS = 3;
@@ -79,6 +84,29 @@ const stillMeeting = (rider: RiderState, car: TrafficCar): boolean =>
 const missedTheRamp = (rider: RiderState, car: TrafficCar): boolean =>
   rider.s > toeOf(car) && rider.onCarrier < 0 && !rider.airborne;
 
+const hidesTraffic = (
+  cars: readonly TrafficCar[],
+  rider: RiderState
+): boolean => {
+  for (let index = 0; index < cars.length; index += 1) {
+    if (index !== rider.jumpSeen && jumpClears(cars, rider, index)) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const stillJumping = (
+  state: RaceState,
+  track: Track,
+  rider: RiderState,
+  car: TrafficCar
+): boolean =>
+  rider.airborne ||
+  rider.s >= toeOf(car) ||
+  !hidesTraffic(state.cars, rider) ||
+  landsArriving(state, track, rider, car, rider.speed);
+
 export const jumpAim = (
   state: RaceState,
   track: Track,
@@ -109,6 +137,11 @@ export const jumpAim = (
         rider.jumpSeen = index;
         rider.jumpTaken =
           misjudges || jumpWorks(state, track, rider, car, aim.speed);
+      } else if (
+        ridingOver(rider, index) &&
+        !stillJumping(state, track, rider, car)
+      ) {
+        rider.jumpTaken = false;
       }
       x = ridingOver(rider, index) ? car.x : passingLineOf(car, x);
     }

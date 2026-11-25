@@ -25,6 +25,7 @@ import type { LoadTooHigh } from "./load.ts";
 import { lobbyWindow, roadLifeWindow, sideBLane } from "./node-lane-side-b.ts";
 import { nodeLane } from "./node-lane.ts";
 import type { NodeLane } from "./node-lane.ts";
+import { currentProtocol } from "./protocol.ts";
 import { sha256Of } from "./result.ts";
 import { scenarioHash, scenarios } from "./scenarios.ts";
 import { selectWindows } from "./select.ts";
@@ -249,6 +250,7 @@ const measure = Effect.fn("gate.measure")(function* measure(
         cloneKilobytes: clone.value.diskKilobytes,
         comparisonId,
         environment: evaluation.environment,
+        evidence: evaluation.evidence,
         files: [{ file: "samples.json", sha256: sha256Of(samplesText) }],
         lanes: samples.lanes,
         lines: evaluation.lines,
@@ -257,6 +259,7 @@ const measure = Effect.fn("gate.measure")(function* measure(
         observations: evaluation.observations,
         ok: evaluation.ok && noVerdict === null,
         proposal: evaluation.proposal ?? null,
+        protocol: currentProtocol,
         scenarios: scenarios.map((scenario) => ({
           hash: scenarioHash(scenario),
           id: scenario.id,

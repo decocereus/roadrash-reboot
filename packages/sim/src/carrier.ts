@@ -11,6 +11,7 @@ import {
   BIKE_HALF_LENGTH,
   BIKE_HALF_WIDTH,
   GRAVITY,
+  LANE_REACH,
   TICK_SECONDS,
 } from "./state.ts";
 import type { CarBox, RaceState, RiderState, TrafficCar } from "./state.ts";
@@ -115,6 +116,25 @@ export const passingLineOf = (car: TrafficCar, x: number): number => {
 
 export const ridingOver = (rider: RiderState, carIndex: number): boolean =>
   rider.jumpTaken && rider.jumpSeen === carIndex;
+
+export const jumpClears = (
+  cars: readonly TrafficCar[],
+  rider: RiderState,
+  carIndex: number
+): boolean => {
+  if (!rider.jumpTaken) {
+    return false;
+  }
+  const carrier = cars[rider.jumpSeen];
+  const car = cars[carIndex];
+  return (
+    carIndex === rider.jumpSeen ||
+    (carrier !== undefined &&
+      car !== undefined &&
+      Math.abs(car.x - carrier.x) < LANE_REACH &&
+      car.s > toeOf(carrier))
+  );
+};
 
 export const launchOffLip = (
   track: Track,

@@ -20,13 +20,15 @@ import * as THREE from "three";
 
 import { onFxLayer } from "./cel.ts";
 import type { Shading } from "./cel.ts";
-import type { Clearance } from "./clearance.ts";
+import { extentOf } from "./clearance.ts";
+import type { Clearance, Extent } from "./clearance.ts";
 import { freeze } from "./ground.ts";
 import type { Stretch } from "./ground.ts";
 import { CYAN } from "./looks.ts";
 import { isMesh } from "./meshes.ts";
 import { emptySheet, facingAt, geometryOf, quad, UP } from "./road-sheet.ts";
 import type { Sheet } from "./road-sheet.ts";
+import { uploadSpan } from "./uploads.ts";
 
 const STRIPE = 0.5;
 const STRIPE_PITCH = 1;
@@ -67,21 +69,22 @@ interface Slots {
   readonly green: THREE.Vector3;
 }
 
-interface Lamps {
-  readonly red: THREE.MeshBasicMaterial;
-  readonly amber: THREE.MeshBasicMaterial;
-  readonly green: THREE.MeshBasicMaterial;
-}
-
 type Span = readonly [from: number, to: number];
 type Facing = ReturnType<typeof facingAt>;
+
+interface Lamps {
+  readonly red: readonly number[];
+  readonly amber: readonly number[];
+  readonly green: readonly number[];
+}
 
 interface Head {
   readonly crossing: SignalledCrossing;
   readonly reads: "main" | "cross";
-  readonly lamp: THREE.Mesh;
-  readonly parent: THREE.Object3D;
-  readonly slots: Slots;
+  readonly lamps: Lamps;
+  readonly from: number;
+  readonly positions: THREE.BufferAttribute;
+  readonly colours: THREE.BufferAttribute;
   shown: LightColour | null;
 }
 
@@ -92,6 +95,13 @@ interface Signal {
   readonly reads: Head["reads"];
   readonly slots: Slots;
   readonly outward: THREE.Vector3;
+}
+
+interface Placed {
+  readonly signal: Signal;
+  readonly solid: Span;
+  readonly glow: Span;
+  readonly lamp: Span;
 }
 
 export interface Junctions {
@@ -287,18 +297,6 @@ const slotsOn = (
   return { amber: at(1), green: at(2), red: at(0) };
 };
 
-const lampFor = (
-  slots: Slots,
-  outward: THREE.Vector3,
-  geometry: THREE.BufferGeometry,
-  material: THREE.Material
-): THREE.Mesh => {
-  const lamp = onFxLayer(new THREE.Mesh(geometry, material));
-  lamp.position.copy(slots.red);
-  lamp.lookAt(slots.red.clone().add(outward));
-  return lamp;
-};
-
 const lenses = (
   track: Track,
   sheet: Sheet,
@@ -441,9 +439,101 @@ const signalsOf = (
 
 const nothing = (): void => undefined;
 
+const IDENTITY = new THREE.Matrix4();
+const LAMP_STRENGTH = 2.2;
+const LAMP_CORNERS = [
+  [-1, 1],
+  [-1, -1],
+  [1, 1],
+  [-1, -1],
+  [1, -1],
+  [1, 1],
+] as const;
+const LAMP_VERTICES = LAMP_CORNERS.length;
+const lampColours = {
+  amber: new THREE.Color(lampGlow.amber).multiplyScalar(LAMP_STRENGTH),
+  green: new THREE.Color(lampGlow.green).multiplyScalar(LAMP_STRENGTH),
+  red: new THREE.Color(lampGlow.red).multiplyScalar(LAMP_STRENGTH),
+} as const satisfies Record<LightColour, THREE.Color>;
+const placer = new THREE.Object3D();
+const corner = new THREE.Vector3();
+
 const colourFor = (head: Head, tick: number): LightColour => {
   const phase = signalPhaseAt(head.crossing, tick);
   return head.reads === "main" ? mainLightOf(phase) : crossLightOf(phase);
+};
+
+const vertexCount = (sheet: Sheet): number => sheet.positions.length / 3;
+
+const append = (into: Sheet, from: Sheet): Span => {
+  const start = vertexCount(into);
+  into.positions.push(...from.positions);
+  into.colours.push(...from.colours);
+  return [start, vertexCount(into)];
+};
+
+const lampCorners = (at: THREE.Vector3, outward: THREE.Vector3): number[] => {
+  placer.position.copy(at);
+  placer.lookAt(corner.copy(at).add(outward));
+  placer.updateMatrix();
+  return LAMP_CORNERS.flatMap(([across, up]) => {
+    corner
+      .set((across * LAMP_SIZE) / 2, (up * LAMP_SIZE) / 2, 0)
+      .applyMatrix4(placer.matrix);
+    return [corner.x, corner.y, corner.z];
+  });
+};
+
+const lampsOf = (signal: Signal): Lamps => ({
+  amber: lampCorners(signal.slots.amber, signal.outward),
+  green: lampCorners(signal.slots.green, signal.outward),
+  red: lampCorners(signal.slots.red, signal.outward),
+});
+
+const extentOfPositions = (positions: readonly number[]): Extent => {
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(positions, 3)
+  );
+  const extent = extentOf(geometry, IDENTITY);
+  geometry.dispose();
+  return extent;
+};
+
+const meshOf = (sheet: Sheet, material: THREE.Material): THREE.Mesh => {
+  const geometry = geometryOf(sheet);
+  geometry.setIndex(Array.from({ length: vertexCount(sheet) }, (_, at) => at));
+  return new THREE.Mesh(geometry, material);
+};
+
+const indexOf = (mesh: THREE.Mesh): THREE.BufferAttribute => {
+  const index = mesh.geometry.getIndex();
+  if (!index) {
+    throw new Error("A merged signal mesh has no index.");
+  }
+  return index;
+};
+
+const attributeOf = (
+  mesh: THREE.Mesh,
+  name: "position" | "color"
+): THREE.BufferAttribute => {
+  const attribute = mesh.geometry.getAttribute(name);
+  if (!(attribute instanceof THREE.BufferAttribute)) {
+    throw new TypeError(`A merged signal mesh has no plain ${name} buffer.`);
+  }
+  return attribute;
+};
+
+const light = (head: Head, colour: LightColour): void => {
+  const lit = lampColours[colour];
+  head.positions.array.set(head.lamps[colour], head.from * 3);
+  for (let vertex = 0; vertex < LAMP_VERTICES; vertex += 1) {
+    head.colours.setXYZ(head.from + vertex, lit.r, lit.g, lit.b);
+  }
+  uploadSpan(head.positions, head.from, head.from + LAMP_VERTICES);
+  uploadSpan(head.colours, head.from, head.from + LAMP_VERTICES);
 };
 
 export const buildJunctions = (
@@ -464,44 +554,65 @@ export const buildJunctions = (
   markMaterial.polygonOffset = true;
   markMaterial.polygonOffsetFactor = -2;
   markMaterial.polygonOffsetUnits = -2;
-  const lampGeometry = new THREE.PlaneGeometry(LAMP_SIZE, LAMP_SIZE);
-  const lamps: Lamps = {
-    amber: shading.glow(lampGlow.amber, 2.2),
-    green: shading.glow(lampGlow.green, 2.2),
-    red: shading.glow(lampGlow.red, 2.2),
-  };
   const colours = {
     line: new THREE.Color(look.line),
     road: new THREE.Color(look.road),
   };
 
-  const place = (crossing: SignalledCrossing, signal: Signal): THREE.Group => {
-    const parent = new THREE.Group();
-    for (const sheet of [signal.post, signal.overhead]) {
-      if (sheet.positions.length > 0) {
-        const solid = new THREE.Mesh(geometryOf(sheet), solidMaterial);
-        solid.castShadow = true;
-        solid.receiveShadow = true;
-        parent.add(solid);
-      }
-    }
-    if (signal.glow.positions.length > 0) {
-      parent.add(
-        onFxLayer(new THREE.Mesh(geometryOf(signal.glow), glowMaterial))
+  const placeSignals = (
+    crossing: SignalledCrossing,
+    assembly: THREE.Group
+  ): void => {
+    const solid = emptySheet();
+    const glow = emptySheet();
+    const placed: Placed[] = signalsOf(track, crossing).map((signal) => {
+      const post = append(solid, signal.post);
+      const overhead = append(solid, signal.overhead);
+      const led = append(glow, signal.glow);
+      const { red } = lampColours;
+      const lamp = append(glow, {
+        alphas: false,
+        colours: LAMP_CORNERS.flatMap(() => [red.r, red.g, red.b]),
+        positions: [...lampsOf(signal).red],
+      });
+      return {
+        glow: [led[0], lamp[1]],
+        lamp,
+        signal,
+        solid: [post[0], overhead[1]],
+      };
+    });
+    const solidMesh = meshOf(solid, solidMaterial);
+    solidMesh.castShadow = true;
+    solidMesh.receiveShadow = true;
+    const glowMesh = onFxLayer(meshOf(glow, glowMaterial));
+    assembly.add(solidMesh, glowMesh);
+    const positions = attributeOf(glowMesh, "position");
+    const lit = attributeOf(glowMesh, "color");
+    for (const { glow: glowSpan, lamp, signal, solid: solidSpan } of placed) {
+      const lamps = lampsOf(signal);
+      heads.push({
+        colours: lit,
+        crossing,
+        from: lamp[0],
+        lamps,
+        positions,
+        reads: signal.reads,
+        shown: null,
+      });
+      clearance.addSpans(
+        [
+          { from: solidSpan[0], index: indexOf(solidMesh), to: solidSpan[1] },
+          { from: glowSpan[0], index: indexOf(glowMesh), to: glowSpan[1] },
+        ],
+        [
+          ...[signal.post, signal.overhead, signal.glow]
+            .filter((sheet) => sheet.positions.length > 0)
+            .map((sheet) => extentOfPositions(sheet.positions)),
+          extentOfPositions(lamps.red),
+        ]
       );
     }
-    const lamp = lampFor(signal.slots, signal.outward, lampGeometry, lamps.red);
-    parent.add(lamp);
-    clearance.addObject(parent);
-    heads.push({
-      crossing,
-      lamp,
-      parent,
-      reads: signal.reads,
-      shown: null,
-      slots: signal.slots,
-    });
-    return parent;
   };
 
   for (const crossing of track.crossings) {
@@ -514,9 +625,7 @@ export const buildJunctions = (
     marks.receiveShadow = true;
     const assembly = new THREE.Group().add(marks);
     if (isSignalled(crossing)) {
-      for (const signal of signalsOf(track, crossing)) {
-        assembly.add(place(crossing, signal));
-      }
+      placeSignals(crossing, assembly);
     }
     group.add(freeze(assembly));
     stretches.push({
@@ -530,18 +639,16 @@ export const buildJunctions = (
     solidMaterial,
     glowMaterial,
     markMaterial,
-    ...slotOrder.map((colour) => lamps[colour]),
   ];
 
   return {
     dispose() {
       group.removeFromParent();
       group.traverse((node) => {
-        if (isMesh(node) && node.geometry !== lampGeometry) {
+        if (isMesh(node)) {
           node.geometry.dispose();
         }
       });
-      lampGeometry.dispose();
       for (const material of owned) {
         material.dispose();
       }
@@ -552,13 +659,7 @@ export const buildJunctions = (
         const colour = colourFor(head, tick);
         if (colour !== head.shown) {
           head.shown = colour;
-          head.lamp.material = lamps[colour];
-          head.lamp.position.copy(head.slots[colour]);
-          head.lamp.updateMatrix();
-          head.lamp.matrixWorld.multiplyMatrices(
-            head.parent.matrixWorld,
-            head.lamp.matrix
-          );
+          light(head, colour);
         }
       }
     },

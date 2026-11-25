@@ -76,7 +76,7 @@ const stanceOf = (pose: Pose): Stance => ({
   ...pose.stance,
 });
 
-const acquire = async (
+export const acquire = async (
   notes: string[]
 ): Promise<Pick<AcquiredAssets, "assets" | "release">> => {
   const { promise, reject, resolve } =
