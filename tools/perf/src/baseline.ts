@@ -1,5 +1,6 @@
 import * as Schema from "effect/Schema";
 
+import { metricKinds, recordedLimit } from "./budgets.ts";
 import type { Budgets } from "./budgets.ts";
 import { scenarioHash, scenarios } from "./scenarios.ts";
 
@@ -78,6 +79,10 @@ export const summaryProblems = (
       ? []
       : [`${where} names run ${source}, not in the baseline`];
   const limitProblems = budgets.limits.flatMap((limit) => {
+    const kind = metricKinds.find((each) => each.metric === limit.metric);
+    if (kind?.rule === "paired" || (kind && recordedLimit(kind))) {
+      return [];
+    }
     const where = `limit ${limit.metric}|${limit.scenario ?? "-"}|${limit.environment}`;
     const recorded = summary.observations.find(
       (each) =>

@@ -130,6 +130,16 @@ const getBackOnBike = (input: RiderInput): void => {
   input.remount = true;
 };
 
+const planLine = (
+  state: RaceState,
+  track: Track,
+  rider: RiderState,
+  police: boolean
+): Aim =>
+  police
+    ? copAim(state.pilot, state, track, rider)
+    : chooseLine(state.pilot, state, track, rider, Number.POSITIVE_INFINITY);
+
 export const pilotRider = (
   state: RaceState,
   track: Track,
@@ -151,19 +161,24 @@ export const pilotRider = (
   riding.brakeShare = Math.min(MOST_BRAKE_SHARE, BRAKE_SHARE + pace.lift);
   slickAhead.metres = Number.POSITIVE_INFINITY;
   slickAhead.speed = Number.POSITIVE_INFINITY;
-  const aim = straightened(
+  let planned = rider.jumpTaken;
+  let aim = jumpAim(
+    state,
     track,
     rider,
-    jumpAim(
+    planLine(state, track, rider, police),
+    roll
+  );
+  while (rider.jumpTaken !== planned) {
+    planned = rider.jumpTaken;
+    aim = jumpAim(
       state,
       track,
       rider,
-      police
-        ? copAim(history, state, track, rider)
-        : chooseLine(history, state, track, rider, Number.POSITIVE_INFINITY),
+      planLine(state, track, rider, police),
       roll
-    )
-  );
-  ride(history, track, rider, aim, pace, input);
+    );
+  }
+  ride(history, track, rider, straightened(track, rider, aim), pace, input);
   fight(state, rider, input, roll);
 };

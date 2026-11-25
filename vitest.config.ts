@@ -13,6 +13,7 @@ const viteTests = [
   "apps/web/test/renderer-lifecycle.test.ts",
   "apps/web/test/rider-gait.test.ts",
   "apps/web/test/seated-callers.test.ts",
+  "apps/web/test/shadow-casters.test.ts",
   "apps/web/test/walker-model.test.ts",
 ];
 const policeTest = "packages/career/src/police.test.ts";
@@ -32,6 +33,7 @@ export default defineConfig({
             "tools/{art,perf,verify,road-test,rooms}/test/**/*.test.ts",
           ],
           name: "node",
+          setupFiles: ["tools/perf/test/bench-queue-env.ts"],
         },
       },
       {

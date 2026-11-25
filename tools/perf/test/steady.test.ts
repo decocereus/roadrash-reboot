@@ -10,6 +10,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   childRecord,
   MAX_WARM_WINDOWS,
+  MIN_WARM_WINDOWS,
   produce,
   settleWindows,
   STEADY_TOLERANCE,
@@ -59,8 +60,8 @@ const slowThenSteadyClock = () =>
     (window) => SLOW_THEN_STEADY[window] ?? SLOW_THEN_STEADY.at(-1) ?? 1
   );
 
-const neverAgreeingClock = () =>
-  windowClock((window) => (window % 2 === 0 ? 1 : 1 + STEADY_TOLERANCE * 3));
+const alwaysFasterClock = () =>
+  windowClock((window) => (1 - STEADY_TOLERANCE * 1.5) ** window);
 
 const produced = async (
   task: ChildRecord["task"],
@@ -141,17 +142,13 @@ describe("the node child producer", () => {
   );
 
   it.each(["time", "alloc"] as const)(
-    "%s: a child that never settles fails with WarmUpUnsettled and writes no record",
+    "%s: a child that keeps getting faster by more than 3% a window fails with WarmUpUnsettled and writes no record",
     async (task) => {
       const early = {
         ...referenceScenario(),
         window: { from: 1, to: WINDOW_TICKS },
       };
-      const { outcome, out } = await produced(
-        task,
-        early,
-        neverAgreeingClock()
-      );
+      const { outcome, out } = await produced(task, early, alwaysFasterClock());
       expect(existsSync(out)).toBeFalsy();
       expect(outcome).toMatchObject({
         _tag: "WarmUpUnsettled",
@@ -165,18 +162,71 @@ describe("the node child producer", () => {
   );
 });
 
+const settledAt = async (means: readonly number[]) => {
+  let timed = 0;
+  const outcome = await Effect.runPromise(
+    settleWindows({ id: "synthetic-v1" }, () => {
+      timed += 1;
+      return [means[timed - 1] ?? Number.NaN];
+    }).pipe(
+      Effect.map((warmup) => warmup.length),
+      Effect.catchTag("WarmUpUnsettled", () => Effect.succeed("unsettled"))
+    )
+  );
+  return { outcome, timed };
+};
+
 describe(settleWindows, () => {
-  it("stops at the first two windows whose means agree", async () => {
-    const within = 1 + STEADY_TOLERANCE / 2;
-    const means = [3, 1.6, within, 1];
-    let timed = 0;
-    const warmup = await Effect.runPromise(
-      settleWindows({ id: "synthetic-v1" }, () => {
-        timed += 1;
-        return [means[timed - 1] ?? Number.NaN];
-      })
+  it("stops at the first window no more than 3% faster than the fastest before it", async () => {
+    const within = 1.6 * (1 - STEADY_TOLERANCE / 2);
+    await expect(settledAt([3, 1.6, within, 1])).resolves.toStrictEqual({
+      outcome: 3,
+      timed: 3,
+    });
+  });
+
+  it("keeps the minimum of three windows when the second already matches the first", async () => {
+    await expect(settledAt([1, 1, 1, 1])).resolves.toStrictEqual({
+      outcome: MIN_WARM_WINDOWS,
+      timed: MIN_WARM_WINDOWS,
+    });
+  });
+
+  it.each([
+    {
+      job: "45360158122 on an AMD EPYC 9V45",
+      means: [
+        0.2515, 0.1655, 0.1466, 0.1513, 0.1348, 0.129, 0.1404, 0.1349, 0.1426,
+        0.1493,
+      ],
+      settles: 4,
+    },
+    {
+      job: "45462280830 attempt 1",
+      means: [
+        0.2787, 0.1647, 0.1761, 0.1679, 0.1576, 0.1798, 0.1652, 0.1579, 0.1895,
+        0.1624,
+      ],
+      settles: 3,
+    },
+  ])(
+    "settles the reference-v1 windows that failed $job at window $settles",
+    async ({ means, settles }) => {
+      await expect(settledAt(means)).resolves.toStrictEqual({
+        outcome: settles,
+        timed: settles,
+      });
+    }
+  );
+
+  it("does not settle a child that keeps getting faster by more than 3% a window", async () => {
+    const faster = Array.from(
+      { length: MAX_WARM_WINDOWS },
+      (_, window) => (1 - STEADY_TOLERANCE * 1.5) ** window
     );
-    expect(warmup.map((each) => each.mean)).toStrictEqual(means);
-    expect(timed).toBe(4);
+    await expect(settledAt(faster)).resolves.toStrictEqual({
+      outcome: "unsettled",
+      timed: MAX_WARM_WINDOWS,
+    });
   });
 });

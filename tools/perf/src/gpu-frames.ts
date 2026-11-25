@@ -284,6 +284,15 @@ const partTimesOf = (samples: readonly GpuSample[], part: string): number[] =>
     })
     .toSorted((left, right) => left - right);
 
+const partTrianglesOf = (
+  samples: readonly GpuSample[],
+  part: string
+): number[] =>
+  samples.flatMap(({ capture }) => {
+    const column = capture.parts.indexOf(part);
+    return capture.frames.map((frame) => frame.triangles[column] ?? Number.NaN);
+  });
+
 const shares = {
   "frame.interval.p50": 0.5,
   "frame.interval.p95": 0.95,
@@ -321,6 +330,9 @@ const valueOf = (metric: string, samples: readonly GpuSample[]): number => {
   }
   if (metric === "main.longTask.blockingMs") {
     return total(samples.map(blockingOf));
+  }
+  if (metric === "render.shadowTriangles.max") {
+    return Math.max(...partTrianglesOf(samples, "shadow"));
   }
   if (isPartMetric(metric)) {
     return quantile(partTimesOf(samples, partMetrics[metric]), 0.95);
@@ -488,7 +500,7 @@ export const evaluateGpu = (
     ...results.flatMap((each) => each.observations),
     ...barRead.observations,
   ];
-  const verdicts = judge(
+  const { evidence, verdicts } = judge(
     limits,
     observations,
     requiredRows(["gpu"], [], [environment])
@@ -501,6 +513,7 @@ export const evaluateGpu = (
     counts,
     lines: [
       ...failures,
+      ...evidence,
       ...verdicts.map((verdict) => verdict.text),
       ...firstUse.held,
       ...counts.flatMap(({ peaks, scenario }) =>
@@ -512,6 +525,9 @@ export const evaluateGpu = (
       ),
     ],
     observations,
-    ok: failures.length === 0 && verdicts.every((verdict) => verdict.ok),
+    ok:
+      failures.length === 0 &&
+      evidence.length === 0 &&
+      verdicts.every((verdict) => verdict.ok),
   };
 };

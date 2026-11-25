@@ -90,7 +90,7 @@ const nextEvent = async (target: EventTarget, type: string): Promise<null> => {
   return await promise;
 };
 
-const acquire = async (notes: string[]): Promise<AcquiredAssets> => {
+export const acquire = async (notes: string[]): Promise<AcquiredAssets> => {
   const { promise, reject, resolve } = Promise.withResolvers<AcquiredAssets>();
   const runtime = browserAssetRuntime();
   const loadCelebrity = celebrityLoader(

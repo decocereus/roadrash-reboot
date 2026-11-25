@@ -19,10 +19,13 @@ import { lookOf } from "../src/game/looks.ts";
 import { isInstancedMesh, isMesh, isSkinnedMesh } from "../src/game/meshes.ts";
 import { glows } from "../src/game/model-slots.ts";
 import { createRiderFigure } from "../src/game/rider-figure.ts";
+import type { ShadowReach } from "../src/game/shadow-reach.ts";
 import { stageEverything, warmStaged } from "../src/game/staging.ts";
 import type { Staged } from "../src/game/staging.ts";
 import { uploadSpan } from "../src/game/uploads.ts";
 import { pinnedAssets, pinnedCelebrities } from "./pinned-assets.ts";
+
+const everyCaster: ShadowReach = { reaches: () => true };
 
 const HELMET_REACH = 0.4;
 
@@ -345,7 +348,7 @@ describe("traffic instance uploads", () => {
     const race = createRaceRun(defaultSetup(track, 3));
     const fleet = placedFleet(assets, shading, race.view.cars);
     const meshes = instancedIn(fleet.group);
-    fleet.commit(0);
+    fleet.commit(0, everyCaster);
     const drawn = meshes.filter((mesh) => mesh.count > 0);
     expect(drawn).not.toHaveLength(0);
     expect(
@@ -366,7 +369,7 @@ describe("traffic instance uploads", () => {
     ).toStrictEqual([]);
     const painted = meshes.map((mesh) => coloursOf(mesh).version);
     expect(painted.filter((version) => version > 0)).not.toHaveLength(0);
-    fleet.commit(1);
+    fleet.commit(1, everyCaster);
     expect(meshes.map((mesh) => coloursOf(mesh).version)).toStrictEqual(
       painted
     );
@@ -379,7 +382,7 @@ describe("traffic instance uploads", () => {
     const assets = await pinnedAssets();
     const race = createRaceRun(defaultSetup(track, 3));
     const riding = placedFleet(assets, shading, race.view.cars);
-    riding.commit(0);
+    riding.commit(0, everyCaster);
     const consumed = instancedIn(riding.group).map((mesh) => {
       const colours = coloursOf(mesh);
       colours.clearUpdateRanges();
@@ -390,7 +393,7 @@ describe("traffic instance uploads", () => {
         version: colours.version,
       };
     });
-    riding.commit(1000);
+    riding.commit(1000, everyCaster);
     const repainted = consumed
       .map(({ before, colours, mesh, version }) => {
         const changed = componentsChanged(before, colours.array);
@@ -420,7 +423,7 @@ describe("traffic instance uploads", () => {
       }))
     );
     const fresh = placedFleet(assets, shading, race.view.cars);
-    fresh.commit(1000);
+    fresh.commit(1000, everyCaster);
     expect(instancedIn(riding.group).map(drawnOf)).toStrictEqual(
       instancedIn(fresh.group).map(drawnOf)
     );

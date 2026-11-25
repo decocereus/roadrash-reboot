@@ -9,11 +9,46 @@ import {
   METAL,
   NVIDIA,
   packRiding,
+  SHADOW_TRIANGLES,
   steady,
   steadyBar,
 } from "./gpu-fixture.ts";
 
 describe("gpu part budgets", () => {
+  it("fails a B window whose shadow pass draws more triangles than the committed budget", () => {
+    const budget = limits.find(
+      (each) =>
+        each.environment === METAL &&
+        each.metric === "render.shadowTriangles.max" &&
+        each.scenario === packRiding?.id
+    );
+    if (!budget) {
+      throw new Error(
+        "budgets.json has no pack-riding shadow triangle budget."
+      );
+    }
+    const over = budget.value + 1;
+    const evaluation = evaluateGpu(
+      campaign((scenario, side) =>
+        isPack(scenario) && side === "B"
+          ? {
+              ...steady,
+              shadowTriangles: (index) =>
+                index === 9 ? over : SHADOW_TRIANGLES,
+            }
+          : steady
+      ),
+      steadyBar,
+      limits,
+      METAL,
+      null
+    );
+    expect(failing(evaluation.lines)).toStrictEqual([
+      `FAIL gpu pack-riding-v1 render.shadowTriangles.max [gpu-helium-metal] observed=${over} triangles limit <= ${budget.value} triangles A=${SHADOW_TRIANGLES.toPrecision(5)}`,
+    ]);
+    expect(evaluation.ok).toBeFalsy();
+  });
+
   it("fails a B window whose riders take longer than the committed budget", () => {
     const budget = limits.find(
       (each) =>
