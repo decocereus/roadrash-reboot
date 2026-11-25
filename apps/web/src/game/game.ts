@@ -512,17 +512,16 @@ const startGame = (
     cast.puffs?.update(seconds);
     frame.profiler?.lap("riders");
 
-    placeFleet(blend);
-    frame.profiler?.lap("fleet");
-
     chase.update(stage.track, cast.subject, seconds);
     if (quality.preset.farRiders) {
       pickFarRiders(cast.views, stage.me, chase.camera, canvas.clientHeight);
     }
     frame.profiler?.lap("camera");
-    stage.world.showRoadLife(stage.race.view, cast.subject.s);
     stage.world.follow(chase.camera, cast.subject.s);
+    stage.world.showRoadLife(stage.race.view, cast.subject.s);
     frame.profiler?.lap("world");
+    placeFleet(blend);
+    frame.profiler?.lap("fleet");
     present();
   };
 

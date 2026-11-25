@@ -607,7 +607,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
         stage.fleet.hideCrossCar(index);
       }
     }
-    stage.fleet.commit(subject.s);
+    stage.fleet.commit(subject.s, stage.world.shadows);
   };
 
   return {
