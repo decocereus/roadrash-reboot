@@ -69,8 +69,8 @@ const benchRaceSetup = (race: PracticeRace): CareerRaceSetup =>
 export const roadLifeSetup = (): CareerRaceSetup =>
   benchRaceSetup(roadLifeRace);
 
-const stressSetup = (): CareerRaceSetup => {
-  const setup = benchRaceSetup(benchRaces.stress);
+const stressSetup = (seed: number): CareerRaceSetup => {
+  const setup = benchRaceSetup({ ...benchRaces.stress, seed });
   return {
     ...setup,
     pacing: STRESS_PACING,
@@ -93,7 +93,9 @@ const withoutWalkers = (setup: CareerRaceSetup): CareerRaceSetup => ({
   track: { ...setup.track, walkSites: [] },
 });
 
-export const benchSetup = (bench: Bench): CareerRaceSetup =>
+export const benchSetup = (bench: Bench, seed: number): CareerRaceSetup =>
   withoutWalkers(
-    bench === "stress" ? stressSetup() : benchRaceSetup(benchRaces.reference)
+    bench === "stress"
+      ? stressSetup(seed)
+      : benchRaceSetup({ ...benchRaces.reference, seed })
   );

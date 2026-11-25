@@ -7,19 +7,19 @@ import {
   calibrationFailures,
   nodeEnvironment,
   nodeSample,
-  p95Of,
   runChild,
   scalesAcross,
 } from "./node-lane.ts";
 import type { NodeSample } from "./node-lane.ts";
 import type { ChildRecord } from "./node.ts";
-import { median } from "./result.ts";
+import { measurementProtocol } from "./protocol.ts";
+import { median, p95Of } from "./result.ts";
 import { ROAD_LIFE } from "./road-life.ts";
 import { WINDOW_TICKS } from "./scenarios.ts";
 import type { Scenario } from "./scenarios.ts";
 import type { Side } from "./sides.ts";
 
-const SIDE_B_RUNS = 5;
+const SIDE_B_RUNS = measurementProtocol.sideBRuns.lobbyAndRoadLife;
 
 export const sideBRecord = Schema.Struct({
   calibrations: Schema.Array(nodeSample),

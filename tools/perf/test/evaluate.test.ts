@@ -301,6 +301,43 @@ describe("perf gate red cases", { timeout: 30_000 }, () => {
     }
   });
 
+  it("refuses room runs that repeat a part or miss a part's seeds before judging any timing", () => {
+    const whole = samplesOf("payload", steadyLanes(steady), build);
+    const [lane, ...others] = whole.node;
+    if (!lane) {
+      throw new Error("the steady samples have no node lane");
+    }
+    const [first, second] = lane.rooms;
+    const relabelled = {
+      ...second,
+      record: {
+        ...second.record,
+        room: { ...second.record.room, part: 2 as const },
+      },
+    };
+    const broken = [
+      { ...lane, rooms: [first, first, first] as const },
+      { ...lane, rooms: [first, second, relabelled] as const },
+    ];
+    for (const each of broken) {
+      const entry = throughEntry(
+        { ...whole, node: [each, ...others] },
+        budgets
+      );
+      expect(entry.status).not.toBe(0);
+      expect(entry.stdout).toContain(
+        `FAIL node ${lane.scenario} RoomSeedsIncomplete`
+      );
+      expect(
+        entry.stdout
+          .split("\n")
+          .filter((line) => line.includes(`node ${lane.scenario} room.`))
+          .filter((line) => !line.endsWith("missing measurement"))
+      ).toStrictEqual([]);
+      expect(entry.stdout).not.toContain("PASS");
+    }
+  });
+
   it("reports each scenario's cold tick p99 without judging it", () => {
     const evaluation = evaluateGate(
       samplesOf("sim", steadyLanes({ runner: 1.6, sim: 1.3 }), build),
@@ -348,7 +385,7 @@ describe("perf gate red cases", { timeout: 30_000 }, () => {
     );
     const failed = evaluateGate(slowerSim, budgets);
     expect(
-      failing(failed.lines).map((line) => line.split(" observed=")[0])
+      failing(failed.lines).map((line) => line.split(" observed")[0])
     ).toStrictEqual(
       ["sim.ticksPerSecond", "sim.tick.p95", "sim.tick.p99"].flatMap((metric) =>
         scenarios.map(
@@ -358,7 +395,7 @@ describe("perf gate red cases", { timeout: 30_000 }, () => {
     );
     expect(
       failed.lines.find((line) => line.includes("reference-v1 sim.tick.p95"))
-    ).toContain("A/B=1.3000 (<= 1.15)");
+    ).toContain("observed A/B=1.3000 limit <= 1.15");
     const entry = throughEntry(slowerSim, budgets);
     expect(entry.status).toBe(1);
     expect(entry.stdout).toContain("scale=1.600");

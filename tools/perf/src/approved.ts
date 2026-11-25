@@ -7,6 +7,8 @@ import * as Schema from "effect/Schema";
 import { baselineSummary, summaryProblems } from "./baseline.ts";
 import { budgetProblems, budgetsFile } from "./budgets.ts";
 import { ConfigInvalid } from "./config-invalid.ts";
+import { currentProtocol } from "./protocol.ts";
+import { readRecordings, recordedProblems } from "./recorded.ts";
 import { sha256Of } from "./result.ts";
 
 const decodeBudgets = Schema.decodeUnknownEffect(
@@ -82,9 +84,11 @@ export const checkApproved = Effect.fnUntraced(function* checkApproved(
           })
       )
     );
+  const recordings = yield* readRecordings(root, budgets);
   const problems = [
     ...hashes.filter((each) => each !== null),
     ...summaryProblems(summary, budgets),
+    ...recordedProblems(budgets, recordings, currentProtocol),
   ];
   if (problems.length > 0) {
     return yield* new ConfigInvalid({

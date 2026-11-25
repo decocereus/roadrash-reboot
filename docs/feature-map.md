@@ -299,6 +299,7 @@ Test files:
 - `apps/web/test/pilot-replay.ts`
 - `packages/sim/src/pilot-cornering.test.ts`
 - `packages/sim/src/pilot-flight.test.ts`
+- `packages/sim/src/pilot-jumps.test.ts`
 - `packages/sim/src/pilot-landing.test.ts`
 - `packages/sim/src/pilot-traffic.test.ts`
 
@@ -458,7 +459,7 @@ The race state the HUD shows and how often it is published: speed, gear, place, 
 - Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/design/screens.md#6-race-hud](design/screens.md#6-race-hud), [docs/design/art-direction.md#hud-style](design/art-direction.md#hud-style), [DESIGN.md#speedometer](../DESIGN.md#speedometer)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md), [single-race.md](../.claude/skills/verify-rushline/features/single-race.md)
 - Perf: `timing.stamp.trimmedMean`, `sim.tick.p95`, `room.rollback.p95`
-- Owns: `apps/web/src/game/hud*.ts`, `apps/web/src/game/race-feedback.ts`, `apps/web/src/hud-feed.ts`, `apps/web/test/hud-cadence.test.ts`, `apps/web/test/race-tower.test.tsx`, `packages/sim/src/timing*.ts`
+- Owns: `apps/web/src/game/hud*.ts`, `apps/web/src/game/race-feedback.ts`, `apps/web/src/hud-feed.ts`, `apps/web/test/hud-cadence.test.ts`, `apps/web/test/hud-tower-rounding.test.ts`, `apps/web/test/race-tower.test.tsx`, `apps/web/test/tower-publish-heap.test.ts`, `apps/web/test/tower-publish-heap.ts`, `apps/web/test/tower-ride.ts`, `packages/sim/src/timing*.ts`
 
 Source files:
 
@@ -472,7 +473,11 @@ Source files:
 Test files:
 
 - `apps/web/test/hud-cadence.test.ts`
+- `apps/web/test/hud-tower-rounding.test.ts`
 - `apps/web/test/race-tower.test.tsx`
+- `apps/web/test/tower-publish-heap.test.ts`
+- `apps/web/test/tower-publish-heap.ts`
+- `apps/web/test/tower-ride.ts`
 - `packages/sim/src/timing.test.ts`
 
 ### Chase camera
@@ -552,7 +557,7 @@ The riders, bikes and traffic cars drawn from the race each frame: placement on 
 - Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/design/art-direction.md#riders-and-bikes](design/art-direction.md#riders-and-bikes), [docs/design/art-direction.md#budget-and-build](design/art-direction.md#budget-and-build)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`, `riders.cpu.p95`
-- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/fleet.ts`, `apps/web/src/game/cross-car-pose.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/src/game/bike-fit.ts`, `apps/web/test/actor-tables.test.ts`, `apps/web/test/bike-contact.ts`, `apps/web/test/figure-wear.test.ts`, `apps/web/test/figure-shadow.test.ts`, `apps/web/test/planted-hands.test.ts`, `apps/web/test/rider-gait.test.ts`, `apps/web/test/rider-poses.test.ts`, `apps/web/test/seated-callers.test.ts`, `apps/web/test/seated-contacts.ts`, `apps/web/test/rider-shade.ts`, `apps/web/test/shade-flats.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`, `apps/web/src/game/gait.ts`, `apps/web/src/game/strider.ts`, `apps/web/src/game/foot-lock.ts`
+- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/fleet.ts`, `apps/web/src/game/shadow-reach.ts`, `apps/web/src/game/cross-car-pose.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/src/game/bike-fit.ts`, `apps/web/test/actor-tables.test.ts`, `apps/web/test/bike-contact.ts`, `apps/web/test/shadow-casters*.ts`, `apps/web/test/figure-wear.test.ts`, `apps/web/test/figure-shadow.test.ts`, `apps/web/test/planted-hands.test.ts`, `apps/web/test/rider-gait.test.ts`, `apps/web/test/rider-poses.test.ts`, `apps/web/test/seated-callers.test.ts`, `apps/web/test/seated-contacts.ts`, `apps/web/test/rider-shade.ts`, `apps/web/test/shade-flats.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`, `apps/web/src/game/gait.ts`, `apps/web/src/game/strider.ts`, `apps/web/src/game/foot-lock.ts`
 
 Source files:
 
@@ -578,6 +583,7 @@ Source files:
 - `apps/web/src/game/rider-figure.ts`
 - `apps/web/src/game/rider-moves.ts`
 - `apps/web/src/game/rider-views.ts`
+- `apps/web/src/game/shadow-reach.ts`
 - `apps/web/src/game/strider.ts`
 
 Test files:
@@ -595,6 +601,8 @@ Test files:
 - `apps/web/test/seated-callers.test.ts`
 - `apps/web/test/seated-contacts.ts`
 - `apps/web/test/shade-flats.ts`
+- `apps/web/test/shadow-casters.test.ts`
+- `apps/web/test/shadow-casters.ts`
 
 ### Frame rate and quality
 
@@ -1253,7 +1261,7 @@ Test files:
 - Docs: [docs/observability.md#frame-profiles](observability.md#frame-profiles), [docs/standards/tooling.md#the-checks](standards/tooling.md#the-checks)
 - Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
 - Perf: none yet
-- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/room.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/load.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/gpu*.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane*.ts`, `tools/perf/src/node-room.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/bench-queue*.ts`, `tools/perf/test/load.test.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu-page.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`, `tools/perf/test/stamp-guard.test.ts`, `tools/perf/test/steady.test.ts`
+- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/record.ts`, `tools/perf/room.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/load.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/gpu*.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane*.ts`, `tools/perf/src/node-room.ts`, `tools/perf/src/protocol.ts`, `tools/perf/src/record.ts`, `tools/perf/src/recorded.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/bench-queue*.ts`, `tools/perf/test/budget-verdicts.test.ts`, `tools/perf/test/load.test.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu-page.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`, `tools/perf/test/recorded-guard.test.ts`, `tools/perf/test/side-a-missing.test.ts`, `tools/perf/test/steady.test.ts`
 
 Source files:
 
@@ -1261,6 +1269,7 @@ Source files:
 - `tools/perf/gpu.ts`
 - `tools/perf/measure.ts`
 - `tools/perf/node.ts`
+- `tools/perf/record.ts`
 - `tools/perf/room.ts`
 - `tools/perf/src/approved.ts`
 - `tools/perf/src/baseline.ts`
@@ -1283,10 +1292,14 @@ Source files:
 - `tools/perf/src/measure-report.ts`
 - `tools/perf/src/measure.ts`
 - `tools/perf/src/measurement-failed.ts`
+- `tools/perf/src/node-lane-room.ts`
 - `tools/perf/src/node-lane-side-b.ts`
 - `tools/perf/src/node-lane.ts`
 - `tools/perf/src/node-room.ts`
 - `tools/perf/src/node.ts`
+- `tools/perf/src/protocol.ts`
+- `tools/perf/src/record.ts`
+- `tools/perf/src/recorded.ts`
 - `tools/perf/src/result.ts`
 - `tools/perf/src/scenarios.ts`
 - `tools/perf/src/select.ts`
@@ -1294,10 +1307,13 @@ Source files:
 
 Test files:
 
+- `tools/perf/test/bench-queue-env.test.ts`
+- `tools/perf/test/bench-queue-env.ts`
 - `tools/perf/test/bench-queue-race.test.ts`
 - `tools/perf/test/bench-queue-rules.test.ts`
 - `tools/perf/test/bench-queue-worker.ts`
 - `tools/perf/test/bench-queue.test.ts`
+- `tools/perf/test/budget-verdicts.test.ts`
 - `tools/perf/test/check.test.ts`
 - `tools/perf/test/evaluate.test.ts`
 - `tools/perf/test/fixture-build.ts`
@@ -1306,8 +1322,9 @@ Test files:
 - `tools/perf/test/gpu.test.ts`
 - `tools/perf/test/load.test.ts`
 - `tools/perf/test/measure-page.test.ts`
+- `tools/perf/test/recorded-guard.test.ts`
 - `tools/perf/test/red-cases.ts`
-- `tools/perf/test/stamp-guard.test.ts`
+- `tools/perf/test/side-a-missing.test.ts`
 - `tools/perf/test/steady.test.ts`
 
 ### Lint plugins
@@ -1478,7 +1495,7 @@ The race room's rules: the setup that seats up to eight humans with pacing off, 
 - Start: `apps/rooms/src/host.ts`, `apps/rooms/src/lobby.ts`, `packages/sim/src/room.ts`
 - Docs: [docs/architecture/race-rooms.md#race-rooms](architecture/race-rooms.md#race-rooms), [docs/standards/simulation.md#keep-the-simulation-deterministic](standards/simulation.md#keep-the-simulation-deterministic), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
 - Verify: [race-room.md](../.claude/skills/verify-rushline/features/race-room.md), [netcode-compare.md](../.claude/skills/verify-rushline/features/netcode-compare.md)
-- Perf: `room.tick.p95`, `room.confirm.p95`, `room.rollback.p95`, `room.checkpoint.p95`, `room.allocatedBytesPerTick`, `room.client.allocatedBytesPerTick`, `room.frame.allocatedBytesPerTick`
+- Perf: `room.tick.p95`, `room.confirm.p95`, `room.rollback.p95`, `room.checkpoint.p50`, `room.allocatedBytesPerTick`, `room.client.allocatedBytesPerTick`, `room.frame.allocatedBytesPerTick`
 - Owns: `packages/sim/src/room*.ts`, `packages/career/src/room-race*.ts`, `apps/rooms/**`, `scripts/rooms-build.test.ts`, `scripts/sim-fingerprint.test.ts`, `apps/web/src/components/guest-name.ts`, `apps/web/test/member-key.test.ts`, `apps/web/test/member-rows.test.tsx`, `apps/web/test/rejoin-cards.test.tsx`, `apps/web/src/components/room-lobby.tsx`, `apps/web/src/components/room-race-screens.tsx`, `apps/web/src/components/use-handoff.ts`, `apps/web/src/prepare-outcome.ts`, `apps/web/src/race-handoff.ts`, `apps/web/src/room-handoff.ts`, `apps/web/test/prepare-outcome.test.ts`, `apps/web/test/race-handoff.test.ts`, `apps/web/test/room-boot-failure.test.tsx`, `apps/web/test/room-limited.test.tsx`, `apps/web/test/finding-riders.test.tsx`, `apps/web/test/room-address.test.ts`, `apps/web/test/room-navigation.test.ts`, `apps/web/test/room-run-stub.ts`, `apps/web/src/components/room-url.ts`, `apps/web/src/components/room-preview.ts`, `apps/web/test/room-preview.test.ts`, `apps/web/test/room-pacing.test.ts`, `apps/web/test/room-screen.test.ts`, `tools/rooms/**`
 
 Source files:

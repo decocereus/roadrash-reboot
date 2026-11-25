@@ -19,7 +19,10 @@ import { lookOf } from "../src/game/looks.ts";
 import { isInstancedMesh } from "../src/game/meshes.ts";
 import { createRiderFigure } from "../src/game/rider-figure.ts";
 import type { Stance } from "../src/game/rider-figure.ts";
+import type { ShadowReach } from "../src/game/shadow-reach.ts";
 import { pinnedAssets } from "./pinned-assets.ts";
+
+const everyCaster: ShadowReach = { reaches: () => true };
 
 const track = trackFor("slag-row");
 const ROLLED = 0.25;
@@ -110,7 +113,7 @@ describe("traffic paint", () => {
     for (let index = 0; index < cars.length; index += 1) {
       fleet.place(track, index, template.s);
     }
-    fleet.commit(template.s);
+    fleet.commit(template.s, everyCaster);
     const drawn = instancedIn(fleet.group).map((mesh) => [
       ...(mesh.instanceColor?.array.slice(0, mesh.count * 3) ?? []),
     ]);

@@ -2,7 +2,7 @@ import { nextSeed, unitOf } from "@racer/track/random";
 import { curvatureAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
-import { ridingOver } from "./carrier.ts";
+import { jumpClears } from "./carrier.ts";
 import { OIL_SLIP, ROCK_BUMP } from "./hazards.ts";
 import type { BikeBump } from "./hazards.ts";
 import { WALKER_BUMP } from "./pedestrians.ts";
@@ -423,7 +423,7 @@ export const gatherObstructions = (
   const { cars, crossCars, pedestrians } = state;
   for (let index = 0; index < cars.length; index += 1) {
     const car = cars[index];
-    if (car && !ridingOver(rider, index)) {
+    if (car && !jumpClears(cars, rider, index)) {
       obstructWithCar(outlook, rider, car);
     }
   }

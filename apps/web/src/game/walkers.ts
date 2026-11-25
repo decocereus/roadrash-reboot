@@ -10,6 +10,8 @@ import { crowdAt } from "./bazaar-crowd.ts";
 import type { Shading } from "./cel.ts";
 import { disposeTree } from "./dispose.ts";
 import { placeOnGround } from "./ground.ts";
+import { castersFirst } from "./shadow-reach.ts";
+import type { CasterCounts, ShadowReach } from "./shadow-reach.ts";
 import { uploadSpan } from "./uploads.ts";
 import { WALKER_OUTFITS, walkerBodies, walkerFrameOf } from "./walker-clips.ts";
 import type { CrowdMode, WalkerLook } from "./walker-clips.ts";
@@ -18,6 +20,10 @@ import { useWalkerPoses } from "./walker-skin.ts";
 const BEHIND = 40;
 const AHEAD = 300;
 const BODY_HEIGHT = 1.7;
+const FIGURE_REACH = 1.3;
+const HIDDEN = 0;
+const CASTS = 1;
+const SHOWN = 2;
 const QUARTER = Math.PI / 2;
 const OUTFIT_SALT = 7919;
 
@@ -36,6 +42,7 @@ interface BodyMarks {
   readonly frames: THREE.InstancedBufferAttribute;
   readonly outfits: THREE.InstancedBufferAttribute;
   readonly scale: number;
+  readonly casters: CasterCounts;
   count: number;
 }
 
@@ -103,13 +110,34 @@ const bodyMarksOf = (
   mesh.castShadow = true;
   mesh.count = 0;
   mesh.visible = false;
-  return { count: 0, frames, mesh, outfits, scale };
+  return {
+    casters: castersFirst(mesh),
+    count: 0,
+    frames,
+    mesh,
+    outfits,
+    scale,
+  };
+};
+
+const write = (
+  body: BodyMarks,
+  matrix: THREE.Matrix4,
+  frame: number,
+  outfit: number
+): void => {
+  const slot = body.count;
+  body.mesh.setMatrixAt(slot, matrix);
+  body.frames.setX(slot, frame + 1);
+  body.outfits.setX(slot, outfit);
+  body.count = slot + 1;
 };
 
 export const createWalkerMarks = (
   track: Track,
   shading: Shading,
-  asset: WalkerAsset
+  asset: WalkerAsset,
+  shadows: ShadowReach
 ): WalkerMarks => {
   const group = new THREE.Group();
   const crowd = crowdAt(track);
@@ -168,24 +196,86 @@ export const createWalkerMarks = (
     return made;
   };
 
-  const place = (walker: PedestrianView, index: number, tick: number): void => {
-    const identity = identityOf(walker, index);
-    const { body, outfit } = identity;
-    const slot = body.count;
-    pose(track, walker, body.scale);
-    body.mesh.setMatrixAt(slot, placer.matrix);
-    body.frames.setX(
-      slot,
-      walkerFrameOf(
-        asset.clips,
-        walker,
-        tick,
-        fellAt[index] ?? tick,
-        identity
-      ) + 1
-    );
-    body.outfits.setX(slot, outfit);
-    body.count = slot + 1;
+  const posed = Array.from({ length: capacity }, () => new THREE.Matrix4());
+  const walkerState = new Uint8Array(capacity);
+  const standingState = new Uint8Array(standing.length);
+  const at = new THREE.Vector3();
+
+  const stateOf = (matrix: THREE.Matrix4, scale: number): number =>
+    shadows.reaches(
+      at.setFromMatrixPosition(matrix),
+      FIGURE_REACH * BODY_HEIGHT * scale
+    )
+      ? CASTS
+      : SHOWN;
+
+  const sortWalkers = (
+    walkers: readonly PedestrianView[],
+    centre: number,
+    tick: number
+  ): void => {
+    for (let index = 0; index < walkers.length; index += 1) {
+      const walker = walkers[index];
+      walkerState[index] = HIDDEN;
+      if (walker) {
+        const down = walker.mode === "down" ? 1 : 0;
+        if (down === 1 && wasDown[index] === 0) {
+          fellAt[index] = tick;
+        }
+        wasDown[index] = down;
+        const matrix = posed[index];
+        if (matrix && walker.s > centre - BEHIND && walker.s < centre + AHEAD) {
+          const { body } = identityOf(walker, index);
+          pose(track, walker, body.scale);
+          matrix.copy(placer.matrix);
+          walkerState[index] = stateOf(matrix, body.scale);
+        }
+      }
+    }
+    for (let index = 0; index < standing.length; index += 1) {
+      const member = standing[index];
+      standingState[index] =
+        member && member.s > centre - BEHIND && member.s < centre + AHEAD
+          ? stateOf(member.matrix, member.scale)
+          : HIDDEN;
+    }
+  };
+
+  const writeWhere = (
+    wanted: number,
+    walkers: readonly PedestrianView[],
+    tick: number
+  ): void => {
+    for (let index = 0; index < walkers.length; index += 1) {
+      const walker = walkers[index];
+      const matrix = posed[index];
+      if (walker && matrix && walkerState[index] === wanted) {
+        const identity = identityOf(walker, index);
+        write(
+          identity.body,
+          matrix,
+          walkerFrameOf(
+            asset.clips,
+            walker,
+            tick,
+            fellAt[index] ?? tick,
+            identity
+          ),
+          identity.outfit
+        );
+      }
+    }
+    for (let index = 0; index < standing.length; index += 1) {
+      const member = standing[index];
+      if (member && standingState[index] === wanted) {
+        write(
+          member.body,
+          member.matrix,
+          walkerFrameOf(asset.clips, member, tick, tick, member),
+          member.outfit
+        );
+      }
+    }
   };
 
   return {
@@ -198,37 +288,15 @@ export const createWalkerMarks = (
       for (const body of bodies) {
         body.count = 0;
       }
-      const walkerCount = walkers.length;
-      for (let index = 0; index < walkerCount; index += 1) {
-        const walker = walkers[index];
-        if (walker) {
-          const down = walker.mode === "down" ? 1 : 0;
-          if (down === 1 && wasDown[index] === 0) {
-            fellAt[index] = tick;
-          }
-          wasDown[index] = down;
-          if (walker.s > centre - BEHIND && walker.s < centre + AHEAD) {
-            place(walker, index, tick);
-          }
-        }
+      sortWalkers(walkers, centre, tick);
+      writeWhere(CASTS, walkers, tick);
+      for (const body of bodies) {
+        body.casters.casting = body.count;
       }
-      const standingCount = standing.length;
-      for (let index = 0; index < standingCount; index += 1) {
-        const member = standing[index];
-        if (member && member.s > centre - BEHIND && member.s < centre + AHEAD) {
-          const { body } = member;
-          const slot = body.count;
-          body.mesh.setMatrixAt(slot, member.matrix);
-          body.frames.setX(
-            slot,
-            walkerFrameOf(asset.clips, member, tick, tick, member) + 1
-          );
-          body.outfits.setX(slot, member.outfit);
-          body.count = slot + 1;
-        }
-      }
-      for (const { count, frames, mesh, outfits } of bodies) {
+      writeWhere(SHOWN, walkers, tick);
+      for (const { casters, count, frames, mesh, outfits } of bodies) {
         mesh.count = count;
+        casters.drawn = count;
         mesh.visible = count > 0;
         if (count > 0) {
           uploadSpan(mesh.instanceMatrix, 0, count);
