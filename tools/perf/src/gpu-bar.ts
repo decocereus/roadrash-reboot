@@ -1,6 +1,7 @@
 import * as Schema from "effect/Schema";
 
 import type { Observation } from "./budgets.ts";
+import type { WindowClock } from "./gpu-clock.ts";
 import {
   frameReaders,
   gpuFrame,
@@ -9,6 +10,7 @@ import {
   peakOf,
   total,
 } from "./gpu-frame-reads.ts";
+import type { ParkReading } from "./gpu-rv.ts";
 import { quantile } from "./result.ts";
 
 export const BAR_BENCH = {
@@ -23,6 +25,7 @@ export const BAR_BENCH = {
 export const barCapture = Schema.Struct({
   camera: Schema.NullOr(Schema.String),
   frames: Schema.Array(gpuFrame),
+  timeOrigin: Schema.Number,
   viewport: Schema.Struct({
     dpr: Schema.Number,
     height: Schema.Number,
@@ -33,8 +36,10 @@ export const barCapture = Schema.Struct({
 
 export interface BarSample {
   readonly capture: typeof barCapture.Type;
+  readonly clock: WindowClock | null;
   readonly consoleErrors: number;
   readonly file: string;
+  readonly park: ParkReading;
 }
 
 const intervalAt = (share: number) => (sample: BarSample) =>
