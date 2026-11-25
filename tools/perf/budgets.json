@@ -30,6 +30,18 @@
         "sha256": "cc0eeefc1626e4051f60797669d510135f837cbfee8d4f3ef03675750de2e821"
       },
       {
+        "file": "tools/perf/baselines/intel-floor-1.vimaan.gpu-chromium-intel.json.gz",
+        "sha256": "647aab040cdc69cc70d1b07d942275675c74d67a15021cb60c3feaecac52a0ed"
+      },
+      {
+        "file": "tools/perf/baselines/intel-floor-2.vimaan.gpu-chromium-intel.json.gz",
+        "sha256": "b504799635190bd14f425b17fbb7d0988006aa9c1aee76d4cafc6d2a7f61a0a3"
+      },
+      {
+        "file": "tools/perf/baselines/intel-floor-3.vimaan.gpu-chromium-intel.json.gz",
+        "sha256": "bcb33aa1eda07822aa51f1dee59d6634fae0a3e332c8e3e26cb77b0f658b9c94"
+      },
+      {
         "file": "tools/perf/baselines/lobby.node-darwin-arm64.json.gz",
         "sha256": "9bd5f82f90b7f3718f95b4968cd5052034046dbf27c9f807473854de11ef3981"
       },
@@ -148,7 +160,7 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "73f7711970904e5ab445653dc75a6c5e8583e18233120ac67be2522d1c2c3247"
+    "summarySha256": "bcbd08aeb40e5eff34da1881f58eba4970965716118a3b1ee3374917b1a15fd9"
   },
   "limits": [
     {
@@ -1808,16 +1820,16 @@
       "value": 4.596490429451265
     },
     {
-      "baseline": 19.899999618530273,
-      "derivation": "1.1 x the worst window: Intel's floor, owner accepted 2026-11-05, not the 60 fps cap",
+      "baseline": 19.600000381469727,
+      "derivation": "1.1 x the worst window: worst of 30 level windows in three main-against-main campaigns at 356a8fb1 on the B A order; Intel's floor, owner accepted 2026-11-05, not the 60 fps cap",
       "direction": "max",
       "environment": "gpu-chromium-intel",
       "metric": "frame.interval.p50",
       "paired": 1.1,
       "scenario": "pack-riding-v1",
-      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "source": "gpu-2026-11-25T11-49-53-415Z-356a8fb-356a8fb",
       "unit": "ms",
-      "value": 21.889999580383304
+      "value": 21.5600004196167
     },
     {
       "baseline": 18.200000762939453,
@@ -1832,16 +1844,16 @@
       "value": 20.0200008392334
     },
     {
-      "baseline": 23.100000381469727,
-      "derivation": "1.15 x the worst window: Intel's floor, owner accepted 2026-11-05, not the 60 fps cap",
+      "baseline": 23.700000762939453,
+      "derivation": "1.15 x the worst window: worst of 30 level windows in three main-against-main campaigns at 356a8fb1 on the B A order; Intel's floor, owner accepted 2026-11-05, not the 60 fps cap",
       "direction": "max",
       "environment": "gpu-chromium-intel",
       "metric": "frame.interval.p95",
       "paired": 1.15,
       "scenario": "pack-riding-v1",
-      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "source": "gpu-2026-11-25T11-21-48-128Z-356a8fb-356a8fb",
       "unit": "ms",
-      "value": 26.565000438690184
+      "value": 27.25500087738037
     },
     {
       "baseline": 21.899999618530273,
@@ -1856,16 +1868,16 @@
       "value": 25.184999561309812
     },
     {
-      "baseline": 39.900001525878906,
-      "derivation": "1.2 x the worst window: Intel's floor, owner accepted 2026-11-05, not the 60 fps cap",
+      "baseline": 37.29999923706055,
+      "derivation": "1.2 x the worst window: worst of 30 level windows in three main-against-main campaigns at 356a8fb1 on the B A order; Intel's floor, owner accepted 2026-11-05, not the 60 fps cap",
       "direction": "max",
       "environment": "gpu-chromium-intel",
       "metric": "frame.interval.p99",
       "paired": 1.2,
       "scenario": "pack-riding-v1",
-      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "source": "gpu-2026-11-25T11-49-53-415Z-356a8fb-356a8fb",
       "unit": "ms",
-      "value": 47.880001831054685
+      "value": 44.75999908447265
     },
     {
       "baseline": 23.200000762939453,
@@ -1880,28 +1892,28 @@
       "value": 27.840000915527344
     },
     {
-      "baseline": 0.021825396825396824,
-      "derivation": "1.2 x the worst window, capped at 1: Intel's floor, owner accepted 2026-11-05, not the 60 fps cap",
+      "baseline": 0.033962264150943396,
+      "derivation": "1.2 x the worst window, capped at 1: worst of 30 level windows in three main-against-main campaigns at 356a8fb1 on the B A order; Intel's floor, owner accepted 2026-11-05, not the 60 fps cap",
       "direction": "max",
       "environment": "gpu-chromium-intel",
       "metric": "frame.missedFraction",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "source": "gpu-2026-11-25T11-49-53-415Z-356a8fb-356a8fb",
       "unit": "share",
-      "value": 0.026190476190476188
+      "value": 0.040754716981132075
     },
     {
-      "baseline": 0.0036101083032490976,
-      "derivation": "1.2 x the worst window, capped at 1: Intel's floor, owner accepted 2026-11-05, not the 60 fps cap",
+      "baseline": 0.00718132854578097,
+      "derivation": "1.2 x the worst window, capped at 1: worst of 30 level windows in three main-against-main campaigns at 356a8fb1 on the B A order; Intel's floor, owner accepted 2026-11-05, not the 60 fps cap",
       "direction": "max",
       "environment": "gpu-chromium-intel",
       "metric": "frame.missedFraction",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "source": "gpu-2026-11-25T11-21-48-128Z-356a8fb-356a8fb",
       "unit": "share",
-      "value": 0.004332129963898917
+      "value": 0.008617594254937163
     },
     {
       "baseline": 0,
