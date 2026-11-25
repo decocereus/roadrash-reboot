@@ -7,10 +7,13 @@ export interface ShadowReach {
 export const HIDDEN = 0;
 export const CASTS = 1;
 export const SHOWN = 2;
+export const UNINKED = 3;
 export const CASTERS_FIRST = [CASTS, SHOWN] as const;
+export const CASTERS_THEN_INKED = [...CASTERS_FIRST, UNINKED] as const;
 
 export interface CasterCounts {
   casting: number;
+  inked: number;
   drawn: number;
 }
 
@@ -32,11 +35,21 @@ export const shadowReachOf = (light: THREE.DirectionalLight): ShadowReach => ({
 });
 
 export const castersFirst = (mesh: THREE.InstancedMesh): CasterCounts => {
-  const counts: CasterCounts = { casting: mesh.count, drawn: mesh.count };
+  const counts: CasterCounts = {
+    casting: mesh.count,
+    drawn: mesh.count,
+    inked: mesh.count,
+  };
   mesh.onBeforeShadow = () => {
     mesh.count = counts.casting;
   };
   mesh.onAfterShadow = () => {
+    mesh.count = counts.drawn;
+  };
+  mesh.onBeforeRender = (_renderer, scene) => {
+    mesh.count = scene.overrideMaterial ? counts.inked : counts.drawn;
+  };
+  mesh.onAfterRender = () => {
     mesh.count = counts.drawn;
   };
   return counts;

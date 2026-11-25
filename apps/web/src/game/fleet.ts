@@ -13,16 +13,18 @@ import { freeze, placeOnGround, whiteInstances } from "./ground.ts";
 import { paintPrimitives } from "./model-slots.ts";
 import type { Palette, Primitive } from "./model-slots.ts";
 import {
-  CASTERS_FIRST,
+  CASTERS_THEN_INKED,
   CASTS,
   castersFirst,
   HIDDEN,
   SHOWN,
+  UNINKED,
 } from "./shadow-reach.ts";
 import type { CasterCounts, ShadowReach } from "./shadow-reach.ts";
 import { uploadSpan } from "./uploads.ts";
 
 const BOXY_HEIGHT = 1.8;
+export const INK_REACH = 600;
 const WHITE: Palette = new Map([["body", "#ffffff"]]);
 const SIDE_STRIPE: Palette = new Map([["accent", "#ff00ff"]]);
 
@@ -76,6 +78,9 @@ const sizeOf = (primitives: readonly Primitive[]): THREE.Vector3 => {
   }
   return bounds.getSize(new THREE.Vector3());
 };
+
+const inkedAt = (s: number, centre: number): typeof SHOWN | typeof UNINKED =>
+  Math.abs(s - centre) <= INK_REACH ? SHOWN : UNINKED;
 
 const DECK_CAR = { halfLength: 2.2, halfWidth: 0.92, height: 1.45 };
 const CARRIER_DECKS = [
@@ -251,6 +256,37 @@ export const createFleet = (
     return true;
   };
 
+  const writePart = (part: FleetPart): void => {
+    let slot = 0;
+    let firstRecoloured = part.cars.length;
+    let lastRecoloured = -1;
+    for (const wanted of CASTERS_THEN_INKED) {
+      for (const member of part.cars) {
+        const matrix = placed[member.index];
+        if (matrix && state[member.index] === wanted) {
+          part.mesh.setMatrixAt(slot, matrix);
+          if (recolour(part, slot, member)) {
+            firstRecoloured = Math.min(firstRecoloured, slot);
+            lastRecoloured = slot;
+          }
+          slot += 1;
+        }
+      }
+      if (wanted === CASTS) {
+        part.casters.casting = slot;
+      }
+      if (wanted === SHOWN) {
+        part.casters.inked = slot;
+      }
+    }
+    part.mesh.count = slot;
+    part.casters.drawn = slot;
+    uploadSpan(part.mesh.instanceMatrix, 0, slot);
+    if (part.mesh.instanceColor) {
+      uploadSpan(part.mesh.instanceColor, firstRecoloured, lastRecoloured + 1);
+    }
+  };
+
   return {
     commit(centre, shadows) {
       const from = centre - reach.behind;
@@ -273,39 +309,11 @@ export const createFleet = (
             reachOfBody[index] ?? 0
           )
             ? CASTS
-            : SHOWN;
+            : inkedAt(s, centre);
         }
       }
       for (const part of parts) {
-        let slot = 0;
-        let firstRecoloured = part.cars.length;
-        let lastRecoloured = -1;
-        for (const wanted of CASTERS_FIRST) {
-          for (const member of part.cars) {
-            const matrix = placed[member.index];
-            if (matrix && state[member.index] === wanted) {
-              part.mesh.setMatrixAt(slot, matrix);
-              if (recolour(part, slot, member)) {
-                firstRecoloured = Math.min(firstRecoloured, slot);
-                lastRecoloured = slot;
-              }
-              slot += 1;
-            }
-          }
-          if (wanted === CASTS) {
-            part.casters.casting = slot;
-          }
-        }
-        part.mesh.count = slot;
-        part.casters.drawn = slot;
-        uploadSpan(part.mesh.instanceMatrix, 0, slot);
-        if (part.mesh.instanceColor) {
-          uploadSpan(
-            part.mesh.instanceColor,
-            firstRecoloured,
-            lastRecoloured + 1
-          );
-        }
+        writePart(part);
       }
     },
     dispose() {
