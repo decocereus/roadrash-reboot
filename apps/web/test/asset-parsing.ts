@@ -1,10 +1,6 @@
 import * as THREE from "three";
 
-import type {
-  AssetParsers,
-  Decoded,
-  RiderAsset,
-} from "../src/game/assets.ts";
+import type { AssetParsers, Decoded, RiderAsset } from "../src/game/assets.ts";
 import type { Primitive } from "../src/game/model-slots.ts";
 import { fakeBike } from "./fake-bike.ts";
 import { fakeRiderMoves, fakeWalkerAsset } from "./walker-asset.ts";
