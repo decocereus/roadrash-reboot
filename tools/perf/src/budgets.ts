@@ -15,7 +15,6 @@ export interface MetricKind {
   readonly lane: Lane;
   readonly unit: string;
   readonly direction: "min" | "max";
-  readonly environments: readonly string[] | null;
   readonly headroom: number;
   readonly paired: number | null;
   readonly perScenario: boolean;
@@ -41,7 +40,6 @@ const pairedKind = (
   margin: number | null
 ): MetricKind => ({
   direction,
-  environments: null,
   headroom: recordedRule.headroom,
   lane: "node",
   metric,
@@ -53,7 +51,6 @@ const pairedKind = (
 
 const normalisedKind = (metric: string, perScenario = true): MetricKind => ({
   direction: "max",
-  environments: null,
   headroom: recordedRule.headroom,
   lane: "node",
   metric,
@@ -67,7 +64,6 @@ const ROOM_ALLOCATION_HEADROOM = 1.1;
 
 const absoluteNodeKind = (metric: string, headroom: number): MetricKind => ({
   direction: "max",
-  environments: null,
   headroom,
   lane: "node",
   metric,
@@ -133,7 +129,6 @@ const buildKinds: readonly MetricKind[] = [
   "assets.texture.total",
 ].map((metric): MetricKind => ({
   direction: "max",
-  environments: null,
   headroom: 1,
   lane: "build",
   metric,
@@ -149,7 +144,6 @@ const gpuKind = (
   paired: number | null
 ): MetricKind => ({
   direction: "max",
-  environments: null,
   headroom: paired ?? 1,
   lane: "gpu",
   metric,
@@ -165,10 +159,7 @@ const gpuKinds: readonly MetricKind[] = [
   gpuKind("frame.interval.p99", "ms", 1.2),
   gpuKind("frame.missedFraction", "share", null),
   gpuKind("riders.cpu.p95", "ms", null),
-  {
-    ...gpuKind("tower.cpu.p95", "ms", null),
-    environments: ["gpu-helium-metal"],
-  },
+  gpuKind("tower.cpu.p95", "ms", null),
   gpuKind("main.longTask.count", "tasks", null),
   gpuKind("main.longTask.blockingMs", "ms", null),
   gpuKind("render.calls.max", "calls", null),
@@ -306,17 +297,12 @@ export const requiredRows = (
   metricKinds
     .filter((kind) => lanes.includes(kind.lane))
     .flatMap((kind) =>
-      environmentsOf(kind.lane, nodeEnvironments, gpuEnvironments)
-        .filter(
-          (environment) =>
-            kind.environments === null ||
-            kind.environments.includes(environment)
-        )
-        .flatMap((environment) =>
+      environmentsOf(kind.lane, nodeEnvironments, gpuEnvironments).flatMap(
+        (environment) =>
           (kind.perScenario ? scenarios.map((each) => each.id) : [null]).map(
             (scenario) => ({ environment, kind, scenario })
           )
-        )
+      )
     );
 
 const finite = (value: number): boolean => Number.isFinite(value);

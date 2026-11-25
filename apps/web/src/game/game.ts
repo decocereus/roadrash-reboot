@@ -464,6 +464,7 @@ const startGame = (
     checkPresented,
     noteDisplay,
     present,
+    presentHalted,
     resize,
     skipsVsync,
     stateOf,
@@ -586,6 +587,7 @@ const startGame = (
       return room && !autopilot ? room.pace() : 1;
     },
     player,
+    presentHalted,
     quality,
     recorder,
     renderer,

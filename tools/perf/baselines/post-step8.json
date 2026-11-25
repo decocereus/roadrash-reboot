@@ -4816,6 +4816,38 @@
       "side": "B",
       "source": "baseline-2026-11-25T03-04-39-637Z-21b6fd2-21b6fd2",
       "value": 859490
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "tower.cpu.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-25T05-50-32-579Z-b5658e3-ea37fca",
+      "value": 0.3
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "tower.cpu.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-25T05-50-32-579Z-b5658e3-ea37fca",
+      "value": 0.3
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "tower.cpu.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-25T06-17-40-061Z-b5658e3-ea37fca",
+      "value": 0.2
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "tower.cpu.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-25T06-17-40-061Z-b5658e3-ea37fca",
+      "value": 0.1
     }
   ],
   "revisions": {
@@ -7273,6 +7305,69 @@
       "sides": {
         "A": "21b6fd275a1c8ce7a47e4a5ce4a13b95403c32aa",
         "B": "21b6fd275a1c8ce7a47e4a5ce4a13b95403c32aa"
+      }
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "facts": {
+        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview",
+        "frameRate": "game setting 60 (rushline.settings.v1), so every vsync is drawn",
+        "pairs": "5 alternating pairs per scenario after one warm-up per scenario and side; the idle side parked on /kit",
+        "side": "side A was main b5658e33; side B was #246's head ea37fca7, which contains it",
+        "source": "the tower.cpu.p95 values are the per-window table in ~/.claude/orchestrate/rushline-launch/evidence/2026-11-25/tower-proof/REPORT.md on the coordinating Mac, at the profiler clock's 0.1 ms resolution; result.json and samples.json stay in /var/tmp/pr246-b/tools/perf/results on vimaan",
+        "verdict": "FAIL on pack-riding-v1 frame.missedFraction only (worst window 2.71% against 2.62%, side A 13.3%); every other row passed",
+        "machine": "vimaan, Intel Core i7-9750H, Intel UHD Graphics 630 (CFL GT2), 8 GiB of RAM",
+        "browser": "/usr/lib/chromium/chromium, windowed through Xwayland on the Intel GPU, RUSHLINE_BROWSER_HOST=linux-intel; the sandbox stays on",
+        "renderer": "ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)",
+        "page": "1919x992 CSS at device pixel ratio 1, the lean preset"
+      },
+      "id": "gpu-2026-11-25T05-50-32-579Z-b5658e3-ea37fca",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "b5658e33d3243371ab851b199b075b0379f3af36",
+        "B": "ea37fca7cc5e4ce599a0a2dea30373e3b09549ee"
+      }
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "facts": {
+        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview",
+        "frameRate": "game setting 60 (rushline.settings.v1), so every vsync is drawn",
+        "pairs": "5 alternating pairs per scenario after one warm-up per scenario and side; the idle side parked on /kit",
+        "side": "side A was main b5658e33; side B was #246's head ea37fca7, which contains it",
+        "source": "the tower.cpu.p95 values are the per-window table in ~/.claude/orchestrate/rushline-launch/evidence/2026-11-25/tower-proof/REPORT.md on the coordinating Mac, at the profiler clock's 0.1 ms resolution; result.json and samples.json stay in /var/tmp/pr246-b/tools/perf/results on vimaan",
+        "verdict": "PASS",
+        "machine": "vimaan, Intel Core i7-9750H, NVIDIA GeForce GTX 1650 Ti with Max-Q Design 4 GiB, 8 GiB of RAM",
+        "browser": "/usr/lib/chromium/chromium, windowed through Xwayland with PRIME offload; the sandbox stays on",
+        "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce GTX 1650 Ti with Max-Q Design/PCIe/SSE2, OpenGL 4.5.0)",
+        "page": "1512x773 CSS at device pixel ratio 2, ?stress&rung=0 and ?stress=reference&rung=0"
+      },
+      "id": "gpu-2026-11-25T06-17-40-061Z-b5658e3-ea37fca",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "b5658e33d3243371ab851b199b075b0379f3af36",
+        "B": "ea37fca7cc5e4ce599a0a2dea30373e3b09549ee"
+      }
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "facts": {
+        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview",
+        "frameRate": "game setting 60 (rushline.settings.v1), so every vsync is drawn",
+        "pairs": "5 alternating pairs per scenario after one warm-up per scenario and side; the idle side parked on /kit",
+        "side": "side A was main b5658e33; side B was #246's head ea37fca7, which contains it",
+        "source": "the tower.cpu.p95 values are the per-window table in ~/.claude/orchestrate/rushline-launch/evidence/2026-11-25/tower-proof/REPORT.md on the coordinating Mac, at the profiler clock's 0.1 ms resolution; result.json and samples.json stay in /var/tmp/pr246-b/tools/perf/results on vimaan",
+        "verdict": "PASS",
+        "machine": "vimaan, Intel Core i7-9750H, NVIDIA GeForce GTX 1650 Ti with Max-Q Design 4 GiB, 8 GiB of RAM",
+        "browser": "/usr/lib/chromium/chromium, windowed through Xwayland with PRIME offload; the sandbox stays on",
+        "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce GTX 1650 Ti with Max-Q Design/PCIe/SSE2, OpenGL 4.5.0)",
+        "page": "1512x773 CSS at device pixel ratio 2, ?stress&rung=0 and ?stress=reference&rung=0"
+      },
+      "id": "gpu-2026-11-25T06-43-52-412Z-b5658e3-ea37fca",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "b5658e33d3243371ab851b199b075b0379f3af36",
+        "B": "ea37fca7cc5e4ce599a0a2dea30373e3b09549ee"
       }
     }
   ],

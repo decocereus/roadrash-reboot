@@ -237,6 +237,7 @@ export const createTowerPass = (renderer: TowerRenderer) => {
 
   const render = () => {
     if (!placement || (rows.length === 0 && !staged)) {
+      moving = false;
       return;
     }
     if (!plan || !baked(placement)) {
@@ -279,6 +280,7 @@ export const createTowerPass = (renderer: TowerRenderer) => {
     show(next: readonly TowerRow[]) {
       rows = next;
     },
+    sliding: () => moving,
     stage() {
       staged = true;
       mesh.visible = true;

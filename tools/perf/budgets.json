@@ -132,7 +132,7 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "4ae359e6297e5c71230c6509b8811d0bd44eb4994d0c0a3a20d070d624a67817"
+    "summarySha256": "5423df8f28944f07b919e6a24eb4380ab2f42d9b5bdc12fff30d26af7780b391"
   },
   "limits": [
     {
@@ -2462,6 +2462,54 @@
       "source": "gpu-2026-11-24T20-11-38-121Z-beea984-de0c4e1",
       "unit": "triangles",
       "value": 322371
+    },
+    {
+      "baseline": 0.3,
+      "derivation": "2 x the worst B window at the first revision that draws the tower in the canvas (windows 0.30, 0.20, 0.30, 0.20, 0.30 ms in gpu-2026-11-25T05-50-32-579Z-b5658e3-ea37fca)",
+      "direction": "max",
+      "environment": "gpu-chromium-intel",
+      "metric": "tower.cpu.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-25T05-50-32-579Z-b5658e3-ea37fca",
+      "unit": "ms",
+      "value": 0.6
+    },
+    {
+      "baseline": 0.3,
+      "derivation": "2 x the worst B window at the first revision that draws the tower in the canvas (windows 0.30, 0.30, 0.20, 0.20, 0.30 ms in gpu-2026-11-25T05-50-32-579Z-b5658e3-ea37fca)",
+      "direction": "max",
+      "environment": "gpu-chromium-intel",
+      "metric": "tower.cpu.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-25T05-50-32-579Z-b5658e3-ea37fca",
+      "unit": "ms",
+      "value": 0.6
+    },
+    {
+      "baseline": 0.2,
+      "derivation": "2 x the worst B window at the first revision that draws the tower in the canvas (windows 0.10, 0.20, 0.10, 0.10, 0.10 ms in gpu-2026-11-25T06-17-40-061Z-b5658e3-ea37fca and 0.10 x5 in gpu-2026-11-25T06-43-52-412Z-b5658e3-ea37fca)",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "tower.cpu.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-25T06-17-40-061Z-b5658e3-ea37fca",
+      "unit": "ms",
+      "value": 0.4
+    },
+    {
+      "baseline": 0.1,
+      "derivation": "2 x the worst B window at the first revision that draws the tower in the canvas (windows 0.10 x5 in gpu-2026-11-25T06-17-40-061Z-b5658e3-ea37fca and 0.10 x5 in gpu-2026-11-25T06-43-52-412Z-b5658e3-ea37fca)",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "tower.cpu.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-25T06-17-40-061Z-b5658e3-ea37fca",
+      "unit": "ms",
+      "value": 0.2
     }
   ],
   "nodeProfiles": {

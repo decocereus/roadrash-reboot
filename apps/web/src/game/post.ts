@@ -171,6 +171,7 @@ export interface Overlay {
   readonly compile: () => void;
   readonly render: () => void;
   readonly resize: (width: number, height: number, pixelRatio: number) => void;
+  readonly sliding: () => boolean;
   readonly stage: () => () => void;
 }
 
@@ -184,6 +185,7 @@ export interface Pipeline {
   setLook: (look: Look) => void;
   resize: (width: number, height: number, pixelRatio: number) => void;
   render: (scene: THREE.Scene, camera: THREE.PerspectiveCamera) => void;
+  sliding: () => boolean;
   dispose: () => void;
 }
 
@@ -414,6 +416,7 @@ export const createPipeline = (
       uniformValue(grade, "grade", THREE.Vector3).set(...look.grade);
       bloom.strength = look.bloom;
     },
+    sliding: () => overlay?.sliding() ?? false,
     stageOverlay: overlay?.stage ?? unstaged,
   };
 };

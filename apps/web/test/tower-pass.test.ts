@@ -180,6 +180,44 @@ describe("the timing tower's pass", () => {
     });
   });
 
+  it("says it is sliding until a swapped row reaches its slot or the tower draws no rows, so a paused game draws only that far", () => {
+    const { clock, pass } = passWith();
+    const rows = rowsOf(["You", "Rival", "Third"]);
+    pass.bake(namesOf(rows));
+    pass.show(rows);
+    pass.render();
+    const still = pass.sliding();
+    clock.now = SLIDE_START_MS;
+    pass.show(reordered(rows));
+    pass.render();
+    clock.now = SLIDE_START_MS + 150;
+    pass.render();
+    const midway = pass.sliding();
+    clock.now = SLIDE_START_MS + 400;
+    pass.render();
+    const settled = pass.sliding();
+    pass.show(rows);
+    pass.render();
+    clock.now = SLIDE_START_MS + 450;
+    pass.render();
+    const again = pass.sliding();
+    pass.show([]);
+    pass.render();
+    expect({
+      again,
+      gone: pass.sliding(),
+      midway,
+      settled,
+      still,
+    }).toStrictEqual({
+      again: true,
+      gone: false,
+      midway: true,
+      settled: false,
+      still: false,
+    });
+  });
+
   it("paints each chip skewed by 12 degrees with a whole-pixel outline, and inks text 2 page pixels out", () => {
     const { canvases, pass } = passWith(DEVICE_RATIO);
     pass.bake(namesOf(rowsOf(["You", "Rival"])));
