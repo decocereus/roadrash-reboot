@@ -8,7 +8,7 @@ import * as THREE from "three";
 
 import type { BarCamera } from "../bar-view.ts";
 
-const FOV = {
+export const FOV = {
   angled: 42,
   door: 50,
   follow: 54,
@@ -32,7 +32,7 @@ const EASE = {
   garage: 3.6,
   room: 3.2,
 } as const;
-const GARAGE_SHOT = {
+export const GARAGE_SHOT = {
   aimRight: 1.7,
   aimY: 0.75,
   eyeX: -3.5,

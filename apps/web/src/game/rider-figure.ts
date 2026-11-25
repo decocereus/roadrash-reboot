@@ -5,35 +5,42 @@ import * as THREE from "three";
 import { clone as cloneRig } from "three/addons/utils/SkeletonUtils.js";
 
 import type { PoseName, RiderAsset } from "./assets.ts";
+import type { BikeDeck } from "./bike-deck.ts";
 import type { BikeFit } from "./bike-fit.ts";
+import { bikeModelIds } from "./bike-models.ts";
+import type { BikeModelId } from "./bike-models.ts";
+import { bikePostures } from "./bike-posture.ts";
 import type { Shading } from "./cel.ts";
 import { disposeTree } from "./dispose.ts";
 import { reachOfPoses } from "./figure-bounds.ts";
+import { chestBones, chestOf, clothOf, forearmBones } from "./figure-chest.ts";
+import type { ChestPoint } from "./figure-chest.ts";
 import { contactsOf as measureContacts } from "./figure-contacts.ts";
 import type { Contacts } from "./figure-contacts.ts";
 import { cycleFor, strikeName, striking } from "./figure-cycle.ts";
 import type { Cycle } from "./figure-cycle.ts";
 import {
-  flinchTurns,
-  hangTurns,
   kickedFrom,
   HANG_SHIFT,
   kneeOut,
   planterOf,
+  restTurns,
   riseOffset,
   risenTurns,
   sideOf,
-  TUCK_TURNS,
   turnedFrom,
 } from "./figure-pose.ts";
-import type { RiderPose, Riding, Sided, Turn } from "./figure-pose.ts";
+import type { BodyPart, RiderPose, Sided, Turn } from "./figure-pose.ts";
 import { posed, PosedSkeleton } from "./figure-rig.ts";
 import type { Rig } from "./figure-rig.ts";
+import { postureFit, seatFitOn, seatingFrom } from "./figure-seating.ts";
+import type { Seated, SeatFit, Seating } from "./figure-seating.ts";
 import { weaponMesh } from "./figure-weapons.ts";
 import { createFootLock } from "./foot-lock.ts";
 import { isSkinnedMesh } from "./meshes.ts";
 import { paintPrimitives } from "./model-slots.ts";
 import type { Palette } from "./model-slots.ts";
+import seatJson from "./seat-table.json" with { type: "json" };
 import type { Footing } from "./strider.ts";
 
 export interface Stance {
@@ -58,6 +65,8 @@ export interface RiderFigure {
   readonly root: THREE.Group;
   readonly standHeight: number;
   mount: (bike: THREE.Object3D, fit: BikeFit, sag: number) => void;
+  seatOn: (fit: BikeFit) => void;
+  readonly fitSeat: (fit: BikeFit, deck: BikeDeck) => SeatFit;
   dispose: () => void;
   animate: (stance: Stance, seconds: number) => void;
   rest: () => void;
@@ -127,12 +136,54 @@ const farBodyOf = (
 };
 
 const reachByAsset = new WeakMap<RiderAsset, THREE.Sphere>();
+const [firstModel] = bikeModelIds;
 const contactsByAsset = new WeakMap<RiderAsset, Contacts>();
+
+const bodyPointsByAsset = new WeakMap<
+  RiderAsset,
+  Readonly<Record<BodyPart, readonly ChestPoint[]>>
+>();
+const seatingsByAsset = new WeakMap<
+  RiderAsset,
+  Readonly<Record<BikeModelId, Seating>>
+>();
+
+export type SeatFits = (
+  url: string,
+  model: BikeModelId,
+  seated: Seated
+) => SeatFit;
+
+export const unfitted: SeatFits = (_url, model, seated) =>
+  postureFit(bikePostures[model], seated);
+
+const seatTable: Readonly<
+  Record<string, Readonly<Record<BikeModelId, SeatFit>> | undefined>
+> = seatJson;
+
+const perModel = <Each>(of: (model: BikeModelId) => Each) =>
+  ({
+    classic: of("classic"),
+    ghost: of("ghost"),
+    oni: of("oni"),
+    seraph: of("seraph"),
+  }) satisfies Record<BikeModelId, Each>;
+
+const tableFit: SeatFits = (url, model) => {
+  const fit = seatTable[url]?.[model];
+  if (!fit) {
+    throw new Error(
+      `The seat table has no fit for ${url} on the ${model}; run pnpm seating.`
+    );
+  }
+  return fit;
+};
 
 export const createRiderFigure = (
   asset: RiderAsset,
   shading: Shading,
-  palette: Palette
+  palette: Palette,
+  fits: SeatFits = tableFit
 ): RiderFigure => {
   const root = new THREE.Group();
   const model = cloneRig(asset.scene);
@@ -178,35 +229,52 @@ export const createRiderFigure = (
   const rig: Rig = { bones, names: asset.bones, root, skeleton };
   const bake = (base: readonly number[], turns: readonly Turn[]) =>
     turnedFrom(rig, base, turns);
-  const tucked = bake(seated, TUCK_TURNS);
+  const lifts = { left: riseOffset(-1), right: riseOffset(1) };
+  const lift = new THREE.Vector3();
+  const bodyPointsOf = () => {
+    const held = bodyPointsByAsset.get(asset);
+    if (held) {
+      return held;
+    }
+    const { giveAt } = clothOf(body);
+    const points = {
+      chest: chestOf(rig, body, chestBones, giveAt),
+      forearms: chestOf(rig, body, forearmBones, giveAt),
+    };
+    bodyPointsByAsset.set(asset, points);
+    return points;
+  };
+  const planter = planterOf(rig, seated, bodyPointsOf);
   const risen = {
     left: bake(seated, risenTurns(-1)),
     right: bake(seated, risenTurns(1)),
   };
-  const lifts = { left: riseOffset(-1), right: riseOffset(1) };
-  const lift = new THREE.Vector3();
-  const planter = planterOf(rig, seated);
-  const riding: Riding = {
-    flinch: {
-      left: bake(seated, flinchTurns(-1)),
-      right: bake(seated, flinchTurns(1)),
-    },
-    hang: {
-      left: bake(seated, hangTurns(-1)),
-      right: bake(seated, hangTurns(1)),
-    },
-    kicked: {
-      left: kickedFrom(rig, risen.left, kickLeft, -1),
-      right: kickedFrom(rig, risen.right, kickRight, 1),
-    },
+  const kicked = {
+    left: kickedFrom(rig, risen.left, kickLeft, -1),
+    right: kickedFrom(rig, risen.right, kickRight, 1),
+  };
+  const seatedRig: Seated = {
+    bake,
+    kicked,
     risen,
     seated,
-    tucked,
-    tuckedHang: {
-      left: bake(tucked, hangTurns(-1)),
-      right: bake(tucked, hangTurns(1)),
-    },
+    spine: asset.bones.indexOf("spine_01"),
   };
+  const seatings =
+    seatingsByAsset.get(asset) ??
+    perModel((bike) =>
+      seatingFrom(
+        fits(asset.url, bike, seatedRig),
+        bikePostures[bike],
+        seatedRig
+      )
+    );
+  seatingsByAsset.set(asset, seatings);
+  const rests = perModel((bike) => bake(seated, restTurns(bikePostures[bike])));
+  posed(rig, seated);
+  const contacts = contactsByAsset.get(asset) ?? measureContacts(body, root);
+  contactsByAsset.set(asset, contacts);
+  let { riding, tuckSlide } = seatings[firstModel];
   const current = [...seated];
   const wanted = [...current];
   const base = [...current];
@@ -232,8 +300,10 @@ export const createRiderFigure = (
     reachByAsset.get(asset) ??
     reachOfPoses(rig, body, hands, [
       ...asset.poses.values(),
-      ...Object.values(riding).flatMap((pose: number[] | Sided<number[]>) =>
-        Array.isArray(pose) ? [pose] : [pose.left, pose.right]
+      ...Object.values(seatings).flatMap(({ riding: set }) =>
+        Object.values(set).flatMap((pose: number[] | Sided<number[]>) =>
+          Array.isArray(pose) ? [pose] : [pose.left, pose.right]
+        )
       ),
     ]);
   reachByAsset.set(asset, reach);
@@ -268,19 +338,12 @@ export const createRiderFigure = (
     }
   };
   composeBones(false);
-
-  const contactsOf = (): Contacts => {
-    const known = contactsByAsset.get(asset);
-    if (known) {
-      return known;
-    }
+  const composed = <Result>(run: () => Result): Result => {
     composeBones(true);
-    posed(rig, seated);
-    const measured = measureContacts(body, root);
+    const result = run();
     posed(rig, written);
     composeBones(false);
-    contactsByAsset.set(asset, measured);
-    return measured;
+    return result;
   };
 
   const apply = () => {
@@ -409,6 +472,19 @@ export const createRiderFigure = (
     return from && to ? between(from, to, cycle.blend) : null;
   };
 
+  const plantOn = (fit: BikeFit) => {
+    planter.seatOn(fit, contacts, rests[fit.model], hip);
+  };
+
+  const seatOn = (fit: BikeFit) => {
+    if (fit === seatedOn) {
+      return;
+    }
+    plantOn(fit);
+    ({ riding, tuckSlide } = seatings[fit.model]);
+    seatedOn = fit;
+  };
+
   return {
     animate(stance, seconds) {
       skeleton.stale = true;
@@ -418,6 +494,7 @@ export const createRiderFigure = (
         HANG_SHIFT *
         kneeOut(stance.lean, stance.speed) *
         (1 - stance.rise);
+      lift.addScaledVector(tuckSlide, stance.tuck * (1 - stance.rise));
       const target = aim(stance);
       if (!target) {
         return;
@@ -466,11 +543,7 @@ export const createRiderFigure = (
       if (!pose) {
         throw new Error(`The rider model has no ${from} pose.`);
       }
-      composeBones(true);
-      const baked = bake(pose, turns);
-      posed(rig, written);
-      composeBones(false);
-      return baked;
+      return composed(() => bake(pose, turns));
     },
     dispose() {
       holding?.removeFromParent();
@@ -486,6 +559,11 @@ export const createRiderFigure = (
       farBody.dispose();
       disposeTree(model);
       skeleton.dispose();
+    },
+    fitSeat(fit, deck) {
+      seatedOn = null;
+      plantOn(fit);
+      return composed(() => seatFitOn(fit, deck, planter, seatedRig));
     },
     holdEveryWeapon() {
       for (let hand = 0; hand < held.length; hand += 1) {
@@ -542,10 +620,7 @@ export const createRiderFigure = (
       body.geometry = far ? farBody : near;
     },
     mount(bike, fit, sag) {
-      if (fit !== seatedOn) {
-        planter.seatOn(fit, contactsOf(), hip);
-        seatedOn = fit;
-      }
+      seatOn(fit);
       root.quaternion.copy(bike.quaternion);
       root.position
         .set(hip.x, hip.y - sag, hip.z)
@@ -594,6 +669,7 @@ export const createRiderFigure = (
       }
     },
     root,
+    seatOn,
     standHeight: asset.standHeight,
   };
 };

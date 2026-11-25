@@ -7,6 +7,7 @@ export const turnInWorld = (bone: THREE.Object3D, turn: THREE.Quaternion) => {
   const parent = new THREE.Quaternion();
   bone.parent?.getWorldQuaternion(parent);
   bone.quaternion.copy(parent.invert().multiply(turn.clone().multiply(world)));
+  bone.updateMatrix();
   bone.updateMatrixWorld(true);
 };
 
@@ -133,6 +134,17 @@ export const swingGirdle = (grip: Grip, limit: number) => {
   }
 };
 
+export const turnAbove = (
+  torso: Joint,
+  above: readonly Joint[],
+  axis: THREE.Vector3,
+  angle: number
+) => {
+  if (angle !== 0) {
+    turnAbout(above, 0, torso.at, spin.setFromAxisAngle(axis, angle));
+  }
+};
+
 export const leanToward = (
   torso: Joint,
   above: readonly Joint[],
@@ -150,9 +162,7 @@ export const leanToward = (
       );
     }
   }
-  if (angle > 0) {
-    turnAbout(above, 0, torso.at, spin.setFromAxisAngle(axis, angle));
-  }
+  turnAbove(torso, above, axis, angle);
 };
 
 const interiorAngle = (upper: number, lower: number, span: number): number =>

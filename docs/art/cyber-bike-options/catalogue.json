@@ -7,13 +7,13 @@
     "accent": "22E5FF",
     "number": "01",
     "description": "Low split nose, widely spaced horizontal lamps, a short wraparound screen and stacked wings.",
-    "triangles": 13644,
+    "triangles": 13792,
     "parts": {
-      "bike_body": 8280,
+      "bike_body": 8428,
       "wheel_f": 2897,
       "wheel_r": 2467
     },
-    "glbBytes": 433456,
+    "glbBytes": 438084,
     "textures": 0,
     "wheelbaseMetres": 1.38
   },
@@ -25,13 +25,13 @@
     "accent": "1CDDF0",
     "number": "02",
     "description": "Narrow spear nose, vertical lamps, a tall blade screen and upright canards.",
-    "triangles": 13400,
+    "triangles": 13548,
     "parts": {
-      "bike_body": 7938,
+      "bike_body": 8086,
       "wheel_f": 2946,
       "wheel_r": 2516
     },
-    "glbBytes": 426212,
+    "glbBytes": 430844,
     "textures": 0,
     "wheelbaseMetres": 1.38
   },
@@ -43,13 +43,13 @@
     "accent": "EAFF38",
     "number": "03",
     "description": "Broad armoured face, one continuous visor light, a low slab screen and a vented jaw.",
-    "triangles": 14426,
+    "triangles": 14574,
     "parts": {
-      "bike_body": 9072,
+      "bike_body": 9220,
       "wheel_f": 2892,
       "wheel_r": 2462
     },
-    "glbBytes": 469216,
+    "glbBytes": 473844,
     "textures": 0,
     "wheelbaseMetres": 1.38
   }

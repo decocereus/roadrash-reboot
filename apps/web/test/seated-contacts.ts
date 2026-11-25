@@ -4,6 +4,22 @@ import { contactNames } from "../src/game/bike-fit.ts";
 import type { BikeFit, ContactName } from "../src/game/bike-fit.ts";
 import { contactsOf } from "../src/game/figure-contacts.ts";
 import type { Contacts } from "../src/game/figure-contacts.ts";
+import type { Stance } from "../src/game/rider-figure.ts";
+
+export const seatedStance = (stance: Partial<Stance>): Stance => ({
+  flinch: 0,
+  flinchSide: 1,
+  lean: 0,
+  pose: "seated",
+  reach: 0,
+  rise: 0,
+  side: 1,
+  speed: 0,
+  time: 0,
+  tuck: 0,
+  weapon: "none",
+  ...stance,
+});
 
 export const bodyOf = (root: THREE.Object3D): THREE.SkinnedMesh => {
   let body: THREE.SkinnedMesh | null = null;

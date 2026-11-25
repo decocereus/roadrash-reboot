@@ -6,13 +6,13 @@
   "accent": "1CDDF0",
   "number": "02",
   "description": "Narrow spear nose, vertical lamps, a tall blade screen and upright canards.",
-  "triangles": 13400,
+  "triangles": 13548,
   "parts": {
-    "bike_body": 7938,
+    "bike_body": 8086,
     "wheel_f": 2946,
     "wheel_r": 2516
   },
-  "glbBytes": 426212,
+  "glbBytes": 430844,
   "textures": 0,
   "wheelbaseMetres": 1.38
 }
