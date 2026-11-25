@@ -1,10 +1,16 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
 import { browserHosts } from "@racer/devtools/browser-host";
+import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 
+import { budgetsFile } from "../src/budgets.ts";
 import { BAR_BENCH } from "../src/gpu-bar.ts";
 import type { BarSample } from "../src/gpu-bar.ts";
 import { evaluateGpu, GPU_PAIRS } from "../src/gpu-frames.ts";
-import { WINDOW_TICKS } from "../src/scenarios.ts";
+import { scenarios, WINDOW_TICKS } from "../src/scenarios.ts";
+import type { Scenario } from "../src/scenarios.ts";
 import {
   BAR_FRAMES,
   barOf,
@@ -12,18 +18,23 @@ import {
   campaign,
   DRAWN_CALLS,
   failing,
-  isPack,
-  limits,
-  METAL,
-  packRiding,
-  reference,
   rideOf,
+  SHADOW_TRIANGLES,
   SLOT,
   START_MS,
   steady,
   steadyBar,
 } from "./gpu-fixture.ts";
 import type { Playback } from "./gpu-fixture.ts";
+
+const { limits } = Schema.decodeUnknownSync(Schema.fromJsonString(budgetsFile))(
+  readFileSync(path.join(import.meta.dirname, "../budgets.json"), "utf-8")
+);
+
+const METAL = browserHosts["macos-metal"].perfEnvironment;
+const [reference, packRiding] = scenarios;
+
+const isPack = (scenario: Scenario): boolean => scenario.id === packRiding?.id;
 
 const judged = (bar: readonly BarSample[]) =>
   failing(
@@ -268,6 +279,70 @@ describe("gpu frame lane", () => {
     );
     expect(failing(evaluation.lines)).toStrictEqual([
       `FAIL gpu pack-riding-v1 render.calls.max [gpu-helium-metal] observed=${over} calls limit <= ${budget.value} calls A=${DRAWN_CALLS.toPrecision(5)}`,
+    ]);
+    expect(evaluation.ok).toBeFalsy();
+  });
+
+  it("fails a B window whose shadow pass draws more triangles than the committed budget", () => {
+    const budget = limits.find(
+      (each) =>
+        each.environment === METAL &&
+        each.metric === "render.shadowTriangles.max" &&
+        each.scenario === packRiding?.id
+    );
+    if (!budget) {
+      throw new Error(
+        "budgets.json has no pack-riding shadow triangle budget."
+      );
+    }
+    const over = budget.value + 1;
+    const evaluation = evaluateGpu(
+      campaign((scenario, side) =>
+        isPack(scenario) && side === "B"
+          ? {
+              ...steady,
+              shadowTriangles: (index) =>
+                index === 9 ? over : SHADOW_TRIANGLES,
+            }
+          : steady
+      ),
+      steadyBar,
+      limits,
+      METAL,
+      null
+    );
+    expect(failing(evaluation.lines)).toStrictEqual([
+      `FAIL gpu pack-riding-v1 render.shadowTriangles.max [gpu-helium-metal] observed=${over} triangles limit <= ${budget.value} triangles A=${SHADOW_TRIANGLES.toPrecision(5)}`,
+    ]);
+    expect(evaluation.ok).toBeFalsy();
+  });
+
+  it("fails a B window whose riders take longer than the committed budget", () => {
+    const budget = limits.find(
+      (each) =>
+        each.environment === METAL &&
+        each.metric === "riders.cpu.p95" &&
+        each.scenario === packRiding?.id
+    );
+    if (!budget) {
+      throw new Error("budgets.json has no pack-riding riders budget.");
+    }
+    const slow = budget.value * 2;
+    const evaluation = evaluateGpu(
+      campaign((scenario, side, pair) =>
+        isPack(scenario) && side === "B" && pair === 0
+          ? { ...steady, riders: (index) => (index % 10 === 0 ? slow : 0.2) }
+          : steady
+      ),
+      steadyBar,
+      limits,
+      METAL,
+      null
+    );
+    expect(
+      failing(evaluation.lines).map((line) => line.split(" observed=")[0])
+    ).toStrictEqual([
+      "FAIL gpu pack-riding-v1 riders.cpu.p95 [gpu-helium-metal]",
     ]);
     expect(evaluation.ok).toBeFalsy();
   });

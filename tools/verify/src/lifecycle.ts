@@ -1,6 +1,7 @@
 import path from "node:path";
 
 import { CurrentHost, browserHosts } from "@racer/devtools/browser-host";
+import { profileFor } from "@racer/devtools/claim";
 import { attempt, cleanupFailed, released } from "@racer/devtools/cleanup";
 import {
   describeDesktop,
@@ -35,7 +36,6 @@ import {
   SlotStore,
   USER_PORTS,
   devtoolsPortOf,
-  profileFor,
   runIdFor,
   serverPortOf,
   statePath,

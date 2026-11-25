@@ -1,24 +1,26 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
+import type * as Clock from "effect/Clock";
+import * as Duration from "effect/Duration";
+import * as Effect from "effect/Effect";
 
-import { browserHosts } from "@racer/devtools/browser-host";
-import * as Schema from "effect/Schema";
-
-import { budgetsFile } from "../src/budgets.ts";
 import { BAR_BENCH } from "../src/gpu-bar.ts";
 import type { BarSample } from "../src/gpu-bar.ts";
 import { FRAME_RATE, GPU_PAIRS } from "../src/gpu-frames.ts";
 import type { GpuSample } from "../src/gpu-frames.ts";
+import type { ParkReading } from "../src/gpu-rv.ts";
 import { scenarios, WINDOW_TICKS } from "../src/scenarios.ts";
 import type { Scenario } from "../src/scenarios.ts";
 import { validRows } from "./red-cases.ts";
 
-export const { limits } = Schema.decodeUnknownSync(
-  Schema.fromJsonString(budgetsFile)
-)(readFileSync(path.join(import.meta.dirname, "../budgets.json"), "utf-8"));
+export const QUIET: ParkReading = {
+  page: '"/kit"',
+  reason: null,
+  renderers: [],
+  run: "run-idle-s0",
+  slot: "0",
+  state: "quiet",
+  tries: 1,
+};
 
-export const METAL = browserHosts["macos-metal"].perfEnvironment;
-export const NVIDIA = browserHosts["linux-nvidia"].perfEnvironment;
 export const SLOT = 1000 / 60;
 const MAIN_CALLS = 130;
 export const DRAWN_CALLS = 350;
@@ -169,14 +171,17 @@ const sampleOf = (
         (_, index) => START_MS + index * SLOT
       ),
     },
+    timeOrigin: 0,
     viewport: playback.viewport,
     visibility: "visible",
   };
   const fields = {
+    clock: null,
     consoleErrors: 0,
     file: `${scenario.id}-pair${pair}-${side}.json`,
     installed: { tick: 6, visibility: "visible" },
     pair,
+    park: QUIET,
     position: side === "A" ? 0 : 1,
     run: side === "A" ? "run-a-s0" : "run-b-s1",
     scenario: scenario.id,
@@ -204,11 +209,6 @@ export const campaign = (
 export const failing = (lines: readonly string[]) =>
   lines.filter((line) => line.startsWith("FAIL"));
 
-export const [reference, packRiding] = scenarios;
-
-export const isPack = (scenario: Scenario): boolean =>
-  scenario.id === packRiding?.id;
-
 export const BAR_FRAMES = BAR_BENCH.to - BAR_BENCH.from;
 
 export const barSampleOf = (
@@ -235,12 +235,15 @@ export const barSampleOf = (
       ticks: 1,
       triangles: [600_000],
     })),
+    timeOrigin: 0,
     viewport: steady.viewport,
     visibility: "visible",
     ...capture,
   },
+  clock: null,
   consoleErrors: 0,
   file: `bar-${index}.json`,
+  park: QUIET,
 });
 
 export const barOf = (
@@ -252,3 +255,23 @@ export const barOf = (
   );
 
 export const steadyBar = barOf(() => 16.7);
+
+export const scriptedClock = () => {
+  const now = { ns: 0n };
+  const advance = (ms: number) => {
+    now.ns += BigInt(Math.round(ms * 1e6));
+  };
+  const clock: Clock.Clock = {
+    currentTimeMillis: Effect.sync(() => Number(now.ns / 1_000_000n)),
+    currentTimeMillisUnsafe: () => Number(now.ns / 1_000_000n),
+    currentTimeNanos: Effect.sync(() => now.ns),
+    currentTimeNanosUnsafe: () => now.ns,
+    monotonicTimeNanos: Effect.sync(() => now.ns),
+    monotonicTimeNanosUnsafe: () => now.ns,
+    sleep: (duration) =>
+      Effect.sync(() => {
+        advance(Duration.toMillis(duration));
+      }),
+  };
+  return { advance, clock };
+};

@@ -19,13 +19,11 @@ import { lookOf } from "../src/game/looks.ts";
 import { isInstancedMesh, isMesh, isSkinnedMesh } from "../src/game/meshes.ts";
 import { glows } from "../src/game/model-slots.ts";
 import { createRiderFigure } from "../src/game/rider-figure.ts";
-import type { ShadowReach } from "../src/game/shadow-reach.ts";
 import { stageEverything, warmStaged } from "../src/game/staging.ts";
 import type { Staged } from "../src/game/staging.ts";
 import { uploadSpan } from "../src/game/uploads.ts";
+import { everyCaster } from "./every-caster.ts";
 import { pinnedAssets, pinnedCelebrities } from "./pinned-assets.ts";
-
-const everyCaster: ShadowReach = { reaches: () => true };
 
 const HELMET_REACH = 0.4;
 
@@ -317,7 +315,7 @@ describe("bike models", () => {
     for (const [index] of field.entries()) {
       bikes.show(index);
     }
-    bikes.commit(new THREE.Vector3());
+    bikes.commit(new THREE.Vector3(), everyCaster);
     const modelOfBody = new Map(
       bikeModelIds.map((model) => [
         bodyVertices(assets.bikes[model].parts),

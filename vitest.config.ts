@@ -6,6 +6,7 @@ const viteTests = [
   "apps/web/test/actor-tables.test.ts",
   "apps/web/test/asset-load.test.ts",
   "apps/web/test/bazaar-kit.test.ts",
+  "apps/web/test/bike-shadow-pass.test.ts",
   "apps/web/test/celebrity-load.test.ts",
   "apps/web/test/model-slots.test.ts",
   "apps/web/test/planted-hands.test.ts",

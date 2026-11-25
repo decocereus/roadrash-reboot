@@ -1,6 +1,6 @@
 # Time of day
 
-A race starts in the evening and the sun sets while the field rides, so it is night by the time the median rider finishes. Slag Row starts at late dusk and ends in deep night. The light is a pure function of the race tick: `hourOf(look.nightTick, tick)` runs from 0 at the green light to 1 at the road's `nightTick`, the median finish of a tier 1 field, and holds there. `skyClock` in `apps/web/src/game/sky-clock.ts` blends the road's keyframes in `looks.ts` (the look's own hour at 0, then its `later` list) into one preallocated hour, in 1,000 steps, and `World.light` applies a new step as uniform and colour writes only: the lights, fog, sky, mountains, plain, cel tones, rim, ink, grade, bloom and every glow material. Every player in a room sees the same sky at the same tick, and a rollback or a rejoin never makes it jump, because the tick is already part of the race.
+A race starts in the evening and the sun sets while the field rides, so it is night before the leader finishes. Slag Row starts at late dusk and ends in deep night. The light is a pure function of the race tick: `hourOf(look.nightTick, tick)` runs from 0 at the green light to 1 at the road's `nightTick` and holds there; the last keyframe, at 0.85, lands when the median race leader is four fifths of the way through. `skyClock` in `apps/web/src/game/sky-clock.ts` blends the road's keyframes in `looks.ts` (the look's own hour at 0, then its `later` list) into one preallocated hour, in 1,000 steps, and `World.light` applies a new step as uniform and colour writes only: the lights, fog, sky, mountains, plain, cel tones, rim, ink, grade, bloom and every glow material. Every player in a room sees the same sky at the same tick, and a rollback or a rejoin never makes it jump, because the tick is already part of the race.
 
 ## Sub-features
 
@@ -26,4 +26,4 @@ Preconditions: `rv doctor --run <run>` passes on a development build; `?hour=` i
 ## Gotchas
 
 - `?hour=` pins the clock for the whole page, including the attract race.
-- The perf windows sit at about 15% to 35% of `nightTick` (reference ticks 3849 to 4449, stress 2028 to 2628), so they never measure night; measure the darkest point with `?hour=1` and `measure.ts`.
+- The perf windows sit at about 18% to 39% of Slag Row's `nightTick` (reference ticks 3849 to 4449, stress 2028 to 2628), so they never measure night; measure the darkest point with `?hour=1` and `measure.ts`.

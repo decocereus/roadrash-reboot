@@ -503,10 +503,6 @@ const startGame = (
       }
     }
     roomOf(session)?.frameDrawn(ownOff, rivalOff);
-    const lead = cast.views[stage.me];
-    if (cast.bikes && lead) {
-      cast.bikes.commit(lead.bike.position);
-    }
     cast.puffs?.update(seconds);
     frame.profiler?.lap("riders");
 
@@ -519,6 +515,11 @@ const startGame = (
     stage.world.showRoadLife(stage.race.view, cast.subject.s);
     lightRace(stage.world, pipeline, stage.race.view, pinnedHour);
     frame.profiler?.lap("world");
+    const lead = cast.views[stage.me];
+    if (cast.bikes && lead) {
+      cast.bikes.commit(lead.bike.position, stage.world.shadows);
+    }
+    frame.profiler?.lap("riders");
     placeFleet(blend);
     frame.profiler?.lap("fleet");
     present();

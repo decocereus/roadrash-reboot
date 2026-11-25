@@ -19,10 +19,8 @@ import { lookOf } from "../src/game/looks.ts";
 import { isInstancedMesh } from "../src/game/meshes.ts";
 import { createRiderFigure } from "../src/game/rider-figure.ts";
 import type { Stance } from "../src/game/rider-figure.ts";
-import type { ShadowReach } from "../src/game/shadow-reach.ts";
+import { everyCaster } from "./every-caster.ts";
 import { pinnedAssets } from "./pinned-assets.ts";
-
-const everyCaster: ShadowReach = { reaches: () => true };
 
 const track = trackFor("slag-row");
 const ROLLED = 0.25;
@@ -220,7 +218,7 @@ describe("bike wheels", () => {
         { model, paint: 0, police: false },
       ]);
       bikes.show(0);
-      bikes.commit(new THREE.Vector3());
+      bikes.commit(new THREE.Vector3(), everyCaster);
       const before = instancedIn(bikes.group).map((mesh) => {
         const box = boxOf(mesh);
         const centre = box.getCenter(new THREE.Vector3());
@@ -229,7 +227,7 @@ describe("bike wheels", () => {
       });
       bikes.spin(0, ROLLED);
       bikes.show(0);
-      bikes.commit(new THREE.Vector3());
+      bikes.commit(new THREE.Vector3(), everyCaster);
       const parts = before.map(({ box, centre, from, mesh, vertex }) => ({
         moved: boxOf(mesh).getCenter(new THREE.Vector3()).distanceTo(centre),
         radius: (box.max.y - box.min.y) / 2,
