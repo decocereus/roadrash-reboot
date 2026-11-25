@@ -98,7 +98,7 @@ const frameOf = (scenario: Scenario, playback: Playback, index: number) => ({
     1,
     13,
     1,
-    1,
+    0,
   ],
   cpu: [
     1,
